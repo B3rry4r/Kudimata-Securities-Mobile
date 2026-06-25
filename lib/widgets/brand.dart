@@ -1,5 +1,5 @@
 // Brand mark + wordmark lockup. Ported from shared.jsx (Mark / Wordmark). The
-// mark keeps its native 228×248 aspect ratio; white variant for ink surfaces.
+// mark keeps its native 2070×2385 aspect ratio; white variant for ink surfaces.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../theme/tokens.dart';
@@ -7,7 +7,7 @@ import '../theme/tokens.dart';
 const _markPurple = 'assets/brand/kudimata-mark.svg';
 const _markWhite = 'assets/brand/kudimata-mark-white.svg';
 
-/// Just the K mark. `size` is the width; height keeps the 248/228 ratio.
+/// Just the K mark. `size` is the width; height keeps the mark's viewBox ratio.
 class KMark extends StatelessWidget {
   const KMark({super.key, this.size = 30, this.white = false});
   final double size;
@@ -15,10 +15,11 @@ class KMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Aspect ratio from the mark's viewBox (2070.02 × 2384.77 — the shield mark).
     return SvgPicture.asset(
       white ? _markWhite : _markPurple,
       width: size,
-      height: size * 248 / 228,
+      height: size * 2384.77 / 2070.02,
     );
   }
 }
