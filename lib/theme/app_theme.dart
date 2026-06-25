@@ -4,7 +4,6 @@
 // Material defaults (text selection, scaffold bg, splash behaviour).
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'tokens.dart';
 
 class KTheme {
@@ -16,7 +15,9 @@ class KTheme {
       brightness: Brightness.light,
     );
 
-    final textTheme = GoogleFonts.spaceGroteskTextTheme(base.textTheme).apply(
+    // Bundled Space Grotesk (assets/fonts) — no runtime font fetch.
+    final textTheme = base.textTheme.apply(
+      fontFamily: KType.fontFamily,
       bodyColor: KColor.ink,
       displayColor: KColor.ink,
     );

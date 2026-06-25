@@ -2,7 +2,6 @@
 // (_ds/.../tokens/*.css). "Editorial mono": white + ink, colour only where it
 // carries meaning. Do not invent values here — every constant traces to a token.
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Colour — near-monochrome. tokens/colors.css
 class KColor {
@@ -116,9 +115,14 @@ const FontFeature _tnum = FontFeature.tabularFigures();
 class KType {
   KType._();
 
+  /// Bundled font family (assets/fonts/SpaceGrotesk-*.ttf, declared in pubspec).
+  /// Bundled — NOT fetched at runtime — so it always renders offline / in release.
+  static const String fontFamily = 'Space Grotesk';
+
   static TextStyle _base(double size, FontWeight w, Color color,
       {double? letterSpacing, double? height}) {
-    return GoogleFonts.spaceGrotesk(
+    return TextStyle(
+      fontFamily: fontFamily,
       fontSize: size,
       fontWeight: w,
       color: color,

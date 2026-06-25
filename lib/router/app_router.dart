@@ -240,10 +240,8 @@ class _TabShell extends StatelessWidget {
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Center(
-                  child: KBottomNav(active: active, onChange: _onNav),
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: KBottomNav(active: active, onChange: _onNav),
               ),
             ),
           ),

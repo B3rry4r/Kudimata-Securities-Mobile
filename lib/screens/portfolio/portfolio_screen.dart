@@ -11,7 +11,7 @@ import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 
-/// Allocation breakdown (matches the design copy/order). Monochrome ink ramp.
+/// Allocation breakdown (matches the design copy/order). Brand purple ramp.
 const _allocation = <_Alloc>[
   _Alloc('Nigerian stocks', 52),
   _Alloc('US stocks', 33),
@@ -75,8 +75,7 @@ class PortfolioScreen extends StatelessWidget {
   }
 }
 
-/// Donut + legend card — monochrome ink ramp (matches the design's NEUTRALS);
-/// legend dots mirror the donut. Purple is reserved for the interactive layer.
+/// Donut + legend card — brand purple ramp; legend dots mirror the donut.
 class _AllocationCard extends StatelessWidget {
   const _AllocationCard();
 
@@ -92,7 +91,7 @@ class _AllocationCard extends StatelessWidget {
                 KDonutSegment(
                   value: _allocation[i].value,
                   label: _allocation[i].name,
-                  color: KAllocationDonut.monoRamp[i % KAllocationDonut.monoRamp.length],
+                  color: KAllocationDonut.ramp[i % KAllocationDonut.ramp.length],
                 ),
             ],
             size: 132,
@@ -106,7 +105,7 @@ class _AllocationCard extends StatelessWidget {
                 for (var i = 0; i < _allocation.length; i++) ...[
                   if (i != 0) const SizedBox(height: 12),
                   _LegendRow(
-                    color: KAllocationDonut.monoRamp[i % KAllocationDonut.monoRamp.length],
+                    color: KAllocationDonut.ramp[i % KAllocationDonut.ramp.length],
                     label: _allocation[i].name,
                     value: '${_allocation[i].value.toInt()}%',
                   ),

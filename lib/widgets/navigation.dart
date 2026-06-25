@@ -31,77 +31,85 @@ class KBottomNav extends StatelessWidget {
   final String active;
   final ValueChanged<String> onChange;
 
-  static const double _slot = 56;
   static const double _pad = 6;
-  static const double _knob = 46;
+  static const double _knob = 48;
+  static const double _content = 56; // slot/icon row height
 
   @override
   Widget build(BuildContext context) {
     var idx = items.indexWhere((it) => it.id == active);
     if (idx < 0) idx = 0;
-    // +2 / +2 for the 1px hairline border on each side (it sits inside the box,
-    // so the inner content area would otherwise be 2px short of the slot row).
-    final width = _pad * 2 + items.length * _slot + 2;
-    const height = _pad * 2 + _slot + 2;
-    final knobLeft = _pad + idx * _slot + (_slot - _knob) / 2;
 
-    return Container(
-      width: width,
-      height: height,
-      padding: const EdgeInsets.all(_pad),
-      decoration: BoxDecoration(
-        color: KColor.paper,
-        borderRadius: BorderRadius.circular(KRadii.pill),
-        border: Border.all(color: KColor.hairline, width: 1),
-        boxShadow: KShadow.nav,
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          AnimatedPositioned(
-            duration: KMotion.base,
-            curve: KMotion.easeSoft,
-            left: knobLeft - _pad,
-            top: (height - _pad * 2 - _knob) / 2,
-            width: _knob,
-            height: _knob,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: KColor.indicator,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: Color(0x57670099), offset: Offset(0, 8), blurRadius: 18),
-                ],
-              ),
-            ),
+    // Fills the available width like a real navbar: the items spread evenly and
+    // the purple knob slides to the centre of the active slot.
+    return LayoutBuilder(
+      builder: (context, c) {
+        final innerW = c.maxWidth - _pad * 2 - 2; // minus padding + 1px border each side
+        final slotW = innerW / items.length;
+        final knobLeft = idx * slotW + (slotW - _knob) / 2;
+
+        return Container(
+          width: c.maxWidth,
+          padding: const EdgeInsets.all(_pad),
+          decoration: BoxDecoration(
+            color: KColor.paper,
+            borderRadius: BorderRadius.circular(KRadii.pill),
+            border: Border.all(color: KColor.hairline, width: 1),
+            boxShadow: KShadow.nav,
           ),
-          Row(
-            children: [
-              for (final it in items)
-                GestureDetector(
-                  onTap: () => onChange(it.id),
-                  behavior: HitTestBehavior.opaque,
-                  child: SizedBox(
-                    width: _slot,
-                    height: _slot,
-                    child: Center(
-                      child: AnimatedSwitcher(
-                        duration: KMotion.base,
-                        child: KIcon(
-                          it.icon,
-                          key: ValueKey('${it.id}-${it.id == active}'),
-                          size: 22,
-                          stroke: it.id == active ? 1.9 : 1.6,
-                          color: it.id == active ? KColor.paper : KColor.ink3,
-                        ),
-                      ),
+          child: SizedBox(
+            height: _content,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedPositioned(
+                  duration: KMotion.base,
+                  curve: KMotion.easeSoft,
+                  left: knobLeft,
+                  top: (_content - _knob) / 2,
+                  width: _knob,
+                  height: _knob,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: KColor.indicator,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Color(0x57670099), offset: Offset(0, 8), blurRadius: 18),
+                      ],
                     ),
                   ),
                 ),
-            ],
+                Row(
+                  children: [
+                    for (final it in items)
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => onChange(it.id),
+                          behavior: HitTestBehavior.opaque,
+                          child: SizedBox(
+                            height: _content,
+                            child: Center(
+                              child: AnimatedSwitcher(
+                                duration: KMotion.base,
+                                child: KIcon(
+                                  it.icon,
+                                  key: ValueKey('${it.id}-${it.id == active}'),
+                                  size: 22,
+                                  stroke: it.id == active ? 1.9 : 1.6,
+                                  color: it.id == active ? KColor.paper : KColor.ink3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

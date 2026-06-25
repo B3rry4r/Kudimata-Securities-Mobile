@@ -131,10 +131,17 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
-            // holdings preview → portfolio
-            const Padding(
+            // holdings preview → portfolio (header format matches Watchlist:
+            // eyebrow left, See all right)
+            Padding(
               padding: _gut,
-              child: KEyebrow('Holdings'),
+              child: Row(
+                children: [
+                  const KEyebrow('Holdings'),
+                  const Spacer(),
+                  _SeeAll(onTap: () => context.go(Routes.portfolio)),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             Padding(
@@ -165,15 +172,6 @@ class HomeScreen extends StatelessWidget {
                       ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: _gut,
-              child: KButton(
-                label: 'See all',
-                variant: KButtonVariant.ghost,
-                onPressed: () => context.go(Routes.portfolio),
               ),
             ),
             const SizedBox(height: 28),

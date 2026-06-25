@@ -81,6 +81,9 @@ Future<T?> showKSheet<T>(
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
+    // Present on the ROOT navigator so the sheet sits ABOVE the shell's floating
+    // bottom nav (otherwise the nav overlay renders on top of the sheet).
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     barrierColor: const Color(0x520F0F12), // rgba(15,15,18,0.32)
     elevation: 0,
