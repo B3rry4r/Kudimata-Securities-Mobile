@@ -39,8 +39,10 @@ class KBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     var idx = items.indexWhere((it) => it.id == active);
     if (idx < 0) idx = 0;
-    final width = _pad * 2 + items.length * _slot;
-    const height = _pad * 2 + _slot;
+    // +2 / +2 for the 1px hairline border on each side (it sits inside the box,
+    // so the inner content area would otherwise be 2px short of the slot row).
+    final width = _pad * 2 + items.length * _slot + 2;
+    const height = _pad * 2 + _slot + 2;
     final knobLeft = _pad + idx * _slot + (_slot - _knob) / 2;
 
     return Container(

@@ -1,6 +1,7 @@
 // KYC 8 — submitted (pending review). A centred pending StatusView. Auto-advances
 // to Approved after a short delay (mocks the provider approving). Mirrors
 // Submitted. SEAM: the real KYC provider's approval callback replaces the timer.
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/router/routes.dart';
@@ -15,13 +16,21 @@ class SubmittedScreen extends StatefulWidget {
 }
 
 class _SubmittedScreenState extends State<SubmittedScreen> {
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
     // SEAM: replace with the KYC provider's approval callback.
-    Future.delayed(const Duration(milliseconds: 2600), () {
+    _timer = Timer(const Duration(milliseconds: 2600), () {
       if (mounted) context.go(Routes.kycApproved);
     });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override

@@ -75,7 +75,6 @@ import '../screens/shared/state_views.dart';
 
 /// Builds the app router. [state] drives the deep-link gate redirect.
 GoRouter buildRouter(AppState state) {
-  final shellNavKey = GlobalKey<NavigatorState>();
   final homeKey = GlobalKey<NavigatorState>();
   final portfolioKey = GlobalKey<NavigatorState>();
   final marketsKey = GlobalKey<NavigatorState>();
@@ -156,7 +155,6 @@ GoRouter buildRouter(AppState state) {
 
       // ── Tab shell (StatefulShellRoute / indexedStack) ──────────────────--
       StatefulShellRoute.indexedStack(
-        parentNavigatorKey: shellNavKey,
         builder: (context, st, navShell) => _TabShell(navShell: navShell),
         branches: [
           StatefulShellBranch(navigatorKey: homeKey, routes: [

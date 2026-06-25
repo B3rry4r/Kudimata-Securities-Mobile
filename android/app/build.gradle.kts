@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.kudimata.kudimata_securities"
+    namespace = "com.kudimata.securities"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +15,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.kudimata.kudimata_securities"
+        applicationId = "com.kudimata.securities"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

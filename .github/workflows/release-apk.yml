@@ -1,10 +1,10 @@
-name: Build & Release
+name: Build & Release APK
 
-# Builds the release Android APK + the Flutter web bundle and publishes both to
-# GitHub Releases.
+# Builds the release Android APK and publishes it to GitHub Releases.
 #  • Push a tag like v1.0.0           → release named after the tag
 #  • Run manually (Actions ▸ Run)     → release "build-<run number>" (or a tag you type)
-# Both artifacts are also uploaded as build artifacts on every run.
+# The APK is also uploaded as a build artifact on every run. (Web is built locally,
+# not in CI.)
 on:
   push:
     tags:
@@ -55,9 +55,6 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Build web bundle
-        run: flutter build web --release
-
       - name: Resolve release tag
         id: meta
         run: |
@@ -71,13 +68,12 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Release tag: $TAG"
 
-      - name: Stage APK + web bundle
+      - name: Stage APK
         run: |
           TAG="${{ steps.meta.outputs.tag }}"
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk \
              "dist/kudimata-securities-${TAG}.apk"
-          ( cd build/web && zip -qr "../../dist/kudimata-securities-web-${TAG}.zip" . )
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -86,29 +82,16 @@ jobs:
           path: dist/*.apk
           if-no-files-found: error
 
-      - name: Upload web artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: kudimata-securities-web
-          path: build/web
-          if-no-files-found: error
-
       - name: Publish to Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: Kudimata Securities ${{ steps.meta.outputs.tag }}
           generate_release_notes: true
-          files: |
-            dist/*.apk
-            dist/*.zip
+          files: dist/*.apk
           body: |
-            Builds for Kudimata Securities.
+            Android release APK for Kudimata Securities.
 
-            - **`*.apk`** — Android release APK. Signed with Android debug keys (no production
-              keystore configured), so it's for testing/sideloading — not Play Store upload.
-              Enable "install from unknown sources" on the device to sideload.
-            - **`*-web.zip`** — static Flutter web build. Unzip and serve over HTTP (e.g.
-              `python3 -m http.server`); it needs a web server, opening `index.html` from disk
-              won't work. To host on GitHub Pages at a sub-path, rebuild with
-              `flutter build web --base-href /Kudimata-Securities-Mobile/`.
+            > Signed with Android debug keys (no production keystore configured), so it's for
+            > testing/sideloading — not Play Store upload. Enable "install from unknown sources"
+            > on the device to sideload.

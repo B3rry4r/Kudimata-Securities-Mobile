@@ -86,19 +86,23 @@ class KKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget key(Widget child, {VoidCallback? onTap, String? semantic}) {
-      return Semantics(
-        button: onTap != null,
-        label: semantic,
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: SizedBox(height: 60, child: Center(child: child)),
+    // Each cell is an exact 64px-tall tappable slot, laid out as 4 rows of 3 so
+    // nothing overflows (a GridView aspect-ratio would clip the glyphs).
+    Widget cell(Widget? child, {VoidCallback? onTap, String? semantic}) {
+      return Expanded(
+        child: Semantics(
+          button: onTap != null,
+          label: semantic,
+          child: GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(height: 64, child: Center(child: child ?? const SizedBox.shrink())),
+          ),
         ),
       );
     }
 
-    Widget digit(String d) => key(
+    Widget digit(String d) => cell(
           Text(
             d,
             style: KType.title(color: KColor.ink).copyWith(
@@ -108,30 +112,32 @@ class KKeypad extends StatelessWidget {
             ).tnum,
           ),
           onTap: () => onKey(d),
+          semantic: d,
         );
 
-    final cells = <Widget>[
-      for (final d in ['1', '2', '3', '4', '5', '6', '7', '8', '9']) digit(d),
-      // bottom-left: biometric action or empty
-      leftAction != null
-          ? key(leftAction!, onTap: onLeftAction, semantic: 'Use biometrics')
-          : const SizedBox.shrink(),
-      digit('0'),
-      key(
-        const KIcon('back', size: 28, color: KColor.ink2), // delete uses a back-style glyph
-        onTap: () => onKey('del'),
-        semantic: 'Delete',
-      ),
-    ];
+    Widget row(List<Widget> kids) => Row(children: kids);
 
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 8,
-      childAspectRatio: (300 / 3) / 60,
-      children: cells,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        row([digit('1'), digit('2'), digit('3')]),
+        const SizedBox(height: 6),
+        row([digit('4'), digit('5'), digit('6')]),
+        const SizedBox(height: 6),
+        row([digit('7'), digit('8'), digit('9')]),
+        const SizedBox(height: 6),
+        row([
+          leftAction != null
+              ? cell(leftAction, onTap: onLeftAction, semantic: 'Use biometrics')
+              : cell(null),
+          digit('0'),
+          cell(
+            const KIcon('back', size: 28, color: KColor.ink2), // delete (backspace) affordance
+            onTap: () => onKey('del'),
+            semantic: 'Delete',
+          ),
+        ]),
+      ],
     );
   }
 }
