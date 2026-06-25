@@ -46,8 +46,8 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
               title: "We're reviewing your details",
               message:
                   "This usually takes a few minutes. We'll notify you when you're verified.",
-              secondary: 'Continue',
-              onSecondary: () => context.go(Routes.kycApproved),
+              secondary: 'Back to home',
+              onSecondary: () => context.go(Routes.home),
             ),
           ),
         ),

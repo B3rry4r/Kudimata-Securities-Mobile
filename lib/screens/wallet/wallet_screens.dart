@@ -29,7 +29,8 @@ class WalletScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 28),
+          // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
+          padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 100),
           children: [
             const KScreenHead(title: 'Wallet'),
             const SizedBox(height: 16),

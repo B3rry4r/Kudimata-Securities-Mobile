@@ -170,8 +170,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   }
 }
 
-/// Selectable option row — hairline top divider, KRadio dot + label; selected
-/// label turns purple (mirrors the design's check-row).
+/// Selectable option row — hairline top divider, label that turns purple +
+/// medium when selected, and a trailing purple check (matches the design's
+/// questionnaire option, which shows no radio dot).
 class _OptionRow extends StatelessWidget {
   const _OptionRow({required this.label, required this.selected, required this.onTap});
   final String label;
@@ -191,8 +192,6 @@ class _OptionRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            KRadio(checked: selected, onChanged: (_) => onTap()),
-            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
@@ -202,6 +201,10 @@ class _OptionRow extends StatelessWidget {
                 ),
               ),
             ),
+            if (selected) ...[
+              const SizedBox(width: 12),
+              const KIcon('check', size: 20, color: KColor.indicator),
+            ],
           ],
         ),
       ),

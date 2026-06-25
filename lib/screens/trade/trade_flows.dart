@@ -62,8 +62,7 @@ class _AmountSheet extends StatefulWidget {
 }
 
 class _AmountSheetState extends State<_AmountSheet> {
-  late final TextEditingController _amount =
-      TextEditingController(text: widget.side.isSell ? '50,000' : '50,000');
+  late final TextEditingController _amount = TextEditingController(text: '50,000');
   String _unit = 'naira';
   late String _quick = widget.side.isSell ? '50%' : '₦50k';
 
@@ -306,8 +305,8 @@ class _SummaryRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step 3 — Success (shared). KStatusView outcome; "View portfolio" / "Done",
-// with a "View order" path into the orders screen.
+// Step 3 — Success (shared). KStatusView outcome; "View portfolio" / "Done"
+// per the design. The orders screen has its own entry points (Home / Wallet).
 // ─────────────────────────────────────────────────────────────────────────────
 
 void _showSuccessSheet(BuildContext context, Asset asset, {required _Side side}) {
@@ -322,10 +321,10 @@ void _showSuccessSheet(BuildContext context, Asset asset, {required _Side side})
         message: side.isSell
             ? 'You sold ₦50,000 of ${asset.ticker}. Proceeds settle T+3.'
             : 'You bought ₦50,000 of ${asset.ticker}. Shares settle T+3.',
-        primary: 'View order',
+        primary: 'View portfolio',
         onPrimary: () {
           Navigator.of(context).pop();
-          context.push(Routes.orderStatus);
+          context.go(Routes.portfolio);
         },
         secondary: 'Done',
         onSecondary: () => Navigator.of(context).pop(),

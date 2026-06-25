@@ -51,7 +51,8 @@ class _MarketsScreenState extends State<MarketsScreen> {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.only(top: 14, bottom: 24),
+          // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
+          padding: const EdgeInsets.only(top: 14, bottom: 100),
           children: [
             Padding(
               padding: _gut,

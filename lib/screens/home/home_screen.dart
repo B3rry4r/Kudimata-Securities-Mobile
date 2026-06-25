@@ -30,7 +30,8 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.only(top: 12, bottom: 24),
+          // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
+          padding: const EdgeInsets.only(top: 12, bottom: 100),
           children: [
             // greeting row
             Padding(
@@ -91,7 +92,7 @@ class HomeScreen extends StatelessWidget {
                     child: _QuickAction(
                       label: 'Withdraw',
                       icon: 'arrowUp',
-                      onTap: () => context.go(Routes.wallet),
+                      onTap: () => showWithdrawFlow(context),
                     ),
                   ),
                 ],

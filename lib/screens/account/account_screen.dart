@@ -47,7 +47,9 @@ class AccountScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 20, bottom: 24),
+          // Root tab: clear the floating KBottomNav (~70px + margin + safe area)
+          // so the "Log out" button isn't hidden behind it.
+          padding: const EdgeInsets.only(top: 20, bottom: 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -187,6 +187,13 @@ class KOtpCells extends StatelessWidget {
 }
 
 /// Generic onboarding screen body: padded gutter column. Mirrors shared.jsx Body.
+///
+/// The design distributes content with flex spacers (Spacer) against an 812px
+/// canvas. Real phones are shorter, so a plain Column would overflow once the
+/// fixed content (heads + keypad/OTP/buttons) exceeds the viewport. We wrap the
+/// column in a LayoutBuilder + scroll view + IntrinsicHeight: on tall phones the
+/// Spacers expand exactly as designed; on short phones the body scrolls instead
+/// of throwing a RenderFlex overflow.
 class KOnboardBody extends StatelessWidget {
   const KOnboardBody({
     super.key,
@@ -200,9 +207,21 @@ class KOnboardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(KSpace.gutter, paddingTop, KSpace.gutter, KSpace.s20),
-      child: Column(crossAxisAlignment: crossAxisAlignment, children: children),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxH = constraints.maxHeight;
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(KSpace.gutter, paddingTop, KSpace.gutter, KSpace.s20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: maxH.isFinite ? maxH - paddingTop - KSpace.s20 : 0,
+            ),
+            child: IntrinsicHeight(
+              child: Column(crossAxisAlignment: crossAxisAlignment, children: children),
+            ),
+          ),
+        );
+      },
     );
   }
 }

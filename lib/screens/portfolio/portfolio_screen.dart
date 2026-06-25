@@ -11,7 +11,7 @@ import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 
-/// Allocation breakdown (matches the design copy/order). Purple ramp owns colour.
+/// Allocation breakdown (matches the design copy/order). Monochrome ink ramp.
 const _allocation = <_Alloc>[
   _Alloc('Nigerian stocks', 52),
   _Alloc('US stocks', 33),
@@ -37,8 +37,10 @@ class PortfolioScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: ListView(
+          // Tab-root: pad the bottom so the last holdings row clears the
+          // floating KBottomNav (~70px + 12 margin + safe area).
           padding: const EdgeInsets.fromLTRB(
-              KSpace.gutter, 14, KSpace.gutter, 24),
+              KSpace.gutter, 14, KSpace.gutter, 100),
           children: [
             const KScreenHead(title: 'Portfolio'),
             const SizedBox(height: 16),
@@ -73,7 +75,8 @@ class PortfolioScreen extends StatelessWidget {
   }
 }
 
-/// Donut + legend card — donut uses the brand purple ramp; legend dots match.
+/// Donut + legend card — monochrome ink ramp (matches the design's NEUTRALS);
+/// legend dots mirror the donut. Purple is reserved for the interactive layer.
 class _AllocationCard extends StatelessWidget {
   const _AllocationCard();
 
@@ -85,7 +88,12 @@ class _AllocationCard extends StatelessWidget {
         children: [
           KAllocationDonut(
             segments: [
-              for (final a in _allocation) KDonutSegment(value: a.value, label: a.name),
+              for (var i = 0; i < _allocation.length; i++)
+                KDonutSegment(
+                  value: _allocation[i].value,
+                  label: _allocation[i].name,
+                  color: KAllocationDonut.monoRamp[i % KAllocationDonut.monoRamp.length],
+                ),
             ],
             size: 132,
             thickness: 18,
@@ -98,7 +106,7 @@ class _AllocationCard extends StatelessWidget {
                 for (var i = 0; i < _allocation.length; i++) ...[
                   if (i != 0) const SizedBox(height: 12),
                   _LegendRow(
-                    color: KAllocationDonut.ramp[i % KAllocationDonut.ramp.length],
+                    color: KAllocationDonut.monoRamp[i % KAllocationDonut.monoRamp.length],
                     label: _allocation[i].name,
                     value: '${_allocation[i].value.toInt()}%',
                   ),
