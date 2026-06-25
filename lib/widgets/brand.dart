@@ -46,21 +46,28 @@ class KWordmark extends StatelessWidget {
       children: [
         KMark(size: size, white: white),
         const SizedBox(width: 10),
-        Text.rich(
-          TextSpan(
-            style: KType.section(color: ink).copyWith(
-              fontSize: 17,
-              fontWeight: KWeight.semibold,
-              letterSpacing: -0.17,
-              height: 1.0,
-            ),
-            children: [
-              const TextSpan(text: 'Kudimata '),
-              TextSpan(
-                text: 'Securities',
-                style: TextStyle(fontWeight: KWeight.regular, color: sub),
+        // Flexible + ellipsis so the wordmark degrades gracefully under large
+        // accessibility text scales / very narrow widths instead of throwing a
+        // horizontal RenderFlex overflow.
+        Flexible(
+          child: Text.rich(
+            TextSpan(
+              style: KType.section(color: ink).copyWith(
+                fontSize: 17,
+                fontWeight: KWeight.semibold,
+                letterSpacing: -0.17,
+                height: 1.0,
               ),
-            ],
+              children: [
+                const TextSpan(text: 'Kudimata '),
+                TextSpan(
+                  text: 'Securities',
+                  style: TextStyle(fontWeight: KWeight.regular, color: sub),
+                ),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

@@ -24,9 +24,6 @@ class HoldingDetailScreen extends StatelessWidget {
     final subTone =
         holding.returnTrend == Trend.loss ? KSubTone.loss : KSubTone.gain;
 
-    // Feature series: MTNN has a ported series; others reuse the asset sparkline.
-    final series = asset.ticker == 'MTNN' ? MockData.mtnnSeries : asset.sparkline;
-
     return Scaffold(
       backgroundColor: KColor.bg,
       appBar: KDetailHeader(title: asset.name),
@@ -46,12 +43,6 @@ class HoldingDetailScreen extends StatelessWidget {
                     change: '${holding.totalReturn} · ${holding.returnPct}',
                     changeTone: trend,
                   ),
-                  const SizedBox(height: 20),
-
-                  // Price history.
-                  KCard(
-                    child: KLineChart(data: series, trend: asset.trend == Trend.loss ? KTrend.loss : KTrend.gain),
-                  ),
                   const SizedBox(height: 16),
 
                   // Position stats — 2×2 grid of KStatCard.
@@ -69,12 +60,12 @@ class HoldingDetailScreen extends StatelessWidget {
                       ),
                       KStatCard(
                         icon: const KIcon('markets', size: 18, color: KColor.ink2),
-                        label: 'Market value',
-                        value: holding.marketValue,
+                        label: 'Current',
+                        value: asset.price,
                       ),
                       KStatCard(
                         icon: const KIcon('arrowUpRight', size: 18, color: KColor.ink2),
-                        label: 'Total return',
+                        label: 'P/L',
                         value: holding.returnPct,
                         sub: holding.totalReturn,
                         subTone: subTone,

@@ -24,6 +24,8 @@ class KInput extends StatefulWidget {
     this.obscure = false,
     this.keyboardType,
     this.trailing,
+    this.amount = false,
+    this.amountSize = 26,
   });
 
   final String? label;
@@ -41,6 +43,14 @@ class KInput extends StatefulWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final Widget? trailing;
+
+  /// Editorial large-amount mode: bumps the input figure (and ₦/$ prefix) to a
+  /// 26px semibold tabular numeral, matching the design's amount-entry sheets
+  /// (Buy/Sell/Add money/Withdraw at 26, Convert at 22 via [amountSize]).
+  final bool amount;
+
+  /// The figure size when [amount] is true.
+  final double amountSize;
 
   @override
   State<KInput> createState() => _KInputState();
@@ -76,7 +86,7 @@ class _KInputState extends State<KInput> {
         AnimatedContainer(
           duration: KMotion.fast,
           curve: KMotion.easeSoft,
-          height: 50,
+          height: widget.amount ? 64 : 50,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: widget.disabled ? KColor.bg : KColor.paper,
@@ -91,8 +101,15 @@ class _KInputState extends State<KInput> {
               ],
               if (widget.prefix != null) ...[
                 Text(widget.prefix!,
-                    style: KType.body(color: KColor.ink2, w: KWeight.medium).tnum),
-                const SizedBox(width: 10),
+                    style: (widget.amount
+                            ? KType.body(color: KColor.ink2, w: KWeight.semibold).copyWith(
+                                fontSize: widget.amountSize,
+                                height: 1.0,
+                                letterSpacing: -0.5,
+                              )
+                            : KType.body(color: KColor.ink2, w: KWeight.medium))
+                        .tnum),
+                SizedBox(width: widget.amount ? 8 : 10),
               ],
               Expanded(
                 child: TextField(
@@ -108,11 +125,23 @@ class _KInputState extends State<KInput> {
                   style: KType
                       .body(
                         color: widget.disabled ? KColor.ink3 : KColor.ink,
-                        w: widget.numeric ? KWeight.medium : KWeight.regular,
+                        w: widget.amount
+                            ? KWeight.semibold
+                            : widget.numeric
+                                ? KWeight.medium
+                                : KWeight.regular,
                       )
                       .copyWith(
-                        letterSpacing: widget.numeric ? -0.14 : null,
-                        fontFeatures: widget.numeric ? const [FontFeature.tabularFigures()] : null,
+                        fontSize: widget.amount ? widget.amountSize : null,
+                        height: widget.amount ? 1.0 : null,
+                        letterSpacing: widget.amount
+                            ? -0.5
+                            : widget.numeric
+                                ? -0.14
+                                : null,
+                        fontFeatures: (widget.numeric || widget.amount)
+                            ? const [FontFeature.tabularFigures()]
+                            : null,
                       ),
                   decoration: InputDecoration(
                     isCollapsed: true,

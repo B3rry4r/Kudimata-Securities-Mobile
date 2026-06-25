@@ -92,6 +92,7 @@ class _AmountSheetState extends State<_AmountSheet> {
           label: 'Amount',
           controller: _amount,
           numeric: true,
+          amount: true,
           prefix: '₦',
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (_) => setState(() {}),
@@ -210,20 +211,24 @@ class _ReviewSheetState extends State<_ReviewSheet> {
   @override
   Widget build(BuildContext context) {
     final isSell = widget.side.isSell;
+    // Asset ticker + price track the launching asset so the review agrees with
+    // the sheet title; the remaining figures mirror the design's mock order.
+    final ticker = widget.asset.ticker;
+    final price = widget.asset.price;
     final rows = isSell
-        ? const [
-            ('Asset', 'MTNN'),
+        ? [
+            ('Asset', ticker),
             ('Type', 'Market'),
             ('Shares', '186.3'),
-            ('Est. price', '₦268.40'),
+            ('Est. price', price),
             ('Fee', '₦125'),
           ]
-        : const [
-            ('Asset', 'MTNN'),
+        : [
+            ('Asset', ticker),
             ('Type', 'Market'),
             ('Amount', '₦50,000'),
             ('Est. shares', '186.3'),
-            ('Est. price', '₦268.40'),
+            ('Est. price', price),
             ('Fee', '₦125'),
           ];
 

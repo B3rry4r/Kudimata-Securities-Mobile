@@ -56,6 +56,7 @@ class _LogInScreenState extends State<LogInScreen> {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 300),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   KKeypad(
                     onKey: _onKey,
