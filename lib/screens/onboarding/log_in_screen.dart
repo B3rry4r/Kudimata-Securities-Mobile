@@ -40,43 +40,45 @@ class _LogInScreenState extends State<LogInScreen> {
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
+    // A returning-user lock screen: the whole block — brand, prompt, dots, keypad,
+    // forgot link — is vertically centred as one cohesive unit (scrolls if it ever
+    // exceeds the viewport). No spacer pushing the keypad to an extreme.
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
-        child: KOnboardBody(
-          paddingTop: 32,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const KWordmark(center: true),
-            const SizedBox(height: 24),
-            Text('Enter your passcode', style: KType.body(color: KColor.ink2)),
-            const SizedBox(height: 24),
-            KPasscodeDots(filled: _code.length),
-            const Spacer(),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 300),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  KKeypad(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const KWordmark(center: true),
+                const SizedBox(height: 28),
+                Text('Enter your passcode', style: KType.body(color: KColor.ink2)),
+                const SizedBox(height: 24),
+                KPasscodeDots(filled: _code.length),
+                const SizedBox(height: 44),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: KKeypad(
                     onKey: _onKey,
                     leftAction: app.biometricEnabled
                         ? const KFingerprint(size: 26, stroke: 1.6, color: KColor.ink)
                         : null,
                     onLeftAction: app.biometricEnabled ? _unlock : null,
                   ),
-                  const SizedBox(height: 12),
-                  KButton(
-                    label: 'Forgot passcode',
-                    variant: KButtonVariant.ghost,
-                    size: KButtonSize.sm,
-                    fullWidth: false,
-                    onPressed: () => context.go(Routes.reset),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                KButton(
+                  label: 'Forgot passcode',
+                  variant: KButtonVariant.ghost,
+                  size: KButtonSize.sm,
+                  fullWidth: false,
+                  onPressed: () => context.go(Routes.reset),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
