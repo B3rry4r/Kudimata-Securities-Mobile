@@ -72,7 +72,7 @@ class KEmptyView extends StatelessWidget {
             width: 72,
             height: 72,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: KColor.paper,
               shape: BoxShape.circle,
               border: Border.fromBorderSide(BorderSide(color: KColor.hairline, width: 1)),
@@ -279,7 +279,7 @@ class KSkeletonList extends StatelessWidget {
                       border: Border(
                         top: i == 0
                             ? BorderSide.none
-                            : const BorderSide(color: KColor.hairline, width: 1),
+                            : BorderSide(color: KColor.hairline, width: 1),
                       ),
                     ),
                     child: Row(

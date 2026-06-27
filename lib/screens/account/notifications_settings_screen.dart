@@ -72,7 +72,7 @@ class _ToggleRow extends StatelessWidget {
         border: Border(
           top: first
               ? BorderSide.none
-              : const BorderSide(color: KColor.hairline, width: 1),
+              : BorderSide(color: KColor.hairline, width: 1),
         ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),

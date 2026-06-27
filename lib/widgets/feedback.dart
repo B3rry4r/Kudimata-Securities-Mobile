@@ -184,7 +184,7 @@ class _StatusButton extends StatelessWidget {
         ),
         child: Text(label,
             style: KType.cardTitle(
-              color: primary ? KColor.paper : KColor.ink,
+              color: primary ? KColor.featureInk : KColor.ink,
               w: KWeight.semibold,
             ).copyWith(letterSpacing: -0.15, height: 1.0)),
       ),

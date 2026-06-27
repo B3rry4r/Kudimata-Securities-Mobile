@@ -79,15 +79,15 @@ class LivenessScreen extends StatelessWidget {
                         height: 72,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: KColor.ink,
+                          color: KColor.feature,
                           shape: BoxShape.circle,
-                          border: Border.all(color: KColor.paper, width: 4),
-                          boxShadow: const [
-                            BoxShadow(color: KColor.ink, blurRadius: 0, spreadRadius: 2),
+                          border: Border.all(color: KColor.featureInk, width: 4),
+                          boxShadow: [
+                            BoxShadow(color: KColor.feature, blurRadius: 0, spreadRadius: 2),
                           ],
                         ),
-                        child: const KIcon('fingerprint',
-                            size: 30, stroke: 1.9, color: KColor.paper),
+                        child: KIcon('fingerprint',
+                            size: 30, stroke: 1.9, color: KColor.featureInk),
                       ),
                     ),
                   ],

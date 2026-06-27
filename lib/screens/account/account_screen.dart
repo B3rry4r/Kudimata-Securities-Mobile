@@ -105,7 +105,33 @@ class AccountScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 28),
+              // Appearance — System / Light / Dark.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const KEyebrow('Appearance'),
+                    const SizedBox(height: 12),
+                    Builder(builder: (context) {
+                      final app = AppScope.of(context);
+                      return KSegmentedControl(
+                        value: app.themeMode.name,
+                        onChanged: (v) => app.setThemeMode(
+                          ThemeMode.values.firstWhere((m) => m.name == v),
+                        ),
+                        options: const [
+                          KSegmentOption(value: 'system', label: 'System'),
+                          KSegmentOption(value: 'light', label: 'Light'),
+                          KSegmentOption(value: 'dark', label: 'Dark'),
+                        ],
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
                 child: KButton(

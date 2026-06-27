@@ -9,14 +9,14 @@ import 'package:kudimata_securities/widgets/widgets.dart';
 /// Fingerprint glyph in the Lucide idiom (1.5px, no fill). KIcon has 'fingerprint'
 /// but the design draws it directly; we reuse KIcon for consistency.
 class KFingerprint extends StatelessWidget {
-  const KFingerprint({super.key, this.size = 20, this.stroke = 1.6, this.color = KColor.ink});
+  const KFingerprint({super.key, this.size = 20, this.stroke = 1.6, this.color});
   final double size;
   final double stroke;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) =>
-      KIcon('fingerprint', size: size, stroke: stroke, color: color);
+      KIcon('fingerprint', size: size, stroke: stroke, color: color ?? KColor.ink);
 }
 
 /// Slim top bar with a back affordance, for mid-flow screens. Height 44, no rule.
@@ -35,7 +35,7 @@ class KOnboardTopBar extends StatelessWidget {
           child: GestureDetector(
             onTap: onBack ?? () => Navigator.of(context).maybePop(),
             behavior: HitTestBehavior.opaque,
-            child: const SizedBox(
+            child: SizedBox(
               width: 40,
               height: 40,
               child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
@@ -132,7 +132,7 @@ class KKeypad extends StatelessWidget {
               : cell(null),
           digit('0'),
           cell(
-            const KIcon('back', size: 28, color: KColor.ink2), // delete (backspace) affordance
+            KIcon('back', size: 28, color: KColor.ink2), // delete (backspace) affordance
             onTap: () => onKey('del'),
             semantic: 'Delete',
           ),
@@ -167,7 +167,7 @@ class KOtpCells extends StatelessWidget {
               width: focused ? 1.5 : 1,
             ),
             boxShadow: focused
-                ? [const BoxShadow(color: KColor.indicatorTint, spreadRadius: 4, blurRadius: 0)]
+                ? [BoxShadow(color: KColor.indicatorTint, spreadRadius: 4, blurRadius: 0)]
                 : null,
           ),
           child: d.isNotEmpty

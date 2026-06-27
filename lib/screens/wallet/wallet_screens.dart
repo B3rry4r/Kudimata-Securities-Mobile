@@ -138,7 +138,7 @@ class _CurrencyBadge extends StatelessWidget {
       width: 40,
       height: 40,
       alignment: Alignment.center,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: KColor.bg,
         shape: BoxShape.circle,
         border: Border.fromBorderSide(BorderSide(color: KColor.hairline, width: 1)),
@@ -222,7 +222,7 @@ class _TxnRow extends StatelessWidget {
         decoration: BoxDecoration(
           border: first
               ? null
-              : const Border(top: BorderSide(color: KColor.hairline, width: 1)),
+              : Border(top: BorderSide(color: KColor.hairline, width: 1)),
         ),
         child: Row(
           children: [
@@ -230,7 +230,7 @@ class _TxnRow extends StatelessWidget {
               width: 38,
               height: 38,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: KColor.bg,
                 shape: BoxShape.circle,
                 border: Border.fromBorderSide(BorderSide(color: KColor.hairline, width: 1)),
@@ -295,7 +295,7 @@ class TransactionDetailScreen extends StatelessWidget {
       return Scaffold(
         backgroundColor: KColor.bg,
         appBar: const KDetailHeader(title: 'Transaction'),
-        body: const Center(
+        body: Center(
           child: Text('Transaction not found', style: TextStyle(color: KColor.ink2)),
         ),
       );
@@ -327,7 +327,7 @@ class TransactionDetailScreen extends StatelessWidget {
                   // Status pill + hero amount, centred over a hairline.
                   Container(
                     padding: const EdgeInsets.only(bottom: 18),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
                     ),
                     child: Column(
@@ -402,7 +402,7 @@ class _DetailRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: last
             ? null
-            : const Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
+            : Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

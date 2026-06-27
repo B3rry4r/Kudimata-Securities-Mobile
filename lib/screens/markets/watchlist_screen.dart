@@ -48,7 +48,7 @@ class WatchlistScreen extends StatelessWidget {
                       border: Border(
                         top: i == 0
                             ? BorderSide.none
-                            : const BorderSide(color: KColor.hairline, width: 1),
+                            : BorderSide(color: KColor.hairline, width: 1),
                       ),
                     ),
                     child: Row(
@@ -70,7 +70,7 @@ class WatchlistScreen extends StatelessWidget {
                           onTap: () =>
                               AppScope.read(context).removeWatch(items[i].ticker),
                           behavior: HitTestBehavior.opaque,
-                          child: const SizedBox(
+                          child: SizedBox(
                             width: 32,
                             height: 32,
                             child: Center(
@@ -103,7 +103,7 @@ class WatchlistScreen extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: KColor.hairline, width: 1),
             ),
-            child: const KIcon('eye', size: 30, color: KColor.ink),
+            child: KIcon('eye', size: 30, color: KColor.ink),
           ),
           const SizedBox(height: 22),
           Text('Nothing saved yet', style: KType.title()),

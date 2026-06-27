@@ -96,7 +96,7 @@ class KBottomNav extends StatelessWidget {
                                   key: ValueKey('${it.id}-${it.id == active}'),
                                   size: 22,
                                   stroke: it.id == active ? 1.9 : 1.6,
-                                  color: it.id == active ? KColor.paper : KColor.ink3,
+                                  color: it.id == active ? KColor.featureInk : KColor.ink3,
                                 ),
                               ),
                             ),

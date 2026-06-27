@@ -340,7 +340,7 @@ class KPillChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: KType.label(color: selected ? KColor.paper : KColor.ink2)
+          style: KType.label(color: selected ? KColor.featureInk : KColor.ink2)
               .copyWith(letterSpacing: 0.01 * 11, height: 1.0),
         ),
       ),
@@ -447,10 +447,10 @@ class KFileUpload extends StatelessWidget {
                   height: 38,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: KColor.ink,
+                    color: KColor.feature,
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: KIcon('check', size: 18, color: KColor.paper),
+                  child: KIcon('check', size: 18, color: KColor.featureInk),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

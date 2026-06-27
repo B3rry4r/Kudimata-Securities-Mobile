@@ -23,7 +23,7 @@ class KycTopBar extends StatelessWidget {
           child: GestureDetector(
             onTap: onBack ?? () => Navigator.of(context).maybePop(),
             behavior: HitTestBehavior.opaque,
-            child: const SizedBox(
+            child: SizedBox(
               width: 40,
               height: 40,
               child: Center(child: KIcon('back', size: 22, color: KColor.ink)),

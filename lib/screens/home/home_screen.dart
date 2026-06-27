@@ -156,7 +156,7 @@ class HomeScreen extends StatelessWidget {
                           border: Border(
                             top: i == 0
                                 ? BorderSide.none
-                                : const BorderSide(color: KColor.hairline, width: 1),
+                                : BorderSide(color: KColor.hairline, width: 1),
                           ),
                         ),
                         child: KAssetRow(
@@ -194,7 +194,7 @@ class HomeScreen extends StatelessWidget {
                           border: Border(
                             top: i == 0
                                 ? BorderSide.none
-                                : const BorderSide(color: KColor.hairline, width: 1),
+                                : BorderSide(color: KColor.hairline, width: 1),
                           ),
                         ),
                         child: KAssetRow(
@@ -242,7 +242,7 @@ class HomeScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const KIcon('chevronRight', size: 20, color: KColor.ink3),
+                      KIcon('chevronRight', size: 20, color: KColor.ink3),
                     ],
                   ),
                 ),
@@ -393,7 +393,7 @@ class _WatchCard extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Text(asset.ticker.substring(0, 2),
-                      style: KType.label(color: KColor.paper, w: KWeight.semibold)
+                      style: KType.label(color: KColor.featureInk, w: KWeight.semibold)
                           .copyWith(fontSize: 10, letterSpacing: 0, height: 1.0)),
                 ),
                 const SizedBox(width: 8),

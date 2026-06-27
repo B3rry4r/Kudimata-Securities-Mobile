@@ -78,7 +78,7 @@ class AssetDetailScreen extends StatelessWidget {
                         ),
                       ),
                       child: KIcon('eye',
-                          size: 20, color: watched ? KColor.paper : KColor.ink),
+                          size: 20, color: watched ? KColor.featureInk : KColor.ink),
                     ),
                   ),
                 ],
@@ -171,7 +171,7 @@ class AssetDetailScreen extends StatelessWidget {
 
             // sticky Buy / Sell footer
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: KColor.paper,
                 border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
               ),

@@ -46,7 +46,7 @@ class KycIntroScreen extends StatelessWidget {
                           border: Border(
                             top: i == 0
                                 ? BorderSide.none
-                                : const BorderSide(color: KColor.hairline, width: 1),
+                                : BorderSide(color: KColor.hairline, width: 1),
                           ),
                         ),
                         padding: const EdgeInsets.all(18),

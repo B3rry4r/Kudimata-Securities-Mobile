@@ -88,7 +88,7 @@ class _ClientAgreementScreenState extends State<ClientAgreementScreen> {
               Container(
                 margin: const EdgeInsets.only(top: 4),
                 padding: const EdgeInsets.only(top: 16),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
                 ),
                 child: Column(

@@ -160,7 +160,7 @@ class _HoldingsCard extends StatelessWidget {
               decoration: BoxDecoration(
                 border: i == 0
                     ? null
-                    : const Border(top: BorderSide(color: KColor.hairline, width: 1)),
+                    : Border(top: BorderSide(color: KColor.hairline, width: 1)),
               ),
               child: KAssetRow(
                 name: holdings[i].asset.name,

@@ -75,7 +75,7 @@ class _SelectRow extends StatelessWidget {
         decoration: BoxDecoration(
           border: first
               ? null
-              : const Border(top: BorderSide(color: KColor.hairline, width: 1)),
+              : Border(top: BorderSide(color: KColor.hairline, width: 1)),
         ),
         child: Row(
           children: [
@@ -83,7 +83,7 @@ class _SelectRow extends StatelessWidget {
               width: 38,
               height: 38,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: KColor.bg,
                 shape: BoxShape.circle,
                 border: Border.fromBorderSide(BorderSide(color: KColor.hairline, width: 1)),
@@ -106,7 +106,7 @@ class _SelectRow extends StatelessWidget {
               ),
             ),
             if (selected) const KIcon('check', size: 20),
-            if (trailingChevron) const KIcon('chevronRight', size: 20, color: KColor.ink3),
+            if (trailingChevron) KIcon('chevronRight', size: 20, color: KColor.ink3),
           ],
         ),
       ),
@@ -124,7 +124,7 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
       ),
       child: Row(
@@ -506,11 +506,11 @@ class _ConvertSheetState extends State<_ConvertSheet> {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: KColor.ink,
+                color: KColor.feature,
                 shape: BoxShape.circle,
-                border: Border.all(color: KColor.paper, width: 3),
+                border: Border.all(color: KColor.featureInk, width: 3),
               ),
-              child: const KIcon('transfer', size: 16, color: KColor.paper),
+              child: KIcon('transfer', size: 16, color: KColor.featureInk),
             ),
           ],
         ),

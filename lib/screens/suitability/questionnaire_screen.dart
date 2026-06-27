@@ -187,7 +187,7 @@ class _OptionRow extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
         ),
         child: Row(
@@ -203,7 +203,7 @@ class _OptionRow extends StatelessWidget {
             ),
             if (selected) ...[
               const SizedBox(width: 12),
-              const KIcon('check', size: 20, color: KColor.indicator),
+              KIcon('check', size: 20, color: KColor.indicator),
             ],
           ],
         ),

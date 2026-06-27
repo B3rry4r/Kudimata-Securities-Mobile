@@ -49,22 +49,22 @@ class HoldingDetailScreen extends StatelessWidget {
                   _StatGrid(
                     children: [
                       KStatCard(
-                        icon: const KIcon('transfer', size: 18, color: KColor.ink2),
+                        icon: KIcon('transfer', size: 18, color: KColor.ink2),
                         label: 'Avg cost',
                         value: holding.avgPrice,
                       ),
                       KStatCard(
-                        icon: const KIcon('portfolio', size: 18, color: KColor.ink2),
+                        icon: KIcon('portfolio', size: 18, color: KColor.ink2),
                         label: 'Quantity',
                         value: holding.units,
                       ),
                       KStatCard(
-                        icon: const KIcon('markets', size: 18, color: KColor.ink2),
+                        icon: KIcon('markets', size: 18, color: KColor.ink2),
                         label: 'Current',
                         value: asset.price,
                       ),
                       KStatCard(
-                        icon: const KIcon('arrowUpRight', size: 18, color: KColor.ink2),
+                        icon: KIcon('arrowUpRight', size: 18, color: KColor.ink2),
                         label: 'P/L',
                         value: holding.returnPct,
                         sub: holding.totalReturn,
@@ -112,7 +112,7 @@ class _ActionFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: KColor.paper,
         border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
       ),

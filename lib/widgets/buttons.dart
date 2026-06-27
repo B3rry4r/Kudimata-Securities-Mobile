@@ -69,7 +69,7 @@ class _KButtonState extends State<KButton> {
         bg = disabled
             ? KColor.ink3
             : (_pressed && !widget.loading ? KColor.indicatorPress : KColor.indicator);
-        fg = KColor.paper;
+        fg = KColor.featureInk; // always white on the purple fill (both themes)
         break;
       case KButtonVariant.secondary:
         bg = KColor.paper;

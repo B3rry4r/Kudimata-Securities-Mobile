@@ -56,7 +56,7 @@ class KAssetRow extends StatelessWidget {
             ),
             child: logo ??
                 Text(_initials,
-                    style: KType.label(color: KColor.paper, w: KWeight.semibold)
+                    style: KType.label(color: KColor.featureInk, w: KWeight.semibold)
                         .copyWith(fontSize: 12, letterSpacing: 0.24, height: 1.0)),
           ),
           const SizedBox(width: 12),

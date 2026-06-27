@@ -50,7 +50,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const KSpinner(size: 40, stroke: 2, color: KColor.ink),
+                    KSpinner(size: 40, stroke: 2, color: KColor.ink),
                     const SizedBox(height: 22),
                     Text('Checking your details…',
                         textAlign: TextAlign.center,

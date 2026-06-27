@@ -59,7 +59,7 @@ class KAccountRow extends StatelessWidget {
         border: Border(
           top: first
               ? BorderSide.none
-              : const BorderSide(color: KColor.hairline, width: 1),
+              : BorderSide(color: KColor.hairline, width: 1),
         ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
@@ -99,7 +99,7 @@ class KRowChevron extends StatelessWidget {
   const KRowChevron({super.key});
   @override
   Widget build(BuildContext context) =>
-      const KIcon('chevronRight', size: 20, color: KColor.ink3);
+      KIcon('chevronRight', size: 20, color: KColor.ink3);
 }
 
 /// A padded grouping card (design uses `Card padding={0}` with `4px 16px`).

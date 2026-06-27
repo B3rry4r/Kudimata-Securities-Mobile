@@ -65,7 +65,7 @@ class _AssetListScreenState extends State<AssetListScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const KIcon('filter', size: 15, color: KColor.ink2),
+                      KIcon('filter', size: 15, color: KColor.ink2),
                       const SizedBox(width: 6),
                       Text((_byChange ? 'Change' : 'Price').upper,
                           style: KType.label(color: KColor.ink2)
@@ -89,7 +89,7 @@ class _AssetListScreenState extends State<AssetListScreen> {
                         border: Border(
                           top: i == 0
                               ? BorderSide.none
-                              : const BorderSide(color: KColor.hairline, width: 1),
+                              : BorderSide(color: KColor.hairline, width: 1),
                         ),
                       ),
                       child: KAssetRow(

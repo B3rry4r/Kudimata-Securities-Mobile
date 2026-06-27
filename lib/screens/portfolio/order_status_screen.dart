@@ -44,7 +44,7 @@ class OrderStatusScreen extends StatelessWidget {
                             decoration: BoxDecoration(
                               border: i == 0
                                   ? null
-                                  : const Border(
+                                  : Border(
                                       top: BorderSide(color: KColor.hairline, width: 1)),
                             ),
                             child: _OrderRow(txn: orders[i]),

@@ -64,7 +64,7 @@ class KCheckbox extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: checked ? KColor.indicator : KColor.hairline, width: 1.5),
               ),
-              child: checked ? KIcon('check', size: 14, stroke: 2.6, color: KColor.paper) : null,
+              child: checked ? KIcon('check', size: 14, stroke: 2.6, color: KColor.featureInk) : null,
             ),
             if (label != null || description != null) ...[
               const SizedBox(width: 12),
@@ -173,7 +173,7 @@ class KSwitch extends StatelessWidget {
             width: 22,
             height: 22,
             decoration: BoxDecoration(
-              color: KColor.paper,
+              color: KColor.featureInk, // white knob on the track (both themes)
               shape: BoxShape.circle,
               boxShadow: const [BoxShadow(color: Color(0x380F0F12), offset: Offset(0, 2), blurRadius: 6)],
             ),

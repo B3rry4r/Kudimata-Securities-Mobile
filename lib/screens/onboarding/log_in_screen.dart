@@ -63,7 +63,7 @@ class _LogInScreenState extends State<LogInScreen> {
                   child: KKeypad(
                     onKey: _onKey,
                     leftAction: app.biometricEnabled
-                        ? const KFingerprint(size: 26, stroke: 1.6, color: KColor.ink)
+                        ? KFingerprint(size: 26, stroke: 1.6, color: KColor.ink)
                         : null,
                     onLeftAction: app.biometricEnabled ? _unlock : null,
                   ),

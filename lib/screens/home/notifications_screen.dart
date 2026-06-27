@@ -32,7 +32,7 @@ class NotificationsScreen extends StatelessWidget {
                         border: Border(
                           top: i == 0
                               ? BorderSide.none
-                              : const BorderSide(color: KColor.hairline, width: 1),
+                              : BorderSide(color: KColor.hairline, width: 1),
                         ),
                       ),
                       child: Padding(
@@ -57,7 +57,7 @@ class NotificationsScreen extends StatelessWidget {
                                         Container(
                                           width: 7,
                                           height: 7,
-                                          decoration: const BoxDecoration(
+                                          decoration: BoxDecoration(
                                             color: KColor.indicator,
                                             shape: BoxShape.circle,
                                           ),

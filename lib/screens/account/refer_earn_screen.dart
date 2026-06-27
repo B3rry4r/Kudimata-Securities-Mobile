@@ -74,13 +74,13 @@ class ReferEarnScreen extends StatelessWidget {
                   width: 26,
                   height: 26,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: KColor.ink,
+                  decoration: BoxDecoration(
+                    color: KColor.feature,
                     shape: BoxShape.circle,
                   ),
                   child: Text(
                     '${i + 1}',
-                    style: KType.micro(color: KColor.paper, w: KWeight.semibold)
+                    style: KType.micro(color: KColor.featureInk, w: KWeight.semibold)
                         .copyWith(fontSize: 12, letterSpacing: 0, height: 1.0)
                         .tnum,
                   ),

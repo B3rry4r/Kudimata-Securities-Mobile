@@ -60,7 +60,7 @@ class _BankRow extends StatelessWidget {
         border: Border(
           top: first
               ? BorderSide.none
-              : const BorderSide(color: KColor.hairline, width: 1),
+              : BorderSide(color: KColor.hairline, width: 1),
         ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),

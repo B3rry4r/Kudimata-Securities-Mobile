@@ -74,8 +74,8 @@ class KPalette {
     feature2: Color(0xFF2A2736),
     featureInk: Color(0xFFFFFFFF),
     featureInk2: Color(0x9EFFFFFF),
-    indicator: Color(0xFFA05CD6), // brighter purple — pops on dark
-    indicatorPress: Color(0xFFB98AE6),
+    indicator: Color(0xFF8C39B8), // brand purple, tuned so white text reads + pops on dark
+    indicatorPress: Color(0xFFA05CD6),
     indicatorTint: Color(0xFF2C1B42), // dark purple chip / focus tint
     gain: Color(0xFF43C088), // brightened green
     loss: Color(0xFFE26A63), // brightened red

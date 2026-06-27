@@ -76,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> {
             bottom: 56,
             child: Column(
               children: [
-                const KSpinner(size: 22, color: KColor.ink3),
+                KSpinner(size: 22, color: KColor.ink3),
                 const SizedBox(height: 18),
                 Text('NGX & US markets'.upper, style: KType.label(color: KColor.ink3)),
               ],
