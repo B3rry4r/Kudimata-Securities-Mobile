@@ -248,16 +248,6 @@ class KAllocationDonut extends StatelessWidget {
     Color(0xFFECDDF5),
   ];
 
-  /// Monochrome ink ramp (--ink / --ink-2 / --ink-3 / #C4C4CA). Use where the
-  /// design's near-monochrome rule applies (e.g. Portfolio allocation) so the
-  /// donut + legend stay neutral and purple is reserved for the interactive layer.
-  static const monoRamp = [
-    KColor.ink,
-    KColor.ink2,
-    KColor.ink3,
-    Color(0xFFC4C4CA),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final sections = [

@@ -2,6 +2,7 @@
 // (passcode → biometric → KYC → suitability → tabs) and the live watchlist set.
 // SEAM: real auth/KYC/suitability outcomes flip these flags; here they are flipped
 // by the demo flows. No persistence yet (a secure store plugs in later).
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart';
 
 class AppState extends ChangeNotifier {
@@ -15,6 +16,9 @@ class AppState extends ChangeNotifier {
   bool kycApproved = false;
   bool suitabilityComplete = false;
   bool signedIn = false;
+
+  // Appearance — System / Light / Dark (SEAM: persist to a store later).
+  ThemeMode themeMode = ThemeMode.system;
 
   // Live watchlist (tickers).
   final Set<String> _watchlist;
@@ -48,6 +52,12 @@ class AppState extends ChangeNotifier {
 
   void setSignedIn(bool v) {
     signedIn = v;
+    notifyListeners();
+  }
+
+  void setThemeMode(ThemeMode m) {
+    if (m == themeMode) return;
+    themeMode = m;
     notifyListeners();
   }
 

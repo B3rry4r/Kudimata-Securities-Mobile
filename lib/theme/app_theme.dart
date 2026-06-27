@@ -1,7 +1,8 @@
-// Kudimata Securities — ThemeData assembled from the tokens. The whole system is
-// one face (Space Grotesk), white surfaces, ink text; purple is the seed for the
-// interactive layer. Screens read from the tokens directly; this theme covers the
-// Material defaults (text selection, scaffold bg, splash behaviour).
+// Kudimata Securities — ThemeData built from a KPalette. One face (Space Grotesk);
+// light = white surfaces / ink text, dark = near-black surfaces / off-white ink;
+// purple is the interactive seed in both. Custom widgets read colours from KColor
+// (the active palette); this theme covers the Material defaults and keeps them in
+// sync via the same palette.
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'tokens.dart';
@@ -9,41 +10,43 @@ import 'tokens.dart';
 class KTheme {
   KTheme._();
 
-  static ThemeData light() {
-    final base = ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-    );
+  static ThemeData light() => _build(KPalette.light);
+  static ThemeData dark() => _build(KPalette.dark);
+
+  static ThemeData _build(KPalette p) {
+    final base = ThemeData(useMaterial3: true, brightness: p.brightness);
 
     // Bundled Space Grotesk (assets/fonts) — no runtime font fetch.
     final textTheme = base.textTheme.apply(
       fontFamily: KType.fontFamily,
-      bodyColor: KColor.ink,
-      displayColor: KColor.ink,
+      bodyColor: p.ink,
+      displayColor: p.ink,
     );
 
     return base.copyWith(
-      scaffoldBackgroundColor: KColor.bg,
-      canvasColor: KColor.bg,
+      scaffoldBackgroundColor: p.bg,
+      canvasColor: p.bg,
       textTheme: textTheme,
       primaryTextTheme: textTheme,
-      colorScheme: const ColorScheme.light(
-        primary: KColor.indicator,
-        onPrimary: KColor.paper,
-        secondary: KColor.ink,
-        onSecondary: KColor.paper,
-        surface: KColor.paper,
-        onSurface: KColor.ink,
-        error: KColor.loss,
-        outline: KColor.hairline,
+      colorScheme: ColorScheme(
+        brightness: p.brightness,
+        primary: p.indicator,
+        onPrimary: Colors.white,
+        secondary: p.ink,
+        onSecondary: p.paper,
+        surface: p.paper,
+        onSurface: p.ink,
+        error: p.loss,
+        onError: Colors.white,
+        outline: p.hairline,
       ),
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       splashFactory: NoSplash.splashFactory,
-      textSelectionTheme: const TextSelectionThemeData(
-        cursorColor: KColor.indicator,
-        selectionColor: KColor.indicatorTint,
-        selectionHandleColor: KColor.indicator,
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: p.indicator,
+        selectionColor: p.indicatorTint,
+        selectionHandleColor: p.indicator,
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {

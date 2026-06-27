@@ -23,9 +23,9 @@ class KSheet extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: KColor.paper,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(KRadii.sheet)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(KRadii.sheet)),
           boxShadow: KShadow.sheet,
         ),
         child: Column(

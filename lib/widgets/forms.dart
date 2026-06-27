@@ -64,7 +64,7 @@ class KCheckbox extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: checked ? KColor.indicator : KColor.hairline, width: 1.5),
               ),
-              child: checked ? const KIcon('check', size: 14, stroke: 2.6, color: KColor.paper) : null,
+              child: checked ? KIcon('check', size: 14, stroke: 2.6, color: KColor.paper) : null,
             ),
             if (label != null || description != null) ...[
               const SizedBox(width: 12),
@@ -121,7 +121,7 @@ class KRadio extends StatelessWidget {
                 child: Container(
                   width: 11,
                   height: 11,
-                  decoration: const BoxDecoration(color: KColor.indicator, shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: KColor.indicator, shape: BoxShape.circle),
                 ),
               ),
             ),
@@ -172,10 +172,10 @@ class KSwitch extends StatelessWidget {
           child: Container(
             width: 22,
             height: 22,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: KColor.paper,
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Color(0x380F0F12), offset: Offset(0, 2), blurRadius: 6)],
+              boxShadow: const [BoxShadow(color: Color(0x380F0F12), offset: Offset(0, 2), blurRadius: 6)],
             ),
           ),
         ),

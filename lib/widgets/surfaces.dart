@@ -12,7 +12,7 @@ class KCard extends StatelessWidget {
     this.border = true,
     this.radius = KRadii.card,
     this.onTap,
-    this.color = KColor.paper,
+    this.color, // null → themed paper (resolved at build)
   });
 
   final Widget child;
@@ -20,14 +20,14 @@ class KCard extends StatelessWidget {
   final bool border;
   final double radius;
   final VoidCallback? onTap;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final card = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: color,
+        color: color ?? KColor.paper,
         borderRadius: BorderRadius.circular(radius),
         border: border ? Border.all(color: KColor.hairline, width: 1) : null,
       ),

@@ -8,13 +8,13 @@ class KSpinner extends StatefulWidget {
     super.key,
     this.size = 18,
     this.stroke = 2,
-    this.color = KColor.indicator,
+    this.color, // null → brand purple (resolved at build)
     this.trackOpacity = 0.18,
   });
 
   final double size;
   final double stroke;
-  final Color color;
+  final Color? color;
   final double trackOpacity;
 
   @override
@@ -39,7 +39,7 @@ class _KSpinnerState extends State<KSpinner> with SingleTickerProviderStateMixin
       child: RotationTransition(
         turns: _c,
         child: CustomPaint(
-          painter: _SpinnerPainter(widget.color, widget.stroke, widget.trackOpacity),
+          painter: _SpinnerPainter(widget.color ?? KColor.indicator, widget.stroke, widget.trackOpacity),
         ),
       ),
     );

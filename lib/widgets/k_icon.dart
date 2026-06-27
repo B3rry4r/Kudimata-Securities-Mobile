@@ -66,13 +66,13 @@ class KIcon extends StatelessWidget {
     super.key,
     this.size = 20,
     this.stroke = 1.75,
-    this.color = KColor.ink,
+    this.color, // null → themed ink (resolved at build)
   });
 
   final String name;
   final double size;
   final double stroke;
-  final Color color;
+  final Color? color;
 
   static bool has(String name) => _kIconPaths.containsKey(name);
 
@@ -80,7 +80,7 @@ class KIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final inner = _kIconPaths[name] ?? '';
     final svg = '<svg xmlns="http://www.w3.org/2000/svg" width="$size" height="$size" '
-        'viewBox="0 0 24 24" fill="none" stroke="${_hex(color)}" '
+        'viewBox="0 0 24 24" fill="none" stroke="${_hex(color ?? KColor.ink)}" '
         'stroke-width="$stroke" stroke-linecap="round" stroke-linejoin="round">'
         '$inner</svg>';
     return SizedBox(

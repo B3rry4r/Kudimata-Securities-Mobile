@@ -13,7 +13,7 @@ class KAssetRow extends StatelessWidget {
     required this.name,
     required this.ticker,
     this.logo,
-    this.logoColor = KColor.ink,
+    this.logoColor, // null → themed ink (resolved at build)
     this.price,
     this.change,
     this.trend,
@@ -24,7 +24,7 @@ class KAssetRow extends StatelessWidget {
   final String name;
   final String ticker;
   final Widget? logo; // a real mark; null → ticker initials on an ink circle
-  final Color logoColor;
+  final Color? logoColor;
   final String? price;
   final String? change;
   final KTrend? trend;
@@ -51,7 +51,7 @@ class KAssetRow extends StatelessWidget {
             alignment: Alignment.center,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: logo != null ? KColor.bg : logoColor,
+              color: logo != null ? KColor.bg : (logoColor ?? KColor.ink),
               shape: BoxShape.circle,
             ),
             child: logo ??

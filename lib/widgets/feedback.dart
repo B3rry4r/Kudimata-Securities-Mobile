@@ -82,8 +82,8 @@ class KToast extends StatelessWidget {
           else if (onClose != null)
             GestureDetector(
               onTap: onClose,
-              child: const Padding(
-                padding: EdgeInsets.only(top: 1, left: 2, right: 2),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 1, left: 2, right: 2),
                 child: KIcon('close', size: 16, color: KColor.ink3),
               ),
             ),

@@ -70,7 +70,7 @@ class KBottomNav extends StatelessWidget {
                   width: _knob,
                   height: _knob,
                   child: Container(
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: KColor.indicator,
                       shape: BoxShape.circle,
                       boxShadow: [

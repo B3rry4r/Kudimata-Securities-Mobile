@@ -205,7 +205,7 @@ class KSearchPill extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const KIcon('search', size: 18, color: KColor.ink3),
+          KIcon('search', size: 18, color: KColor.ink3),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -226,8 +226,8 @@ class KSearchPill extends StatelessWidget {
           if (showFilter)
             GestureDetector(
               onTap: onFilter,
-              child: const Padding(
-                padding: EdgeInsets.all(2),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
                 child: KIcon('filter', size: 18, color: KColor.ink2),
               ),
             ),
@@ -450,7 +450,7 @@ class KFileUpload extends StatelessWidget {
                     color: KColor.ink,
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const KIcon('check', size: 18, color: KColor.paper),
+                  child: KIcon('check', size: 18, color: KColor.paper),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -469,8 +469,8 @@ class KFileUpload extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: onRemove,
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
                     child: KIcon('close', size: 18, color: KColor.ink3),
                   ),
                 ),

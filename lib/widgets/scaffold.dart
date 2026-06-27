@@ -6,13 +6,13 @@ import 'k_icon.dart';
 
 /// The editorial signature: small, uppercase, tracked label (.ks-eyebrow).
 class KEyebrow extends StatelessWidget {
-  const KEyebrow(this.text, {super.key, this.color = KColor.ink3});
+  const KEyebrow(this.text, {super.key, this.color});
   final String text;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) =>
-      Text(text.upper, style: KType.label(color: color));
+      Text(text.upper, style: KType.label(color: color ?? KColor.ink3));
 }
 
 /// Screen title + optional body — the standard header block (ScreenHead).
@@ -67,7 +67,7 @@ class KDetailHeader extends StatelessWidget implements PreferredSizeWidget {
     final topPad = MediaQuery.of(context).padding.top;
     return Container(
       padding: EdgeInsets.only(top: topPad),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: KColor.bg,
         border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
       ),
@@ -80,7 +80,7 @@ class KDetailHeader extends StatelessWidget implements PreferredSizeWidget {
               GestureDetector(
                 onTap: onBack ?? () => Navigator.of(context).maybePop(),
                 behavior: HitTestBehavior.opaque,
-                child: const SizedBox(
+                child: SizedBox(
                   width: 40,
                   height: 40,
                   child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
