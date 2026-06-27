@@ -73,7 +73,12 @@ import '../screens/account/statements_screen.dart';
 // Shared states (used for missing-data placeholders).
 import '../screens/shared/state_views.dart';
 
-/// Builds the app router. [state] drives the deep-link gate redirect.
+/// Builds the app router. [state] drives the deep-link gate redirect AND the
+/// theme reactivity: every screen is wrapped in a [ListenableBuilder] on [state]
+/// so a theme-mode / system-brightness change rebuilds it (the global KColor
+/// palette alone doesn't push rebuilds through go_router's cached routes or the
+/// shell's preserved branch navigators). Screens are built WITHOUT `const` so a
+/// fresh instance is created on each rebuild (a const instance would be skipped).
 GoRouter buildRouter(AppState state) {
   final homeKey = GlobalKey<NavigatorState>();
   final portfolioKey = GlobalKey<NavigatorState>();
@@ -81,101 +86,102 @@ GoRouter buildRouter(AppState state) {
   final walletKey = GlobalKey<NavigatorState>();
   final accountKey = GlobalKey<NavigatorState>();
 
+  // Re-theme on every AppState notify (theme toggle / system brightness bump).
+  Widget themed(Widget Function() build) =>
+      ListenableBuilder(listenable: state, builder: (_, _) => build());
+
   return GoRouter(
     initialLocation: Routes.splash,
     refreshListenable: state,
     redirect: (context, st) => _gateRedirect(state, st),
     routes: [
       // ── Gated onboarding ──────────────────────────────────────────────--
-      GoRoute(path: Routes.splash, builder: (_, _) => const SplashScreen()),
-      GoRoute(path: Routes.signup, builder: (_, _) => const SignUpScreen()),
-      GoRoute(path: Routes.otp, builder: (_, _) => const OtpScreen()),
-      GoRoute(
-        path: Routes.createPasscode,
-        builder: (_, _) => const CreatePasscodeScreen(),
-      ),
+      GoRoute(path: Routes.splash, builder: (_, _) => themed(() => SplashScreen())),
+      GoRoute(path: Routes.signup, builder: (_, _) => themed(() => SignUpScreen())),
+      GoRoute(path: Routes.otp, builder: (_, _) => themed(() => OtpScreen())),
+      GoRoute(path: Routes.createPasscode, builder: (_, _) => themed(() => CreatePasscodeScreen())),
       GoRoute(
         path: Routes.confirmPasscode,
         // Create-step passes the chosen code through GoRouter `extra`.
-        builder: (_, st) => ConfirmPasscodeScreen(created: st.extra as String?),
+        builder: (_, st) => themed(() => ConfirmPasscodeScreen(created: st.extra as String?)),
       ),
-      GoRoute(path: Routes.biometric, builder: (_, _) => const BiometricScreen()),
-      GoRoute(path: Routes.login, builder: (_, _) => const LogInScreen()),
-      GoRoute(path: Routes.reset, builder: (_, _) => const ResetPasscodeScreen()),
+      GoRoute(path: Routes.biometric, builder: (_, _) => themed(() => BiometricScreen())),
+      GoRoute(path: Routes.login, builder: (_, _) => themed(() => LogInScreen())),
+      GoRoute(path: Routes.reset, builder: (_, _) => themed(() => ResetPasscodeScreen())),
 
       // ── KYC ───────────────────────────────────────────────────────────--
-      GoRoute(path: Routes.kycIntro, builder: (_, _) => const KycIntroScreen()),
-      GoRoute(path: Routes.kycPersonal, builder: (_, _) => const PersonalDetailsScreen()),
-      GoRoute(path: Routes.kycBvn, builder: (_, _) => const BvnScreen()),
-      GoRoute(path: Routes.kycId, builder: (_, _) => const IdUploadScreen()),
-      GoRoute(path: Routes.kycLiveness, builder: (_, _) => const LivenessScreen()),
-      GoRoute(path: Routes.kycChecking, builder: (_, _) => const CheckingScreen()),
-      GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => const NextOfKinScreen()),
-      GoRoute(path: Routes.kycSubmitted, builder: (_, _) => const SubmittedScreen()),
-      GoRoute(path: Routes.kycApproved, builder: (_, _) => const ApprovedScreen()),
+      GoRoute(path: Routes.kycIntro, builder: (_, _) => themed(() => KycIntroScreen())),
+      GoRoute(path: Routes.kycPersonal, builder: (_, _) => themed(() => PersonalDetailsScreen())),
+      GoRoute(path: Routes.kycBvn, builder: (_, _) => themed(() => BvnScreen())),
+      GoRoute(path: Routes.kycId, builder: (_, _) => themed(() => IdUploadScreen())),
+      GoRoute(path: Routes.kycLiveness, builder: (_, _) => themed(() => LivenessScreen())),
+      GoRoute(path: Routes.kycChecking, builder: (_, _) => themed(() => CheckingScreen())),
+      GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => themed(() => NextOfKinScreen())),
+      GoRoute(path: Routes.kycSubmitted, builder: (_, _) => themed(() => SubmittedScreen())),
+      GoRoute(path: Routes.kycApproved, builder: (_, _) => themed(() => ApprovedScreen())),
 
       // ── Suitability & agreements ───────────────────────────────────────--
-      GoRoute(path: Routes.questionnaire, builder: (_, _) => const QuestionnaireScreen()),
-      GoRoute(path: Routes.suitabilityResult, builder: (_, _) => const SuitabilityResultScreen()),
-      GoRoute(path: Routes.riskDisclosure, builder: (_, _) => const RiskDisclosureScreen()),
-      GoRoute(path: Routes.clientAgreement, builder: (_, _) => const ClientAgreementScreen()),
+      GoRoute(path: Routes.questionnaire, builder: (_, _) => themed(() => QuestionnaireScreen())),
+      GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themed(() => SuitabilityResultScreen())),
+      GoRoute(path: Routes.riskDisclosure, builder: (_, _) => themed(() => RiskDisclosureScreen())),
+      GoRoute(path: Routes.clientAgreement, builder: (_, _) => themed(() => ClientAgreementScreen())),
 
       // ── Pushed detail (top-level — cover the shell, no tab bar) ─────────--
-      GoRoute(path: Routes.notifications, builder: (_, _) => const NotificationsScreen()),
-      GoRoute(path: Routes.search, builder: (_, _) => const SearchScreen()),
-      GoRoute(path: Routes.orderStatus, builder: (_, _) => const OrderStatusScreen()),
+      GoRoute(path: Routes.notifications, builder: (_, _) => themed(() => NotificationsScreen())),
+      GoRoute(path: Routes.search, builder: (_, _) => themed(() => SearchScreen())),
+      GoRoute(path: Routes.orderStatus, builder: (_, _) => themed(() => OrderStatusScreen())),
       GoRoute(path: Routes.assetList, builder: (_, st) {
         // Optional AssetClass passed via `extra` (defaults to NGX when absent).
         final cls = st.extra is AssetClass ? st.extra as AssetClass : null;
-        return AssetListScreen(assetClass: cls);
+        return themed(() => AssetListScreen(assetClass: cls));
       }),
-      GoRoute(path: Routes.watchlist, builder: (_, _) => const WatchlistScreen()),
+      GoRoute(path: Routes.watchlist, builder: (_, _) => themed(() => WatchlistScreen())),
       GoRoute(
         path: Routes.assetDetailPath,
-        builder: (_, st) => AssetDetailScreen(ticker: st.pathParameters['ticker']!),
+        builder: (_, st) => themed(() => AssetDetailScreen(ticker: st.pathParameters['ticker']!)),
       ),
       GoRoute(
         path: Routes.holdingDetailPath,
-        builder: (_, st) => HoldingDetailScreen(ticker: st.pathParameters['ticker']!),
+        builder: (_, st) => themed(() => HoldingDetailScreen(ticker: st.pathParameters['ticker']!)),
       ),
       GoRoute(
         path: Routes.transactionDetailPath,
-        builder: (_, st) => TransactionDetailScreen(id: st.pathParameters['id']!),
+        builder: (_, st) => themed(() => TransactionDetailScreen(id: st.pathParameters['id']!)),
       ),
 
       // ── Account sub-pages (pushed) ─────────────────────────────────────--
-      GoRoute(path: Routes.acctPersonal, builder: (_, _) => const PersonalInfoScreen()),
-      GoRoute(path: Routes.acctBanks, builder: (_, _) => const BankAccountsScreen()),
-      GoRoute(path: Routes.acctRefer, builder: (_, _) => const ReferEarnScreen()),
-      GoRoute(path: Routes.acctHelp, builder: (_, _) => const HelpSupportScreen()),
-      GoRoute(path: Routes.acctSecurity, builder: (_, _) => const SecurityScreen()),
-      GoRoute(path: Routes.acctNotifications, builder: (_, _) => const NotificationsSettingsScreen()),
-      GoRoute(path: Routes.acctLegal, builder: (_, _) => const LegalScreen()),
-      GoRoute(path: Routes.acctStatements, builder: (_, _) => const StatementsScreen()),
+      GoRoute(path: Routes.acctPersonal, builder: (_, _) => themed(() => PersonalInfoScreen())),
+      GoRoute(path: Routes.acctBanks, builder: (_, _) => themed(() => BankAccountsScreen())),
+      GoRoute(path: Routes.acctRefer, builder: (_, _) => themed(() => ReferEarnScreen())),
+      GoRoute(path: Routes.acctHelp, builder: (_, _) => themed(() => HelpSupportScreen())),
+      GoRoute(path: Routes.acctSecurity, builder: (_, _) => themed(() => SecurityScreen())),
+      GoRoute(path: Routes.acctNotifications, builder: (_, _) => themed(() => NotificationsSettingsScreen())),
+      GoRoute(path: Routes.acctLegal, builder: (_, _) => themed(() => LegalScreen())),
+      GoRoute(path: Routes.acctStatements, builder: (_, _) => themed(() => StatementsScreen())),
 
       // ── Tab shell (StatefulShellRoute / indexedStack) ──────────────────--
       StatefulShellRoute.indexedStack(
-        builder: (context, st, navShell) => _TabShell(navShell: navShell),
+        builder: (context, st, navShell) => themed(() => _TabShell(navShell: navShell)),
         branches: [
           StatefulShellBranch(navigatorKey: homeKey, routes: [
-            GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
+            GoRoute(path: Routes.home, builder: (_, _) => themed(() => HomeScreen())),
           ]),
           StatefulShellBranch(navigatorKey: portfolioKey, routes: [
-            GoRoute(path: Routes.portfolio, builder: (_, _) => const PortfolioScreen()),
+            GoRoute(path: Routes.portfolio, builder: (_, _) => themed(() => PortfolioScreen())),
           ]),
           StatefulShellBranch(navigatorKey: marketsKey, routes: [
-            GoRoute(path: Routes.markets, builder: (_, _) => const MarketsScreen()),
+            GoRoute(path: Routes.markets, builder: (_, _) => themed(() => MarketsScreen())),
           ]),
           StatefulShellBranch(navigatorKey: walletKey, routes: [
-            GoRoute(path: Routes.wallet, builder: (_, _) => const WalletScreen()),
+            GoRoute(path: Routes.wallet, builder: (_, _) => themed(() => WalletScreen())),
           ]),
           StatefulShellBranch(navigatorKey: accountKey, routes: [
-            GoRoute(path: Routes.account, builder: (_, _) => const AccountScreen()),
+            GoRoute(path: Routes.account, builder: (_, _) => themed(() => AccountScreen())),
           ]),
         ],
       ),
     ],
-    errorBuilder: (_, st) => RouteNotFoundScreen(location: st.uri.toString()),
+    errorBuilder: (_, st) => themed(() => RouteNotFoundScreen(location: st.uri.toString())),
   );
 }
 

@@ -34,7 +34,12 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
   void _onState() => setState(() {}); // re-resolve brightness on themeMode change
 
   @override
-  void didChangePlatformBrightness() => setState(() {}); // system theme changed
+  void didChangePlatformBrightness() {
+    // OS light/dark changed — re-resolve our palette and rebuild every screen
+    // (the per-route ListenableBuilders listen to AppState).
+    setState(() {});
+    _state.refreshTheme();
+  }
 
   @override
   void dispose() {

@@ -61,6 +61,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Force theme-dependent rebuilds (e.g. when the OS brightness changes while
+  /// in System mode). No state change — just nudges listeners to re-read KColor.
+  void refreshTheme() => notifyListeners();
+
   void toggleWatch(String ticker) {
     if (!_watchlist.remove(ticker)) _watchlist.add(ticker);
     notifyListeners();
