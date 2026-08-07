@@ -71,13 +71,31 @@ class PersonalDetailsScreen extends StatefulWidget {
   State<PersonalDetailsScreen> createState() => _PersonalDetailsScreenState();
 }
 
+/// Month-name formatter for the DOB field's display text ("12 May 1990") —
+/// avoided intl just for this since the app has no other date-formatting
+/// dependency yet.
+const _kMonths = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+String _formatDobDisplay(DateTime d) => '${d.day} ${_kMonths[d.month - 1]} ${d.year}';
+
+/// ISO-8601 date only (no time component), matching KycSubmission.dob's
+/// documented wire contract (kyc_form_state.dart).
+String _formatDobIso(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
 class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   final _name = TextEditingController();
-  final _dob = TextEditingController();
   final _addr = TextEditingController();
   final _city = TextEditingController();
   final _phone = TextEditingController();
 
+  // A real date picker, not free-typed text — was previously a plain KInput
+  // with a "DD / MM / YYYY" placeholder the investor had to type by hand
+  // (and nothing enforced it matched that format, or was even a real date).
+  DateTime? _dob;
   String? _residenceState;
   KPhoneCountry _phoneCountry = kDefaultPhoneCountry;
 
@@ -87,11 +105,25 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   @override
   void dispose() {
     _name.dispose();
-    _dob.dispose();
     _addr.dispose();
     _city.dispose();
     _phone.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDob() async {
+    final now = DateTime.now();
+    // Investing/KYC accounts require the investor to be an adult — the
+    // picker's own range enforces that rather than a separate validator.
+    final adultCutoff = DateTime(now.year - 18, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dob ?? adultCutoff,
+      firstDate: DateTime(now.year - 100),
+      lastDate: adultCutoff,
+      helpText: 'Date of birth',
+    );
+    if (picked != null) setState(() => _dob = picked);
   }
 
   Future<void> _pickState() async {
@@ -111,7 +143,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   Future<void> _continue() async {
     final normalizedPhone = _normalizePhoneToE164(_phone.text, _phoneCountry.dial);
     final valid = _name.text.trim().isNotEmpty &&
-        _dob.text.trim().isNotEmpty &&
+        _dob != null &&
         _addr.text.trim().isNotEmpty &&
         _city.text.trim().isNotEmpty &&
         _residenceState != null &&
@@ -123,7 +155,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     final app = AppScope.read(context);
     final kycForm = app.kycForm;
     kycForm.setName(_name.text.trim());
-    kycForm.setDob(_dob.text.trim());
+    kycForm.setDob(_formatDobIso(_dob!));
     kycForm.setAddress(_addr.text.trim());
     kycForm.setCity(_city.text.trim());
     kycForm.setResidenceState(_residenceState!);
@@ -173,12 +205,12 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                   ? 'Enter your full name'
                                   : null),
                           const SizedBox(height: 16),
-                          KInput(
+                          _TappableField(
                               label: 'Date of birth',
-                              placeholder: 'DD / MM / YYYY',
-                              controller: _dob,
-                              onChanged: _showErrors ? (_) => setState(() {}) : null,
-                              error: _showErrors && _dob.text.trim().isEmpty
+                              value: _dob != null ? _formatDobDisplay(_dob!) : null,
+                              placeholder: 'Select your date of birth',
+                              onTap: _pickDob,
+                              error: _showErrors && _dob == null
                                   ? 'Enter your date of birth'
                                   : null),
                           const SizedBox(height: 16),
@@ -193,7 +225,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           const SizedBox(height: 16),
                           KInput(
                               label: 'City',
-                              placeholder: 'Lagos',
+                              placeholder: 'Ikeja',
                               controller: _city,
                               onChanged: _showErrors ? (_) => setState(() {}) : null,
                               error: _showErrors && _city.text.trim().isEmpty

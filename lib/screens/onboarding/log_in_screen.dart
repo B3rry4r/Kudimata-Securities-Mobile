@@ -1,5 +1,8 @@
 // 06 · Log in — the returning-user unlock. Centered wordmark, passcode dots, the
-// keypad (with a biometric shortcut bottom-left), and a Forgot passcode link.
+// keypad (with a biometric shortcut bottom-left), and a Forgot password link
+// (relabeled from "Forgot passcode" — the screen it leads to is a real
+// account password reset, not a local-passcode reset; see
+// reset_passcode_screen.dart's header comment).
 // On a full passcode we sign in and go home. Ported from screens.jsx LogIn.
 // Root gated screen: own Scaffold, no tab bar.
 //
@@ -231,7 +234,15 @@ class _LogInScreenState extends State<LogInScreen> {
     }
 
     if (!mounted) return;
-    context.go(Routes.home);
+    // Re-hydrate kyc/suitability from the server before landing on Home —
+    // those AppState flags are in-memory only (not persisted), so on a cold
+    // start they've reset to their `false` defaults even for an
+    // already-fully-onboarded returning investor. Without this, Home's
+    // "Complete your KYC" prompt would wrongly show every relaunch.
+    // hydrateGatingStateAndRoute already does exactly this and lands on
+    // Home unconditionally; app.signedIn is already true here (required to
+    // even reach this unlock screen), so its setSignedIn(true) is a no-op.
+    await hydrateGatingStateAndRoute(context);
   }
 
   // ── Email+password login ────────────────────────────────────────────────
@@ -376,7 +387,7 @@ class _LogInScreenState extends State<LogInScreen> {
                 ),
                 const SizedBox(height: 8),
                 KButton(
-                  label: 'Forgot passcode',
+                  label: 'Forgot password',
                   variant: KButtonVariant.ghost,
                   size: KButtonSize.sm,
                   fullWidth: false,
@@ -444,7 +455,7 @@ class _LogInScreenState extends State<LogInScreen> {
             const SizedBox(height: 8),
             Center(
               child: KButton(
-                label: 'Forgot passcode',
+                label: 'Forgot password',
                 variant: KButtonVariant.ghost,
                 size: KButtonSize.sm,
                 fullWidth: false,
@@ -536,23 +547,21 @@ class _LogInScreenState extends State<LogInScreen> {
   }
 }
 
-/// Fetches real KYC/suitability state from the server and routes the
-/// investor accordingly — the step that makes routing correct after a fresh
-/// login (see this file's header). Called once by
-/// confirm_passcode_screen.dart right after it persists a brand-new LOCAL
-/// passcode for a fresh email+password login (gated on
+/// Fetches real KYC/suitability state from the server (purely informational
+/// now — see below), signs the investor in, and always lands on Home. Called
+/// once by confirm_passcode_screen.dart right after it persists a brand-new
+/// LOCAL passcode for a fresh email+password login (gated on
 /// AppState.loginPasscodeSetup, which [_LogInScreenState._completeLogin]
 /// sets and this consumes indirectly by being invoked at all — the caller
 /// resets the flag itself before calling this).
 ///
-/// Mirrors the exact same per-status branches the existing KYC screens
-/// already use (kyc/submitted.dart, kyc/approved.dart) so a fresh login
-/// lands exactly where those screens would have taken a live walk-through:
-///   - no KycSubmission at all (GET /kyc-submissions/me 404)      -> KYC intro
-///   - submission exists, not yet approved, rejected/flagged/expired -> KYC outcome
-///   - submission exists, still pending/review                   -> KYC submitted (pending view)
-///   - submission approved, no SuitabilityResult yet (404)        -> suitability questionnaire
-///   - submission approved AND a SuitabilityResult exists          -> Home (signedIn set true here)
+/// Browsing the app shell no longer requires KYC/suitability to be complete
+/// — only trading/funding do (enforced both by the Buy/Sell/Add
+/// money/Withdraw entry points checking these same AppState flags, and
+/// server-side by OrdersService/TransactionsService, since a purely
+/// frontend gate is bypassable). This function's job is just to hydrate
+/// those flags accurately so Home can show the right "Complete your KYC"
+/// prompt (or none, if already done) — never to redirect away from Home.
 Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   final app = AppScope.read(context);
   final kycRepo = KycRepository(app.apiClient);
@@ -587,26 +596,8 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   app.setKycSubmitted(kycSubmitted);
   app.setKycApproved(kycApproved);
   app.setSuitabilityComplete(suitabilityComplete);
+  app.setSignedIn(true);
 
   if (!context.mounted) return;
-
-  if (kyc == null) {
-    context.go(Routes.kycIntro);
-    return;
-  }
-  if (kycApproved) {
-    if (suitabilityComplete) {
-      app.setSignedIn(true);
-      context.go(Routes.home);
-    } else {
-      context.go(Routes.questionnaire);
-    }
-    return;
-  }
-  if (kyc.status == 'rejected' || kyc.status == 'flagged' || kyc.status == 'expired') {
-    context.go(Routes.kycOutcome);
-    return;
-  }
-  // pending | review.
-  context.go(Routes.kycSubmitted);
+  context.go(Routes.home);
 }

@@ -167,6 +167,17 @@ class _HomeBody extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
+        // Browsing is open to everyone; only trading/funding require KYC +
+        // suitability (see wallet_flows.dart's showAddMoneyFlow/
+        // showWithdrawFlow and markets/asset_detail_screen.dart's Buy/Sell,
+        // which gate on these same AppState flags — backed server-side too,
+        // OrdersService/TransactionsService). This prompts the investor
+        // toward whichever step of that they haven't finished yet; shows
+        // nothing once both are done. AppScope.of (not .read) so it reacts
+        // live once hydrateGatingStateAndRoute (log_in_screen.dart) or the
+        // KYC/suitability flow itself updates these flags.
+        _KycPrompt(app: AppScope.of(context)),
+
         // quick actions
         Padding(
           padding: _gut,
@@ -459,6 +470,47 @@ class _QuickAction extends StatelessWidget {
                 maxLines: 1,
                 style: KType.micro(color: KColor.ink, w: KWeight.medium)
                     .copyWith(letterSpacing: 0.01 * 10)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Prompts an investor who can't yet trade/fund toward whichever step
+/// they're missing (see the call site's comment). Renders nothing once
+/// [AppState.kycApproved] and [AppState.suitabilityComplete] are both true.
+/// Reuses the same `_Bubble`/KCard row treatment as `_WatchlistEmptyCard`
+/// and the Orders card below, rather than a new visual language.
+class _KycPrompt extends StatelessWidget {
+  const _KycPrompt({required this.app});
+  final AppState app;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = tradingEligibilityGap(app);
+    if (gap == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, 16),
+      child: KCard(
+        onTap: () => context.push(gap.route),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            const _Bubble(icon: 'profile'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(gap.title, style: KType.cardTitle()),
+                  const SizedBox(height: 2),
+                  Text(gap.message, style: KType.micro(color: KColor.ink3)),
+                ],
+              ),
+            ),
+            KIcon('chevronRight', size: 20, color: KColor.ink3),
           ],
         ),
       ),

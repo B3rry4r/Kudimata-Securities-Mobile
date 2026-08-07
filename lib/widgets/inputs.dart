@@ -59,6 +59,10 @@ class KInput extends StatefulWidget {
 class _KInputState extends State<KInput> {
   late final FocusNode _focus = FocusNode()..addListener(() => setState(() {}));
 
+  // Password/passcode fields (widget.obscure) start hidden, same as before —
+  // this just tracks whether the reveal toggle below has since flipped that.
+  late bool _obscured = widget.obscure;
+
   @override
   void dispose() {
     _focus.dispose();
@@ -117,7 +121,7 @@ class _KInputState extends State<KInput> {
                   focusNode: _focus,
                   enabled: !widget.disabled,
                   onChanged: widget.onChanged,
-                  obscureText: widget.obscure,
+                  obscureText: _obscured,
                   keyboardType: widget.keyboardType ??
                       (widget.numeric ? TextInputType.number : TextInputType.text),
                   cursorColor: KColor.indicator,
@@ -155,7 +159,17 @@ class _KInputState extends State<KInput> {
                 const SizedBox(width: 10),
                 Text(widget.suffix!, style: KType.body(color: KColor.ink3, w: KWeight.medium)),
               ],
-              if (widget.trailing != null) ...[const SizedBox(width: 10), widget.trailing!],
+              if (widget.obscure) ...[
+                const SizedBox(width: 10),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() => _obscured = !_obscured),
+                  child: KIcon(_obscured ? 'eye' : 'eyeOff', size: 18, color: KColor.ink3),
+                ),
+              ] else if (widget.trailing != null) ...[
+                const SizedBox(width: 10),
+                widget.trailing!,
+              ],
             ],
           ),
         ),

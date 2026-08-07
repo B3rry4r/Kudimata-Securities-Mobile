@@ -12,6 +12,7 @@ import 'package:flutter/widgets.dart';
 import '../data/api/api_client.dart';
 import '../data/api/auth_token_store.dart';
 import '../data/api/passcode_store.dart';
+import '../router/routes.dart';
 import '../screens/kyc/kyc_form_state.dart';
 
 class AppState extends ChangeNotifier {
@@ -195,6 +196,47 @@ class AppState extends ChangeNotifier {
   void removeWatch(String ticker) {
     if (_watchlist.remove(ticker)) notifyListeners();
   }
+}
+
+/// Where an investor should go next to become eligible to trade/fund, or
+/// null if they already can ([AppState.kycApproved] &&
+/// [AppState.suitabilityComplete]). Browsing itself is never gated —
+/// this only matters at the specific points that need it: home_screen.dart's
+/// prompt card, and the Buy/Sell/Add money/Withdraw entry points
+/// (trade_flows.dart, wallet_flows.dart), which all call this so the copy
+/// and routing stay consistent everywhere it's surfaced. Purely a UX
+/// convenience — the real enforcement is server-side (OrdersService/
+/// TransactionsService in the backend both re-check this before acting).
+class TradingEligibilityGap {
+  const TradingEligibilityGap({required this.title, required this.message, required this.route});
+  final String title;
+  final String message;
+  final String route;
+}
+
+TradingEligibilityGap? tradingEligibilityGap(AppState app) {
+  if (!app.kycSubmitted) {
+    return const TradingEligibilityGap(
+      title: 'Complete your KYC',
+      message: 'Verify your identity to start investing',
+      route: Routes.kycIntro,
+    );
+  }
+  if (!app.kycApproved) {
+    return const TradingEligibilityGap(
+      title: 'Your KYC is under review',
+      message: "We'll notify you once it's approved",
+      route: Routes.kycSubmitted,
+    );
+  }
+  if (!app.suitabilityComplete) {
+    return const TradingEligibilityGap(
+      title: 'Complete your risk profile',
+      message: 'A few questions before you can start investing',
+      route: Routes.questionnaire,
+    );
+  }
+  return null;
 }
 
 /// InheritedNotifier exposing the single [AppState]. Wrap the app once; read it

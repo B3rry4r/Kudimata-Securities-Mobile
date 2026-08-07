@@ -1,6 +1,10 @@
 // 05 · Enable biometric — fingerprint ring, headline, Enable / Maybe later. Both
-// paths advance to the KYC intro; Enable also flips biometricEnabled. Ported from
-// screens.jsx Biometric. Mid-flow gated screen, no tab bar.
+// paths sign the investor in and land on Home; Enable also flips
+// biometricEnabled. KYC/suitability are no longer forced here — browsing is
+// open to everyone, only trading/funding require them (see Home's
+// "Complete your KYC" prompt and the KYC-gate checks on Buy/Sell/Add
+// money/Withdraw). Ported from screens.jsx Biometric. Mid-flow gated screen,
+// no tab bar.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
@@ -59,15 +63,20 @@ class BiometricScreen extends StatelessWidget {
                     label: 'Enable',
                     // SEAM: real biometric enrolment (local_auth) plugs in here.
                     onPressed: () {
-                      AppScope.read(context).setBiometric(true);
-                      context.go(Routes.kycIntro);
+                      final app = AppScope.read(context);
+                      app.setBiometric(true);
+                      app.setSignedIn(true);
+                      context.go(Routes.home);
                     },
                   ),
                   const SizedBox(height: 10),
                   KButton(
                     label: 'Maybe later',
                     variant: KButtonVariant.ghost,
-                    onPressed: () => context.go(Routes.kycIntro),
+                    onPressed: () {
+                      AppScope.read(context).setSignedIn(true);
+                      context.go(Routes.home);
+                    },
                   ),
                 ],
               ),

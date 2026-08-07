@@ -39,6 +39,7 @@
 // equities only, and Convert existed solely to fund USD stock buys.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_securities/app/app_state.dart';
@@ -52,19 +53,58 @@ import 'package:kudimata_securities/theme/tokens.dart';
 // Public flow launchers (cross-stage contract — see BUILD_CONTRACT.md §d).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Add money: amount + method → review → success.
-Future<void> showAddMoneyFlow(BuildContext context) => showKSheet<void>(
-      context,
-      title: 'Add money',
-      child: const _AddMoneySheet(),
-    );
+/// Add money: amount + method → review → success. Gated on
+/// [tradingEligibilityGap] — browsing the Wallet tab never requires
+/// KYC/suitability, only actually funding does (also enforced server-side,
+/// TransactionsService.assertEligibleToTransact, since this check alone is
+/// bypassable).
+Future<void> showAddMoneyFlow(BuildContext context) async {
+  if (!await _ensureEligibleToTransact(context)) return;
+  if (!context.mounted) return;
+  await showKSheet<void>(
+    context,
+    title: 'Add money',
+    child: const _AddMoneySheet(),
+  );
+}
 
-/// Withdraw: amount + destination bank → review → success.
-Future<void> showWithdrawFlow(BuildContext context) => showKSheet<void>(
-      context,
-      title: 'Withdraw',
-      child: const _WithdrawSheet(),
-    );
+/// Withdraw: amount + destination bank → review → success. Same gate as
+/// [showAddMoneyFlow].
+Future<void> showWithdrawFlow(BuildContext context) async {
+  if (!await _ensureEligibleToTransact(context)) return;
+  if (!context.mounted) return;
+  await showKSheet<void>(
+    context,
+    title: 'Withdraw',
+    child: const _WithdrawSheet(),
+  );
+}
+
+/// Shows a sheet pointing the investor at whichever KYC/suitability step
+/// they're missing instead of opening the fund/withdraw sheet. Returns true
+/// (no sheet shown) once they're actually eligible. Mirrors
+/// trade_flows.dart's `_ensureEligibleToTrade` (duplicated rather than
+/// shared per this codebase's per-module convention).
+Future<bool> _ensureEligibleToTransact(BuildContext context) async {
+  final gap = tradingEligibilityGap(AppScope.read(context));
+  if (gap == null) return true;
+  await showKSheet<void>(
+    context,
+    child: KStatusView(
+      tone: KStatusTone.pending,
+      title: gap.title,
+      message: gap.message,
+      primary: 'Continue',
+      onPrimary: () {
+        Navigator.of(context).pop();
+        context.push(gap.route);
+      },
+      secondary: 'Not now',
+      onSecondary: () => Navigator.of(context).pop(),
+    ),
+  );
+  return false;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared bits.

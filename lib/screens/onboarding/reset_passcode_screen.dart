@@ -1,13 +1,17 @@
-// 07 · Reset your passcode — email entry, then code + new password. Ported
-// from screens.jsx ResetPasscode, extended with a second step. Mid-flow
-// gated screen pushed off Log in, no tab bar.
+// 07 · Reset your password — email entry, then code + new password. Ported
+// from screens.jsx ResetPasscode (originally mislabeled "reset your
+// passcode" — both the screen copy and the buttons linking to it, on both
+// the login form and the local-unlock screen, called this "Forgot
+// passcode"; relabeled to "Forgot/reset password" since that's what it
+// actually does), extended with a second step. Mid-flow gated screen pushed
+// off Log in, no tab bar.
 //
-// Reconciliation note: despite this screen's name ("reset your passcode"),
-// the backend concept behind it is a real account PASSWORD reset, not the
-// app-local PIN — Kudimata-Securities-Backend/.pipeline/conventions.md is
-// explicit that the passcode is client-only and never sent to the server,
-// and registry.json's AuthSession/EmailOtp resources have no passcode-reset
-// endpoint at all, only a password one:
+// Reconciliation note: the backend concept behind this screen is a real
+// account PASSWORD reset, not the app-local PIN —
+// Kudimata-Securities-Backend/.pipeline/conventions.md is explicit that the
+// passcode is client-only and never sent to the server, and registry.json's
+// AuthSession/EmailOtp resources have no passcode-reset endpoint at all,
+// only a password one:
 //   POST /auth/request-password-reset {email} -> EmailOtp
 //   POST /auth/reset-password {email, code, newPassword} -> 204 No Content
 //     (not on the frozen registry.json list; the necessary completion of
@@ -102,14 +106,23 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
         newPassword: _newPassword,
       );
       if (!mounted) return;
+      // This screen is also reachable from the local-unlock screen (a
+      // signed-in device with a set passcode the investor has forgotten —
+      // see log_in_screen.dart's `_buildUnlock`), where AppState.signedIn
+      // and PasscodeStore.hasPasscode() are both still true going in. Without
+      // clearing them here, log_in_screen.dart's `_decideMode()` would just
+      // show that same locked passcode screen again after a successful
+      // password reset — a dead end for exactly the person this flow exists
+      // to help. forceSignOut() clears both the stale session and the
+      // forgotten local passcode, so the login screen correctly falls back
+      // to its email+password form.
+      await AppScope.read(context).forceSignOut();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password reset. Log in with your new password.')),
       );
-      // Hand off to the real email+password login form (log_in_screen.dart),
-      // not the old passcode-unlock screen — a password reset doesn't touch
-      // this device's local passcode/session, so AppState.signedIn is still
-      // false here and log_in_screen.dart would show its email-login mode
-      // anyway; passing the email along just saves retyping it. Read via
+      // Hand off to the real email+password login form (log_in_screen.dart).
+      // Passing the email along just saves retyping it. Read via
       // GoRouterState.of(context).extra on that screen (app_router.dart's
       // Routes.login GoRoute discards its builder's `state` arg, same as
       // otp_screen.dart's own extra handoff).
@@ -153,7 +166,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
   List<Widget> _emailStep() {
     return [
       const KScreenHead(
-        title: 'Reset your passcode',
+        title: 'Reset your password',
         body: "We'll send a code to your email.",
       ),
       const SizedBox(height: 28),

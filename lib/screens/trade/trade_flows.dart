@@ -47,13 +47,47 @@ const double _kDailyLimit = 500000;
 // Public flow launchers (cross-stage contract — see BUILD_CONTRACT.md §d).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Buy flow: amount → (over-limit?) → review → success.
-Future<void> showBuyFlow(BuildContext context, Asset asset) =>
-    _showAmountSheet(context, asset, side: _Side.buy);
+/// Buy flow: amount → (over-limit?) → review → success. Gated on
+/// [tradingEligibilityGap] — browsing an asset's detail page never requires
+/// KYC/suitability, only actually trading does (also enforced server-side,
+/// OrdersService.assertEligibleToTrade, since this check alone is
+/// bypassable).
+Future<void> showBuyFlow(BuildContext context, Asset asset) async {
+  if (!await _ensureEligibleToTrade(context)) return;
+  if (!context.mounted) return;
+  await _showAmountSheet(context, asset, side: _Side.buy);
+}
 
-/// Sell flow: amount → review → success.
-Future<void> showSellFlow(BuildContext context, Asset asset) =>
-    _showAmountSheet(context, asset, side: _Side.sell);
+/// Sell flow: amount → review → success. Same gate as [showBuyFlow].
+Future<void> showSellFlow(BuildContext context, Asset asset) async {
+  if (!await _ensureEligibleToTrade(context)) return;
+  if (!context.mounted) return;
+  await _showAmountSheet(context, asset, side: _Side.sell);
+}
+
+/// Shows a sheet pointing the investor at whichever KYC/suitability step
+/// they're missing instead of opening the trade sheet. Returns true (no
+/// sheet shown) once they're actually eligible.
+Future<bool> _ensureEligibleToTrade(BuildContext context) async {
+  final gap = tradingEligibilityGap(AppScope.read(context));
+  if (gap == null) return true;
+  await showKSheet<void>(
+    context,
+    child: KStatusView(
+      tone: KStatusTone.pending,
+      title: gap.title,
+      message: gap.message,
+      primary: 'Continue',
+      onPrimary: () {
+        Navigator.of(context).pop();
+        context.push(gap.route);
+      },
+      secondary: 'Not now',
+      onSecondary: () => Navigator.of(context).pop(),
+    ),
+  );
+  return false;
+}
 
 enum _Side { buy, sell }
 
