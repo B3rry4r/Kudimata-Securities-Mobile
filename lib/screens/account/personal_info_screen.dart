@@ -66,13 +66,27 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   late Future<(PersonalInfo, String)> _future = _load();
 
   Future<(PersonalInfo, String)> _load() async {
-    final results = await Future.wait([
-      _userRepo.personalInfo(),
-      _kycRepo.me(),
-    ]);
-    final info = results[0] as PersonalInfo;
-    final kyc = results[1] as KycSubmissionStatus;
-    return (info, kyc.bvn ?? '—');
+    final infoFuture = _userRepo.personalInfo();
+    final bvnFuture = _fetchBvn();
+    final info = await infoFuture;
+    final bvn = await bvnFuture;
+    return (info, bvn);
+  }
+
+  /// A 404 here just means this investor hasn't submitted KYC yet — a
+  /// perfectly normal state (browsing no longer requires KYC first, see
+  /// home_screen.dart's prompt card), not a reason to fail this whole
+  /// screen. Mirrors asset_detail_screen.dart's `_fetchHolding` — same
+  /// "404 on an optional secondary fetch means 'nothing yet', not an
+  /// error" pattern.
+  Future<String> _fetchBvn() async {
+    try {
+      final kyc = await _kycRepo.me();
+      return kyc.bvn ?? '—';
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) return '—';
+      rethrow;
+    }
   }
 
   void _reload() => setState(() => _future = _load());

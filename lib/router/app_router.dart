@@ -66,6 +66,7 @@ import '../screens/account/personal_info_screen.dart';
 import '../screens/account/bank_accounts_screen.dart';
 import '../screens/account/refer_earn_screen.dart';
 import '../screens/account/help_support_screen.dart';
+import '../screens/account/faq_screen.dart';
 import '../screens/account/security_screen.dart';
 import '../screens/account/notifications_settings_screen.dart';
 import '../screens/account/legal_screen.dart';
@@ -168,6 +169,7 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.acctBanks, builder: (_, _) => themed(() => BankAccountsScreen())),
       GoRoute(path: Routes.acctRefer, builder: (_, _) => themed(() => ReferEarnScreen())),
       GoRoute(path: Routes.acctHelp, builder: (_, _) => themed(() => HelpSupportScreen())),
+      GoRoute(path: Routes.acctFaq, builder: (_, _) => themed(() => FaqScreen())),
       GoRoute(path: Routes.acctSecurity, builder: (_, _) => themed(() => SecurityScreen())),
       GoRoute(path: Routes.acctNotifications, builder: (_, _) => themed(() => NotificationsSettingsScreen())),
       GoRoute(path: Routes.acctLegal, builder: (_, _) => themed(() => LegalScreen())),

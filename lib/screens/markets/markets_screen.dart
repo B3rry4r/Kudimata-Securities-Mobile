@@ -1,13 +1,16 @@
-// Markets tab root — title, read-only SearchPill (pushes Search), category
-// PillChips (All / NGX), trending + the filtered list. Ported from
-// app-screens.jsx `Markets`. Root tab: Scaffold body WITHOUT bottom nav (the
-// shell owns it).
+// Markets tab root — title, read-only SearchPill (pushes Search), trending +
+// the asset list. Ported from app-screens.jsx `Markets`. Root tab: Scaffold
+// body WITHOUT bottom nav (the shell owns it).
 //
-// Wired to GET /assets/trending and GET /assets?assetClass= via
-// AssetRepository.trending()/.byAssetClass() (see lib/data/api/README.md for
-// the FutureBuilder convention this follows). Selecting a category chip
-// re-triggers the list Future; the Trending Future is independent of the
-// selected tab (it only renders while the "All" chip is selected).
+// The search bar's filter icon and the All/NGX category pills were removed
+// (user directive 2026-08-07) — there's nothing meaningful left to filter by
+// as a top-level category now that the catalog is NGX (+ETF) only, and the
+// filter icon just duplicated tapping the search pill itself (both opened
+// the same Search screen).
+//
+// Wired to GET /assets/trending and GET /assets via
+// AssetRepository.trending()/.byAssetClass(null) (see lib/data/api/README.md
+// for the FutureBuilder convention this follows).
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
@@ -20,15 +23,6 @@ import 'package:kudimata_securities/widgets/widgets.dart';
 
 const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 
-/// Category filter — value drives the list; null = All.
-class _Cat {
-  const _Cat(this.label, this.cls);
-  final String label;
-  final AssetClass? cls;
-}
-
-const _cats = [_Cat('All', null), _Cat('NGX', AssetClass.ngx)];
-
 class MarketsScreen extends StatefulWidget {
   const MarketsScreen({super.key});
 
@@ -40,22 +34,9 @@ class _MarketsScreenState extends State<MarketsScreen> {
   late final _repo = AssetRepository(AppScope.read(context).apiClient);
 
   late Future<List<Asset>> _trendingFuture = _repo.trending();
-  late Future<List<Asset>> _listFuture = _repo.byAssetClass(_selectedClass);
-
-  String _cat = 'All';
-
-  AssetClass? get _selectedClass =>
-      _cats.firstWhere((c) => c.label == _cat).cls;
+  late Future<List<Asset>> _listFuture = _repo.byAssetClass(null);
 
   KTrend _k(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
-
-  void _selectCat(String label) {
-    if (label == _cat) return;
-    setState(() {
-      _cat = label;
-      _listFuture = _repo.byAssetClass(_selectedClass);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,75 +57,52 @@ class _MarketsScreenState extends State<MarketsScreen> {
                   const SizedBox(height: 16),
                   KSearchPill(
                     placeholder: 'Search stocks',
-                    showFilter: true,
                     readOnly: true,
                     onTap: () => context.push(Routes.search),
-                    onFilter: () => context.push(Routes.search),
                   ),
                   const SizedBox(height: 16),
                 ],
               ),
             ),
-            // category chips
-            SizedBox(
-              height: 36,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
+            const SizedBox(height: 12),
+
+            // trending
+            Padding(
+              padding: _gut,
+              child: Row(
                 children: [
-                  for (final c in _cats)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: KPillChip(
-                        label: c.label,
-                        selected: _cat == c.label,
-                        onTap: () => _selectCat(c.label),
-                      ),
+                  const KEyebrow('Trending'),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => context.push(Routes.assetList),
+                    behavior: HitTestBehavior.opaque,
+                    child: Text(
+                      'See all'.upper,
+                      style: KType.micro(
+                        color: KColor.ink2,
+                        w: KWeight.semibold,
+                      ).copyWith(letterSpacing: 0.06 * 10),
                     ),
+                  ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: _gut,
+              child: _asyncCard(
+                _trendingFuture,
+                spark: false,
+                onRetry: () =>
+                    setState(() => _trendingFuture = _repo.trending()),
               ),
             ),
             const SizedBox(height: 28),
 
-            // trending (only on the All tab)
-            if (_cat == 'All') ...[
-              Padding(
-                padding: _gut,
-                child: Row(
-                  children: [
-                    const KEyebrow('Trending'),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () => context.push(Routes.assetList),
-                      behavior: HitTestBehavior.opaque,
-                      child: Text(
-                        'See all'.upper,
-                        style: KType.micro(
-                          color: KColor.ink2,
-                          w: KWeight.semibold,
-                        ).copyWith(letterSpacing: 0.06 * 10),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: _gut,
-                child: _asyncCard(
-                  _trendingFuture,
-                  spark: false,
-                  onRetry: () =>
-                      setState(() => _trendingFuture = _repo.trending()),
-                ),
-              ),
-              const SizedBox(height: 28),
-            ],
-
-            // the filtered list
-            Padding(
+            // the full list
+            const Padding(
               padding: _gut,
-              child: KEyebrow(_cat == 'All' ? 'All assets' : _cat),
+              child: KEyebrow('All assets'),
             ),
             const SizedBox(height: 12),
             Padding(
@@ -152,9 +110,8 @@ class _MarketsScreenState extends State<MarketsScreen> {
               child: _asyncCard(
                 _listFuture,
                 spark: true,
-                onRetry: () => setState(
-                  () => _listFuture = _repo.byAssetClass(_selectedClass),
-                ),
+                onRetry: () =>
+                    setState(() => _listFuture = _repo.byAssetClass(null)),
               ),
             ),
           ],

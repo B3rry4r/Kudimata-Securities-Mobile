@@ -138,9 +138,17 @@ class _HomeBody extends StatelessWidget {
           padding: _gut,
           child: Row(
             children: [
-              _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
-              const SizedBox(width: 12),
-              Text('Hi, $first', style: KType.section()),
+              GestureDetector(
+                onTap: () => context.push(Routes.acctPersonal),
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  children: [
+                    _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
+                    const SizedBox(width: 12),
+                    Text('Hi, $first', style: KType.section()),
+                  ],
+                ),
+              ),
               const Spacer(),
               _BellButton(
                 onPressed: () => context.push(Routes.notifications),
@@ -264,36 +272,43 @@ class _HomeBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Padding(
-          padding: _gut,
-          child: KCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Column(
-              children: [
-                for (var i = 0; i < data.holdings.length; i++)
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: i == 0
-                            ? BorderSide.none
-                            : BorderSide(color: KColor.hairline, width: 1),
-                      ),
-                    ),
-                    child: KAssetRow(
-                      name: data.holdings[i].name,
-                      ticker: data.holdings[i].ticker,
-                      price: data.holdings[i].price,
-                      change: data.holdings[i].change,
-                      trend: _kTrend(data.holdings[i].trend),
-                      logoColor: data.holdings[i].logoColor ?? KColor.ink,
-                      onTap: () =>
-                          context.push(Routes.assetDetail(data.holdings[i].ticker)),
-                    ),
+        data.holdings.isEmpty
+            ? Padding(
+                padding: _gut,
+                child: _HoldingsEmptyCard(
+                  onTap: () => context.go(Routes.markets),
+                ),
+              )
+            : Padding(
+                padding: _gut,
+                child: KCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < data.holdings.length; i++)
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: i == 0
+                                  ? BorderSide.none
+                                  : BorderSide(color: KColor.hairline, width: 1),
+                            ),
+                          ),
+                          child: KAssetRow(
+                            name: data.holdings[i].name,
+                            ticker: data.holdings[i].ticker,
+                            price: data.holdings[i].price,
+                            change: data.holdings[i].change,
+                            trend: _kTrend(data.holdings[i].trend),
+                            logoColor: data.holdings[i].logoColor ?? KColor.ink,
+                            onTap: () =>
+                                context.push(Routes.assetDetail(data.holdings[i].ticker)),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
-          ),
-        ),
+                ),
+              ),
         const SizedBox(height: 28),
 
         // trending
@@ -513,6 +528,41 @@ class _KycPrompt extends StatelessWidget {
             KIcon('chevronRight', size: 20, color: KColor.ink3),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Inline prompt shown in place of the holdings list when the investor
+/// holds nothing yet — was previously just an empty KCard (zero children,
+/// rendering as a bare sliver of padding/border), not an actual empty
+/// state. Mirrors `_WatchlistEmptyCard` below. Taps through to Markets.
+class _HoldingsEmptyCard extends StatelessWidget {
+  const _HoldingsEmptyCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return KCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          const _Bubble(icon: 'portfolio'),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('You have no holdings yet', style: KType.cardTitle()),
+                const SizedBox(height: 2),
+                Text('Browse Markets to make your first investment',
+                    style: KType.micro(color: KColor.ink3)),
+              ],
+            ),
+          ),
+          KIcon('chevronRight', size: 20, color: KColor.ink3),
+        ],
       ),
     );
   }

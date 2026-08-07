@@ -69,6 +69,7 @@ class Routes {
   static const String acctBanks = '/account/banks';
   static const String acctRefer = '/account/refer';
   static const String acctHelp = '/account/help';
+  static const String acctFaq = '/account/help/faq';
   static const String acctSecurity = '/account/security';
   static const String acctNotifications = '/account/notifications';
   static const String acctLegal = '/account/legal';

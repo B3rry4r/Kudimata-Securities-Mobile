@@ -8,19 +8,20 @@
 // query ever leaves the widget), matching the local-filter pattern used by
 // search_screen.dart.
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'account_widgets.dart';
 
-// PLACEHOLDER contact details — no backend resource exists for this
-// screen's content (see header note), so these are static, hand-set
-// values. Replace with the real support desk's address/number/URL before
-// release.
-const _kSupportEmail = 'support@kudimatasecurities.com';
-const _kSupportPhone = '+2348000000000'; // placeholder Nigerian E.164 number
-const _kHelpCenterUrl = 'https://kudimatasecurities.com/help';
+// Real contact details — no backend resource exists for this screen's
+// content (see header note) so these stay static/hand-set, but they're the
+// company's actual support channels (cross-checked against
+// Kudimata-Web/pages/contact.js's real contact page), not placeholders.
+const _kSupportEmail = 'support@kudimata.com';
+const _kSupportPhone = '+2349163344444';
 
 class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
@@ -70,15 +71,21 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   void _onRowTap(String title) {
     switch (title) {
       case 'Browse FAQs':
-        _launch(Uri.parse(_kHelpCenterUrl));
+        context.push(Routes.acctFaq);
         break;
       case 'Message support':
         _launch(Uri(scheme: 'mailto', path: _kSupportEmail));
         break;
       case 'Report a problem':
-        // SEAM: no dedicated bug-report channel exists (no ticketing API,
-        // no in-app chat) — intentionally left as a no-op rather than
-        // fabricating one. Wire this up once a target exists.
+        // No dedicated bug-report channel exists (no ticketing API, no
+        // in-app chat) — same mailto hand-off as Message support, with a
+        // subject line so support can triage it as a report rather than a
+        // general question.
+        _launch(Uri(
+          scheme: 'mailto',
+          path: _kSupportEmail,
+          query: 'subject=${Uri.encodeComponent('Reporting a problem')}',
+        ));
         break;
       case 'Call us':
         _launch(Uri(scheme: 'tel', path: _kSupportPhone));
