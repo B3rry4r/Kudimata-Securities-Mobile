@@ -38,7 +38,7 @@ class KycTopBar extends StatelessWidget {
 /// Segmented step-progress strip — ink for done/current, hairline ahead, plus a
 /// tracked "STEP n OF total" caption. Mirrors StepProgress.
 class KycStepProgress extends StatelessWidget {
-  const KycStepProgress({super.key, this.total = 5, required this.current});
+  const KycStepProgress({super.key, this.total = 4, required this.current});
   final int total;
   final int current;
 

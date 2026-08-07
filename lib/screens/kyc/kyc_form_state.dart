@@ -1,19 +1,19 @@
 // Kudimata Securities — shared KYC in-progress form state.
 //
-// WHY THIS EXISTS: the 5 KYC screens (personal-details → bvn → id-upload →
-// liveness → next-of-kin) each collect a different slice of ONE eventual
-// submission, but only the LAST screen (next-of-kin) calls the real backend:
-//   POST /kyc-submissions   body: {bvn, nin, documentType, nextOfKin, address}
+// WHY THIS EXISTS: the KYC screens (bvn → id-upload → liveness → next-of-kin)
+// each collect a different slice of ONE eventual submission, but only the
+// LAST screen (next-of-kin) calls the real backend:
+//   POST /kyc-submissions   body: {bvn, nin, documentType, nextOfKin}
 // (see /workspace/projects/Kudimata-Securities-Backend/.pipeline/registry.json,
 // KycSubmission resource). Fields entered on earlier screens must survive
 // in-memory until that final call — today each screen only holds its own
 // TextEditingControllers and discards them on navigation (see the
 // STUB-kyc-* entries in .pipeline/fragments/kyc-*.json). This class is the
-// ONE shared place every screen stashes its piece, so 5 screen-wiring agents
-// don't each invent a different mechanism.
+// ONE shared place every screen stashes its piece, so multiple screen-wiring
+// agents don't each invent a different mechanism.
 //
 // HOW TO USE (mirrors AppState/AppScope exactly — no new InheritedWidget):
-//   AppScope.read(context).kycForm.setName(_name.text);      // on Continue
+//   AppScope.read(context).kycForm.setBvn(_bvn.text);         // on Continue
 //   AppScope.read(context).kycForm.registerUploadedDocument(  // after upload
 //       objectKey, 'nin');
 //   final body = AppScope.read(context).kycForm.toSubmissionBody();
@@ -26,24 +26,20 @@
 // before calling [setDocumentType].
 //
 // `nin` (the National Identification Number string) is required by the final
-// POST body but none of the 5 screens today have a text field for it —
+// POST body but none of the screens today have a text field for it —
 // id_upload.dart only captures a document TYPE + an uploaded file. The
 // kyc-id (or a future) screen-wiring agent must add a way to collect it (or
 // this stays null and the final call fails validation) — that decision is
 // out of scope for this shared holder.
 //
-// NOTE: `name` and `dob` are collected on kyc-personal and held here for
-// completeness (they're real KycSubmission fields per registry.json) but are
-// NOT part of the POST /kyc-submissions request body — that endpoint doesn't
-// accept them. [toSubmissionBody] reflects that: it does not send name/dob.
-//
-// `city` and `state` (residenceState) ARE now part of the POST body, both
-// optional/nullable per registry.json's latest KycSubmission endpoint entry
-// — `city` was previously collected here but silently dropped from
-// [toSubmissionBody] (a backend-side bug, now fixed there and here); `state`
-// is a new field (Nigerian state of residence, picked from a fixed
-// 36-state+FCT dropdown on kyc-personal — see
-// lib/screens/kyc/_pickers.dart — not free text).
+// name/dob/address/city/state are DELIBERATELY NOT collected here anymore
+// (2026-08-07, supersedes.json S-9) — they moved to the post-signup
+// onboarding step (screens/onboarding/personal_details_screen.dart), which
+// persists them straight to the User record via PATCH /users/me. KYC now
+// starts from BVN; "personal details" is onboarding, not identity
+// verification. [toSubmissionBody] omits address/city/state entirely —
+// KycSubmissionsService falls back to the investor's on-file User record for
+// all three when they're absent from the request body.
 import 'package:flutter/foundation.dart';
 
 /// One uploaded KYC document, as recorded by the presigned-upload flow
@@ -63,21 +59,10 @@ class KycUploadedDocument {
 /// Reached the same way as every other piece of app session state:
 /// `AppScope.read(context).kycForm` (see lib/app/app_state.dart).
 class KycFormState extends ChangeNotifier {
-  // kyc-personal (step 1).
-  String? name;
-  String? dob; // ISO-8601 date string, per KycSubmission.dob.
-  String? address;
-  String? city;
-
-  /// Nigerian state of residence — picked from the fixed 36-state+FCT list
-  /// in lib/screens/kyc/_pickers.dart (kNigerianStates), not free text.
-  /// Named to avoid any confusion with Flutter's own `State` class.
-  String? residenceState;
-
-  // kyc-bvn (step 2).
+  // kyc-bvn (step 1).
   String? bvn;
 
-  // kyc-id (step 3). NIN number string (see file header — no current screen
+  // kyc-id (step 2). NIN number string (see file header — no current screen
   // field collects this) and the resolved documentType enum value.
   String? nin;
   String? documentType; // nin | passport | drivers_licence | resubmission
@@ -88,35 +73,10 @@ class KycFormState extends ChangeNotifier {
   final List<KycUploadedDocument> _documents = [];
   List<KycUploadedDocument> get documents => List.unmodifiable(_documents);
 
-  // kyc-next-of-kin (step 5 / final screen).
+  // kyc-next-of-kin (step 4 / final screen).
   String? nextOfKinName;
   String? nextOfKinRelationship;
   String? nextOfKinPhone;
-
-  void setName(String v) {
-    name = v;
-    notifyListeners();
-  }
-
-  void setDob(String v) {
-    dob = v;
-    notifyListeners();
-  }
-
-  void setAddress(String v) {
-    address = v;
-    notifyListeners();
-  }
-
-  void setCity(String v) {
-    city = v;
-    notifyListeners();
-  }
-
-  void setResidenceState(String v) {
-    residenceState = v;
-    notifyListeners();
-  }
 
   void setBvn(String v) {
     bvn = v;
@@ -160,10 +120,12 @@ class KycFormState extends ChangeNotifier {
   }
 
   /// Assembles the exact `POST /kyc-submissions` request body — bvn, nin,
-  /// documentType, nextOfKin (object), address, and the optional city/state
-  /// pair — per registry.json's KycSubmission POST endpoint. Call this from
-  /// the next-of-kin screen's submit handler, once fields collected earlier
-  /// in the flow are read through this shared holder.
+  /// documentType, and nextOfKin (object) — per registry.json's KycSubmission
+  /// POST endpoint. address/city/state are deliberately omitted (see file
+  /// header): KycSubmissionsService falls back to the investor's on-file
+  /// User record, populated by the onboarding personal-details step. Call
+  /// this from the next-of-kin screen's submit handler, once fields
+  /// collected earlier in the flow are read through this shared holder.
   Map<String, dynamic> toSubmissionBody() {
     return {
       'bvn': bvn,
@@ -174,25 +136,17 @@ class KycFormState extends ChangeNotifier {
         'relationship': nextOfKinRelationship,
         'phone': nextOfKinPhone,
       },
-      'address': address,
-      'city': city,
-      'state': residenceState,
     };
   }
 
   /// Clears every collected field for a fresh resubmission attempt (kyc
   /// outcome screen's "Resubmit documents"/"Start again" actions — see
-  /// lib/screens/kyc/outcome_not_approved.dart). Re-entering kyc-personal
-  /// with the FIRST attempt's stale data would be wrong (e.g. a rejected
-  /// document upload should not silently carry over); this restarts the
-  /// 5-screen collection flow with a clean slate. `documents` is a private
-  /// growable list, so it's cleared in place rather than reassigned.
+  /// lib/screens/kyc/outcome_not_approved.dart). Re-entering kyc-bvn with the
+  /// FIRST attempt's stale data would be wrong (e.g. a rejected document
+  /// upload should not silently carry over); this restarts the collection
+  /// flow with a clean slate. `documents` is a private growable list, so
+  /// it's cleared in place rather than reassigned.
   void reset() {
-    name = null;
-    dob = null;
-    address = null;
-    city = null;
-    residenceState = null;
     bvn = null;
     nin = null;
     documentType = null;

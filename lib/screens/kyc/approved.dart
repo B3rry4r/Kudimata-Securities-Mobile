@@ -1,4 +1,4 @@
-// KYC 9 — approved (success). A centred success StatusView. Sets kycApproved and
+// KYC 8 — approved (success). A centred success StatusView. Sets kycApproved and
 // the primary "Start investing" hands off to the suitability questionnaire.
 // Mirrors Approved.
 //

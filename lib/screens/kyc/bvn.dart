@@ -1,4 +1,4 @@
-// KYC 3 — BVN verification (step 2 of 5). Single numeric field with the privacy
+// KYC 2 — BVN verification (step 1 of 4). Single numeric field with the privacy
 // helper. Mirrors Bvn. SEAM: the KYC provider verifies the BVN here.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +55,7 @@ class _BvnScreenState extends State<BvnScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const KycTopBar(),
-            const KycStepProgress(current: 2),
+            const KycStepProgress(current: 1),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

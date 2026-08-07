@@ -1,7 +1,7 @@
-// KYC 7 — next of kin (post-check; no step strip). Name / relationship / phone.
+// KYC 6 — next of kin (post-check; no step strip). Name / relationship / phone.
 // Mirrors NextOfKin. Continue submits the application: POST /kyc-submissions
-// with the fields accumulated across all 5 KYC screens (KycFormState), then
-// registers any documents uploaded earlier (id_upload.dart / liveness.dart)
+// with the fields accumulated across the earlier KYC screens (KycFormState),
+// then registers any documents uploaded earlier (id_upload.dart / liveness.dart)
 // against the new submission id, then sets kycSubmitted and advances to the
 // Submitted (pending review) screen. See lib/data/api/README.md,
 // lib/data/repositories/kyc_repository.dart (submission) and

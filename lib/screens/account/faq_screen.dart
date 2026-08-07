@@ -44,12 +44,6 @@ const List<_Faq> _kFaqs = [
         'briefly for a compliance check.',
   ),
   _Faq(
-    'Who holds my money?',
-    "Funds move through Flutterwave, a licensed payment processor — "
-        "Kudimata Securities doesn't custody your cash directly. Your "
-        'in-app wallet balance always reflects your real, available funds.',
-  ),
-  _Faq(
     'What can I invest in?',
     'Nigerian Exchange (NGX) listed equities. Other asset classes may be '
         'added later.',

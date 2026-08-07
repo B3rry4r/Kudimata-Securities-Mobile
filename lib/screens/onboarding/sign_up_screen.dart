@@ -25,6 +25,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  final _fullName = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
 
@@ -33,11 +34,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
+  bool get _fullNameValid => _fullName.text.trim().isNotEmpty;
   bool get _emailValid => _emailPattern.hasMatch(_email.text.trim());
   bool get _passwordValid => _password.text.trim().length >= 8;
 
   @override
   void dispose() {
+    _fullName.dispose();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -55,6 +58,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
             const SizedBox(height: 28),
             const KScreenHead(title: 'Create your account'),
             const SizedBox(height: 28),
+            KInput(
+              label: 'Full name',
+              icon: 'profile',
+              placeholder: 'Ada Obi',
+              controller: _fullName,
+              onChanged: _showErrors ? (_) => setState(() {}) : null,
+              error: _showErrors && !_fullNameValid ? 'Enter your full name' : null,
+            ),
+            const SizedBox(height: 16),
             KInput(
               label: 'Email',
               icon: 'profile',
@@ -105,16 +117,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _continue() async {
-    if (!_emailValid || !_passwordValid) {
+    if (!_fullNameValid || !_emailValid || !_passwordValid) {
       setState(() => _showErrors = true);
       return;
     }
+    final fullName = _fullName.text.trim();
     final email = _email.text.trim();
     final password = _password.text.trim();
     setState(() => _busy = true);
     final repo = AuthRepository(AppScope.read(context).apiClient);
     try {
-      await repo.signUp(email: email, password: password);
+      await repo.signUp(email: email, password: password, fullName: fullName);
       if (!mounted) return;
       context.go(Routes.otp, extra: email);
     } on ApiException catch (e) {

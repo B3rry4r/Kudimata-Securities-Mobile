@@ -1,4 +1,4 @@
-// KYC 8 — submitted (pending review). A centred pending StatusView.
+// KYC 7 — submitted (pending review). A centred pending StatusView.
 //
 // The real KYC submission (POST /kyc-submissions) already happened on the
 // PRECEDING next-of-kin screen — see lib/screens/kyc/next_of_kin.dart and

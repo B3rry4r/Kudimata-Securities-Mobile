@@ -1,8 +1,9 @@
 // 05 · Enable biometric — fingerprint ring, headline, Enable / Maybe later. Both
-// paths sign the investor in and land on Home; Enable also flips
-// biometricEnabled. KYC/suitability are no longer forced here — browsing is
-// open to everyone, only trading/funding require them (see Home's
-// "Complete your KYC" prompt and the KYC-gate checks on Buy/Sell/Add
+// paths sign the investor in, then land on the onboarding personal-details
+// step (personal_details_screen.dart) rather than Home directly — Enable
+// also flips biometricEnabled. KYC/suitability are no longer forced here —
+// browsing is open to everyone, only trading/funding require them (see
+// Home's "Complete your KYC" prompt and the KYC-gate checks on Buy/Sell/Add
 // money/Withdraw). Ported from screens.jsx Biometric. Mid-flow gated screen,
 // no tab bar.
 import 'package:flutter/material.dart';
@@ -66,7 +67,7 @@ class BiometricScreen extends StatelessWidget {
                       final app = AppScope.read(context);
                       app.setBiometric(true);
                       app.setSignedIn(true);
-                      context.go(Routes.home);
+                      context.go(Routes.onboardingPersonal);
                     },
                   ),
                   const SizedBox(height: 10),
@@ -75,7 +76,7 @@ class BiometricScreen extends StatelessWidget {
                     variant: KButtonVariant.ghost,
                     onPressed: () {
                       AppScope.read(context).setSignedIn(true);
-                      context.go(Routes.home);
+                      context.go(Routes.onboardingPersonal);
                     },
                   ),
                 ],

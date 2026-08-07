@@ -43,9 +43,10 @@ void main() {
       '/account/personal', '/account/banks', '/account/refer', '/account/help',
       '/account/security', '/account/notifications', '/account/legal', '/account/statements',
       // gated
-      '/signup', '/otp', '/passcode/create', '/passcode/confirm', '/biometric', '/login', '/reset',
+      '/signup', '/otp', '/passcode/create', '/passcode/confirm', '/biometric',
+      '/onboarding/personal', '/login', '/reset',
       // kyc
-      '/kyc', '/kyc/personal', '/kyc/bvn', '/kyc/id', '/kyc/liveness',
+      '/kyc', '/kyc/bvn', '/kyc/id', '/kyc/liveness',
       '/kyc/next-of-kin', '/kyc/submitted', '/kyc/approved',
       // suitability
       '/suitability', '/suitability/result', '/suitability/risk', '/suitability/agreement',

@@ -1,8 +1,11 @@
-// kyc-personal's two picker sheets — Nigerian state of residence and the
-// phone country-code — plus the country-code dataset backing the phone
-// field. lib/widgets/ is FROZEN (docs/BUILD_CONTRACT.md), so these are
-// file-local, non-widget-library additions living alongside
-// personal_details.dart rather than in the shared widget library.
+// personal_details_screen.dart's (onboarding, post-signup) two picker
+// sheets — Nigerian state of residence and the phone country-code — plus the
+// country-code dataset backing the phone field. Originally built for the old
+// kyc/personal_details.dart screen; moved here when that screen was deleted
+// (personal details moved out of KYC into onboarding, 2026-08-07). lib/widgets/
+// is FROZEN (docs/BUILD_CONTRACT.md), so these are file-local, non-widget-
+// library additions living alongside personal_details_screen.dart rather
+// than in the shared widget library.
 //
 // Both sheets reuse showKSheet/KCard/KSearchPill/KIcon exactly the way
 // bank_accounts_screen.dart's `_AddBankAccountSheet` composes a scrollable,

@@ -1,4 +1,4 @@
-// KYC 6 — checking (step 5 of 5). A centred spinner that auto-advances to the
+// KYC 5 — checking (step 4 of 4). A centred spinner that auto-advances to the
 // next-of-kin step after a short delay (mocks the provider review). Mirrors
 // Checking. SEAM: the KYC provider's verification result replaces this timer.
 //

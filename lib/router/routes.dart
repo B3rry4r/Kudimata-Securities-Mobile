@@ -16,12 +16,12 @@ class Routes {
   static const String createPasscode = '/passcode/create';
   static const String confirmPasscode = '/passcode/confirm';
   static const String biometric = '/biometric';
+  static const String onboardingPersonal = '/onboarding/personal';
   static const String login = '/login';
   static const String reset = '/reset';
 
   // ── KYC ──────────────────────────────────────────────────────────────────
   static const String kycIntro = '/kyc';
-  static const String kycPersonal = '/kyc/personal';
   static const String kycBvn = '/kyc/bvn';
   static const String kycId = '/kyc/id';
   static const String kycLiveness = '/kyc/liveness';

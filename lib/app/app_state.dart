@@ -56,9 +56,9 @@ class AppState extends ChangeNotifier {
 
   /// The single shared [KycFormState] — assigned exactly once, at app
   /// startup, by `main.dart`'s `_KudimataAppState.initState`, alongside
-  /// [apiClient]. Holds every field the 5 KYC screens (personal-details →
-  /// bvn → id-upload → liveness → next-of-kin) collect, since only the last
-  /// of those screens makes the real `POST /kyc-submissions` call — see
+  /// [apiClient]. Holds every field the KYC screens (bvn → id-upload →
+  /// liveness → next-of-kin) collect, since only the last of those screens
+  /// makes the real `POST /kyc-submissions` call — see
   /// lib/screens/kyc/kyc_form_state.dart for the field list and usage.
   /// Reached the same way as [apiClient]:
   ///   `AppScope.read(context).kycForm`  (event handlers, initState)

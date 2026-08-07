@@ -1,4 +1,4 @@
-// KYC 5 — liveness selfie (step 4 of 5). A framed selfie capture: monochrome
+// KYC 4 — liveness selfie (step 3 of 4). A framed selfie capture: monochrome
 // profile silhouette inside a circle with a dashed guidance ring (or the
 // captured photo once taken), plus a round capture button that opens the
 // device camera. Mirrors Liveness, but uses the fingerprint/profile motif
@@ -49,7 +49,7 @@ class _LivenessScreenState extends State<LivenessScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const KycTopBar(),
-            const KycStepProgress(current: 4),
+            const KycStepProgress(current: 3),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(

@@ -26,9 +26,9 @@ import 'account_widgets.dart';
 
 /// Loose E.164 check mirroring the backend's UpdateMeDto validator
 /// (Kudimata-Securities-Backend src/users/dto/update-me.dto.ts) — same
-/// pattern as kyc/personal_details.dart's `_normalizePhoneToE164`,
-/// duplicated here rather than shared since neither file is allowed to grow
-/// a shared-utility dependency for this change.
+/// pattern as onboarding/personal_details_screen.dart's
+/// `_normalizePhoneToE164`, duplicated here rather than shared since neither
+/// file is allowed to grow a shared-utility dependency for this change.
 final RegExp _e164Pattern = RegExp(r'^\+[1-9]\d{7,14}$');
 
 /// Normalizes free-typed input to E.164, tolerating a local Nigerian

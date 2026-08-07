@@ -1,24 +1,24 @@
-// KYC 2 — personal details (step 1 of 5). Name / DOB / address / city /
-// state / phone. Mirrors PersonalDetails. Continue advances the linear flow
-// to BVN.
+// Onboarding — personal details. Runs right after biometric.dart, before the
+// investor lands on Home, for every fresh sign-up. DOB / residential address
+// / city / state / phone — NOT a KYC step (KYC starts from BVN — see
+// kyc/kyc_intro.dart). This is what used to be collected mid-KYC on
+// kyc/personal_details.dart; it moved here 2026-08-07 so "personal details"
+// (basic onboarding) and "KYC" (identity verification: BVN, ID, liveness)
+// are no longer conflated — see the KYC flow's own header comments for the
+// other half of this change.
 //
-// State-of-residence is a fixed 36-state+FCT picker (see _pickers.dart —
-// KycSubmission.state's documented contract requires this, not free text),
-// styled like a KInput but read-only/tappable (_TappableField below), same
-// showKSheet pattern as bank_accounts_screen.dart's bank picker.
+// Full name is no longer collected here — sign_up_screen.dart now asks for
+// it directly at signup, which is also what fixed Home's "Hi {email}"
+// greeting (it now uses the real name).
 //
-// Phone is the investor's OWN number — collected nowhere else in the app
-// (sign-up only takes email+password; next_of_kin.dart's "Phone number"
-// field is for a different person). User.phone is required, non-nullable
-// backend-side and defaults to an auto-generated placeholder at signup, so
-// this screen also fires a direct PATCH /users/me the moment Continue is
-// pressed (UserRepository.updateProfile) — independent of the eventual
-// POST /kyc-submissions call on next_of_kin.dart, since phone lives on the
-// User record, not KycSubmission, and that endpoint's body has no phone
-// field. The phone field now has a real country-code picker (_PhoneField
-// below, backed by _pickers.dart's kPhoneCountries) rather than a hardcoded
-// +234 prefix — defaults to Nigeria, same as before, but the investor can
-// change it.
+// Reuses the exact DOB date-picker / state-of-residence picker / phone
+// country-code picker originally built for the old kyc/personal_details.dart
+// screen (_pickers.dart, moved here alongside its only remaining consumer
+// now that that screen is deleted) rather than duplicating that picker UI.
+//
+// A single PATCH /users/me call (UserRepository.updateProfile) persists
+// dob/residentialAddress/city/state/phone — no separate submission step,
+// unlike the old KYC screen which staged values into KycFormState first.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
@@ -27,20 +27,16 @@ import 'package:kudimata_securities/data/repositories/user_repository.dart';
 import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
-import '_kyc_chrome.dart';
 import '_pickers.dart';
+import 'onboarding_scaffold.dart';
 
-/// Loose E.164 check mirroring the backend's UpdateMeDto validator (
-/// Kudimata-Securities-Backend src/users/dto/update-me.dto.ts):
-/// `+` then 8-15 digits, no leading zero after the `+`.
+/// Loose E.164 check mirroring the backend's UpdateMeDto validator, same
+/// pattern as kyc/personal_details.dart's identical constant (duplicated
+/// rather than shared — that file is out of scope to touch, per this
+/// codebase's convention of small per-screen helpers over cross-file
+/// sharing for things this size).
 final RegExp _e164Pattern = RegExp(r'^\+[1-9]\d{7,14}$');
 
-/// Normalizes free-typed input to E.164 using the SELECTED country's dial
-/// code ([dialCode], without the leading '+'), tolerating the local
-/// (`0803...`) format rather than rejecting it outright — better UX than a
-/// hard reject, and the backend is documented to tolerate local-format
-/// input elsewhere in this system. Returns null if the result still isn't a
-/// plausible phone number.
 String? _normalizePhoneToE164(String raw, String dialCode) {
   final trimmed = raw.trim();
   if (trimmed.isEmpty) return null;
@@ -51,29 +47,15 @@ String? _normalizePhoneToE164(String raw, String dialCode) {
   if (hasPlus) {
     e164 = '+$digits';
   } else if (digits.startsWith(dialCode)) {
-    // Already carries the selected country's dial code, just missing the '+'.
     e164 = '+$digits';
   } else if (digits.startsWith('0')) {
-    // Local format (0803...) — drop the trunk 0, prepend the selected
-    // country's dial code.
     e164 = '+$dialCode${digits.substring(1)}';
   } else {
-    // Bare local digits.
     e164 = '+$dialCode$digits';
   }
   return _e164Pattern.hasMatch(e164) ? e164 : null;
 }
 
-class PersonalDetailsScreen extends StatefulWidget {
-  const PersonalDetailsScreen({super.key});
-
-  @override
-  State<PersonalDetailsScreen> createState() => _PersonalDetailsScreenState();
-}
-
-/// Month-name formatter for the DOB field's display text ("12 May 1990") —
-/// avoided intl just for this since the app has no other date-formatting
-/// dependency yet.
 const _kMonths = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -81,20 +63,21 @@ const _kMonths = [
 
 String _formatDobDisplay(DateTime d) => '${d.day} ${_kMonths[d.month - 1]} ${d.year}';
 
-/// ISO-8601 date only (no time component), matching KycSubmission.dob's
-/// documented wire contract (kyc_form_state.dart).
 String _formatDobIso(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
-  final _name = TextEditingController();
+class OnboardingPersonalDetailsScreen extends StatefulWidget {
+  const OnboardingPersonalDetailsScreen({super.key});
+
+  @override
+  State<OnboardingPersonalDetailsScreen> createState() => _OnboardingPersonalDetailsScreenState();
+}
+
+class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDetailsScreen> {
   final _addr = TextEditingController();
   final _city = TextEditingController();
   final _phone = TextEditingController();
 
-  // A real date picker, not free-typed text — was previously a plain KInput
-  // with a "DD / MM / YYYY" placeholder the investor had to type by hand
-  // (and nothing enforced it matched that format, or was even a real date).
   DateTime? _dob;
   String? _residenceState;
   KPhoneCountry _phoneCountry = kDefaultPhoneCountry;
@@ -104,7 +87,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   @override
   void dispose() {
-    _name.dispose();
     _addr.dispose();
     _city.dispose();
     _phone.dispose();
@@ -113,8 +95,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   Future<void> _pickDob() async {
     final now = DateTime.now();
-    // Investing/KYC accounts require the investor to be an adult — the
-    // picker's own range enforces that rather than a separate validator.
     final adultCutoff = DateTime(now.year - 18, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
@@ -136,14 +116,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     if (picked != null) setState(() => _phoneCountry = picked);
   }
 
-  // Basic non-empty validation (matches the flow's no-live-validation
-  // pattern — errors only surface after Continue is pressed). Phone also
-  // has to normalize to a plausible E.164 number, since it's sent straight
-  // to PATCH /users/me below.
   Future<void> _continue() async {
     final normalizedPhone = _normalizePhoneToE164(_phone.text, _phoneCountry.dial);
-    final valid = _name.text.trim().isNotEmpty &&
-        _dob != null &&
+    final valid = _dob != null &&
         _addr.text.trim().isNotEmpty &&
         _city.text.trim().isNotEmpty &&
         _residenceState != null &&
@@ -152,26 +127,26 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       setState(() => _showErrors = true);
       return;
     }
-    final app = AppScope.read(context);
-    final kycForm = app.kycForm;
-    kycForm.setName(_name.text.trim());
-    kycForm.setDob(_formatDobIso(_dob!));
-    kycForm.setAddress(_addr.text.trim());
-    kycForm.setCity(_city.text.trim());
-    kycForm.setResidenceState(_residenceState!);
 
     setState(() => _busy = true);
+    final app = AppScope.read(context);
     final userRepo = UserRepository(app.apiClient);
     try {
-      await userRepo.updateProfile(phone: normalizedPhone);
+      await userRepo.updateProfile(
+        dob: _formatDobIso(_dob!),
+        residentialAddress: _addr.text.trim(),
+        city: _city.text.trim(),
+        state: _residenceState!,
+        phone: normalizedPhone,
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      _showPhoneErrorSheet(context, message: e.message);
+      _showErrorSheet(context, message: e.message);
       return;
     }
     if (!mounted) return;
-    context.go(Routes.kycBvn);
+    context.go(Routes.home);
   }
 
   @override
@@ -182,8 +157,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const KycTopBar(),
-            const KycStepProgress(current: 1),
+            KOnboardTopBar(onBack: () => context.go(Routes.biometric)),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -191,20 +165,14 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const KScreenHead(title: 'Your details'),
+                    const KScreenHead(
+                      title: 'A few more details',
+                      body: 'This helps us keep your account secure and compliant.',
+                    ),
                     const SizedBox(height: 20),
                     KCard(
                       child: Column(
                         children: [
-                          KInput(
-                              label: 'Full name',
-                              placeholder: 'Chidi Okafor',
-                              controller: _name,
-                              onChanged: _showErrors ? (_) => setState(() {}) : null,
-                              error: _showErrors && _name.text.trim().isEmpty
-                                  ? 'Enter your full name'
-                                  : null),
-                          const SizedBox(height: 16),
                           _TappableField(
                               label: 'Date of birth',
                               value: _dob != null ? _formatDobDisplay(_dob!) : null,
@@ -232,9 +200,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                   ? 'Enter your city'
                                   : null),
                           const SizedBox(height: 16),
-                          // Fixed 36-state+FCT picker — see _pickers.dart's
-                          // showStatePicker. Styled like KInput but
-                          // read-only/tappable, not free text.
                           _TappableField(
                               label: 'State',
                               value: _residenceState,
@@ -244,11 +209,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                   ? 'Select your state'
                                   : null),
                           const SizedBox(height: 16),
-                          // The investor's OWN phone number — distinct from
-                          // next_of_kin.dart's "Phone number" field, which
-                          // belongs to a different person entirely. Country
-                          // code is a real tappable picker (_pickers.dart's
-                          // showCountryCodePicker), defaulting to Nigeria.
                           _PhoneField(
                               controller: _phone,
                               country: _phoneCountry,
@@ -283,20 +243,14 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   }
 }
 
-/// Shown when the PATCH /users/me phone update fails with an
-/// [ApiException] — [message] is that exception's human-readable summary
-/// (safe to show directly, per lib/data/api/api_exception.dart). The form's
-/// entered values stay intact so the investor can retry without re-typing
-/// anything. Mirrors next_of_kin.dart's `_showErrorSheet`, duplicated here
-/// (rather than shared) since that file is out of scope to touch.
-void _showPhoneErrorSheet(BuildContext context, {required String message}) {
+void _showErrorSheet(BuildContext context, {required String message}) {
   showKSheet<void>(
     context,
     child: Padding(
       padding: const EdgeInsets.only(top: 16),
       child: KStatusView(
         tone: KStatusTone.error,
-        title: 'Couldn\'t save phone number',
+        title: "Couldn't save your details",
         message: message,
         primary: 'Try again',
         onPrimary: () => Navigator.of(context).pop(),
@@ -305,11 +259,9 @@ void _showPhoneErrorSheet(BuildContext context, {required String message}) {
   );
 }
 
-/// A field styled exactly like [KInput] (same label/box/error tokens —
-/// height 50, KRadii.input, hairline/loss border) but read-only and
-/// tappable, opening a picker sheet instead of the keyboard. lib/widgets/
-/// is frozen so this can't be added to KInput itself as a `readOnly` mode;
-/// kept file-local here since only this screen's State field needs it.
+/// Same styling as kyc/personal_details.dart's file-local `_TappableField` —
+/// duplicated rather than shared (lib/widgets/ is frozen; that file's copy
+/// is private to its own library).
 class _TappableField extends StatelessWidget {
   const _TappableField({
     required this.label,
@@ -368,13 +320,8 @@ class _TappableField extends StatelessWidget {
   }
 }
 
-/// The phone field: a tappable country-code chip (flag + dial code, opens
-/// [showCountryCodePicker]) beside a plain number entry — replaces the old
-/// fixed `+234` [KInput.prefix]. Composed from the same tokens KInput uses
-/// (height 50, KRadii.input, hairline/ink/loss border, KType styles) rather
-/// than reusing KInput itself, since KInput has no slot for a tappable
-/// leading widget (only a static prefix Text) — see file header for why
-/// this can't just live in lib/widgets/ (frozen).
+/// Same styling as kyc/personal_details.dart's file-local `_PhoneField` —
+/// duplicated for the same reason as `_TappableField` above.
 class _PhoneField extends StatefulWidget {
   const _PhoneField({
     required this.controller,

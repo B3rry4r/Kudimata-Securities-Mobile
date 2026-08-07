@@ -53,21 +53,29 @@ class UserRepository {
   /// PATCH /users/me — self-service partial profile update. Every param is
   /// optional; only the fields passed are sent, matching the backend's
   /// UpdateMeDto (Kudimata-Securities-Backend
-  /// src/users/dto/update-me.dto.ts: fullName?/phone?/residentialAddress?,
-  /// all independently optional, `phone` validated server-side against
-  /// `/^\+[1-9]\d{7,14}$/` — callers must normalize to E.164 before calling
-  /// this). Used by kyc/personal_details.dart (collects the investor's own
-  /// phone number — nothing else in the app captures it) and
+  /// src/users/dto/update-me.dto.ts: fullName?/phone?/residentialAddress?/
+  /// dob?/city?/state?, all independently optional, `phone` validated
+  /// server-side against `/^\+[1-9]\d{7,14}$/` and `dob` an ISO-8601 date —
+  /// callers must normalize both before calling this). Used by
+  /// onboarding/personal_details_screen.dart (the post-signup onboarding
+  /// step that now collects dob/address/city/state/phone — KYC starts from
+  /// BVN and no longer asks for these, 2026-08-07) and
   /// account/personal_info_screen.dart's "Edit details" sheet.
   Future<void> updateProfile({
     String? fullName,
     String? phone,
     String? residentialAddress,
+    String? dob,
+    String? city,
+    String? state,
   }) async {
     final body = <String, dynamic>{};
     if (fullName != null) body['fullName'] = fullName;
     if (phone != null) body['phone'] = phone;
     if (residentialAddress != null) body['residentialAddress'] = residentialAddress;
+    if (dob != null) body['dob'] = dob;
+    if (city != null) body['city'] = city;
+    if (state != null) body['state'] = state;
     await _client.patch('/users/me', data: body);
   }
 

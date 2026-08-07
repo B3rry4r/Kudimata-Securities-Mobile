@@ -20,8 +20,8 @@
 //     whether resubmission is still allowed — if attempts remain, "Resubmit
 //     documents" clears the in-memory KycFormState (a fresh attempt must
 //     not carry over the rejected attempt's stale fields — see
-//     KycFormState.reset) and restarts the 5-screen KYC collection flow at
-//     kyc-personal. If attempts are exhausted, "Contact support" instead —
+//     KycFormState.reset) and restarts the KYC collection flow at kyc-bvn.
+//     If attempts are exhausted, "Contact support" instead —
 //     no resubmit option.
 //   - flagged: needs a human reviewer, not a resubmission, so there is
 //     never a resubmit action here. The investor is still signed in and the
@@ -55,11 +55,11 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
     setState(() => _statusFuture = _repo.me());
   }
 
-  /// Clears the shared in-progress form so kyc-personal starts clean, then
-  /// restarts the 5-screen KYC collection flow.
+  /// Clears the shared in-progress form so kyc-bvn starts clean, then
+  /// restarts the KYC collection flow.
   void _restartKyc() {
     AppScope.read(context).kycForm.reset();
-    context.go(Routes.kycPersonal);
+    context.go(Routes.kycBvn);
   }
 
   @override

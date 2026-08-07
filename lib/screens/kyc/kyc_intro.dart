@@ -17,7 +17,7 @@ class KycIntroScreen extends StatelessWidget {
   const KycIntroScreen({super.key});
 
   static const _rows = [
-    _KycRow('IDENTITY', 'Your name, date of birth and BVN.', 'profile'),
+    _KycRow('IDENTITY', 'Your BVN — Bank Verification Number.', 'profile'),
     _KycRow('DOCUMENT', 'A government ID — NIN, passport or licence.', 'card'),
     // Liveness selfie — fingerprint/profile motif (no camera icon in the set).
     _KycRow('SELFIE', 'A quick liveness check to match your face.', 'fingerprint'),
@@ -91,7 +91,7 @@ class KycIntroScreen extends StatelessWidget {
               KButton(
                 label: 'Start',
                 iconRight: 'arrowUpRight',
-                onPressed: () => context.go(Routes.kycPersonal),
+                onPressed: () => context.go(Routes.kycBvn),
               ),
             ],
           ),

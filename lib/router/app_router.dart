@@ -20,12 +20,12 @@ import '../screens/onboarding/otp_screen.dart';
 import '../screens/onboarding/create_passcode_screen.dart';
 import '../screens/onboarding/confirm_passcode_screen.dart';
 import '../screens/onboarding/biometric_screen.dart';
+import '../screens/onboarding/personal_details_screen.dart';
 import '../screens/onboarding/log_in_screen.dart';
 import '../screens/onboarding/reset_passcode_screen.dart';
 
 // KYC.
 import '../screens/kyc/kyc_intro.dart';
-import '../screens/kyc/personal_details.dart';
 import '../screens/kyc/bvn.dart';
 import '../screens/kyc/id_upload.dart';
 import '../screens/kyc/liveness.dart';
@@ -120,12 +120,15 @@ GoRouter buildRouter(AppState state) {
         },
       ),
       GoRoute(path: Routes.biometric, builder: (_, _) => themed(() => BiometricScreen())),
+      GoRoute(
+        path: Routes.onboardingPersonal,
+        builder: (_, _) => themed(() => OnboardingPersonalDetailsScreen()),
+      ),
       GoRoute(path: Routes.login, builder: (_, _) => themed(() => LogInScreen())),
       GoRoute(path: Routes.reset, builder: (_, _) => themed(() => ResetPasscodeScreen())),
 
       // ── KYC ───────────────────────────────────────────────────────────--
       GoRoute(path: Routes.kycIntro, builder: (_, _) => themed(() => KycIntroScreen())),
-      GoRoute(path: Routes.kycPersonal, builder: (_, _) => themed(() => PersonalDetailsScreen())),
       GoRoute(path: Routes.kycBvn, builder: (_, _) => themed(() => BvnScreen())),
       GoRoute(path: Routes.kycId, builder: (_, _) => themed(() => IdUploadScreen())),
       GoRoute(path: Routes.kycLiveness, builder: (_, _) => themed(() => LivenessScreen())),
@@ -213,7 +216,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.splash, Routes.signup, Routes.otp,
     Routes.createPasscode, Routes.confirmPasscode,
     Routes.biometric, Routes.login, Routes.reset,
-    Routes.kycIntro, Routes.kycPersonal, Routes.kycBvn, Routes.kycId,
+    Routes.kycIntro, Routes.kycBvn, Routes.kycId,
     Routes.kycLiveness, Routes.kycChecking, Routes.kycNextOfKin,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     Routes.questionnaire, Routes.suitabilityResult,

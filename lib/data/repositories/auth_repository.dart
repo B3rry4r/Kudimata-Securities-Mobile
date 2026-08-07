@@ -46,15 +46,18 @@ class AuthRepository {
   final ApiClient _client;
 
   /// Mirrors the sign-up screen's Continue action. POST /auth/signup
-  /// {email, password} — registry.json's response shape is `EmailOtp`, but
-  /// no screen renders any of its fields yet (the OTP screen still shows a
-  /// static demo address), so this only surfaces success/failure via
-  /// [ApiException] and returns void; the caller navigates to Routes.otp
-  /// with the entered email once this completes.
-  Future<void> signUp({required String email, required String password}) async {
+  /// {email, password, fullName} — registry.json's response shape is
+  /// `EmailOtp`, but no screen renders any of its fields yet (the OTP screen
+  /// still shows a static demo address), so this only surfaces
+  /// success/failure via [ApiException] and returns void; the caller
+  /// navigates to Routes.otp with the entered email once this completes.
+  /// `fullName` became required backend-side 2026-08-07 so Home can greet
+  /// the investor by name instead of falling back to their email.
+  Future<void> signUp({required String email, required String password, required String fullName}) async {
     await _client.post('/auth/signup', data: {
       'email': email,
       'password': password,
+      'fullName': fullName,
     });
   }
 
