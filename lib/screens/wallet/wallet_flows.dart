@@ -32,7 +32,10 @@
 // one (falling back to the first) as the destination, same as the design's
 // single-row layout implies. See _WithdrawSheetState for the gap this
 // leaves: only ever the primary/first saved account is reachable from this
-// screen; adding/choosing others requires the account-banks screen.
+// screen; adding/choosing others requires the account-banks screen. When
+// there are NO saved accounts at all, the row routes there instead of
+// sitting inert (2026-08-07 — previously a no-op, so an investor with no
+// bank account had no way forward from this sheet).
 //
 // NGX-only: the Convert (₦ → $) flow was removed — Blue Marina supplies NGX
 // equities only, and Convert existed solely to fund USD stock buys.
@@ -43,6 +46,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
 import 'package:kudimata_securities/data/api/api_exception.dart';
 import 'package:kudimata_securities/data/repositories/wallet_repository.dart';
+import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
@@ -438,10 +442,20 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
               child: _SelectRow(
                 icon: 'wallet',
                 title: account?.bankName ?? 'No saved bank account',
-                sub: account?.accountNumberMasked ?? 'Add one in Account · Banks',
+                sub: account?.accountNumberMasked ?? 'Tap to add one',
                 trailingChevron: true,
                 first: true,
-                onTap: () {}, // SEAM: picker for choosing among multiple saved payout accounts — this row always targets the primary/first saved account (see file header).
+                // No saved account: routes to the add-bank-account screen
+                // instead of sitting inert. With a saved account, this row
+                // still has no picker for choosing among multiple saved
+                // payout accounts (see file header) — it always targets the
+                // primary/first one.
+                onTap: account == null
+                    ? () {
+                        Navigator.of(context).pop();
+                        context.push(Routes.acctBanks);
+                      }
+                    : () {},
               ),
             ),
             const SizedBox(height: 12),
