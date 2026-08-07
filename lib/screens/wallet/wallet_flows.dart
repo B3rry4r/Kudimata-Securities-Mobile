@@ -3,26 +3,25 @@
 // sequences: amount → method/bank → review → KStatusView success. The
 // launching wallet screen stays behind the scrim.
 //
-// Wired per lib/data/api/README.md: the review steps' confirm buttons call
-// WalletRepository.fund()/withdraw() (POST /transactions/fund,
-// POST /transactions/withdraw) instead of the old mocked delay. Both sheets
-// already thread the entered amount end-to-end (unlike trade_flows.dart's
-// known bug — a different screen). On ApiException from the initial call
-// itself (e.g. a real 422 for insufficient balance) an error variant of the
-// KStatusView sheet shows, and the review step is left in place (not popped)
-// so the user can retry without re-entering anything.
+// Wired per lib/data/api/README.md. Withdraw's review step calls
+// WalletRepository.withdraw() (POST /transactions/withdraw) same as before.
+// On ApiException from the call itself (e.g. a real 422 for insufficient
+// balance) an error variant of the KStatusView sheet shows, and the review
+// step is left in place (not popped) so the user can retry without
+// re-entering anything.
 //
-// Add money is NOT instant: POST /transactions/fund no longer attempts a
-// direct card charge — it creates a pending Transaction and returns a
-// Flutterwave hosted-checkout `checkoutUrl`. _AddMoneyReview._confirm()
-// launches that link externally (url_launcher, same pattern as
-// statements_screen.dart/legal_screen.dart/help_support_screen.dart) and then
-// shows a `pending`-tone KStatusView explaining the investor must finish
-// paying in their browser — there is no success sheet at fund()-call time
-// anymore, since the money hasn't moved yet (only Flutterwave's webhook,
-// server-to-server, ever confirms that). Withdraw is UNCHANGED — withdrawals
-// still go server-to-bank directly, so its review step keeps the original
-// immediate KStatusView success flow.
+// Add money (2026-08-07, backend supersedes.json S-8): no longer a
+// checkout-link redirect. WalletRepository.virtualAccount() (GET
+// /transactions/virtual-account) returns the investor's own permanent,
+// dedicated bank account (Flutterwave v4 Virtual Accounts) — _AddMoneySheet
+// just displays it with a copy button. No amount entry, no method choice,
+// no review/confirm step: the investor transfers whatever they want,
+// whenever they want, from their own banking app, and the wallet balance
+// updates once the backend's webhook confirms the transfer landed (same
+// "check back later / pull to refresh" pattern the old pending-checkout
+// sheet used, just without ever leaving this app). Withdraw is UNCHANGED —
+// withdrawals still go server-to-bank directly via v3, so its review step
+// keeps the original immediate KStatusView success flow.
 //
 // The withdraw destination: POST /transactions/withdraw needs a saved
 // `BankAccount.id` (registry.json), not a raw bank code/account number. No
@@ -40,7 +39,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_securities/app/app_state.dart';
 import 'package:kudimata_securities/data/api/api_exception.dart';
@@ -116,7 +114,6 @@ class _SelectRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.sub,
-    this.selected = false,
     this.trailingChevron = false,
     required this.first,
     this.onTap,
@@ -125,7 +122,6 @@ class _SelectRow extends StatelessWidget {
   final String icon;
   final String title;
   final String sub;
-  final bool selected;
   final bool trailingChevron;
   final bool first;
   final VoidCallback? onTap;
@@ -170,7 +166,6 @@ class _SelectRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (selected) const KIcon('check', size: 20),
             if (trailingChevron) KIcon('chevronRight', size: 20, color: KColor.ink3),
           ],
         ),
@@ -224,32 +219,6 @@ void _showSuccessSheet(
   );
 }
 
-/// Shown after POST /transactions/fund succeeds and the returned
-/// `checkoutUrl` has been (best-effort) launched in the investor's browser.
-/// Funding is NOT complete at this point — only Flutterwave's webhook,
-/// server-to-server, confirms the money actually moved — so this is a
-/// `pending` tone, not `success`. "I've completed payment" just dismisses
-/// back to the wallet screen (same pop-based pattern as [_showSuccessSheet]'s
-/// "Done"); the wallet's existing pull-to-refresh is how the investor sees
-/// the eventual outcome once the webhook has processed.
-void _showCheckoutPendingSheet(BuildContext context) {
-  showKSheet<void>(
-    context,
-    child: Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: KStatusView(
-        tone: KStatusTone.pending,
-        title: 'Finish payment in your browser',
-        message: "We've opened a secure checkout page in your browser. "
-            "Once you're done there, come back here and pull down to refresh "
-            'your wallet.',
-        primary: "I've completed payment",
-        onPrimary: () => Navigator.of(context).pop(),
-      ),
-    ),
-  );
-}
-
 /// Shown over the still-open review sheet when a fund/withdraw call fails
 /// with an [ApiException] (e.g. insufficient balance) — [message] is that
 /// exception's human-readable summary (safe to show directly, per
@@ -283,29 +252,9 @@ int _parseAmountKobo(String amountText) {
   return (value * 100).round();
 }
 
-// Quick-amount chips that overwrite the amount field.
-class _QuickAmounts extends StatelessWidget {
-  const _QuickAmounts({required this.values, required this.onPick});
-  final List<(String label, String value)> values;
-  final ValueChanged<String> onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (final (label, value) in values) ...[
-          if (label != values.first.$1) const SizedBox(width: 8),
-          Expanded(
-            child: KPillChip(label: label, onTap: () => onPick(value)),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// ADD MONEY — Step 1: amount + payment method.
+// ADD MONEY — the investor's dedicated funding account (no amount/method
+// entry, no review/confirm step — see file header).
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AddMoneySheet extends StatefulWidget {
@@ -315,156 +264,89 @@ class _AddMoneySheet extends StatefulWidget {
 }
 
 class _AddMoneySheetState extends State<_AddMoneySheet> {
-  late final TextEditingController _amount = TextEditingController(text: '50,000');
-  String _method = 'bank'; // bank | card
+  late final _repo = WalletRepository(AppScope.read(context).apiClient);
+  late Future<VirtualAccountDetails> _future = _repo.virtualAccount();
 
-  @override
-  void dispose() {
-    _amount.dispose();
-    super.dispose();
+  Future<void> _copy(String accountNumber) async {
+    await Clipboard.setData(ClipboardData(text: accountNumber));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Account number copied')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KInput(
-          label: 'Amount',
-          controller: _amount,
-          numeric: true,
-          amount: true,
-          prefix: '₦',
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        ),
-        const SizedBox(height: 14),
-        _QuickAmounts(
-          values: const [('₦10k', '10,000'), ('₦50k', '50,000'), ('₦100k', '100,000')],
-          onPick: (v) => setState(() => _amount.text = v),
-        ),
-        const SizedBox(height: 24),
-        const Padding(
-          padding: EdgeInsets.only(bottom: 10),
-          child: KEyebrow('Pay with'),
-        ),
-        KCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              _SelectRow(
-                icon: 'transfer',
-                title: 'Bank transfer',
-                sub: 'Reflects within minutes',
-                selected: _method == 'bank',
-                first: true,
-                onTap: () => setState(() => _method = 'bank'),
-              ),
-              _SelectRow(
-                icon: 'card',
-                title: 'Debit card',
-                sub: 'Instant · 1.4% fee',
-                selected: _method == 'card',
-                first: false,
-                onTap: () => setState(() => _method = 'card'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text('Bank transfers reflect within minutes.',
-            style: KType.body(color: KColor.ink3)),
-        const SizedBox(height: 22),
-        KButton(
-          label: 'Continue',
-          onPressed: () {
-            Navigator.of(context).pop();
-            _showAddMoneyReview(context, amount: _amount.text, method: _method);
-          },
-        ),
-      ],
-    );
-  }
-}
-
-void _showAddMoneyReview(BuildContext context,
-    {required String amount, required String method}) {
-  showKSheet<void>(
-    context,
-    title: 'Review',
-    child: _AddMoneyReview(amount: amount, method: method),
-  );
-}
-
-class _AddMoneyReview extends StatefulWidget {
-  const _AddMoneyReview({required this.amount, required this.method});
-  final String amount;
-  final String method;
-  @override
-  State<_AddMoneyReview> createState() => _AddMoneyReviewState();
-}
-
-class _AddMoneyReviewState extends State<_AddMoneyReview> {
-  bool _busy = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final methodLabel = widget.method == 'card' ? 'Debit card' : 'Bank transfer';
-    final fee = widget.method == 'card' ? '1.4%' : '₦0.00';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SummaryRow(label: 'Amount', value: '₦${widget.amount}'),
-        _SummaryRow(label: 'Method', value: methodLabel),
-        _SummaryRow(label: 'Fee', value: fee),
-        const SizedBox(height: 18),
-        Text('Funds appear in your naira wallet once confirmed.',
-            style: KType.body(color: KColor.ink3)),
-        const SizedBox(height: 22),
-        KButton(
-          label: 'Add money',
-          loading: _busy,
-          onPressed: _busy ? null : _confirm,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirm() async {
-    setState(() => _busy = true);
-    final repo = WalletRepository(AppScope.read(context).apiClient);
-    // registry.json's fund method enum is card|transfer — the sheet's
-    // 'bank'/'card' selection maps 'bank' -> 'transfer'. It's advisory only
-    // now (Flutterwave's own hosted checkout is where the investor actually
-    // picks a payment method) but still worth sending along.
-    final apiMethod = widget.method == 'card' ? 'card' : 'transfer';
-    try {
-      final result =
-          await repo.fund(amountKobo: _parseAmountKobo(widget.amount), method: apiMethod);
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      // Best-effort external hand-off to Flutterwave's hosted checkout —
-      // same no-throw-to-the-user pattern statements_screen.dart's
-      // _download() uses; a launch failure shouldn't strand the investor
-      // without ANY explanation, so the pending sheet still shows below
-      // regardless (it names the checkout page rather than assuming it
-      // opened).
-      final uri = Uri.tryParse(result.checkoutUrl);
-      if (uri != null) {
-        try {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } catch (_) {
-          // Ignored — see comment above.
+    return FutureBuilder<VirtualAccountDetails>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: KLoadingView(),
+          );
         }
-      }
-      if (!mounted) return;
-      _showCheckoutPendingSheet(context);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      _showErrorSheet(context, title: 'Add money failed', message: e.message);
-    }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: KErrorView(
+              onPrimary: () => setState(() => _future = _repo.virtualAccount()),
+            ),
+          );
+        }
+        final account = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const KEyebrow('Your funding account'),
+            const SizedBox(height: 10),
+            KCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _SummaryRow(label: 'Bank', value: account.bankName),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Account number', style: KType.body(color: KColor.ink2)),
+                        Row(
+                          children: [
+                            Text(account.accountNumber,
+                                style: KType.body(color: KColor.ink, w: KWeight.medium).tnum),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => _copy(account.accountNumber),
+                              behavior: HitTestBehavior.opaque,
+                              child: Text('Copy',
+                                  style: KType.label(color: KColor.indicator, w: KWeight.semibold)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This account is permanently yours. Transfer any amount from your '
+              "bank app, any time — your wallet updates automatically once we "
+              'receive it.',
+              style: KType.body(color: KColor.ink3),
+            ),
+            const SizedBox(height: 22),
+            KButton(
+              label: 'Done',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

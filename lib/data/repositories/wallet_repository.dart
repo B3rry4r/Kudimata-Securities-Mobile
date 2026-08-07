@@ -41,7 +41,21 @@ import '../models.dart';
 /// created plus the Flutterwave hosted-checkout link the caller must send
 /// the investor to in order to actually move money (see [WalletRepository]'s
 /// file header — the backend no longer attempts a direct card charge).
+///
+/// SUPERSEDED (2026-08-07): the Add money sheet no longer calls fund() —
+/// wallet funding moved to [WalletRepository.virtualAccount] (a dedicated
+/// bank-transfer account, not a checkout redirect). [fund] is kept here
+/// unused rather than removed, matching the backend's own choice to keep
+/// its v3 checkout code wired but unused (see backend supersedes.json S-8).
 typedef FundResult = ({Txn transaction, String checkoutUrl});
+
+/// GET /transactions/virtual-account response — the investor's own
+/// permanent, dedicated bank account for wallet funding (Flutterwave v4
+/// Virtual Accounts). Replaces the old checkout-link flow: the investor
+/// transfers directly to this account from their own banking app, no
+/// amount entry or redirect needed, and the wallet balance updates once the
+/// backend's webhook confirms the transfer landed.
+typedef VirtualAccountDetails = ({String accountNumber, String bankName});
 
 class WalletRepository {
   const WalletRepository(this._client);
@@ -87,6 +101,21 @@ class WalletRepository {
       'bankAccountId': bankAccountId,
     });
     return _fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// GET /transactions/virtual-account — the real "Add money" flow now (see
+  /// [VirtualAccountDetails]'s doc comment). Idempotent: the backend creates
+  /// the account on the first call for a given investor and just returns
+  /// the same one on every call after that. Requires KYC approved +
+  /// suitability complete — a 403 here surfaces as an [ApiException] the
+  /// caller shows same as any other eligibility-gated action.
+  Future<VirtualAccountDetails> virtualAccount() async {
+    final response = await _client.get('/transactions/virtual-account');
+    final json = response.data as Map<String, dynamic>;
+    return (
+      accountNumber: json['accountNumber'] as String? ?? '',
+      bankName: json['bankName'] as String? ?? '',
+    );
   }
 
   /// GET /bank-accounts — the investor's saved payout destinations, used to
