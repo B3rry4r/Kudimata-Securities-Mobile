@@ -17,8 +17,9 @@ import 'package:kudimata_securities/theme/tokens.dart';
 const _routes = <String, String>{
   'login': '/login',
   'signup': '/signup',
+  'onboarding_personal': '/onboarding/personal',
   'kyc_intro': '/kyc',
-  'kyc_personal': '/kyc/personal',
+  'kyc_bvn': '/kyc/bvn',
   'suitability': '/suitability',
   'home': '/home',
   'markets': '/markets',
