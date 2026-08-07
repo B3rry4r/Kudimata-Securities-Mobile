@@ -53,7 +53,7 @@ jobs:
         run: flutter test
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://kudimata-securities-backend-production.up.railway.app
 
       - name: Resolve release tag
         id: meta
