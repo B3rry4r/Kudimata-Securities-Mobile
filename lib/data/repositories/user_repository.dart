@@ -29,15 +29,13 @@ class UserRepository {
   }
 
   /// Backs the account-personal screen (personal_info_screen.dart), which
-  /// needs two fields UserProfile doesn't carry — `dob` and
-  /// `residentialAddress` (see Kudimata-Securities-Backend
-  /// src/common/types/user.types.ts's `User` interface: both were added to
-  /// the real User model to replace what were hardcoded literals on that
-  /// screen). UserProfile itself is left untouched (models.dart is out of
-  /// scope for this screen's wiring), so this is a second, self-contained
-  /// GET /users/me call returning a small screen-local view type instead —
-  /// same convention as e.g. WalletRepository.BankAccountSummary,
-  /// HoldingsRepository.PortfolioSummary.
+  /// needs fields UserProfile doesn't carry — `dob`/`residentialAddress`/
+  /// `city`/`state` (see Kudimata-Securities-Backend
+  /// src/common/types/user.types.ts's `User` interface). UserProfile itself
+  /// is left untouched (models.dart is out of scope for this screen's
+  /// wiring), so this is a second, self-contained GET /users/me call
+  /// returning a small screen-local view type instead — same convention as
+  /// e.g. WalletRepository.BankAccountSummary, HoldingsRepository.PortfolioSummary.
   Future<PersonalInfo> personalInfo() async {
     final response = await _client.get('/users/me');
     final json = response.data as Map<String, dynamic>;
@@ -47,6 +45,8 @@ class UserRepository {
       phone: json['phone'] as String? ?? '',
       dob: _formatDob(json['dob'] as String?),
       residentialAddress: json['residentialAddress'] as String? ?? '—',
+      city: json['city'] as String? ?? '—',
+      state: json['state'] as String? ?? '—',
     );
   }
 
@@ -106,6 +106,8 @@ class PersonalInfo {
     required this.phone,
     required this.dob,
     required this.residentialAddress,
+    required this.city,
+    required this.state,
   });
 
   final String fullName;
@@ -113,4 +115,6 @@ class PersonalInfo {
   final String phone;
   final String dob; // preformatted "14 Mar 1996", or "—" if none on file
   final String residentialAddress; // or "—" if none on file
+  final String city; // or "—" if none on file
+  final String state; // or "—" if none on file
 }

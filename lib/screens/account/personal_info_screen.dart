@@ -11,9 +11,16 @@
 // hardcoded literals interleaved with the two real MockData.user fields.
 //
 // "Edit details" opens a showKSheet form (full name / phone / residential
-// address, the three fields PATCH /users/me accepts — see
-// UserRepository.updateProfile) pre-filled with the values already shown
-// above. Saving re-fetches so the screen reflects the new values.
+// address / city / state — see UserRepository.updateProfile) pre-filled
+// with the values already shown above. Saving re-fetches so the screen
+// reflects the new values. City/state editing added 2026-08-07
+// (supersedes.json S-9): they're normally collected once by the post-signup
+// onboarding step (onboarding/personal_details_screen.dart), but that step
+// can fail or be skipped (e.g. a phone-number conflict, or the investor
+// just closing the app mid-flow) with no way back to it — this screen is
+// the only other place in the app that can complete them. dob stays
+// deliberately non-editable here ("contact support") — an existing,
+// unrelated product decision this change doesn't touch.
 import 'package:flutter/material.dart';
 import 'package:kudimata_securities/app/app_state.dart';
 import 'package:kudimata_securities/data/api/api_exception.dart';
@@ -22,6 +29,7 @@ import 'package:kudimata_securities/data/repositories/user_repository.dart';
 import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
+import '../onboarding/_pickers.dart';
 import 'account_widgets.dart';
 
 /// Loose E.164 check mirroring the backend's UpdateMeDto validator
@@ -138,6 +146,8 @@ class _PersonalInfoBody extends StatelessWidget {
       ('Email', info.email),
       ('Phone', info.phone),
       ('Residential address', info.residentialAddress),
+      ('City', info.city),
+      ('State', info.state),
       ('BVN', bvn),
     ];
 
@@ -209,11 +219,15 @@ class _EditPersonalInfoSheet extends StatefulWidget {
 class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
   late final _name = TextEditingController(text: widget.info.fullName);
   late final _phone = TextEditingController(text: widget.info.phone);
-  // The repository renders a missing address as '—' for display; don't
+  // The repository renders a missing value as '—' for display; don't
   // prefill that placeholder into an editable field.
   late final _addr = TextEditingController(
     text: widget.info.residentialAddress == '—' ? '' : widget.info.residentialAddress,
   );
+  late final _city = TextEditingController(
+    text: widget.info.city == '—' ? '' : widget.info.city,
+  );
+  late String? _state = widget.info.state == '—' ? null : widget.info.state;
 
   bool _showErrors = false;
   bool _busy = false;
@@ -224,7 +238,13 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
     _name.dispose();
     _phone.dispose();
     _addr.dispose();
+    _city.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickState() async {
+    final picked = await showStatePicker(context, selected: _state);
+    if (picked != null) setState(() => _state = picked);
   }
 
   Future<void> _save() async {
@@ -243,6 +263,8 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
         fullName: _name.text.trim(),
         phone: normalizedPhone,
         residentialAddress: _addr.text.trim().isEmpty ? null : _addr.text.trim(),
+        city: _city.text.trim().isEmpty ? null : _city.text.trim(),
+        state: _state,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -286,6 +308,19 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
           placeholder: '12 Bourdillon Road',
           controller: _addr,
         ),
+        const SizedBox(height: 16),
+        KInput(
+          label: 'City',
+          placeholder: 'Ikeja',
+          controller: _city,
+        ),
+        const SizedBox(height: 16),
+        _TappableField(
+          label: 'State',
+          value: _state,
+          placeholder: 'Select your state',
+          onTap: _pickState,
+        ),
         if (_error != null) ...[
           const SizedBox(height: 10),
           Text(_error!, style: KType.micro(color: KColor.loss)),
@@ -295,6 +330,61 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
           label: 'Save changes',
           loading: _busy,
           onPressed: _busy ? null : _save,
+        ),
+      ],
+    );
+  }
+}
+
+/// Same styling as onboarding/personal_details_screen.dart's file-local
+/// `_TappableField` (KInput-styled but read-only/tappable, opens a picker
+/// sheet) — duplicated rather than shared per this codebase's convention;
+/// lib/widgets/ is frozen so this can't live there.
+class _TappableField extends StatelessWidget {
+  const _TappableField({
+    required this.label,
+    required this.value,
+    required this.placeholder,
+    required this.onTap,
+  });
+
+  final String label;
+  final String? value;
+  final String placeholder;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label.upper, style: KType.label(color: KColor.ink2)),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: KColor.paper,
+              borderRadius: BorderRadius.circular(KRadii.input),
+              border: Border.all(color: KColor.hairline, width: 1),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value ?? placeholder,
+                    style: KType.body(color: value != null ? KColor.ink : KColor.ink3),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                KIcon('arrowDown', size: 16, color: KColor.ink3),
+              ],
+            ),
+          ),
         ),
       ],
     );
