@@ -1,7 +1,7 @@
 // Kudimata Securities — immutable domain models. Prices/changes are PREFORMATTED
 // strings exactly as the design (app-data.jsx) presents them: "₦268.40",
 // "+1.94%", "−0.62%" (note: loss uses the unicode minus U+2212). Movement colour
-// is carried by [Trend] on numbers only. Scope: NGX, US, ETF — no fixed income.
+// is carried by [Trend] on numbers only. Scope: NGX only.
 import 'package:flutter/widgets.dart';
 import 'mock.dart' show spark;
 

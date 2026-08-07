@@ -52,7 +52,7 @@ class KEmptyView extends StatelessWidget {
   const KEmptyView.watchlist({super.key, this.onAction})
       : icon = 'eye', // design used a bookmark glyph (not in the fixed KIcon set)
         title = 'Nothing saved yet',
-        message = 'Save a stock or ETF to follow its price here.',
+        message = 'Save a stock to follow its price here.',
         actionLabel = 'Browse markets';
 
   final String icon;

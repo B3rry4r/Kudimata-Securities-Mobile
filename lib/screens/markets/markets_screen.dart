@@ -1,12 +1,20 @@
 // Markets tab root — title, read-only SearchPill (pushes Search), category
-// PillChips (All / NGX / US / ETFs), trending + the filtered list. Ported from
-// app-screens.jsx `Markets`, extended with all four categories. Root tab: Scaffold
-// body WITHOUT bottom nav (the shell owns it).
+// PillChips (All / NGX), trending + the filtered list. Ported from
+// app-screens.jsx `Markets`. Root tab: Scaffold body WITHOUT bottom nav (the
+// shell owns it).
+//
+// Wired to GET /assets/trending and GET /assets?assetClass= via
+// AssetRepository.trending()/.byAssetClass() (see lib/data/api/README.md for
+// the FutureBuilder convention this follows). Selecting a category chip
+// re-triggers the list Future; the Trending Future is independent of the
+// selected tab (it only renders while the "All" chip is selected).
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kudimata_securities/data/mock.dart';
+import 'package:kudimata_securities/app/app_state.dart';
 import 'package:kudimata_securities/data/models.dart';
+import 'package:kudimata_securities/data/repositories/asset_repository.dart';
 import 'package:kudimata_securities/router/routes.dart';
+import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 
@@ -19,12 +27,7 @@ class _Cat {
   final AssetClass? cls;
 }
 
-const _cats = [
-  _Cat('All', null),
-  _Cat('NGX', AssetClass.ngx),
-  _Cat('US', AssetClass.us),
-  _Cat('ETFs', AssetClass.etf),
-];
+const _cats = [_Cat('All', null), _Cat('NGX', AssetClass.ngx)];
 
 class MarketsScreen extends StatefulWidget {
   const MarketsScreen({super.key});
@@ -34,14 +37,24 @@ class MarketsScreen extends StatefulWidget {
 }
 
 class _MarketsScreenState extends State<MarketsScreen> {
+  late final _repo = AssetRepository(AppScope.read(context).apiClient);
+
+  late Future<List<Asset>> _trendingFuture = _repo.trending();
+  late Future<List<Asset>> _listFuture = _repo.byAssetClass(_selectedClass);
+
   String _cat = 'All';
+
+  AssetClass? get _selectedClass =>
+      _cats.firstWhere((c) => c.label == _cat).cls;
 
   KTrend _k(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
 
-  List<Asset> get _list {
-    final cls = _cats.firstWhere((c) => c.label == _cat).cls;
-    if (cls == null) return MockData.allAssets;
-    return MockData.allAssets.where((a) => a.assetClass == cls).toList();
+  void _selectCat(String label) {
+    if (label == _cat) return;
+    setState(() {
+      _cat = label;
+      _listFuture = _repo.byAssetClass(_selectedClass);
+    });
   }
 
   @override
@@ -62,7 +75,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                   Text('Markets', style: KType.title()),
                   const SizedBox(height: 16),
                   KSearchPill(
-                    placeholder: 'Search stocks, ETFs',
+                    placeholder: 'Search stocks',
                     showFilter: true,
                     readOnly: true,
                     onTap: () => context.push(Routes.search),
@@ -85,7 +98,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                       child: KPillChip(
                         label: c.label,
                         selected: _cat == c.label,
-                        onTap: () => setState(() => _cat = c.label),
+                        onTap: () => _selectCat(c.label),
                       ),
                     ),
                 ],
@@ -104,15 +117,27 @@ class _MarketsScreenState extends State<MarketsScreen> {
                     GestureDetector(
                       onTap: () => context.push(Routes.assetList),
                       behavior: HitTestBehavior.opaque,
-                      child: Text('See all'.upper,
-                          style: KType.micro(color: KColor.ink2, w: KWeight.semibold)
-                              .copyWith(letterSpacing: 0.06 * 10)),
+                      child: Text(
+                        'See all'.upper,
+                        style: KType.micro(
+                          color: KColor.ink2,
+                          w: KWeight.semibold,
+                        ).copyWith(letterSpacing: 0.06 * 10),
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
-              Padding(padding: _gut, child: _card(MockData.trending, spark: false)),
+              Padding(
+                padding: _gut,
+                child: _asyncCard(
+                  _trendingFuture,
+                  spark: false,
+                  onRetry: () =>
+                      setState(() => _trendingFuture = _repo.trending()),
+                ),
+              ),
               const SizedBox(height: 28),
             ],
 
@@ -122,10 +147,49 @@ class _MarketsScreenState extends State<MarketsScreen> {
               child: KEyebrow(_cat == 'All' ? 'All assets' : _cat),
             ),
             const SizedBox(height: 12),
-            Padding(padding: _gut, child: _card(_list, spark: true)),
+            Padding(
+              padding: _gut,
+              child: _asyncCard(
+                _listFuture,
+                spark: true,
+                onRetry: () => setState(
+                  () => _listFuture = _repo.byAssetClass(_selectedClass),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  /// FutureBuilder wrapper shared by the Trending block and the filtered
+  /// list — same loading/error/empty states either way, per
+  /// lib/data/api/README.md's canonical pattern.
+  Widget _asyncCard(
+    Future<List<Asset>> future, {
+    required bool spark,
+    required VoidCallback onRetry,
+  }) {
+    return FutureBuilder<List<Asset>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const KLoadingView();
+        }
+        if (snapshot.hasError) {
+          return KErrorView(onPrimary: onRetry);
+        }
+        final data = snapshot.data!;
+        if (data.isEmpty) {
+          return const KEmptyView(
+            icon: 'markets',
+            title: 'No assets found',
+            message: 'There are no assets to show in this category right now.',
+          );
+        }
+        return _card(data, spark: spark);
+      },
     );
   }
 

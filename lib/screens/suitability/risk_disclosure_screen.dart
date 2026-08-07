@@ -1,9 +1,21 @@
 // Suitability — risk disclosure. Scrollable plain-language legal copy inside a
 // hairline card, a KCheckbox acknowledgement, then a primary Agree button that
 // unlocks once acknowledged. Ported from risk-screens.jsx (RiskDisclosure).
+//
+// Tapping "Agree" persists the acknowledgement server-side (POST
+// /compliance-acknowledgements) via ComplianceRepository before navigating on
+// — see STUB-risk-disclosure-1 in
+// Kudimata-Securities-Backend/.pipeline/fragments/risk-disclosure.json, which
+// flagged the previous pure-navigation tap as having no durable record of
+// consent. `_documentVersion` is a simple hardcoded label (this screen's copy
+// carries no version marker of its own to match) identifying which revision
+// of the _sections legal copy below the user agreed to.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
+import 'package:kudimata_securities/data/repositories/compliance_repository.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/router/routes.dart';
@@ -24,6 +36,14 @@ class RiskDisclosureScreen extends StatefulWidget {
 
 class _RiskDisclosureScreenState extends State<RiskDisclosureScreen> {
   bool _agreed = false;
+  bool _submitting = false;
+
+  /// Document version this screen's static legal copy (_sections below)
+  /// corresponds to — sent alongside the acknowledgement so a future revision
+  /// of this copy can be told apart from what the user actually agreed to.
+  /// No version label is shown in this screen's UI to match, so this is a
+  /// simple hardcoded starting label.
+  static const _documentVersion = 'v1';
 
   static const List<_Section> _sections = [
     _Section('What this is',
@@ -42,6 +62,22 @@ class _RiskDisclosureScreenState extends State<RiskDisclosureScreen> {
             'charges from third parties. Currency conversion may apply to US '
             'assets.'),
   ];
+
+  Future<void> _agree() async {
+    setState(() => _submitting = true);
+    final repo = ComplianceRepository(AppScope.read(context).apiClient);
+    try {
+      await repo.acknowledge(kind: 'risk_disclosure', documentVersion: _documentVersion);
+      if (!mounted) return;
+      context.go(Routes.clientAgreement);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,9 +129,8 @@ class _RiskDisclosureScreenState extends State<RiskDisclosureScreen> {
                     const SizedBox(height: 16),
                     KButton(
                       label: 'Agree',
-                      onPressed: _agreed
-                          ? () => context.go(Routes.clientAgreement)
-                          : null,
+                      loading: _submitting,
+                      onPressed: _agreed && !_submitting ? _agree : null,
                     ),
                   ],
                 ),

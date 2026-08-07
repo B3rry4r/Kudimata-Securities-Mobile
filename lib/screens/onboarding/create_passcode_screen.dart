@@ -1,14 +1,28 @@
 // 03 · Create a passcode — 6 dots fill from the keypad; at 6 digits we advance to
 // confirm. Ported from screens.jsx CreatePasscode. Mid-flow gated, no tab bar.
+//
+// Re-entry (reentry): Security's "Change passcode" (security_screen.dart)
+// PUSHes here with `extra: true` for an already-signed-in investor, instead
+// of the gated onboarding flow reaching it via go(). When reentry is set we
+// keep using push() to advance to confirm (so the Security/account stack
+// underneath survives) and pop back to Security on the back arrow, instead
+// of the onboarding go()/otp-back behaviour.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
+import 'confirm_passcode_screen.dart';
 import 'onboarding_scaffold.dart';
 
 class CreatePasscodeScreen extends StatefulWidget {
-  const CreatePasscodeScreen({super.key});
+  const CreatePasscodeScreen({super.key, this.reentry = false});
+
+  /// True when re-entering this flow from Security's "Change passcode"
+  /// rather than first-time onboarding. Defaults to false so the ordinary
+  /// signup → passcode → biometric → KYC flow is unaffected when this isn't
+  /// explicitly set.
+  final bool reentry;
 
   @override
   State<CreatePasscodeScreen> createState() => _CreatePasscodeScreenState();
@@ -27,7 +41,14 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
     });
     if (_code.length == 6) {
       // Hand the chosen passcode to the confirm step (mismatch checked there).
-      context.go(Routes.confirmPasscode, extra: _code);
+      final args = ConfirmPasscodeArgs(code: _code, reentry: widget.reentry);
+      if (widget.reentry) {
+        // Push (not go) so the Security/account stack below stays intact —
+        // confirm's success pops back through both screens to Security.
+        context.push(Routes.confirmPasscode, extra: args);
+      } else {
+        context.go(Routes.confirmPasscode, extra: args);
+      }
     }
   }
 
@@ -39,7 +60,10 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KOnboardTopBar(onBack: () => context.go(Routes.otp)),
+            KOnboardTopBar(
+              onBack: () =>
+                  widget.reentry ? context.pop() : context.go(Routes.otp),
+            ),
             Expanded(
               child: KOnboardBody(
                 paddingTop: 12,

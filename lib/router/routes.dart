@@ -29,6 +29,7 @@ class Routes {
   static const String kycNextOfKin = '/kyc/next-of-kin';
   static const String kycSubmitted = '/kyc/submitted';
   static const String kycApproved = '/kyc/approved';
+  static const String kycOutcome = '/kyc/outcome';
 
   // ── Suitability ──────────────────────────────────────────────────────────
   static const String questionnaire = '/suitability';

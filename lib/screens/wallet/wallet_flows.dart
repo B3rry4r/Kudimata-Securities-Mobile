@@ -1,15 +1,50 @@
 // Kudimata Securities — Stage 8: Wallet money-movement flows as bottom sheets.
-// Mirrors wallet-screens.jsx (AddMoney / Withdraw / Convert) as showKSheet
-// sequences: amount → method/bank/rate → review → KStatusView success. The
+// Mirrors wallet-screens.jsx (AddMoney / Withdraw) as showKSheet
+// sequences: amount → method/bank → review → KStatusView success. The
 // launching wallet screen stays behind the scrim.
 //
-// SEAM: every flow stops at a MOCKED processor result — a short delay + a
-// KStatusView success stands in for the real wallet funding processor / payout
-// rail / FX rate engine. No real payments, withdrawals, or currency conversion
-// happen here.
+// Wired per lib/data/api/README.md: the review steps' confirm buttons call
+// WalletRepository.fund()/withdraw() (POST /transactions/fund,
+// POST /transactions/withdraw) instead of the old mocked delay. Both sheets
+// already thread the entered amount end-to-end (unlike trade_flows.dart's
+// known bug — a different screen). On ApiException from the initial call
+// itself (e.g. a real 422 for insufficient balance) an error variant of the
+// KStatusView sheet shows, and the review step is left in place (not popped)
+// so the user can retry without re-entering anything.
+//
+// Add money is NOT instant: POST /transactions/fund no longer attempts a
+// direct card charge — it creates a pending Transaction and returns a
+// Flutterwave hosted-checkout `checkoutUrl`. _AddMoneyReview._confirm()
+// launches that link externally (url_launcher, same pattern as
+// statements_screen.dart/legal_screen.dart/help_support_screen.dart) and then
+// shows a `pending`-tone KStatusView explaining the investor must finish
+// paying in their browser — there is no success sheet at fund()-call time
+// anymore, since the money hasn't moved yet (only Flutterwave's webhook,
+// server-to-server, ever confirms that). Withdraw is UNCHANGED — withdrawals
+// still go server-to-bank directly, so its review step keeps the original
+// immediate KStatusView success flow.
+//
+// The withdraw destination: POST /transactions/withdraw needs a saved
+// `BankAccount.id` (registry.json), not a raw bank code/account number. No
+// in-sheet picker UI exists for choosing among multiple saved accounts (the
+// design's _SelectRow is a single fixed row, not a list) — building one is a
+// bigger UI change than this wiring pass, so _WithdrawSheet fetches the
+// investor's real saved accounts (GET /bank-accounts) and uses the primary
+// one (falling back to the first) as the destination, same as the design's
+// single-row layout implies. See _WithdrawSheetState for the gap this
+// leaves: only ever the primary/first saved account is reachable from this
+// screen; adding/choosing others requires the account-banks screen.
+//
+// NGX-only: the Convert (₦ → $) flow was removed — Blue Marina supplies NGX
+// equities only, and Convert existed solely to fund USD stock buys.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
+import 'package:kudimata_securities/data/repositories/wallet_repository.dart';
+import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 
@@ -30,16 +65,6 @@ Future<void> showWithdrawFlow(BuildContext context) => showKSheet<void>(
       title: 'Withdraw',
       child: const _WithdrawSheet(),
     );
-
-/// Convert: ₦ → \$ amounts at a fixed mock rate → review → success.
-Future<void> showConvertFlow(BuildContext context) => showKSheet<void>(
-      context,
-      title: 'Convert',
-      child: const _ConvertSheet(),
-    );
-
-// Mock FX rate (₦ per $1). SEAM: real rate comes from the FX engine.
-const double _kRate = 1580;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared bits.
@@ -157,6 +182,65 @@ void _showSuccessSheet(
       ),
     ),
   );
+}
+
+/// Shown after POST /transactions/fund succeeds and the returned
+/// `checkoutUrl` has been (best-effort) launched in the investor's browser.
+/// Funding is NOT complete at this point — only Flutterwave's webhook,
+/// server-to-server, confirms the money actually moved — so this is a
+/// `pending` tone, not `success`. "I've completed payment" just dismisses
+/// back to the wallet screen (same pop-based pattern as [_showSuccessSheet]'s
+/// "Done"); the wallet's existing pull-to-refresh is how the investor sees
+/// the eventual outcome once the webhook has processed.
+void _showCheckoutPendingSheet(BuildContext context) {
+  showKSheet<void>(
+    context,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: KStatusView(
+        tone: KStatusTone.pending,
+        title: 'Finish payment in your browser',
+        message: "We've opened a secure checkout page in your browser. "
+            "Once you're done there, come back here and pull down to refresh "
+            'your wallet.',
+        primary: "I've completed payment",
+        onPrimary: () => Navigator.of(context).pop(),
+      ),
+    ),
+  );
+}
+
+/// Shown over the still-open review sheet when a fund/withdraw call fails
+/// with an [ApiException] (e.g. insufficient balance) — [message] is that
+/// exception's human-readable summary (safe to show directly, per
+/// lib/data/api/api_exception.dart). "Try again" just dismisses this sheet;
+/// the review step behind it keeps its entered amount/method/destination so
+/// the retry doesn't lose any input.
+void _showErrorSheet(
+  BuildContext context, {
+  required String title,
+  required String message,
+}) {
+  showKSheet<void>(
+    context,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: KStatusView(
+        tone: KStatusTone.error,
+        title: title,
+        message: message,
+        primary: 'Try again',
+        onPrimary: () => Navigator.of(context).pop(),
+      ),
+    ),
+  );
+}
+
+/// Comma-grouped naira text (e.g. "50,000" or "12,345.67") → integer kobo,
+/// matching trade_flows.dart's `_amountValue` parsing convention.
+int _parseAmountKobo(String amountText) {
+  final value = double.tryParse(amountText.replaceAll(RegExp('[^0-9.]'), '')) ?? 0;
+  return (value * 100).round();
 }
 
 // Quick-amount chips that overwrite the amount field.
@@ -309,14 +393,38 @@ class _AddMoneyReviewState extends State<_AddMoneyReview> {
 
   Future<void> _confirm() async {
     setState(() => _busy = true);
-    // SEAM: real wallet funding processor (bank-transfer rail / card charge)
-    // plugs in here. Mocked with a short delay.
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    Navigator.of(context).pop();
-    _showSuccessSheet(context,
-        title: 'Money added',
-        message: '₦${widget.amount} is on the way to your naira wallet.');
+    final repo = WalletRepository(AppScope.read(context).apiClient);
+    // registry.json's fund method enum is card|transfer — the sheet's
+    // 'bank'/'card' selection maps 'bank' -> 'transfer'. It's advisory only
+    // now (Flutterwave's own hosted checkout is where the investor actually
+    // picks a payment method) but still worth sending along.
+    final apiMethod = widget.method == 'card' ? 'card' : 'transfer';
+    try {
+      final result =
+          await repo.fund(amountKobo: _parseAmountKobo(widget.amount), method: apiMethod);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      // Best-effort external hand-off to Flutterwave's hosted checkout —
+      // same no-throw-to-the-user pattern statements_screen.dart's
+      // _download() uses; a launch failure shouldn't strand the investor
+      // without ANY explanation, so the pending sheet still shows below
+      // regardless (it names the checkout page rather than assuming it
+      // opened).
+      final uri = Uri.tryParse(result.checkoutUrl);
+      if (uri != null) {
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {
+          // Ignored — see comment above.
+        }
+      }
+      if (!mounted) return;
+      _showCheckoutPendingSheet(context);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _showErrorSheet(context, title: 'Add money failed', message: e.message);
+    }
   }
 }
 
@@ -330,8 +438,33 @@ class _WithdrawSheet extends StatefulWidget {
   State<_WithdrawSheet> createState() => _WithdrawSheetState();
 }
 
+typedef _WithdrawInit = ({String balance, BankAccountSummary? account});
+
 class _WithdrawSheetState extends State<_WithdrawSheet> {
   late final TextEditingController _amount = TextEditingController(text: '20,000');
+  late final _repo = WalletRepository(AppScope.read(context).apiClient);
+  late Future<_WithdrawInit> _init = _load();
+
+  // GET /wallet-balance + GET /bank-accounts, fetched together so the sheet
+  // has a single loading/error state (README.md convention). The withdraw
+  // destination: no in-sheet picker exists for choosing among multiple saved
+  // accounts (see file header) — this always resolves to the investor's
+  // primary account, falling back to the first saved one.
+  Future<_WithdrawInit> _load() async {
+    final balanceFuture = _repo.balance();
+    final accountsFuture = _repo.bankAccounts();
+    final balance = await balanceFuture;
+    final accounts = await accountsFuture;
+    BankAccountSummary? account;
+    for (final a in accounts) {
+      if (a.primary) {
+        account = a;
+        break;
+      }
+    }
+    account ??= accounts.isEmpty ? null : accounts.first;
+    return (balance: balance, account: account);
+  }
 
   @override
   void dispose() {
@@ -341,68 +474,96 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KInput(
-          label: 'Amount',
-          controller: _amount,
-          numeric: true,
-          amount: true,
-          prefix: '₦',
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          helper: 'Balance ₦310,400.00',
-        ),
-        const SizedBox(height: 24),
-        const Padding(
-          padding: EdgeInsets.only(bottom: 10),
-          child: KEyebrow('To'),
-        ),
-        KCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _SelectRow(
-            icon: 'wallet',
-            title: 'GTBank',
-            sub: '••• 4821',
-            trailingChevron: true,
-            first: true,
-            onTap: () {}, // SEAM: bank picker (saved payout accounts) plugs in here.
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text('Withdrawals arrive within 1 business day.',
-            style: KType.body(color: KColor.ink3)),
-        const SizedBox(height: 22),
-        KButton(
-          label: 'Withdraw',
-          onPressed: () {
-            Navigator.of(context).pop();
-            _showWithdrawReview(context, amount: _amount.text);
-          },
-        ),
-      ],
+    return FutureBuilder<_WithdrawInit>(
+      future: _init,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: KLoadingView(),
+          );
+        }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: KErrorView(
+              onPrimary: () => setState(() => _init = _load()),
+            ),
+          );
+        }
+        final data = snapshot.data!;
+        final account = data.account;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            KInput(
+              label: 'Amount',
+              controller: _amount,
+              numeric: true,
+              amount: true,
+              prefix: '₦',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              helper: 'Balance ${data.balance}',
+            ),
+            const SizedBox(height: 24),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 10),
+              child: KEyebrow('To'),
+            ),
+            KCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _SelectRow(
+                icon: 'wallet',
+                title: account?.bankName ?? 'No saved bank account',
+                sub: account?.accountNumberMasked ?? 'Add one in Account · Banks',
+                trailingChevron: true,
+                first: true,
+                onTap: () {}, // SEAM: picker for choosing among multiple saved payout accounts — this row always targets the primary/first saved account (see file header).
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('Withdrawals arrive within 1 business day.',
+                style: KType.body(color: KColor.ink3)),
+            const SizedBox(height: 22),
+            KButton(
+              label: 'Withdraw',
+              onPressed: account == null
+                  ? null
+                  : () {
+                      Navigator.of(context).pop();
+                      _showWithdrawReview(context, amount: _amount.text, account: account);
+                    },
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-void _showWithdrawReview(BuildContext context, {required String amount}) {
+void _showWithdrawReview(BuildContext context,
+    {required String amount, required BankAccountSummary account}) {
   showKSheet<void>(
     context,
     title: 'Review',
-    child: _WithdrawReview(amount: amount),
+    child: _WithdrawReview(amount: amount, account: account),
   );
 }
 
 class _WithdrawReview extends StatefulWidget {
-  const _WithdrawReview({required this.amount});
+  const _WithdrawReview({required this.amount, required this.account});
   final String amount;
+  final BankAccountSummary account;
   @override
   State<_WithdrawReview> createState() => _WithdrawReviewState();
 }
 
 class _WithdrawReviewState extends State<_WithdrawReview> {
   bool _busy = false;
+
+  String get _destinationLabel =>
+      '${widget.account.bankName} ${widget.account.accountNumberMasked}';
 
   @override
   Widget build(BuildContext context) {
@@ -411,7 +572,7 @@ class _WithdrawReviewState extends State<_WithdrawReview> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _SummaryRow(label: 'Amount', value: '₦${widget.amount}'),
-        _SummaryRow(label: 'To', value: 'GTBank ••• 4821'),
+        _SummaryRow(label: 'To', value: _destinationLabel),
         _SummaryRow(label: 'Fee', value: '₦0.00'),
         const SizedBox(height: 18),
         Text('Withdrawals arrive within 1 business day.',
@@ -428,167 +589,21 @@ class _WithdrawReviewState extends State<_WithdrawReview> {
 
   Future<void> _confirm() async {
     setState(() => _busy = true);
-    // SEAM: real payout rail (bank transfer to the saved account) plugs in here.
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    Navigator.of(context).pop();
-    _showSuccessSheet(context,
-        title: 'Withdrawal started',
-        message: '₦${widget.amount} is on its way to GTBank ••• 4821.');
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CONVERT — Step 1: ₦ → $ at a fixed mock rate.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ConvertSheet extends StatefulWidget {
-  const _ConvertSheet();
-  @override
-  State<_ConvertSheet> createState() => _ConvertSheetState();
-}
-
-class _ConvertSheetState extends State<_ConvertSheet> {
-  late final TextEditingController _from = TextEditingController(text: '158,000');
-  late final TextEditingController _to = TextEditingController(text: '100.00');
-
-  @override
-  void dispose() {
-    _from.dispose();
-    _to.dispose();
-    super.dispose();
-  }
-
-  double _num(String s) => double.tryParse(s.replaceAll(RegExp('[^0-9.]'), '')) ?? 0;
-
-  String _fmtUsd(double v) => v.toStringAsFixed(2);
-  String _fmtNgn(double v) => v
-      .toStringAsFixed(0)
-      .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]},');
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Column(
-              children: [
-                KInput(
-                  label: 'From',
-                  controller: _from,
-                  numeric: true,
-                  amount: true,
-                  amountSize: 22,
-                  prefix: '₦',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (v) => _to.text = _fmtUsd(_num(v) / _kRate),
-                ),
-                const SizedBox(height: 10),
-                KInput(
-                  label: 'To',
-                  controller: _to,
-                  numeric: true,
-                  amount: true,
-                  amountSize: 22,
-                  prefix: '\$',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (v) => _from.text = _fmtNgn(_num(v) * _kRate),
-                ),
-              ],
-            ),
-            // The swap medallion straddling the two fields.
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: KColor.feature,
-                shape: BoxShape.circle,
-                border: Border.all(color: KColor.featureInk, width: 3),
-              ),
-              child: KIcon('transfer', size: 16, color: KColor.featureInk),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Rate'.upper, style: KType.label()),
-              const SizedBox(width: 8),
-              Text('₦1,580 = \$1',
-                  style: KType.body(color: KColor.ink, w: KWeight.medium).tnum),
-            ],
-          ),
-        ),
-        const SizedBox(height: 22),
-        KButton(
-          label: 'Convert',
-          onPressed: () {
-            Navigator.of(context).pop();
-            _showConvertReview(context, from: _from.text, to: _to.text);
-          },
-        ),
-      ],
-    );
-  }
-}
-
-void _showConvertReview(BuildContext context,
-    {required String from, required String to}) {
-  showKSheet<void>(
-    context,
-    title: 'Review',
-    child: _ConvertReview(from: from, to: to),
-  );
-}
-
-class _ConvertReview extends StatefulWidget {
-  const _ConvertReview({required this.from, required this.to});
-  final String from;
-  final String to;
-  @override
-  State<_ConvertReview> createState() => _ConvertReviewState();
-}
-
-class _ConvertReviewState extends State<_ConvertReview> {
-  bool _busy = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SummaryRow(label: 'From', value: '₦${widget.from}'),
-        _SummaryRow(label: 'To', value: '\$${widget.to}'),
-        _SummaryRow(label: 'Rate', value: '₦1,580 = \$1'),
-        const SizedBox(height: 18),
-        Text('The dollar amount lands in your USD wallet.',
-            style: KType.body(color: KColor.ink3)),
-        const SizedBox(height: 22),
-        KButton(
-          label: 'Convert',
-          loading: _busy,
-          onPressed: _busy ? null : _confirm,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirm() async {
-    setState(() => _busy = true);
-    // SEAM: real FX engine + settlement plug in here (rate lock, ledger move).
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    Navigator.of(context).pop();
-    _showSuccessSheet(context,
-        title: 'Converted',
-        message: '\$${widget.to} is now in your USD wallet.');
+    final repo = WalletRepository(AppScope.read(context).apiClient);
+    try {
+      await repo.withdraw(
+        amountKobo: _parseAmountKobo(widget.amount),
+        bankAccountId: widget.account.id,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _showSuccessSheet(context,
+          title: 'Withdrawal started',
+          message: '₦${widget.amount} is on its way to $_destinationLabel.');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _showErrorSheet(context, title: 'Withdrawal failed', message: e.message);
+    }
   }
 }

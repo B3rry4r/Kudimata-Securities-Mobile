@@ -1,6 +1,23 @@
 // KYC 6 — checking (step 5 of 5). A centred spinner that auto-advances to the
 // next-of-kin step after a short delay (mocks the provider review). Mirrors
 // Checking. SEAM: the KYC provider's verification result replaces this timer.
+//
+// WIRING NOTE (kyc-checking pass): confirmed against
+// .pipeline/fragments/kyc-checking.json — reads: [KycVerification.status]
+// with no gating condition described, actions: [], uiStatesHandled: only
+// "checking" (entered unconditionally on build, left unconditionally on the
+// timer). There is no incremental-verification endpoint mid-KYC-collection:
+// the whole submission (bvn/nin/documentType/nextOfKin/address) goes to the
+// backend in ONE `POST /kyc-submissions` call from the next-of-kin screen
+// (see kyc_form_state.dart). Gating this screen's advance on KycFormState
+// fields was considered and rejected: the fields required by that POST body
+// (bvn, nin, documentType) belong to earlier screens (kyc-bvn, kyc-id), not
+// to anything collected here, and `nin` in particular has no collecting UI
+// anywhere yet (documented gap, see kyc_form_state.dart lines 28-33) — so a
+// field-presence gate here would just block on a gap that belongs to a
+// different screen's wiring pass, not this one's. Real validation happens
+// where the real call happens: on kyc-next-of-kin's submit. This timer stays
+// as a client-side UX pacing beat with no backend counterpart to wire.
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';

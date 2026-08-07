@@ -1,17 +1,44 @@
-// KYC 5 — liveness selfie (step 4 of 5). A framed selfie placeholder: monochrome
-// profile silhouette inside a circle with a dashed guidance ring, plus a round
-// capture button. Mirrors Liveness, but uses the fingerprint/profile motif (no
-// camera — there is no camera icon in the set and we don't open a real camera).
-// SEAM: the KYC provider's liveness capture plugs into the capture button.
+// KYC 5 — liveness selfie (step 4 of 5). A framed selfie capture: monochrome
+// profile silhouette inside a circle with a dashed guidance ring (or the
+// captured photo once taken), plus a round capture button that opens the
+// device camera. Mirrors Liveness, but uses the fingerprint/profile motif
+// for the button glyph.
+//
+// Real camera capture (image_picker, ImageSource.camera) + the shared
+// presigned-upload flow: POST /kyc-documents/upload-url -> PUT the bytes to
+// the returned uploadUrl -> KycFormState.registerUploadedDocument(objectKey,
+// 'liveness_selfie'). See lib/data/repositories/kyc_document_repository.dart
+// for why the PUT bypasses the shared ApiClient, and kyc_form_state.dart for
+// why this screen does NOT call POST /kyc-documents itself (no
+// kycSubmissionId exists yet — that only comes from the final
+// POST /kyc-submissions call on the next-of-kin screen).
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
+import 'package:kudimata_securities/data/repositories/kyc_document_repository.dart';
 import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 import '_kyc_chrome.dart';
 
-class LivenessScreen extends StatelessWidget {
+class LivenessScreen extends StatefulWidget {
   const LivenessScreen({super.key});
+
+  @override
+  State<LivenessScreen> createState() => _LivenessScreenState();
+}
+
+class _LivenessScreenState extends State<LivenessScreen> {
+  late final _repo = KycDocumentRepository(AppScope.read(context).apiClient);
+  final _picker = ImagePicker();
+
+  String? _capturedPath;
+  bool _busy = false;
+  String? _error;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +65,8 @@ class LivenessScreen extends StatelessWidget {
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          // Circle with a profile silhouette.
+                          // Circle with either the captured photo or the
+                          // placeholder profile silhouette.
                           Positioned.fill(
                             child: Container(
                               decoration: BoxDecoration(
@@ -47,7 +75,16 @@ class LivenessScreen extends StatelessWidget {
                                 border: Border.all(color: KColor.hairline, width: 1),
                               ),
                               alignment: Alignment.center,
-                              child: KIcon('profile', size: 96, color: KColor.ink3),
+                              child: _capturedPath == null
+                                  ? KIcon('profile', size: 96, color: KColor.ink3)
+                                  : ClipOval(
+                                      child: Image.file(
+                                        File(_capturedPath!),
+                                        width: 238,
+                                        height: 238,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                             ),
                           ),
                           // Dashed guidance ring (slightly outset).
@@ -62,17 +99,21 @@ class LivenessScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 28),
-                    Text('Center your face',
-                        textAlign: TextAlign.center, style: KType.title()),
+                    Text(_error ?? 'Center your face',
+                        textAlign: TextAlign.center,
+                        style: KType.title(color: _error != null ? KColor.loss : null)),
                     const SizedBox(height: 10),
-                    Text('and hold still',
+                    Text(
+                        _error != null
+                            ? 'Tap the button to try again'
+                            : (_busy ? 'Uploading...' : 'and hold still'),
                         textAlign: TextAlign.center,
                         style: KType.body(color: KColor.ink2)),
                     const Spacer(),
-                    // Round capture button.
-                    // SEAM: KYC provider liveness capture plugs in here.
+                    // Round capture button — opens the device camera, then
+                    // runs the presigned-upload flow.
                     GestureDetector(
-                      onTap: () => context.go(Routes.kycChecking),
+                      onTap: _busy ? null : _capture,
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 72,
@@ -86,8 +127,10 @@ class LivenessScreen extends StatelessWidget {
                             BoxShadow(color: KColor.feature, blurRadius: 0, spreadRadius: 2),
                           ],
                         ),
-                        child: KIcon('fingerprint',
-                            size: 30, stroke: 1.9, color: KColor.featureInk),
+                        child: _busy
+                            ? KSpinner(size: 26, color: KColor.featureInk)
+                            : KIcon('fingerprint',
+                                size: 30, stroke: 1.9, color: KColor.featureInk),
                       ),
                     ),
                   ],
@@ -98,6 +141,52 @@ class LivenessScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _capture() async {
+    setState(() {
+      _error = null;
+    });
+
+    final XFile? shot;
+    try {
+      shot = await _picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+        imageQuality: 85,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = "Couldn't open the camera");
+      return;
+    }
+    if (shot == null) return; // user cancelled — stay on the frame as-is.
+
+    setState(() {
+      _busy = true;
+      _capturedPath = shot!.path;
+    });
+
+    try {
+      final bytes = await shot.readAsBytes();
+      final upload = await _repo.requestUploadUrl(
+        documentKind: 'liveness_selfie',
+        documentName: shot.name.isNotEmpty ? shot.name : 'liveness-selfie.jpg',
+      );
+      await _repo.putFile(upload.uploadUrl, bytes, contentType: 'image/jpeg');
+
+      if (!mounted) return;
+      AppScope.read(context).kycForm.registerUploadedDocument(upload.objectKey, 'liveness_selfie');
+
+      if (!mounted) return;
+      context.go(Routes.kycChecking);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
   }
 }
 

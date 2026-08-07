@@ -1,16 +1,29 @@
 // Kudimata Securities — Stage 8: Wallet screens. Mirrors wallet-screens.jsx:
-// WalletScreen (root tab — naira BalancePanel + $ sub-balance, action row, recent
+// WalletScreen (root tab — naira BalancePanel, action row, recent
 // transactions) and TransactionDetailScreen (pushed; KStatusView-style summary +
-// detail rows). The three money-movement flows (Add money / Withdraw / Convert)
-// live in wallet_flows.dart as bottom-sheet sequences.
+// detail rows). NGX-only: no USD wallet / Convert flow in the UI (HIDE phase —
+// TxnType.convert stays as dead code below). The money-movement flows
+// (Add money / Withdraw) live in wallet_flows.dart as bottom-sheet sequences.
+//
+// WalletScreen is wired per lib/data/api/README.md's FutureBuilder
+// convention: WalletRepository.balance() (GET /wallet-balance) replaces the
+// hardcoded '₦310,400.00' KBalancePanel literal, and
+// TransactionRepository.list() (GET /transactions) replaces MockData.txns.
+// Both are fetched together (started concurrently, awaited into one record)
+// so the screen has a single loading/error state, matching the README's
+// one-future-per-screen shape.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/data/models.dart';
-import 'package:kudimata_securities/data/mock.dart';
 import 'package:kudimata_securities/router/routes.dart';
+import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
+import 'package:kudimata_securities/data/repositories/transaction_repository.dart';
+import 'package:kudimata_securities/data/repositories/wallet_repository.dart';
+import 'package:kudimata_securities/screens/shared/state_views.dart';
 
 import 'wallet_flows.dart';
 
@@ -18,158 +31,137 @@ import 'wallet_flows.dart';
 // 1 · WALLET HOME (root tab — shell provides the bottom nav).
 // ─────────────────────────────────────────────────────────────────────────────
 
-class WalletScreen extends StatelessWidget {
+typedef _WalletData = ({String balance, List<Txn> txns});
+
+class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
 
   @override
+  State<WalletScreen> createState() => _WalletScreenState();
+}
+
+class _WalletScreenState extends State<WalletScreen> {
+  late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
+  late final _txnRepo = TransactionRepository(AppScope.read(context).apiClient);
+  late Future<_WalletData> _future = _load();
+
+  Future<_WalletData> _load() async {
+    final balanceFuture = _walletRepo.balance();
+    final txnsFuture = _txnRepo.list();
+    final balance = await balanceFuture;
+    final page = await txnsFuture;
+    return (balance: balance, txns: page.data);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final txns = MockData.txns;
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
-          padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 100),
-          children: [
-            const KScreenHead(title: 'Wallet'),
-            const SizedBox(height: 16),
-
-            // Naira wallet — the one rich ink surface on this screen.
-            const KBalancePanel(label: 'Naira wallet', balance: '₦310,400.00'),
-            const SizedBox(height: 12),
-
-            // USD sub-balance — plain hairline card with a currency glyph badge.
-            const KCard(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  _CurrencyBadge(glyph: '\$'),
-                  SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _DollarsTitle(),
-                        SizedBox(height: 2),
-                        _UsdEyebrow(),
-                      ],
-                    ),
-                  ),
-                  _UsdValue(),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Action row — Add money / Withdraw / Convert (sheet flows).
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionTile(
-                    icon: 'arrowDownLeft',
-                    label: 'Add money',
-                    onTap: () => showAddMoneyFlow(context),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ActionTile(
-                    icon: 'arrowUp',
-                    label: 'Withdraw',
-                    onTap: () => showWithdrawFlow(context),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ActionTile(
-                    icon: 'transfer',
-                    label: 'Convert',
-                    onTap: () => showConvertFlow(context),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-
-            // Recent header — eyebrow + Orders shortcut.
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const KEyebrow('Recent'),
-                  GestureDetector(
-                    onTap: () => context.push(Routes.orderStatus),
-                    behavior: HitTestBehavior.opaque,
-                    child: Text('Orders',
-                        style: KType.label(color: KColor.ink2, w: KWeight.semibold)),
-                  ),
-                ],
-              ),
-            ),
-
-            // Transactions list — tap a row → transaction detail.
-            KCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  for (var i = 0; i < txns.length; i++)
-                    _TxnRow(txn: txns[i], first: i == 0),
-                ],
-              ),
-            ),
-          ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            setState(() => _future = _load());
+            await _future;
+          },
+          child: FutureBuilder<_WalletData>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const KLoadingView();
+              }
+              if (snapshot.hasError) {
+                return KErrorView(
+                  onPrimary: () => setState(() => _future = _load()),
+                );
+              }
+              final data = snapshot.data!;
+              return _WalletBody(balance: data.balance, txns: data.txns);
+            },
+          ),
         ),
       ),
     );
   }
 }
 
-// Currency glyph in a neutral hairline circle — never a flag.
-class _CurrencyBadge extends StatelessWidget {
-  const _CurrencyBadge({required this.glyph});
-  final String glyph;
+// Same widget tree the mock version built — fed live balance/txns.
+class _WalletBody extends StatelessWidget {
+  const _WalletBody({required this.balance, required this.txns});
+  final String balance;
+  final List<Txn> txns;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: KColor.bg,
-        shape: BoxShape.circle,
-        border: Border.fromBorderSide(BorderSide(color: KColor.hairline, width: 1)),
-      ),
-      child: Text(glyph,
-          style: KType.cardTitle(w: KWeight.semibold).copyWith(fontSize: 17, height: 1.0)),
+    return ListView(
+      // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
+      padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 100),
+      children: [
+        const KScreenHead(title: 'Wallet'),
+        const SizedBox(height: 16),
+
+        // Naira wallet — the one rich ink surface on this screen.
+        KBalancePanel(label: 'Naira wallet', balance: balance),
+        const SizedBox(height: 12),
+
+        // Action row — Add money / Withdraw (sheet flows).
+        Row(
+          children: [
+            Expanded(
+              child: _ActionTile(
+                icon: 'arrowDownLeft',
+                label: 'Add money',
+                onTap: () => showAddMoneyFlow(context),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(
+                icon: 'arrowUp',
+                label: 'Withdraw',
+                onTap: () => showWithdrawFlow(context),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+
+        // Recent header — eyebrow + Orders shortcut.
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const KEyebrow('Recent'),
+              GestureDetector(
+                onTap: () => context.push(Routes.orderStatus),
+                behavior: HitTestBehavior.opaque,
+                child: Text('Orders',
+                    style: KType.label(color: KColor.ink2, w: KWeight.semibold)),
+              ),
+            ],
+          ),
+        ),
+
+        // Transactions list — tap a row → transaction detail.
+        if (txns.isEmpty)
+          KEmptyView.transactions(onAction: () => showAddMoneyFlow(context))
+        else
+          KCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                for (var i = 0; i < txns.length; i++)
+                  _TxnRow(txn: txns[i], first: i == 0),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
 
-class _DollarsTitle extends StatelessWidget {
-  const _DollarsTitle();
-  @override
-  Widget build(BuildContext context) =>
-      Text('Dollars', style: KType.cardTitle().copyWith(height: 20 / 15));
-}
-
-class _UsdValue extends StatelessWidget {
-  const _UsdValue();
-  @override
-  Widget build(BuildContext context) =>
-      Text('\$1,204.55', style: KType.section().tnum);
-}
-
-class _UsdEyebrow extends StatelessWidget {
-  const _UsdEyebrow();
-  @override
-  Widget build(BuildContext context) => Text('USD wallet'.upper, style: KType.label());
-}
-
-// 1/3-width action tile — line icon over a label.
+// 1/2-width action tile — line icon over a label.
 class _ActionTile extends StatelessWidget {
   const _ActionTile({required this.icon, required this.label, required this.onTap});
   final String icon;
@@ -268,9 +260,22 @@ class _TxnRow extends StatelessWidget {
 // 2 · TRANSACTION DETAIL (pushed — KDetailHeader, no tab bar).
 // ─────────────────────────────────────────────────────────────────────────────
 
-class TransactionDetailScreen extends StatelessWidget {
+class TransactionDetailScreen extends StatefulWidget {
   const TransactionDetailScreen({super.key, required this.id});
   final String id;
+
+  @override
+  State<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
+}
+
+class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
+  late final _repo = TransactionRepository(AppScope.read(context).apiClient);
+  late Future<Txn> _future = _repo.byId(widget.id);
+
+  // "Get receipt" is a one-shot action (GET /transactions/:id/receipt), not
+  // the screen's own load — tracked separately so the load/retry state above
+  // and the button's own busy state never fight each other.
+  bool _receiptBusy = false;
 
   // Human label for the ledger type (sentence case).
   String _typeLabel(Txn t) => switch (t.type) {
@@ -287,74 +292,126 @@ class TransactionDetailScreen extends StatelessWidget {
         TxnStatus.failed => (KStatusTone.error, 'Failed', KColor.loss),
       };
 
-  @override
-  Widget build(BuildContext context) {
-    final txn = MockData.txnById(id);
+  Future<void> _getReceipt() async {
+    setState(() => _receiptBusy = true);
+    try {
+      await _repo.receiptUrl(widget.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Receipt requested — check your email shortly.')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _receiptBusy = false);
+    }
+  }
 
-    if (txn == null) {
-      return Scaffold(
+  Widget get _notFoundScaffold => Scaffold(
         backgroundColor: KColor.bg,
         appBar: const KDetailHeader(title: 'Transaction'),
         body: Center(
           child: Text('Transaction not found', style: TextStyle(color: KColor.ink2)),
         ),
       );
-    }
 
-    final (_, statusLabel, dotColor) = _status(txn.status);
-    final amountColor = txn.incoming ? KColor.gain : KColor.ink;
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Txn>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: KColor.bg,
+            appBar: const KDetailHeader(title: 'Transaction'),
+            body: const KLoadingView(),
+          );
+        }
 
-    final rows = <(String, String)>[
-      ('Type', '${_typeLabel(txn)} · ${txn.title.replaceFirst(RegExp(r'^(Buy|Sell)\s+'), '')}'),
-      ('Reference', txn.id),
-      ('Date & time', txn.date),
-      ('Status', statusLabel),
-    ];
+        if (snapshot.hasError) {
+          final error = snapshot.error;
+          // A 404 (stale/deleted/inaccessible id — e.g. a deep link) is the
+          // screen's own designed "not found" state, not a generic load
+          // failure — see .pipeline/fragments/transaction-detail.json
+          // uiStatesHandled[not-found].
+          if (error is ApiException && error.statusCode == 404) {
+            return _notFoundScaffold;
+          }
+          return Scaffold(
+            backgroundColor: KColor.bg,
+            appBar: const KDetailHeader(title: 'Transaction'),
+            body: KErrorView(
+              onPrimary: () => setState(() => _future = _repo.byId(widget.id)),
+            ),
+          );
+        }
 
-    return Scaffold(
-      backgroundColor: KColor.bg,
-      appBar: const KDetailHeader(title: 'Transaction'),
-      body: SafeArea(
-        top: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(KSpace.gutter, 20, KSpace.gutter, 24),
-          children: [
-            KCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Status pill + hero amount, centred over a hairline.
-                  Container(
-                    padding: const EdgeInsets.only(bottom: 18),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
-                    ),
-                    child: Column(
-                      children: [
-                        _StatusPill(label: statusLabel, dotColor: dotColor),
-                        const SizedBox(height: 16),
-                        Text(txn.amount,
-                            style: KType.hero(color: amountColor).tnum),
-                      ],
-                    ),
+        final txn = snapshot.data;
+        if (txn == null) return _notFoundScaffold;
+
+        final (_, statusLabel, dotColor) = _status(txn.status);
+        final amountColor = txn.incoming ? KColor.gain : KColor.ink;
+
+        final rows = <(String, String)>[
+          ('Type',
+              '${_typeLabel(txn)} · ${txn.title.replaceFirst(RegExp(r'^(Buy|Sell)\s+'), '')}'),
+          ('Reference', txn.id),
+          ('Date & time', txn.date),
+          ('Status', statusLabel),
+        ];
+
+        return Scaffold(
+          backgroundColor: KColor.bg,
+          appBar: const KDetailHeader(title: 'Transaction'),
+          body: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(KSpace.gutter, 20, KSpace.gutter, 24),
+              children: [
+                KCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Status pill + hero amount, centred over a hairline.
+                      Container(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
+                        ),
+                        child: Column(
+                          children: [
+                            _StatusPill(label: statusLabel, dotColor: dotColor),
+                            const SizedBox(height: 16),
+                            Text(txn.amount,
+                                style: KType.hero(color: amountColor).tnum),
+                          ],
+                        ),
+                      ),
+                      // Detail rows.
+                      for (var i = 0; i < rows.length; i++)
+                        _DetailRow(
+                            label: rows[i].$1, value: rows[i].$2, last: i == rows.length - 1),
+                    ],
                   ),
-                  // Detail rows.
-                  for (var i = 0; i < rows.length; i++)
-                    _DetailRow(label: rows[i].$1, value: rows[i].$2, last: i == rows.length - 1),
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+                // GET /transactions/:id/receipt. Backend note: receipt
+                // generation is still a stub (placeholder presigned URL, no
+                // real PDF yet) — wired anyway so the plumbing is correct
+                // end-to-end; see transaction_repository.dart's receiptUrl().
+                KButton(
+                  label: 'Get receipt',
+                  variant: KButtonVariant.ghost,
+                  loading: _receiptBusy,
+                  onPressed: _receiptBusy ? null : _getReceipt,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            // SEAM: real receipt generation (PDF / statement service) plugs in here.
-            KButton(
-              label: 'Get receipt',
-              variant: KButtonVariant.ghost,
-              onPressed: () {},
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

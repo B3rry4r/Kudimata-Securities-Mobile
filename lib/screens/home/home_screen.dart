@@ -2,255 +2,362 @@
 // quick-actions row, watchlist strip, holdings preview, trending, Orders link.
 // Ported from app-screens.jsx `Home`. Root tab: builds a Scaffold body WITHOUT a
 // bottom nav — the shell owns that. Numbers tabular; movement colour on numbers.
+//
+// Wired to the backend per lib/data/api/README.md's FutureBuilder convention.
+// Four repositories back this screen's five reads, combined into one
+// `Future.wait`-style load (kicked off concurrently, awaited in sequence) fed
+// through a single screen-level FutureBuilder — one spinner/retry for the
+// whole tab rather than five nested ones:
+//   UserRepository.me()             GET /users/me                — greeting name
+//   HoldingsRepository.summary()    GET /portfolio-summary        — BalancePanel
+//     (totalValue/change/chartSeries; replaces the old hardcoded literals —
+//     STUB-home-1 in .pipeline/fragments/home.json — with the SAME aggregate
+//     the portfolio screen uses, per that stub's own reconciliation note)
+//   WatchlistRepository.items()     GET /watchlist-items          — watchlist strip
+//     (already scoped server-side to the caller's saved tickers, so this
+//     screen no longer intersects it with AppState.watchlistTickers itself —
+//     that set/toggleWatch stays for the add/remove-watchlist UI elsewhere)
+//   HoldingsRepository.holdings()   GET /holdings                 — holdings preview
+//     (Holding itself has no display fields; .asset is the joined Asset&Quote
+//     HoldingsRepository already resolves — see that file's header. pageSize: 5
+//     keeps this a "preview" card, matching its "See all → portfolio" link)
+//   AssetRepository.trending()      GET /assets/trending           — trending list
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/mock.dart';
 import 'package:kudimata_securities/data/models.dart';
+import 'package:kudimata_securities/data/repositories/asset_repository.dart';
+import 'package:kudimata_securities/data/repositories/holdings_repository.dart';
+import 'package:kudimata_securities/data/repositories/user_repository.dart';
+import 'package:kudimata_securities/data/repositories/watchlist_repository.dart';
 import 'package:kudimata_securities/router/routes.dart';
+import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'package:kudimata_securities/screens/wallet/wallet_flows.dart';
 
 const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 
-class HomeScreen extends StatelessWidget {
+KTrend _kTrend(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
+
+/// Combined payload for the single screen-level FutureBuilder.
+class _HomeData {
+  const _HomeData({
+    required this.user,
+    required this.summary,
+    required this.watchlist,
+    required this.holdings,
+    required this.trending,
+  });
+
+  final UserProfile user;
+  final PortfolioSummary summary;
+  final List<Asset> watchlist;
+  final List<Asset> holdings;
+  final List<Asset> trending;
+}
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  KTrend _k(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
+  late final _holdingsRepo = HoldingsRepository(AppScope.read(context).apiClient);
+  late final _watchlistRepo = WatchlistRepository(AppScope.read(context).apiClient);
+  late final _assetRepo = AssetRepository(AppScope.read(context).apiClient);
+  late Future<_HomeData> _future = _load();
+
+  Future<_HomeData> _load() async {
+    // Kick off all five requests before awaiting any, so they run concurrently.
+    final userFuture = _userRepo.me();
+    final summaryFuture = _holdingsRepo.summary();
+    final watchlistFuture = _watchlistRepo.items();
+    final holdingsFuture = _holdingsRepo.holdings(pageSize: 5);
+    final trendingFuture = _assetRepo.trending();
+
+    final user = await userFuture;
+    final summary = await summaryFuture;
+    final watchlist = await watchlistFuture;
+    final holdingsPage = await holdingsFuture;
+    final trending = await trendingFuture;
+
+    return _HomeData(
+      user: user,
+      summary: summary,
+      watchlist: watchlist,
+      holdings: holdingsPage.data.map((h) => h.asset).toList(),
+      trending: trending,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = MockData.user;
-    final first = user.fullName.split(' ').first;
-    final watch = AppScope.of(context).watchlistTickers;
-
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
-          padding: const EdgeInsets.only(top: 12, bottom: 100),
-          children: [
-            // greeting row
-            Padding(
-              padding: _gut,
-              child: Row(
-                children: [
-                  _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
-                  const SizedBox(width: 12),
-                  Text('Hi, $first', style: KType.section()),
-                  const Spacer(),
-                  _BellButton(
-                    onPressed: () => context.push(Routes.notifications),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // feature panel — the one ink surface
-            Padding(
-              padding: _gut,
-              child: KBalancePanel(
-                label: 'Portfolio value',
-                balance: '₦2,418,650.00',
-                change: '+₦34,210 · 1.43% today',
-                changeTone: KTrend.gain,
-                chart: KLineChart(
-                  data: MockData.homeSeries,
-                  onDark: true,
-                  height: 120,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // quick actions
-            Padding(
-              padding: _gut,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Add money',
-                      icon: 'arrowDownLeft',
-                      onTap: () => showAddMoneyFlow(context),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Invest',
-                      icon: 'arrowUpRight',
-                      onTap: () => context.go(Routes.markets),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickAction(
-                      label: 'Withdraw',
-                      icon: 'arrowUp',
-                      onTap: () => showWithdrawFlow(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // watchlist strip
-            Padding(
-              padding: _gut,
-              child: Row(
-                children: [
-                  const KEyebrow('Watchlist'),
-                  const Spacer(),
-                  _SeeAll(onTap: () => context.push(Routes.watchlist)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 152,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, 4),
-                children: [
-                  for (final a in MockData.watchlist.where((a) => watch.contains(a.ticker)))
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: _WatchCard(
-                        asset: a,
-                        onTap: () => context.push(Routes.assetDetail(a.ticker)),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // holdings preview → portfolio (header format matches Watchlist:
-            // eyebrow left, See all right)
-            Padding(
-              padding: _gut,
-              child: Row(
-                children: [
-                  const KEyebrow('Holdings'),
-                  const Spacer(),
-                  _SeeAll(onTap: () => context.go(Routes.portfolio)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: _gut,
-              child: KCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < MockData.holdings.length; i++)
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: i == 0
-                                ? BorderSide.none
-                                : BorderSide(color: KColor.hairline, width: 1),
-                          ),
-                        ),
-                        child: KAssetRow(
-                          name: MockData.holdings[i].name,
-                          ticker: MockData.holdings[i].ticker,
-                          price: MockData.holdings[i].price,
-                          change: MockData.holdings[i].change,
-                          trend: _k(MockData.holdings[i].trend),
-                          logoColor: MockData.holdings[i].logoColor ?? KColor.ink,
-                          onTap: () =>
-                              context.push(Routes.assetDetail(MockData.holdings[i].ticker)),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // trending
-            const Padding(
-              padding: _gut,
-              child: KEyebrow('Trending'),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: _gut,
-              child: KCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < MockData.trending.length; i++)
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: i == 0
-                                ? BorderSide.none
-                                : BorderSide(color: KColor.hairline, width: 1),
-                          ),
-                        ),
-                        child: KAssetRow(
-                          name: MockData.trending[i].name,
-                          ticker: MockData.trending[i].ticker,
-                          price: MockData.trending[i].price,
-                          change: MockData.trending[i].change,
-                          trend: _k(MockData.trending[i].trend),
-                          logoColor: MockData.trending[i].logoColor ?? KColor.ink,
-                          onTap: () =>
-                              context.push(Routes.assetDetail(MockData.trending[i].ticker)),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // Orders link
-            const Padding(
-              padding: _gut,
-              child: KEyebrow('Activity'),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: _gut,
-              child: KCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                onTap: () => context.push(Routes.orderStatus),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                  child: Row(
-                    children: [
-                      const _Bubble(icon: 'transfer'),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Orders', style: KType.cardTitle()),
-                            const SizedBox(height: 2),
-                            Text('Track your buy & sell orders',
-                                style: KType.micro(color: KColor.ink3)),
-                          ],
-                        ),
-                      ),
-                      KIcon('chevronRight', size: 20, color: KColor.ink3),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+        child: FutureBuilder<_HomeData>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const KLoadingView();
+            }
+            if (snapshot.hasError) {
+              return KErrorView.failedLoad(
+                onPrimary: () => setState(() => _future = _load()),
+              );
+            }
+            return _HomeBody(data: snapshot.data!);
+          },
         ),
       ),
+    );
+  }
+}
+
+/// The loaded-state widget tree — identical to the original mock-fed
+/// `build()`, just parameterized on fetched data instead of `MockData.x`.
+class _HomeBody extends StatelessWidget {
+  const _HomeBody({required this.data});
+  final _HomeData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final first = data.user.fullName.split(' ').first;
+
+    return ListView(
+      // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
+      padding: const EdgeInsets.only(top: 12, bottom: 100),
+      children: [
+        // greeting row
+        Padding(
+          padding: _gut,
+          child: Row(
+            children: [
+              _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
+              const SizedBox(width: 12),
+              Text('Hi, $first', style: KType.section()),
+              const Spacer(),
+              _BellButton(
+                onPressed: () => context.push(Routes.notifications),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // feature panel — the one ink surface
+        Padding(
+          padding: _gut,
+          child: KBalancePanel(
+            label: 'Portfolio value',
+            balance: data.summary.totalValue,
+            change: data.summary.change,
+            changeTone: _kTrend(data.summary.changeTrend),
+            chart: KLineChart(
+              data: data.summary.chartSeries,
+              onDark: true,
+              height: 120,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // quick actions
+        Padding(
+          padding: _gut,
+          child: Row(
+            children: [
+              Expanded(
+                child: _QuickAction(
+                  label: 'Add money',
+                  icon: 'arrowDownLeft',
+                  onTap: () => showAddMoneyFlow(context),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuickAction(
+                  label: 'Invest',
+                  icon: 'arrowUpRight',
+                  onTap: () => context.go(Routes.markets),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuickAction(
+                  label: 'Withdraw',
+                  icon: 'arrowUp',
+                  onTap: () => showWithdrawFlow(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // watchlist strip — GET /watchlist-items is already scoped server-side
+        // to the caller's saved tickers, so no local AppState.watchlistTickers
+        // filter here (unlike the old MockData.watchlist.where(...) version).
+        Padding(
+          padding: _gut,
+          child: Row(
+            children: [
+              const KEyebrow('Watchlist'),
+              const Spacer(),
+              _SeeAll(onTap: () => context.push(Routes.watchlist)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        data.watchlist.isEmpty
+            ? Padding(
+                padding: _gut,
+                child: _WatchlistEmptyCard(
+                  onTap: () => context.push(Routes.watchlist),
+                ),
+              )
+            : SizedBox(
+                height: 152,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, 4),
+                  children: [
+                    for (final a in data.watchlist)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: _WatchCard(
+                          asset: a,
+                          onTap: () => context.push(Routes.assetDetail(a.ticker)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+        const SizedBox(height: 28),
+
+        // holdings preview → portfolio (header format matches Watchlist:
+        // eyebrow left, See all right)
+        Padding(
+          padding: _gut,
+          child: Row(
+            children: [
+              const KEyebrow('Holdings'),
+              const Spacer(),
+              _SeeAll(onTap: () => context.go(Routes.portfolio)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: _gut,
+          child: KCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Column(
+              children: [
+                for (var i = 0; i < data.holdings.length; i++)
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: i == 0
+                            ? BorderSide.none
+                            : BorderSide(color: KColor.hairline, width: 1),
+                      ),
+                    ),
+                    child: KAssetRow(
+                      name: data.holdings[i].name,
+                      ticker: data.holdings[i].ticker,
+                      price: data.holdings[i].price,
+                      change: data.holdings[i].change,
+                      trend: _kTrend(data.holdings[i].trend),
+                      logoColor: data.holdings[i].logoColor ?? KColor.ink,
+                      onTap: () =>
+                          context.push(Routes.assetDetail(data.holdings[i].ticker)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // trending
+        const Padding(
+          padding: _gut,
+          child: KEyebrow('Trending'),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: _gut,
+          child: KCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Column(
+              children: [
+                for (var i = 0; i < data.trending.length; i++)
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: i == 0
+                            ? BorderSide.none
+                            : BorderSide(color: KColor.hairline, width: 1),
+                      ),
+                    ),
+                    child: KAssetRow(
+                      name: data.trending[i].name,
+                      ticker: data.trending[i].ticker,
+                      price: data.trending[i].price,
+                      change: data.trending[i].change,
+                      trend: _kTrend(data.trending[i].trend),
+                      logoColor: data.trending[i].logoColor ?? KColor.ink,
+                      onTap: () =>
+                          context.push(Routes.assetDetail(data.trending[i].ticker)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // Orders link
+        const Padding(
+          padding: _gut,
+          child: KEyebrow('Activity'),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: _gut,
+          child: KCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            onTap: () => context.push(Routes.orderStatus),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+              child: Row(
+                children: [
+                  const _Bubble(icon: 'transfer'),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Orders', style: KType.cardTitle()),
+                        const SizedBox(height: 2),
+                        Text('Track your buy & sell orders',
+                            style: KType.micro(color: KColor.ink3)),
+                      ],
+                    ),
+                  ),
+                  KIcon('chevronRight', size: 20, color: KColor.ink3),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -354,6 +461,41 @@ class _QuickAction extends StatelessWidget {
                     .copyWith(letterSpacing: 0.01 * 10)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Inline prompt shown in place of the horizontal watchlist strip when the
+/// investor has zero watched tickers — matches this screen's existing
+/// `KCard` treatment (see the Orders card below) rather than leaving the
+/// section blank. Taps through to the dedicated Watchlist screen.
+class _WatchlistEmptyCard extends StatelessWidget {
+  const _WatchlistEmptyCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return KCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          const _Bubble(icon: 'plus'),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Your watchlist is empty', style: KType.cardTitle()),
+                const SizedBox(height: 2),
+                Text('Add stocks to your watchlist to see them here',
+                    style: KType.micro(color: KColor.ink3)),
+              ],
+            ),
+          ),
+          KIcon('chevronRight', size: 20, color: KColor.ink3),
+        ],
       ),
     );
   }

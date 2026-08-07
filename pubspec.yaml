@@ -38,6 +38,47 @@ dependencies:
   flutter_svg: ^2.3.0
   go_router: ^17.3.0
 
+  # Real camera capture for kyc-liveness's selfie step (ImageSource.camera).
+  image_picker: ^1.1.2
+
+  # Device file picker for kyc-id's ID upload (JPG/PNG/PDF from device
+  # storage — image_picker above only covers camera/gallery images, not
+  # PDF, so this screen needs its own picker rather than reusing that one).
+  file_picker: ^8.1.2
+
+  # Shared API client infra (lib/data/api/) — HTTP client w/ interceptor
+  # support, and secure on-device token storage. No state-management package
+  # added alongside these: screens consume repositories via FutureBuilder,
+  # see lib/data/api/README.md.
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+
+  # SHA-256 for PasscodeStore's salted passcode hash (lib/data/api/passcode_store.dart)
+  # — already resolved transitively (via dio/flutter_secure_storage); pinned
+  # explicitly here since we import it directly.
+  crypto: ^3.0.6
+
+  # Legal screen: opens a presigned document-download URL externally — there
+  # is no in-app PDF viewer, so launching the browser/OS handler is the
+  # minimal appropriate tool for that one seam.
+  url_launcher: ^6.3.2
+
+  # Plain (non-interceptor) HTTP client for kyc-id's direct-to-S3 presigned
+  # PUT upload — deliberately NOT the shared ApiClient's Dio instance, whose
+  # auth interceptor would attach this app's own Authorization header to the
+  # S3 request and break the presigned-URL signature.
+  http: ^1.2.2
+
+  # Refer & earn's "Share invite" (lib/screens/account/refer_earn_screen.dart)
+  # — opens the real OS share sheet for the referral code/message, alongside
+  # the existing trackShare() attribution ping.
+  share_plus: ^12.0.2
+
+  # Small local key-value persistence for the last ~5 recent search terms
+  # (lib/screens/home/search_screen.dart) — purely on-device history, not a
+  # backend concern.
+  shared_preferences: ^2.5.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

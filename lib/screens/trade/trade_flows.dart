@@ -4,14 +4,39 @@
 // sequence of showKSheet presentations; the launching screen (asset detail) stays
 // behind the scrim, so we don't re-render the design's TradeBackdrop here.
 //
-// SEAM: the order itself is mocked — a delay + KStatusView stands in for the real
-// sponsoring-broker order API. No real trading happens.
+// WIRED: order placement calls OrderPlacementRepository.placeOrder ->
+// `POST /orders` (see lib/data/repositories/order_placement_repository.dart).
+// On ApiException the Review sheet swaps to KErrorView.orderFailed instead of
+// silently "succeeding".
+//
+// FIXED BUG (was: Review sheet never received what the investor actually
+// typed in the Amount sheet — it always showed a hardcoded "₦50,000"/
+// "186.3 shares" regardless of input, so a real order would have submitted
+// the wrong amount). The Amount sheet now computes an [_OrderInput] (naira
+// value + share units, whichever the investor actually entered, per the
+// naira/shares toggle) and threads it through Review -> confirm -> the
+// `POST /orders` payload -> the Success message.
+//
+// FIXED BUG (was: the Amount sheet's "Balance"/"Holding" line was a
+// hardcoded "₦310,400" / "120 shares · ₦32,208" literal, unrelated to the
+// investor's real wallet balance or real position size). The Amount sheet
+// now fetches WalletRepository.balance() (buy, `GET /wallet-balance`) or
+// HoldingsRepository.byTicker (sell, `GET /holdings/:ticker`) once in
+// initState and shows the resolved figure — "…" while loading, "—" if the
+// fetch fails, since this is a secondary informational element and must not
+// block or crash the trade flow.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/data/models.dart';
+import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
+import 'package:kudimata_securities/data/repositories/order_placement_repository.dart';
+import 'package:kudimata_securities/data/repositories/wallet_repository.dart';
+import 'package:kudimata_securities/data/repositories/holdings_repository.dart';
+import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/router/routes.dart';
 import 'package:go_router/go_router.dart';
 
@@ -34,6 +59,49 @@ enum _Side { buy, sell }
 
 extension on _Side {
   bool get isSell => this == _Side.sell;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared amount/price helpers.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Asset.price arrives as a preformatted display string ("₦268.40" /
+/// "$228.10") — strip the currency symbol/commas to get a usable double.
+double _parsePrice(String price) =>
+    double.tryParse(price.replaceAll(RegExp('[^0-9.]'), '')) ?? 0;
+
+/// Whole-naira value -> "₦50,000" (no decimals, matching this flow's mock
+/// figures — Fee/Amount/Total were always shown as whole naira).
+String _formatNaira(double value) {
+  final rounded = value.round();
+  final negative = rounded < 0;
+  final abs = negative ? -rounded : rounded;
+  final s = abs.toString();
+  final buf = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    final posFromEnd = s.length - i;
+    buf.write(s[i]);
+    if (posFromEnd > 1 && posFromEnd % 3 == 1) buf.write(',');
+  }
+  return '${negative ? '−' : ''}₦$buf';
+}
+
+/// What the investor actually entered in the Amount sheet, resolved to both
+/// units — this is what threads through Review -> confirm -> the order
+/// payload -> the Success message, replacing the old hardcoded figures.
+class _OrderInput {
+  const _OrderInput({
+    required this.unit,
+    required this.amountNaira,
+    required this.units,
+  });
+
+  /// 'naira' or 'shares' — mirrors the Amount sheet's KSegmentedControl
+  /// toggle; decides which of amountNaira/units is the investor's real
+  /// input and which is the derived estimate.
+  final String unit;
+  final double amountNaira;
+  final double units;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -63,8 +131,39 @@ class _AmountSheet extends StatefulWidget {
 
 class _AmountSheetState extends State<_AmountSheet> {
   late final TextEditingController _amount = TextEditingController(text: '50,000');
+  late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
+  late final _holdingsRepo = HoldingsRepository(AppScope.read(context).apiClient);
   String _unit = 'naira';
   late String _quick = widget.side.isSell ? '50%' : '₦50k';
+
+  // Balance (buy) / Holding (sell) line — fetched once when the sheet opens
+  // (GET /wallet-balance or GET /holdings/:ticker), replacing the old
+  // hardcoded '₦310,400' / '120 shares · ₦32,208' literals. null while the
+  // fetch is in flight; '—' if it fails — this is a secondary informational
+  // element, not the core trade flow, so a failure here must not block or
+  // crash the sheet.
+  String? _balanceOrHolding;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBalanceOrHolding();
+  }
+
+  Future<void> _loadBalanceOrHolding() async {
+    try {
+      final text = widget.side.isSell
+          ? await _holdingsRepo
+              .byTicker(widget.asset.ticker)
+              .then((h) => '${h.units} shares · ${h.marketValue}')
+          : await _walletRepo.balance();
+      if (!mounted) return;
+      setState(() => _balanceOrHolding = text);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _balanceOrHolding = '—');
+    }
+  }
 
   @override
   void dispose() {
@@ -72,11 +171,21 @@ class _AmountSheetState extends State<_AmountSheet> {
     super.dispose();
   }
 
-  // Parse the (comma-grouped) naira amount for the limit check.
+  // Parse the (comma-grouped) figure the investor typed — its meaning
+  // (naira amount vs share units) depends on [_unit].
   double get _amountValue =>
       double.tryParse(_amount.text.replaceAll(RegExp('[^0-9.]'), '')) ?? 0;
 
-  bool get _overLimit => !widget.side.isSell && _amountValue > _kDailyLimit;
+  double get _price => _parsePrice(widget.asset.price);
+
+  /// Share units, whichever way the investor entered the order.
+  double get _units =>
+      _unit == 'shares' ? _amountValue : (_price > 0 ? _amountValue / _price : 0);
+
+  /// Naira value, whichever way the investor entered the order.
+  double get _amountNaira => _unit == 'naira' ? _amountValue : _amountValue * _price;
+
+  bool get _overLimit => !widget.side.isSell && _amountNaira > _kDailyLimit;
 
   @override
   Widget build(BuildContext context) {
@@ -89,11 +198,12 @@ class _AmountSheetState extends State<_AmountSheet> {
       mainAxisSize: MainAxisSize.min,
       children: [
         KInput(
-          label: 'Amount',
+          label: _unit == 'naira' ? 'Amount' : 'Shares',
           controller: _amount,
           numeric: true,
           amount: true,
-          prefix: '₦',
+          prefix: _unit == 'naira' ? '₦' : null,
+          suffix: _unit == 'shares' ? 'shares' : null,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (_) => setState(() {}),
           error: _overLimit
@@ -111,8 +221,12 @@ class _AmountSheetState extends State<_AmountSheet> {
         ),
         if (!_overLimit) ...[
           const SizedBox(height: 10),
-          Text('≈ 186.3 shares',
-              style: KType.micro(color: KColor.ink3).tnum.copyWith(letterSpacing: 0.04 * 10)),
+          Text(
+            _unit == 'naira'
+                ? '≈ ${_units.toStringAsFixed(1)} shares'
+                : '≈ ${_formatNaira(_amountNaira)}',
+            style: KType.micro(color: KColor.ink3).tnum.copyWith(letterSpacing: 0.04 * 10),
+          ),
         ],
 
         // Holding / balance line + ghost shortcut.
@@ -126,7 +240,7 @@ class _AmountSheetState extends State<_AmountSheet> {
                   children: [
                     TextSpan(text: isSell ? 'Holding ' : 'Balance '),
                     TextSpan(
-                      text: isSell ? '120 shares · ₦32,208' : '₦310,400',
+                      text: _balanceOrHolding ?? '…',
                       style: KType.body(color: KColor.ink, w: KWeight.medium).tnum,
                     ),
                   ],
@@ -174,8 +288,13 @@ class _AmountSheetState extends State<_AmountSheet> {
             : KButton(
                 label: 'Review order',
                 onPressed: () {
+                  final input = _OrderInput(
+                    unit: _unit,
+                    amountNaira: _amountNaira,
+                    units: _units,
+                  );
                   Navigator.of(context).pop();
-                  _showReviewSheet(context, widget.asset, side: widget.side);
+                  _showReviewSheet(context, widget.asset, side: widget.side, input: input);
                 },
               ),
       ],
@@ -187,50 +306,75 @@ class _AmountSheetState extends State<_AmountSheet> {
 // Step 2 — Review order (shared). Summary rows + risk ack + confirm.
 // ─────────────────────────────────────────────────────────────────────────────
 
-void _showReviewSheet(BuildContext context, Asset asset, {required _Side side}) {
+void _showReviewSheet(
+  BuildContext context,
+  Asset asset, {
+  required _Side side,
+  required _OrderInput input,
+}) {
   showKSheet<void>(
     context,
     title: 'Review order',
-    child: _ReviewSheet(asset: asset, side: side),
+    child: _ReviewSheet(asset: asset, side: side, input: input),
   );
 }
 
 class _ReviewSheet extends StatefulWidget {
-  const _ReviewSheet({required this.asset, required this.side});
+  const _ReviewSheet({required this.asset, required this.side, required this.input});
   final Asset asset;
   final _Side side;
+  final _OrderInput input;
 
   @override
   State<_ReviewSheet> createState() => _ReviewSheetState();
 }
 
+// Flat mock fee — registry.json's Order resource has no fee field, so
+// unlike amount/units (the investor's real input) this stays a fixed design
+// figure, same as before.
+const double _kFeeNaira = 125;
+
 class _ReviewSheetState extends State<_ReviewSheet> {
+  late final _repo = OrderPlacementRepository(AppScope.read(context).apiClient);
   bool _agreed = false;
   bool _placing = false;
+  bool _failed = false;
 
   @override
   Widget build(BuildContext context) {
+    if (_failed) {
+      return KErrorView.orderFailed(
+        onPrimary: () {
+          setState(() => _failed = false);
+          _confirm();
+        },
+        onSecondary: () => Navigator.of(context).pop(),
+      );
+    }
+
     final isSell = widget.side.isSell;
-    // Asset ticker + price track the launching asset so the review agrees with
-    // the sheet title; the remaining figures mirror the design's mock order.
+    final input = widget.input;
     final ticker = widget.asset.ticker;
     final price = widget.asset.price;
-    final rows = isSell
-        ? [
-            ('Asset', ticker),
-            ('Type', 'Market'),
-            ('Shares', '186.3'),
-            ('Est. price', price),
-            ('Fee', '₦125'),
-          ]
-        : [
-            ('Asset', ticker),
-            ('Type', 'Market'),
-            ('Amount', '₦50,000'),
-            ('Est. shares', '186.3'),
-            ('Est. price', price),
-            ('Fee', '₦125'),
-          ];
+
+    // Rows now reflect the investor's actual input: whichever of
+    // amount/shares they typed is shown as the primary figure, the other is
+    // the derived estimate — replacing the old hardcoded '₦50,000'/'186.3'.
+    final rows = <(String, String)>[
+      ('Asset', ticker),
+      ('Type', 'Market'),
+      if (input.unit == 'naira') ...[
+        ('Amount', _formatNaira(input.amountNaira)),
+        ('Est. shares', input.units.toStringAsFixed(1)),
+      ] else ...[
+        ('Shares', input.units.toStringAsFixed(1)),
+        ('Est. amount', _formatNaira(input.amountNaira)),
+      ],
+      ('Est. price', price),
+      ('Fee', _formatNaira(_kFeeNaira)),
+    ];
+
+    final total = isSell ? input.amountNaira - _kFeeNaira : input.amountNaira + _kFeeNaira;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +390,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             children: [
               Text(isSell ? 'Proceeds' : 'Total',
                   style: KType.cardTitle(w: KWeight.semibold)),
-              Text(isSell ? '₦49,875' : '₦50,125',
+              Text(_formatNaira(total),
                   style: KType.section().tnum.copyWith(fontWeight: KWeight.bold)),
             ],
           ),
@@ -277,12 +421,32 @@ class _ReviewSheetState extends State<_ReviewSheet> {
 
   Future<void> _confirm() async {
     setState(() => _placing = true);
-    // SEAM: sponsoring-broker order API call goes here. Mocked with a short delay;
-    // a real placement would return an order id / status to thread into Orders.
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    Navigator.of(context).pop();
-    _showSuccessSheet(context, widget.asset, side: widget.side);
+    final side = widget.side.isSell ? OrderSide.sell : OrderSide.buy;
+    final input = widget.input;
+    try {
+      if (input.unit == 'shares') {
+        await _repo.placeOrder(
+          ticker: widget.asset.ticker,
+          side: side,
+          units: input.units,
+        );
+      } else {
+        await _repo.placeOrder(
+          ticker: widget.asset.ticker,
+          side: side,
+          amountKobo: (input.amountNaira * 100).round(),
+        );
+      }
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _showSuccessSheet(context, widget.asset, side: widget.side, input: input);
+    } on ApiException {
+      if (!mounted) return;
+      setState(() {
+        _placing = false;
+        _failed = true;
+      });
+    }
   }
 }
 
@@ -314,8 +478,14 @@ class _SummaryRow extends StatelessWidget {
 // per the design. The orders screen has its own entry points (Home / Wallet).
 // ─────────────────────────────────────────────────────────────────────────────
 
-void _showSuccessSheet(BuildContext context, Asset asset, {required _Side side}) {
+void _showSuccessSheet(
+  BuildContext context,
+  Asset asset, {
+  required _Side side,
+  required _OrderInput input,
+}) {
   HapticFeedback.lightImpact();
+  final amountStr = _formatNaira(input.amountNaira);
   showKSheet<void>(
     context,
     child: Padding(
@@ -324,8 +494,8 @@ void _showSuccessSheet(BuildContext context, Asset asset, {required _Side side})
         tone: KStatusTone.success,
         title: 'Order placed',
         message: side.isSell
-            ? 'You sold ₦50,000 of ${asset.ticker}. Proceeds settle T+3.'
-            : 'You bought ₦50,000 of ${asset.ticker}. Shares settle T+3.',
+            ? 'You sold $amountStr of ${asset.ticker}. Proceeds settle T+3.'
+            : 'You bought $amountStr of ${asset.ticker}. Shares settle T+3.',
         primary: 'View portfolio',
         onPrimary: () {
           Navigator.of(context).pop();

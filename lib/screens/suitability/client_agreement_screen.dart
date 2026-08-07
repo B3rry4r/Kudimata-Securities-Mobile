@@ -1,6 +1,10 @@
 // Suitability — client agreement. Scrollable terms, a KCheckbox, a primary
-// "Accept and continue" button, and a version footer. Accepting completes
-// suitability + signs the user in, then routes to the home tab.
+// "Accept and continue" button, and a version footer. Accepting posts a
+// ComplianceAcknowledgement (kind: 'client_agreement') to the broker
+// compliance API, then — only once that succeeds — completes suitability
+// and signs the user in, then routes to the home tab. This is the final
+// gated onboarding step, so those AppState flags must never flip on a
+// failed acknowledgement.
 // Ported from risk-screens.jsx (ClientAgreement).
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +13,8 @@ import 'package:kudimata_securities/widgets/widgets.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
+import 'package:kudimata_securities/data/repositories/compliance_repository.dart';
 
 /// One numbered, eyebrow-led clause.
 class _Clause {
@@ -26,6 +32,13 @@ class ClientAgreementScreen extends StatefulWidget {
 
 class _ClientAgreementScreenState extends State<ClientAgreementScreen> {
   bool _agreed = false;
+  bool _submitting = false;
+
+  late final _repo = ComplianceRepository(AppScope.read(context).apiClient);
+
+  /// Matches the "Version 1.0 · 25 June 2026" footer below — the
+  /// documentVersion sent with the acknowledgement.
+  static const _documentVersion = '1.0';
 
   static const List<_Clause> _clauses = [
     _Clause('1 · About this agreement',
@@ -46,12 +59,25 @@ class _ClientAgreementScreenState extends State<ClientAgreementScreen> {
             'regulation.'),
   ];
 
-  void _accept() {
-    // SEAM: the signed agreement record would post to the broker compliance API.
-    final app = AppScope.read(context);
-    app.setSuitabilityComplete(true);
-    app.setSignedIn(true);
-    context.go(Routes.home);
+  Future<void> _accept() async {
+    setState(() => _submitting = true);
+    try {
+      await _repo.acknowledge(
+        kind: 'client_agreement',
+        documentVersion: _documentVersion,
+      );
+      if (!mounted) return;
+      final app = AppScope.read(context);
+      app.setSuitabilityComplete(true);
+      app.setSignedIn(true);
+      context.go(Routes.home);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    }
   }
 
   @override
@@ -102,7 +128,8 @@ class _ClientAgreementScreenState extends State<ClientAgreementScreen> {
                     const SizedBox(height: 14),
                     KButton(
                       label: 'Accept and continue',
-                      onPressed: _agreed ? _accept : null,
+                      loading: _submitting,
+                      onPressed: _agreed && !_submitting ? _accept : null,
                     ),
                     const SizedBox(height: 14),
                     Center(

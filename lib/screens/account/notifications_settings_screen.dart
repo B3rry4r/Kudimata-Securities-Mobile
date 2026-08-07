@@ -1,6 +1,21 @@
-// Stage 9 — Notifications settings (pushed). Grouped KSwitch lists by channel.
-// Mirrors `Notifications` in settings-screens.jsx.
+// Stage 9 — Notifications settings (pushed). Mirrors `Notifications` in
+// settings-screens.jsx.
+//
+// Wired per lib/data/api/README.md's FutureBuilder convention against
+// NotificationPreferencesRepository (GET/PUT /notification-preferences/me).
+// Per dispatcher ruling C-5 / UA-19, the real backend models EMAIL ONLY
+// (ordersEmail/priceAlertsEmail/accountEmail) — there is no Push or SMS
+// channel. The screen used to render a 3-channel (Push/Email/SMS) grid per
+// group, all local `setState` only; the Push and SMS columns have been
+// removed here (not just left inert) since there is no backend to wire them
+// to — only the Email toggle remains per group, same card/row styling as
+// before. Each toggle is an optimistic update (mirrors
+// notifications_screen.dart's `_markRead`): flip immediately, PATCH
+// /notification-preferences/me, revert on failure.
 import 'package:flutter/material.dart';
+import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/repositories/notification_preferences_repository.dart';
+import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'account_widgets.dart';
@@ -15,39 +30,102 @@ class NotificationsSettingsScreen extends StatefulWidget {
 
 class _NotificationsSettingsScreenState
     extends State<NotificationsSettingsScreen> {
-  // Each group → ordered (channel, on) toggles. SEAM: real preference store
-  // plugs in here.
-  final List<(String eyebrow, List<(String, bool)> rows)> _groups = [
-    ('Orders', [('Push', true), ('Email', true), ('SMS', false)]),
-    ('Price alerts', [('Push', true), ('Email', false)]),
-    ('Account', [('Push', true), ('Email', true), ('SMS', true)]),
-  ];
+  late final _repo =
+      NotificationPreferencesRepository(AppScope.read(context).apiClient);
+  late Future<NotificationPreferences> _future = _repo.me();
+
+  Future<void> _toggleOrders(NotificationPreferences prefs, bool value) async {
+    final previous = prefs.ordersEmail;
+    setState(() => prefs.ordersEmail = value);
+    try {
+      await _repo.update(prefs);
+    } catch (_) {
+      // No offline/retry machinery in this app (README.md) — just revert the
+      // optimistic change so the switch reflects the last-saved state.
+      if (mounted) setState(() => prefs.ordersEmail = previous);
+    }
+  }
+
+  Future<void> _togglePriceAlerts(NotificationPreferences prefs, bool value) async {
+    final previous = prefs.priceAlertsEmail;
+    setState(() => prefs.priceAlertsEmail = value);
+    try {
+      await _repo.update(prefs);
+    } catch (_) {
+      if (mounted) setState(() => prefs.priceAlertsEmail = previous);
+    }
+  }
+
+  Future<void> _toggleAccount(NotificationPreferences prefs, bool value) async {
+    final previous = prefs.accountEmail;
+    setState(() => prefs.accountEmail = value);
+    try {
+      await _repo.update(prefs);
+    } catch (_) {
+      if (mounted) setState(() => prefs.accountEmail = previous);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Notifications',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var g = 0; g < _groups.length; g++) ...[
-            if (g > 0) const SizedBox(height: 24),
-            KEyebrow(_groups[g].$1),
-            const SizedBox(height: 10),
-            KAccountCard(
-              children: [
-                for (var r = 0; r < _groups[g].$2.length; r++)
+      child: FutureBuilder<NotificationPreferences>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const KLoadingView();
+          }
+          if (snapshot.hasError) {
+            return KErrorView(
+              onPrimary: () => setState(() => _future = _repo.me()),
+            );
+          }
+          final prefs = snapshot.data!;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const KEyebrow('Orders'),
+              const SizedBox(height: 10),
+              KAccountCard(
+                children: [
                   _ToggleRow(
-                    label: _groups[g].$2[r].$1,
-                    checked: _groups[g].$2[r].$2,
-                    first: r == 0,
-                    onChanged: (v) => setState(
-                        () => _groups[g].$2[r] = (_groups[g].$2[r].$1, v)),
+                    label: 'Email',
+                    checked: prefs.ordersEmail,
+                    first: true,
+                    onChanged: (v) => _toggleOrders(prefs, v),
                   ),
-              ],
-            ),
-          ],
-        ],
+                ],
+              ),
+              const SizedBox(height: 24),
+              const KEyebrow('Price alerts'),
+              const SizedBox(height: 10),
+              KAccountCard(
+                children: [
+                  _ToggleRow(
+                    label: 'Email',
+                    checked: prefs.priceAlertsEmail,
+                    first: true,
+                    onChanged: (v) => _togglePriceAlerts(prefs, v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const KEyebrow('Account'),
+              const SizedBox(height: 10),
+              KAccountCard(
+                children: [
+                  _ToggleRow(
+                    label: 'Email',
+                    checked: prefs.accountEmail,
+                    first: true,
+                    onChanged: (v) => _toggleAccount(prefs, v),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }

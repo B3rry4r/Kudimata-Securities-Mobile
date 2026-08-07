@@ -41,5 +41,24 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Required by url_launcher (legal_screen.dart's document
+             download-url hand-off) so ACTION_VIEW can resolve an https
+             handler on Android 11+ package-visibility restrictions:
+             https://pub.dev/packages/url_launcher#configuration -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <!-- Required by url_launcher (help_support_screen.dart's email/call
+             support rows) so ACTION_VIEW can resolve mailto/tel handlers on
+             Android 11+ package-visibility restrictions. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="mailto"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tel"/>
+        </intent>
     </queries>
 </manifest>

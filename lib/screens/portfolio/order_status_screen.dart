@@ -1,60 +1,91 @@
 // Stage 7 · Order status (pushed; route Routes.orderStatus). Lists the user's
-// buy/sell orders from MockData.txns with per-order status via KBadge. Empty
-// state uses KStatusView. KDetailHeader (back chevron, no tab bar).
+// buy/sell orders with per-order status via KBadge. Empty state uses
+// KStatusView. KDetailHeader (back chevron, no tab bar).
 //
-// SEAM: order records are mock. Live order state (placed → filled / failed)
-// streams from the sponsoring-broker order API here.
+// Wired to GET /transactions (buy/sell subset) via OrdersRepository.orders()
+// — see lib/data/repositories/orders_repository.dart for why this screen's
+// data comes from the Transaction resource rather than registry.json's Order
+// resource, and lib/data/api/README.md for the FutureBuilder convention this
+// follows.
 import 'package:flutter/material.dart';
 
-import 'package:kudimata_securities/data/mock.dart';
+import 'package:kudimata_securities/app/app_state.dart';
 import 'package:kudimata_securities/data/models.dart';
+import 'package:kudimata_securities/data/repositories/orders_repository.dart';
+import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 
-class OrderStatusScreen extends StatelessWidget {
+class OrderStatusScreen extends StatefulWidget {
   const OrderStatusScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Orders = buy/sell ledger entries only (funding/withdrawal live in Wallet).
-    final orders = MockData.txns
-        .where((t) => t.type == TxnType.buy || t.type == TxnType.sell)
-        .toList();
+  State<OrderStatusScreen> createState() => _OrderStatusScreenState();
+}
 
+class _OrderStatusScreenState extends State<OrderStatusScreen> {
+  late final _repo = OrdersRepository(AppScope.read(context).apiClient);
+  late Future<List<Txn>> _future = _repo.orders();
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KColor.bg,
       appBar: const KDetailHeader(title: 'Orders'),
       body: SafeArea(
         top: false,
-        child: orders.isEmpty
-            ? const _EmptyOrders()
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(
-                    KSpace.gutter, 16, KSpace.gutter, 24),
-                children: [
-                  const KEyebrow('Recent orders'),
-                  const SizedBox(height: 12),
-                  KCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (var i = 0; i < orders.length; i++)
-                          Container(
-                            decoration: BoxDecoration(
-                              border: i == 0
-                                  ? null
-                                  : Border(
-                                      top: BorderSide(color: KColor.hairline, width: 1)),
-                            ),
-                            child: _OrderRow(txn: orders[i]),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+        child: FutureBuilder<List<Txn>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const KLoadingView();
+            }
+            if (snapshot.hasError) {
+              return KErrorView(
+                title: "Couldn't load orders",
+                onPrimary: () => setState(() => _future = _repo.orders()),
+              );
+            }
+            final orders = snapshot.data!;
+            return orders.isEmpty ? const _EmptyOrders() : _OrderList(orders: orders);
+          },
+        ),
       ),
+    );
+  }
+}
+
+/// The list of order rows — identical to the mock version's widget tree,
+/// just fed from live `Txn` data instead of `MockData.txns`.
+class _OrderList extends StatelessWidget {
+  const _OrderList({required this.orders});
+  final List<Txn> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(KSpace.gutter, 16, KSpace.gutter, 24),
+      children: [
+        const KEyebrow('Recent orders'),
+        const SizedBox(height: 12),
+        KCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < orders.length; i++)
+                Container(
+                  decoration: BoxDecoration(
+                    border: i == 0
+                        ? null
+                        : Border(top: BorderSide(color: KColor.hairline, width: 1)),
+                  ),
+                  child: _OrderRow(txn: orders[i]),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

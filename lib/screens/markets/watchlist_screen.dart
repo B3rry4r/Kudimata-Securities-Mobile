@@ -1,34 +1,95 @@
-// Watchlist (pushed) — saved assets (AppState.watchlistTickers) as KAssetRows
-// with a remove control; empty state when nothing is saved. Ported from
-// app-screens.jsx `Watchlist` / `WatchlistEmpty`. Pushed screen: Scaffold +
-// KDetailHeader. Toggle writes AppState (live across the app).
+// Watchlist (pushed) — saved assets fetched live from GET /watchlist-items
+// (WatchlistRepository) as KAssetRows with a remove control; empty state when
+// nothing is saved. Ported from app-screens.jsx `Watchlist` / `WatchlistEmpty`.
+// Pushed screen: Scaffold + KDetailHeader.
+//
+// Source of truth: the server. AppState.watchlistTickers/toggleWatch are
+// still flipped here for immediate optimistic UI feedback (they're shared
+// with other screens — home, asset-detail — that read them for local toggle
+// state), but the remove control now also fires DELETE /watchlist-items/:ticker
+// and, on failure, reverts the optimistic local flip and re-fetches the list
+// so the screen never drifts from what the server actually has saved.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/mock.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
 import 'package:kudimata_securities/data/models.dart';
+import 'package:kudimata_securities/data/repositories/watchlist_repository.dart';
 import 'package:kudimata_securities/router/routes.dart';
+import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 
 const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 
-class WatchlistScreen extends StatelessWidget {
+class WatchlistScreen extends StatefulWidget {
   const WatchlistScreen({super.key});
+
+  @override
+  State<WatchlistScreen> createState() => _WatchlistScreenState();
+}
+
+class _WatchlistScreenState extends State<WatchlistScreen> {
+  late final _repo = WatchlistRepository(AppScope.read(context).apiClient);
+  late Future<List<Asset>> _future = _repo.items();
 
   KTrend _k(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
 
+  /// Optimistic remove: flips local AppState immediately for instant UI
+  /// feedback (other screens read the same AppState.watchlistTickers), then
+  /// fires the real DELETE. On failure, reverts the local flip and refetches
+  /// the list from the server — the server stays the source of truth.
+  Future<void> _removeTicker(String ticker) async {
+    final app = AppScope.read(context);
+    app.removeWatch(ticker);
+    setState(() {}); // reflect the optimistic removal in this screen's list immediately
+    try {
+      await _repo.remove(ticker);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      app.addWatch(ticker); // revert the optimistic local toggle
+      setState(() => _future = _repo.items());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final app = AppScope.of(context);
-    final tickers = app.watchlistTickers;
-    // Resolve to assets (across all classes), preserving the canonical order.
-    final items = MockData.allAssets.where((a) => tickers.contains(a.ticker)).toList();
-
     return Scaffold(
       backgroundColor: KColor.bg,
       appBar: const KDetailHeader(title: 'Watchlist'),
-      body: items.isEmpty ? _empty(context) : _list(context, items),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          setState(() => _future = _repo.items());
+          await _future;
+        },
+        child: FutureBuilder<List<Asset>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const KLoadingView();
+            }
+            if (snapshot.hasError) {
+              return ListView(
+                children: [
+                  KErrorView(
+                    onPrimary: () => setState(() => _future = _repo.items()),
+                  ),
+                ],
+              );
+            }
+            final items = snapshot.data ?? const <Asset>[];
+            if (items.isEmpty) {
+              return ListView(
+                children: [_empty(context)],
+              );
+            }
+            return _list(context, items);
+          },
+        ),
+      ),
     );
   }
 
@@ -67,8 +128,7 @@ class WatchlistScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         GestureDetector(
-                          onTap: () =>
-                              AppScope.read(context).removeWatch(items[i].ticker),
+                          onTap: () => _removeTicker(items[i].ticker),
                           behavior: HitTestBehavior.opaque,
                           child: SizedBox(
                             width: 32,
@@ -110,7 +170,7 @@ class WatchlistScreen extends StatelessWidget {
           const SizedBox(height: 10),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 260),
-            child: Text('Save a stock or ETF to follow its price and changes here.',
+            child: Text('Save a stock to follow its price and changes here.',
                 textAlign: TextAlign.center,
                 style: KType.body(color: KColor.ink2)),
           ),

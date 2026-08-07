@@ -2,11 +2,20 @@
 // single AppState (AppScope), with light/dark theming driven by AppState.themeMode
 // (System / Light / Dark). The Stage-1 gallery still lives at lib/gallery/ but is
 // no longer referenced.
+//
+// Also constructs the single shared AuthTokenStore + ApiClient here, before the
+// first frame, and wires ApiClient.onSessionExpired to this same AppState's
+// forceSignOut(). Every screen/repository reaches the client via
+// `AppScope.read(context).apiClient` / `AppScope.of(context).apiClient` — see
+// lib/data/api/README.md; do not construct a second ApiClient anywhere else.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app/app_state.dart';
+import 'data/api/api_client.dart';
+import 'data/api/auth_token_store.dart';
 import 'router/app_router.dart';
+import 'screens/kyc/kyc_form_state.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
 
@@ -20,13 +29,22 @@ class KudimataApp extends StatefulWidget {
 }
 
 class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
-  // Single session-state instance; the router gate listens to it.
-  final AppState _state = AppState();
+  // Single session-state instance; the router gate listens to it. Single
+  // shared token store, handed to both AppState (local signedIn hydration)
+  // and ApiClient (auth header / refresh), so both agree on one token pair.
+  final AuthTokenStore _tokenStore = AuthTokenStore();
+  late final AppState _state = AppState(tokenStore: _tokenStore);
   late final GoRouter _router = buildRouter(_state);
 
   @override
   void initState() {
     super.initState();
+    // Single shared ApiClient, constructed before the first frame. Its
+    // onSessionExpired callback closes the loop from Task 2's 401-refresh
+    // failure path back to this exact AppState instance's forceSignOut().
+    _state.apiClient = ApiClient(tokenStore: _tokenStore, onSessionExpired: _state.forceSignOut);
+    // Single shared KYC form holder — see lib/screens/kyc/kyc_form_state.dart.
+    _state.kycForm = KycFormState();
     WidgetsBinding.instance.addObserver(this);
     _state.addListener(_onState);
   }

@@ -33,6 +33,7 @@ import '../screens/kyc/checking.dart';
 import '../screens/kyc/next_of_kin.dart';
 import '../screens/kyc/submitted.dart';
 import '../screens/kyc/approved.dart';
+import '../screens/kyc/outcome_not_approved.dart';
 
 // Suitability & agreements.
 import '../screens/suitability/questionnaire_screen.dart';
@@ -99,11 +100,23 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.splash, builder: (_, _) => themed(() => SplashScreen())),
       GoRoute(path: Routes.signup, builder: (_, _) => themed(() => SignUpScreen())),
       GoRoute(path: Routes.otp, builder: (_, _) => themed(() => OtpScreen())),
-      GoRoute(path: Routes.createPasscode, builder: (_, _) => themed(() => CreatePasscodeScreen())),
+      GoRoute(
+        path: Routes.createPasscode,
+        // `extra: true` marks re-entry from Security's "Change passcode"
+        // (security_screen.dart) rather than first-time onboarding.
+        builder: (_, st) => themed(() => CreatePasscodeScreen(reentry: st.extra == true)),
+      ),
       GoRoute(
         path: Routes.confirmPasscode,
-        // Create-step passes the chosen code through GoRouter `extra`.
-        builder: (_, st) => themed(() => ConfirmPasscodeScreen(created: st.extra as String?)),
+        // Create-step passes the chosen code (and re-entry flag) via
+        // GoRouter `extra` as a ConfirmPasscodeArgs.
+        builder: (_, st) {
+          final args = st.extra;
+          return themed(() => ConfirmPasscodeScreen(
+                created: args is ConfirmPasscodeArgs ? args.code : null,
+                reentry: args is ConfirmPasscodeArgs ? args.reentry : false,
+              ));
+        },
       ),
       GoRoute(path: Routes.biometric, builder: (_, _) => themed(() => BiometricScreen())),
       GoRoute(path: Routes.login, builder: (_, _) => themed(() => LogInScreen())),
@@ -119,6 +132,7 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => themed(() => NextOfKinScreen())),
       GoRoute(path: Routes.kycSubmitted, builder: (_, _) => themed(() => SubmittedScreen())),
       GoRoute(path: Routes.kycApproved, builder: (_, _) => themed(() => ApprovedScreen())),
+      GoRoute(path: Routes.kycOutcome, builder: (_, _) => themed(() => KycOutcomeScreen())),
 
       // ── Suitability & agreements ───────────────────────────────────────--
       GoRoute(path: Routes.questionnaire, builder: (_, _) => themed(() => QuestionnaireScreen())),
@@ -199,7 +213,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.biometric, Routes.login, Routes.reset,
     Routes.kycIntro, Routes.kycPersonal, Routes.kycBvn, Routes.kycId,
     Routes.kycLiveness, Routes.kycChecking, Routes.kycNextOfKin,
-    Routes.kycSubmitted, Routes.kycApproved,
+    Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     Routes.questionnaire, Routes.suitabilityResult,
     Routes.riskDisclosure, Routes.clientAgreement,
   };

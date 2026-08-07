@@ -1,13 +1,68 @@
 // Kudimata Securities — minimal app session state. Drives the gated-flow router
 // (passcode → biometric → KYC → suitability → tabs) and the live watchlist set.
 // SEAM: real auth/KYC/suitability outcomes flip these flags; here they are flipped
-// by the demo flows. No persistence yet (a secure store plugs in later).
+// by the demo flows.
+// Persistence: `signedIn` is now backed by AuthTokenStore (flutter_secure_storage)
+// — the secure store this comment used to say "plugs in later". See
+// _hydrateSignedIn() and forceSignOut() below. Every other flag here is still
+// in-memory only.
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart';
 
+import '../data/api/api_client.dart';
+import '../data/api/auth_token_store.dart';
+import '../data/api/passcode_store.dart';
+import '../screens/kyc/kyc_form_state.dart';
+
 class AppState extends ChangeNotifier {
-  AppState({Set<String>? watchlistTickers})
-      : _watchlist = watchlistTickers ?? {'MTNN', 'AAPL', 'TSLA', 'DANGCEM'};
+  AppState({
+    Set<String>? watchlistTickers,
+    AuthTokenStore? tokenStore,
+    PasscodeStore? passcodeStore,
+  })  : _watchlist = watchlistTickers ?? {'MTNN', 'GTCO', 'ZENITHBANK', 'DANGCEM'},
+        _tokenStore = tokenStore ?? AuthTokenStore(),
+        _passcodeStore = passcodeStore ?? PasscodeStore() {
+    ready = _hydrate();
+  }
+
+  /// Resolves once startup hydration ([_hydrateSignedIn] +
+  /// [_hydratePasscodeSet]) has completed. [signedIn] and [passcodeSet]
+  /// both start `false` synchronously (before the secure-storage reads that
+  /// back them return) — callers that need a startup-correct read of either
+  /// flag, rather than just reacting to a later [notifyListeners] call, must
+  /// await this first. See splash_screen.dart's routing decision.
+  late final Future<void> ready;
+
+  Future<void> _hydrate() async {
+    await Future.wait([_hydrateSignedIn(), _hydratePasscodeSet()]);
+  }
+
+  final AuthTokenStore _tokenStore;
+  final PasscodeStore _passcodeStore;
+
+  /// The single shared [ApiClient] — assigned exactly once, at app startup,
+  /// by `main.dart`'s `_KudimataAppState.initState` (which wires this same
+  /// AppState's [forceSignOut] as the client's `onSessionExpired` callback).
+  /// `late final`: unset reads before that assignment throw a clear
+  /// LateInitializationError rather than silently returning null.
+  ///
+  /// Every screen/repository reaches it via the SAME `AppScope` this app
+  /// already threads `AppState` through — no second InheritedWidget:
+  ///   `AppScope.read(context).apiClient`  (event handlers, initState, repo construction)
+  ///   `AppScope.of(context).apiClient`    (only if the widget already listens to AppState)
+  /// See lib/data/api/README.md.
+  late final ApiClient apiClient;
+
+  /// The single shared [KycFormState] — assigned exactly once, at app
+  /// startup, by `main.dart`'s `_KudimataAppState.initState`, alongside
+  /// [apiClient]. Holds every field the 5 KYC screens (personal-details →
+  /// bvn → id-upload → liveness → next-of-kin) collect, since only the last
+  /// of those screens makes the real `POST /kyc-submissions` call — see
+  /// lib/screens/kyc/kyc_form_state.dart for the field list and usage.
+  /// Reached the same way as [apiClient]:
+  ///   `AppScope.read(context).kycForm`  (event handlers, initState)
+  ///   `AppScope.of(context).kycForm`    (only if already listening to AppState)
+  late final KycFormState kycForm;
 
   // Onboarding / gate flags.
   bool passcodeSet = false;
@@ -16,6 +71,20 @@ class AppState extends ChangeNotifier {
   bool kycApproved = false;
   bool suitabilityComplete = false;
   bool signedIn = false;
+
+  /// True while a fresh email+password login (log_in_screen.dart) is
+  /// walking its device through first-time LOCAL passcode creation, so
+  /// confirm_passcode_screen.dart can tell that case apart from both
+  /// first-time signup onboarding (reentry=false, continues to Biometric)
+  /// and Security's change-passcode reentry (reentry=true, pops back to
+  /// Security) — neither of which the existing `reentry` bool alone can
+  /// distinguish. Threaded via AppState rather than GoRouter `extra` because
+  /// app_router.dart's CreatePasscode/ConfirmPasscode route builders only
+  /// ever forward `reentry`/`created` out of `extra`, not a third value.
+  /// Consumed (set back to false) by confirm_passcode_screen.dart the
+  /// instant it acts on it, so it never leaks into a later, unrelated
+  /// security-reentry passcode change.
+  bool loginPasscodeSetup = false;
 
   // Appearance — System / Light / Dark (SEAM: persist to a store later).
   ThemeMode themeMode = ThemeMode.system;
@@ -52,6 +121,55 @@ class AppState extends ChangeNotifier {
 
   void setSignedIn(bool v) {
     signedIn = v;
+    notifyListeners();
+  }
+
+  void setLoginPasscodeSetup(bool v) {
+    loginPasscodeSetup = v;
+    notifyListeners();
+  }
+
+  /// On construction, read the secure token store to decide the initial
+  /// [signedIn] value — a LOCAL presence check only (an access token was
+  /// persisted from a prior session), not a server-side validation. If that
+  /// token has since expired, the first real API call still 401s and
+  /// ApiClient's refresh-then-force-sign-out path (see lib/data/api/api_client.dart)
+  /// takes over from there.
+  Future<void> _hydrateSignedIn() async {
+    final token = await _tokenStore.getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      signedIn = true;
+      notifyListeners();
+    }
+  }
+
+  /// On construction, read the secure passcode store to decide the initial
+  /// [passcodeSet] value — mirrors [_hydrateSignedIn] but checks local
+  /// passcode-hash presence via [PasscodeStore.hasPasscode] instead of a
+  /// stored access token. Without this, [passcodeSet] stays at its `false`
+  /// default for the whole process, and splash_screen.dart would route every
+  /// cold launch to sign-up — even a returning investor with a valid stored
+  /// session and a stored passcode.
+  Future<void> _hydratePasscodeSet() async {
+    final has = await _passcodeStore.hasPasscode();
+    if (has) {
+      passcodeSet = true;
+      notifyListeners();
+    }
+  }
+
+  /// Called by ApiClient when a 401 could not be silently resolved (refresh
+  /// attempt failed or no refresh token was stored) — clears persisted
+  /// tokens and flips [signedIn] off so the gated router falls back to the
+  /// sign-in flow. Also clears the locally stored passcode hash (PasscodeStore)
+  /// — a forced sign-out routes back to Routes.signup (see log_in_screen.dart),
+  /// so any stale local passcode should go with it rather than surviving to
+  /// (mis)gate a future session on this device.
+  Future<void> forceSignOut() async {
+    await _tokenStore.clearTokens();
+    await _passcodeStore.clearPasscode();
+    signedIn = false;
+    loginPasscodeSetup = false;
     notifyListeners();
   }
 

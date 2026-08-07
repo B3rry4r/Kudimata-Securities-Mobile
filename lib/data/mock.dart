@@ -90,8 +90,8 @@ class MockData {
   // ── Watchlist (ported from WATCHLIST) ────────────────────────────────────
   static const List<Asset> watchlist = [
     Asset(name: 'MTN Nigeria', ticker: 'MTNN', price: '₦268.40', change: '+1.94%', trend: Trend.gain, assetClass: AssetClass.ngx, logoColor: _Logo.mtnn),
-    Asset(name: 'Apple', ticker: 'AAPL', price: '\$228.10', change: '+0.90%', trend: Trend.gain, assetClass: AssetClass.us, logoColor: _Logo.apple),
-    Asset(name: 'Tesla', ticker: 'TSLA', price: '\$410.30', change: '+2.20%', trend: Trend.gain, assetClass: AssetClass.us, logoColor: _Logo.tesla),
+    Asset(name: 'GTCO', ticker: 'GTCO', price: '₦48.20', change: '+3.10%', trend: Trend.gain, assetClass: AssetClass.ngx, logoColor: _Logo.gtco),
+    Asset(name: 'Zenith Bank', ticker: 'ZENITHBANK', price: '₦39.85', change: '+0.50%', trend: Trend.gain, assetClass: AssetClass.ngx, logoColor: _Logo.zenith),
     Asset(name: 'Dangote Cement', ticker: 'DANGCEM', price: '₦485.00', change: '−0.62%', trend: Trend.loss, assetClass: AssetClass.ngx, logoColor: _Logo.dangcem),
   ];
 
@@ -109,9 +109,9 @@ class MockData {
   // ── Holdings (ported HOLDINGS → derived Holding records) ──────────────────
   static const Asset _hMtnn = Asset(name: 'MTN Nigeria', ticker: 'MTNN', price: '₦268.40', change: '+1.94%', trend: Trend.gain, assetClass: AssetClass.ngx, logoColor: _Logo.mtnn);
   static const Asset _hDang = Asset(name: 'Dangote Cement', ticker: 'DANGCEM', price: '₦485.00', change: '−0.62%', trend: Trend.loss, assetClass: AssetClass.ngx, logoColor: _Logo.dangcem);
-  static const Asset _hAapl = Asset(name: 'Apple', ticker: 'AAPL', price: '\$228.10', change: '+0.90%', trend: Trend.gain, assetClass: AssetClass.us, logoColor: _Logo.apple);
+  static const Asset _hStanbic = Asset(name: 'Stanbic IBTC', ticker: 'STANBIC', price: '₦64.00', change: '+1.10%', trend: Trend.gain, assetClass: AssetClass.ngx);
 
-  static const List<Asset> holdings = [_hMtnn, _hDang, _hAapl];
+  static const List<Asset> holdings = [_hMtnn, _hDang, _hStanbic];
 
   static const List<Holding> portfolioHoldings = [
     Holding(
@@ -133,12 +133,12 @@ class MockData {
       returnTrend: Trend.loss,
     ),
     Holding(
-      asset: _hAapl,
-      units: '15',
-      marketValue: '\$3,421.50',
-      avgPrice: '\$208.00',
-      totalReturn: '+\$301.50',
-      returnPct: '+9.66%',
+      asset: _hStanbic,
+      units: '250',
+      marketValue: '₦16,000.00',
+      avgPrice: '₦58.00',
+      totalReturn: '+₦1,500.00',
+      returnPct: '+10.34%',
       returnTrend: Trend.gain,
     ),
   ];
@@ -154,11 +154,11 @@ class MockData {
   static const List<Txn> txns = [
     Txn(id: 'TX1042', title: 'Wallet funding', subtitle: 'Bank transfer · GTBank', amount: '+₦50,000.00', date: '24 Jun 2026 · 14:32', type: TxnType.fund, status: TxnStatus.completed, incoming: true),
     Txn(id: 'TX1041', title: 'Buy MTNN', subtitle: '120 units @ ₦240.10', amount: '−₦28,812.00', date: '24 Jun 2026 · 14:35', type: TxnType.buy, status: TxnStatus.completed, incoming: false),
-    Txn(id: 'TX1040', title: 'Buy AAPL', subtitle: '15 units @ \$208.00', amount: '−\$3,120.00', date: '20 Jun 2026 · 16:02', type: TxnType.buy, status: TxnStatus.completed, incoming: false),
-    Txn(id: 'TX1039', title: 'Currency conversion', subtitle: '₦ → \$ · rate 1,580.00', amount: '−₦4,932,000.00', date: '20 Jun 2026 · 15:58', type: TxnType.convert, status: TxnStatus.completed, incoming: false),
+    Txn(id: 'TX1040', title: 'Buy ZENITHBANK', subtitle: '15 units @ ₦39.85', amount: '−₦597.75', date: '20 Jun 2026 · 16:02', type: TxnType.buy, status: TxnStatus.completed, incoming: false),
+    Txn(id: 'TX1039', title: 'Buy DANGCEM', subtitle: '10 units @ ₦485.00', amount: '−₦4,850.00', date: '20 Jun 2026 · 15:58', type: TxnType.buy, status: TxnStatus.completed, incoming: false),
     Txn(id: 'TX1038', title: 'Sell DANGCEM', subtitle: '10 units @ ₦485.00', amount: '+₦4,850.00', date: '18 Jun 2026 · 11:14', type: TxnType.sell, status: TxnStatus.completed, incoming: true),
     Txn(id: 'TX1037', title: 'Withdrawal', subtitle: 'To GTBank ····4821', amount: '−₦25,000.00', date: '16 Jun 2026 · 09:40', type: TxnType.withdraw, status: TxnStatus.pending, incoming: false),
-    Txn(id: 'TX1036', title: 'Buy TSLA', subtitle: '5 units @ \$410.30', amount: '−\$2,051.50', date: '15 Jun 2026 · 18:21', type: TxnType.buy, status: TxnStatus.failed, incoming: false),
+    Txn(id: 'TX1036', title: 'Buy STANBIC', subtitle: '5 units @ ₦64.00', amount: '−₦320.00', date: '15 Jun 2026 · 18:21', type: TxnType.buy, status: TxnStatus.failed, incoming: false),
     Txn(id: 'TX1035', title: 'Wallet funding', subtitle: 'Card · Visa ····1199', amount: '+₦100,000.00', date: '12 Jun 2026 · 08:05', type: TxnType.fund, status: TxnStatus.completed, incoming: true),
   ];
 
@@ -172,10 +172,10 @@ class MockData {
   // ── Notifications ────────────────────────────────────────────────────────
   static const List<AppNotification> notifications = [
     AppNotification(title: 'Order filled', body: 'Your buy order for 120 MTNN was filled at ₦240.10.', time: '2h ago', icon: 'check', unread: true),
-    AppNotification(title: 'Price alert', body: 'TSLA is up 2.20% today, now at \$410.30.', time: '5h ago', icon: 'markets', unread: true),
+    AppNotification(title: 'Price alert', body: 'GTCO is up 2.20% today, now at ₦48.20.', time: '5h ago', icon: 'markets', unread: true),
     AppNotification(title: 'Wallet funded', body: 'We received ₦50,000.00 via bank transfer.', time: '1d ago', icon: 'wallet'),
     AppNotification(title: 'Withdrawal pending', body: 'Your ₦25,000.00 withdrawal is being processed.', time: '2d ago', icon: 'transfer'),
-    AppNotification(title: 'Welcome to Kudimata', body: 'Your account is verified. Start investing in NGX, US stocks and ETFs.', time: '5d ago', icon: 'bell'),
+    AppNotification(title: 'Welcome to Kudimata', body: 'Your account is verified. Start investing in NGX stocks.', time: '5d ago', icon: 'bell'),
   ];
 
   // ── Demo user ────────────────────────────────────────────────────────────

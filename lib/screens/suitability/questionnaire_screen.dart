@@ -7,6 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/router/routes.dart';
+import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
+import 'package:kudimata_securities/data/repositories/suitability_repository.dart';
 
 /// One suitability question with its answer options.
 class _Question {
@@ -61,6 +64,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   // Selected option index per question (defaults to first, as in the design).
   final List<int> _answers = List<int>.filled(_questions.length, 0);
 
+  late final _repo = SuitabilityRepository(AppScope.read(context).apiClient);
+  bool _submitting = false;
+
   void _back() {
     if (_index == 0) {
       context.pop(); // back to the gate that launched suitability
@@ -73,7 +79,33 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     if (_index < _questions.length - 1) {
       setState(() => _index++);
     } else {
+      _submit();
+    }
+  }
+
+  // POST /suitability-result with all 5 collected answers, then navigate to
+  // the result screen (which re-fetches the real computed profile via
+  // GET /suitability-result/me — see suitability_repository.dart). Question
+  // ids: this screen's questions are a hardcoded local list with no
+  // backend-defined id, so the list index is used, stringified as
+  // "q0".."q4" — the backend's scoring only requires a non-empty string id
+  // (see submit-suitability-answers.dto.ts), it does not interpret it.
+  Future<void> _submit() async {
+    setState(() => _submitting = true);
+    final answers = [
+      for (var i = 0; i < _questions.length; i++)
+        SuitabilityAnswer(questionId: 'q$i', selectedOptionIndex: _answers[i]),
+    ];
+    try {
+      await _repo.submit(answers);
+      if (!mounted) return;
       context.go(Routes.suitabilityResult);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
     }
   }
 
@@ -147,14 +179,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                           child: KButton(
                             label: 'Back',
                             variant: KButtonVariant.ghost,
-                            onPressed: _back,
+                            onPressed: _submitting ? null : _back,
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: KButton(
                             label: 'Next',
-                            onPressed: _next,
+                            loading: _submitting,
+                            onPressed: _submitting ? null : _next,
                           ),
                         ),
                       ],
