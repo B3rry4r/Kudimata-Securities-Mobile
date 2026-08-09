@@ -1,10 +1,18 @@
-name: Build & Release APK
+name: Build & Release Android
 
-# Builds the release Android APK and publishes it to GitHub Releases.
+# Builds the release Android APK + AAB and publishes them to GitHub Releases.
 #  • Push a tag like v1.0.0           → release named after the tag
 #  • Run manually (Actions ▸ Run)     → release "build-<run number>" (or a tag you type)
-# The APK is also uploaded as a build artifact on every run. (Web is built locally,
-# not in CI.)
+# The APK/AAB are also uploaded as a build artifact on every run. (Web is built locally,
+# not in CI. iOS has its own workflow — see ios.yml.)
+#
+# Repository secrets required (Settings → Secrets and variables → Actions):
+#   • KEYSTORE_BASE64   — the release upload keystore (.jks), base64-encoded.
+#   • KEYSTORE_PASSWORD — keystore (store) password.
+#   • KEY_PASSWORD       — key password.
+#   • KEY_ALIAS          — alias of the key inside the keystore.
+# Without these, the workflow falls back to Android's debug keys (sideload-only,
+# not accepted by Play Store) — same as local builds without android/key.properties.
 on:
   push:
     tags:
@@ -52,8 +60,24 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}"
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}"
+            echo "storeFile=upload-keystore.jks"
+          } > android/key.properties
+
       - name: Build release APK
         run: flutter build apk --release --dart-define=API_BASE_URL=https://kudimata-securities-backend-production.up.railway.app
+
+      - name: Build release AAB (Play Store upload format)
+        run: flutter build appbundle --release --dart-define=API_BASE_URL=https://kudimata-securities-backend-production.up.railway.app
 
       - name: Resolve release tag
         id: meta
@@ -68,18 +92,20 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Release tag: $TAG"
 
-      - name: Stage APK
+      - name: Stage artifacts
         run: |
           TAG="${{ steps.meta.outputs.tag }}"
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk \
              "dist/kudimata-securities-${TAG}.apk"
+          cp build/app/outputs/bundle/release/app-release.aab \
+             "dist/kudimata-securities-${TAG}.aab"
 
-      - name: Upload APK artifact
+      - name: Upload build artifacts (workflow run)
         uses: actions/upload-artifact@v4
         with:
-          name: kudimata-securities-apk
-          path: dist/*.apk
+          name: kudimata-securities-android-${{ steps.meta.outputs.tag }}
+          path: dist/*
           if-no-files-found: error
 
       - name: Publish to Releases
@@ -88,10 +114,9 @@ jobs:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: Kudimata Securities ${{ steps.meta.outputs.tag }}
           generate_release_notes: true
-          files: dist/*.apk
+          files: dist/*
           body: |
-            Android release APK for Kudimata Securities.
+            Android release build for Kudimata Securities.
 
-            > Signed with Android debug keys (no production keystore configured), so it's for
-            > testing/sideloading — not Play Store upload. Enable "install from unknown sources"
-            > on the device to sideload.
+            • `kudimata-securities-${{ steps.meta.outputs.tag }}.apk` — sideload on Android
+            • `kudimata-securities-${{ steps.meta.outputs.tag }}.aab` — Play Store upload

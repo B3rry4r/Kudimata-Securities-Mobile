@@ -1,0 +1,7 @@
+git_url(ENV["MATCH_GIT_URL"])
+storage_mode("git")
+type("appstore")
+app_identifier("com.kudimata.securities")
+
+# Git auth
+git_basic_authorization(Base64.strict_encode64("#{ENV['MATCH_GIT_TOKEN']}:x-oauth-basic"))

@@ -43,3 +43,19 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Release signing — never commit the upload keystore or its passwords.
+# CI decodes KEYSTORE_BASE64 (a GitHub Actions secret) into these same paths
+# at build time; see .github/workflows/release-apk.yml.
+*.jks
+*.keystore
+key.properties
+
+# iOS release signing (Fastlane Match / App Store Connect).
+ios/fastlane/apikey.json
+ios/AuthKey.p8
+ios/fastlane/report.xml
+
+# Local-only credentials notes generated while setting up release signing —
+# deliberately never committed. See RELEASE_SECRETS.local.md's own header.
+RELEASE_SECRETS.local.md

@@ -1,0 +1,147 @@
+# Fastfile
+opt_out_usage
+
+platform :ios do
+  desc "Build and upload to TestFlight (Fastlane-managed signing)"
+  lane :beta do
+    setup_ci
+
+    # -----------------------------
+    # Keychain for CI
+    # -----------------------------
+    create_keychain(
+      name: "signing_keychain",
+      password: ENV["MATCH_KEYCHAIN_PASSWORD"],
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600,
+      lock_when_sleeps: false
+    )
+
+    # -----------------------------
+    # App Store Connect API Key
+    # -----------------------------
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_filepath: "./AuthKey.p8"
+    )
+
+    # -----------------------------
+    # MATCH — handles all signing
+    # -----------------------------
+    match(
+      type: "appstore",
+      readonly: true,
+      app_identifier: "com.kudimata.securities",
+      git_url: ENV["MATCH_GIT_URL"],
+      git_basic_authorization: Base64.strict_encode64(
+        "#{ENV['MATCH_GIT_TOKEN']}:x-oauth-basic"
+      ),
+      keychain_name: "signing_keychain",
+      keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"],
+      api_key: api_key,
+      clone_branch_directly: true
+    )
+
+    # -----------------------------
+    # Get profile and team info from the installed profile
+    # -----------------------------
+    profile_path = ENV["sigh_com.kudimata.securities_appstore_profile-path"]
+    UI.message("Profile path: #{profile_path}")
+
+    require 'plist'
+    profile_plist = Plist.parse_xml(`security cms -D -i "#{profile_path}"`)
+    profile_uuid = profile_plist["UUID"]
+    team_id = profile_plist["TeamIdentifier"].first
+    team_name = profile_plist["TeamName"]
+
+    UI.message("=" * 50)
+    UI.message("Profile UUID: #{profile_uuid}")
+    UI.message("Profile Name: #{profile_plist['Name']}")
+    UI.message("Team ID from profile: #{team_id}")
+    UI.message("Team Name from profile: #{team_name}")
+    UI.message("=" * 50)
+
+    actual_team_id = team_id
+
+    # -----------------------------
+    # Set team ID and provisioning profile in project
+    # -----------------------------
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: actual_team_id,
+      bundle_identifier: "com.kudimata.securities",
+      profile_uuid: profile_uuid,
+      code_sign_identity: "iPhone Distribution",
+      build_configurations: ["Release"]
+    )
+
+    # -----------------------------
+    # Build number — timestamp-based for uniqueness
+    # -----------------------------
+    new_build_number = Time.now.to_i.to_s[-9..-1].to_i
+    UI.success("Build number: #{new_build_number}")
+
+    increment_build_number(
+      build_number: new_build_number,
+      xcodeproj: "Runner.xcodeproj"
+    )
+
+    # Sync build number into pubspec.yaml so Flutter doesn't override it
+    project_root = File.expand_path("../..", Dir.pwd)
+    pubspec_path = File.join(project_root, "pubspec.yaml")
+
+    if File.exist?(pubspec_path)
+      content = File.read(pubspec_path)
+      updated = content.gsub(/^version:\s*(\d+\.\d+\.\d+)\+\d+/, "version: \\1+#{new_build_number}")
+      File.write(pubspec_path, updated)
+      UI.success("Updated pubspec.yaml to build number #{new_build_number}")
+    else
+      UI.error("pubspec.yaml not found at #{pubspec_path} — continuing anyway")
+    end
+
+    ENV["BUILD_NUMBER"] = new_build_number.to_s
+
+    # -----------------------------
+    # Flutter build (no codesign)
+    # -----------------------------
+    Dir.chdir("..") do
+      sh("flutter", "build", "ios", "--release", "--no-codesign",
+         "--build-number=#{new_build_number}",
+         "--dart-define=API_BASE_URL=https://kudimata-securities-backend-production.up.railway.app",
+         "--obfuscate", "--split-debug-info=build/app/outputs/symbols")
+    end
+
+    # -----------------------------
+    # Xcode archive + export
+    # -----------------------------
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: {
+        teamID: actual_team_id,
+        provisioningProfiles: {
+          "com.kudimata.securities" => profile_uuid
+        }
+      },
+      clean: false,
+      xcargs: "-disableAutomaticPackageResolution -skipPackagePluginValidation"
+    )
+
+    # -----------------------------
+    # Upload to TestFlight
+    # -----------------------------
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: false
+    )
+
+  ensure
+    delete_keychain(
+      name: "signing_keychain"
+    ) if File.exist?(File.expand_path("~/Library/Keychains/signing_keychain-db"))
+  end
+end

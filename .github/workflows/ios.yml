@@ -1,0 +1,195 @@
+name: iOS Build and Deploy
+
+# Builds the release iOS app and uploads it to TestFlight via Fastlane + Match.
+# Signing is Match-managed (readonly here — see match.yml to bootstrap/rotate certs).
+#
+# Repository secrets required (Settings → Secrets and variables → Actions):
+#   • APP_STORE_CONNECT_API_KEY_ID  — App Store Connect API key ID.
+#   • APP_STORE_CONNECT_ISSUER_ID   — App Store Connect API issuer ID.
+#   • APP_STORE_CONNECT_API_KEY     — the .p8 key file, base64-encoded.
+#   • MATCH_GIT_URL                 — private git repo Match stores certs/profiles in.
+#   • MATCH_GIT_TOKEN               — GitHub PAT with access to that repo.
+#   • MATCH_PASSWORD                — passphrase Match uses to encrypt/decrypt certs.
+#   • APPLE_TEAM_ID                 — Apple Developer Team ID.
+#   • KEYCHAIN_UNLOCK_PASSWORD      — password for the throwaway CI keychain.
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: macos-15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        cache: true
+
+    - name: Install Flutter dependencies
+      run: flutter pub get
+
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '26.0'
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+        bundler-cache: true
+
+    - name: Install Fastlane
+      working-directory: ios
+      run: |
+        gem install bundler --no-document
+        bundle install
+
+    - name: Install CocoaPods
+      working-directory: ios
+      run: bundle exec pod install
+
+    - name: Resolve Swift Package dependencies
+      working-directory: ios
+      run: |
+        xcodebuild -resolvePackageDependencies \
+          -workspace Runner.xcworkspace \
+          -scheme Runner \
+          -disableAutomaticPackageResolution 2>/dev/null || \
+        xcodebuild -resolvePackageDependencies \
+          -workspace Runner.xcworkspace \
+          -scheme Runner
+
+    - name: Setup Git credentials for Match
+      run: |
+        git config --global user.email "ci@github.com"
+        git config --global user.name "GitHub Actions"
+
+    - name: Fix iOS deployment target and CocoaPods
+      run: |
+        cat > ios/Podfile << 'EOF'
+        platform :ios, '17.0'
+
+        ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+        project 'Runner', {
+          'Debug' => :debug,
+          'Profile' => :release,
+          'Release' => :release,
+        }
+
+        def flutter_root
+          generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+          unless File.exist?(generated_xcode_build_settings_path)
+            raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+          end
+
+          File.foreach(generated_xcode_build_settings_path) do |line|
+            matches = line.match(/FLUTTER_ROOT\=(.*)/)
+            return matches[1].strip if matches
+          end
+          raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+        end
+
+        require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+        flutter_ios_podfile_setup
+
+        target 'Runner' do
+          use_frameworks!
+          use_modular_headers!
+
+          flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+        end
+
+        post_install do |installer|
+          installer.pods_project.targets.each do |target|
+            flutter_additional_ios_build_settings(target)
+
+            target.build_configurations.each do |config|
+              config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+            end
+          end
+        end
+        EOF
+
+        /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 17.0" ios/Flutter/AppFrameworkInfo.plist || true
+        /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 17.0" ios/Runner/Info.plist || true
+
+    - name: Create App Store Connect API key file
+      run: |
+        mkdir -p ios/fastlane
+        cd ios/fastlane
+        printf '{\n  "key_id": "%s",\n  "issuer_id": "%s",\n  "key": "%s",\n  "duration": 1200,\n  "in_house": false\n}' \
+        "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
+        "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
+        "$(echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')" > apikey.json
+
+    - name: Deploy to TestFlight
+      env:
+        APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+        MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        MATCH_GIT_TOKEN: ${{ secrets.MATCH_GIT_TOKEN }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        FASTLANE_SKIP_UPDATE_CHECK: true
+        FASTLANE_HIDE_GITHUB_ISSUES: true
+        FASTLANE_DISABLE_ANIMATION: true
+        MATCH_KEYCHAIN_NAME: signing_keychain
+        MATCH_KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_UNLOCK_PASSWORD }}
+        FL_UNLOCK_KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_UNLOCK_PASSWORD }}
+        MATCH_TYPE: appstore
+        MATCH_READONLY: true
+        MATCH_STORAGE_MODE: git
+        MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_TOKEN }}
+        MATCH_SKIP_CONFIRMATION: true
+        MATCH_VERBOSE: true
+        FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
+        FASTLANE_XCODEBUILD_SETTINGS_RETRIES: "2"
+      run: |
+        cd ios
+
+        echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > AuthKey.p8
+
+        echo "=== Checking Fastfile ==="
+        if [ -f "fastlane/Fastfile" ]; then
+          echo "Fastfile found"
+          bundle exec fastlane lanes
+        else
+          echo "Fastfile not found"
+          exit 1
+        fi
+
+        bundle exec fastlane ios beta
+
+    - name: Upload xcodebuild logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: xcodebuild-logs
+        path: ~/Library/Logs/gym/Runner-Runner.log
+        retention-days: 7
+
+    - name: Display xcodebuild error log on failure
+      if: failure()
+      run: |
+        echo "=== LAST 500 LINES OF XCODEBUILD LOG ==="
+        tail -n 500 ~/Library/Logs/gym/Runner-Runner.log || echo "Log file not found"
+        echo ""
+        echo "=== ERRORS ==="
+        grep -i "error:" ~/Library/Logs/gym/Runner-Runner.log | tail -n 50 || echo "No errors found"
+
+    - name: Clean up
+      if: always()
+      run: |
+        rm -f ios/AuthKey.p8
+        rm -f ios/fastlane/apikey.json
+        security delete-keychain signing_keychain || true
