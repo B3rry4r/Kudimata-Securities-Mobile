@@ -28,7 +28,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_exception.dart';
 import 'package:kudimata_securities/data/api/passcode_store.dart';
+import 'package:kudimata_securities/data/repositories/user_repository.dart';
 import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
@@ -85,13 +87,28 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
     // No created code available (e.g. deep link): accept as the demo path.
     final matches = created == null || _code == created;
     if (matches) {
+      final app = AppScope.read(context);
+      // Scope the passcode to the account that set it (BUG-03 — see
+      // PasscodeStore's file header) — a valid session already exists in
+      // every path that reaches this screen (signup's post-OTP tokens,
+      // log_in_screen.dart's fresh email+password tokens, or an
+      // already-signed-in Security reentry), so GET /users/me resolves the
+      // real owner. Best-effort: a transient failure here just means the
+      // owner check misses on the next login (forces one extra
+      // create/confirm round) rather than blocking passcode creation
+      // outright — never a reason to strand the investor on this screen.
+      var owner = '';
+      try {
+        owner = (await UserRepository(app.apiClient).me()).email;
+      } on ApiException {
+        // best-effort — see comment above.
+      }
       // Persist a salted hash of the confirmed passcode so log_in_screen.dart
       // has a real local value to verify a re-entered passcode against — see
       // PasscodeStore. AppState.setPasscode(true) is kept alongside this: it's
       // the in-memory gate flag the router/other screens already read.
-      await _passcodeStore.setPasscode(created ?? _code);
+      await _passcodeStore.setPasscode(created ?? _code, owner: owner);
       if (!mounted) return;
-      final app = AppScope.read(context);
       app.setPasscode(true);
       if (widget.reentry) {
         // Re-entry from Security: confirm the change and return there,

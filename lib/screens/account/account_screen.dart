@@ -56,7 +56,10 @@ class _AccountScreenState extends State<AccountScreen> {
       // through to local teardown regardless of whether the API call
       // succeeded.
     }
-    await app.forceSignOut();
+    // signOut(), not forceSignOut() — a plain voluntary sign-out preserves
+    // this device's passcode (BUG-03) instead of wiping it; see
+    // AppState.signOut()'s doc comment.
+    await app.signOut();
     if (!context.mounted) return;
     context.go(Routes.login);
   }

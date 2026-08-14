@@ -199,28 +199,52 @@ class AppState extends ChangeNotifier {
   }
 
   /// Called by ApiClient when a 401 could not be silently resolved (refresh
-  /// attempt failed or no refresh token was stored) — clears persisted
-  /// tokens and flips [signedIn] off so the gated router falls back to the
-  /// sign-in flow. Also clears the locally stored passcode hash (PasscodeStore)
-  /// — a forced sign-out routes back to Routes.signup (see log_in_screen.dart),
-  /// so any stale local passcode should go with it rather than surviving to
-  /// (mis)gate a future session on this device.
+  /// attempt failed or no refresh token was stored) — a genuine
+  /// security-relevant sign-out: the session itself is no longer valid, or
+  /// (reset_passcode_screen.dart) the account password was just reset
+  /// server-side. Also clears the locally stored passcode hash
+  /// (PasscodeStore) — this device's passcode is only ever trustworthy as a
+  /// stand-in for a real, still-valid session; once that's gone for a
+  /// security reason, so should the shortcut past it.
   ///
-  /// Also the single sign-out path used everywhere (explicit "Sign out" in
-  /// Account, session expiry, splash's invalid-session bounce — see the
-  /// grep-able call sites). Resets kycSubmitted/kycApproved/
-  /// suitabilityComplete/biometricEnabled too (2026-08-10) — these used to
-  /// survive a sign-out, so signing into/creating a DIFFERENT account in the
-  /// same browser tab (web has no natural process restart between accounts)
+  /// Also called by splash_screen.dart's invalid-session bounce. NOT called
+  /// by a plain voluntary "Sign out" in Account — see [signOut] for that
+  /// (2026-08-14, BUG-03): the two used to be the same method, which meant
+  /// signing out and back in as the SAME person always forced recreating
+  /// the passcode from scratch, defeating its purpose as a fast re-entry
+  /// shortcut. Splits are keyed to "was this sign-out because something's
+  /// actually wrong" vs "the investor just chose to sign out."
+  Future<void> forceSignOut() async {
+    await _passcodeStore.clearPasscode();
+    await _resetSessionState();
+  }
+
+  /// Plain voluntary sign-out (Account's "Sign out" button) — ends the
+  /// session same as [forceSignOut], but does NOT wipe the on-device
+  /// passcode. log_in_screen.dart's post-login flow re-checks
+  /// PasscodeStore.belongsTo() against whichever account signs in next: the
+  /// same person gets to skip straight past passcode creation and reuse
+  /// it, a different account on this device still gets a fresh
+  /// create/confirm flow (same protection [forceSignOut] used to apply
+  /// unconditionally, just decided at the point it's actually knowable).
+  Future<void> signOut() async {
+    await _resetSessionState();
+  }
+
+  /// Shared by [forceSignOut]/[signOut] — everything about ending a session
+  /// EXCEPT the passcode decision, which differs between the two (see their
+  /// doc comments). Resets kycSubmitted/kycApproved/suitabilityComplete/
+  /// biometricEnabled/the watchlist too (2026-08-10) — these used to survive
+  /// a sign-out, so signing into/creating a DIFFERENT account in the same
+  /// browser tab (web has no natural process restart between accounts)
   /// inherited the previous account's eligibility state: a fresh signup
   /// could land on Home already "kycApproved", skipping the KYC gate
   /// entirely on Add money/Withdraw/Buy/Sell. hydrateGatingStateAndRoute
   /// (log_in_screen.dart) still re-syncs these from the server on the next
   /// real login, so this only removes the stale carry-over, not any real
   /// hydration path.
-  Future<void> forceSignOut() async {
+  Future<void> _resetSessionState() async {
     await _tokenStore.clearTokens();
-    await _passcodeStore.clearPasscode();
     signedIn = false;
     loginPasscodeSetup = false;
     kycSubmitted = false;

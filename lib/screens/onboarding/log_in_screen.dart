@@ -267,7 +267,7 @@ class _LogInScreenState extends State<LogInScreen> {
         });
         return;
       }
-      await _completeLogin(result.tokens!);
+      await _completeLogin(result.tokens!, _email.text.trim());
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -298,7 +298,7 @@ class _LogInScreenState extends State<LogInScreen> {
     try {
       final tokens = await repo.verifyEmailOtp(email: email, code: _stepUpDigits.join());
       if (!mounted) return;
-      await _completeLogin(tokens);
+      await _completeLogin(tokens, email);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -313,21 +313,35 @@ class _LogInScreenState extends State<LogInScreen> {
   }
 
   /// Shared by both the direct-session and step-up-then-session paths.
-  /// Persists the fresh tokens, then routes into LOCAL passcode creation —
-  /// this device has none yet, since reaching the email-login form at all
-  /// required either `!signedIn` or `!hasPasscode`. AppState.signedIn is
-  /// deliberately NOT set true here: this app's existing convention (see
-  /// otp_screen.dart's post-verify handoff, and client_agreement_screen.dart
-  /// setting it only once suitability is genuinely complete) only flips it
-  /// once the investor is fully through every gate, so `_gateRedirect`
-  /// (app_router.dart) never free-roams someone whose real KYC/suitability
-  /// state hasn't been hydrated and checked yet — see
-  /// [hydrateGatingStateAndRoute] below, which does set it once that's
-  /// confirmed complete.
-  Future<void> _completeLogin(AuthTokens tokens) async {
+  /// Persists the fresh tokens, then either routes into LOCAL passcode
+  /// creation (this device has none yet, or its existing one belongs to a
+  /// different account — reaching the email-login form at all required
+  /// either `!signedIn` or `!hasPasscode`) or — BUG-03 fix, 2026-08-14 —
+  /// skips straight past passcode creation when this device already has a
+  /// passcode set by THIS SAME [email] (PasscodeStore.belongsTo): a plain
+  /// sign-out-then-sign-back-in as the same person should re-use the
+  /// existing passcode, not force recreating it every time. AppState.signedIn
+  /// is deliberately NOT set true in the create-passcode branch: this app's
+  /// existing convention (see otp_screen.dart's post-verify handoff, and
+  /// client_agreement_screen.dart setting it only once suitability is
+  /// genuinely complete) only flips it once the investor is fully through
+  /// every gate, so `_gateRedirect` (app_router.dart) never free-roams
+  /// someone whose real KYC/suitability state hasn't been hydrated and
+  /// checked yet — see [hydrateGatingStateAndRoute], which does set it once
+  /// that's confirmed complete (both branches below eventually reach it).
+  Future<void> _completeLogin(AuthTokens tokens, String email) async {
     await _tokenStore.saveTokens(tokens.accessToken, tokens.refreshToken ?? '');
     if (!mounted) return;
     final app = AppScope.read(context);
+
+    final reuseExisting = await _passcodeStore.belongsTo(email);
+    if (!mounted) return;
+
+    if (reuseExisting) {
+      await hydrateGatingStateAndRoute(context);
+      return;
+    }
+
     app.setLoginPasscodeSetup(true);
     context.go(Routes.createPasscode);
   }
