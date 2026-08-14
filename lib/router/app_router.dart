@@ -3,6 +3,7 @@
 // keeping its own stack, under a shell scaffold that floats KBottomNav above the
 // content. Every gated / KYC / suitability / pushed-detail / account-sub route is
 // TOP-LEVEL so it covers the tab bar (no nav, KDetailHeader chrome).
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -119,7 +120,15 @@ GoRouter buildRouter(AppState state) {
               ));
         },
       ),
-      GoRoute(path: Routes.biometric, builder: (_, _) => themed(() => BiometricScreen())),
+      GoRoute(
+        path: Routes.biometric,
+        // Biometric enrolment can't function on web (no local_auth backing
+        // store) — bounce straight past it to the next onboarding step, same
+        // as BiometricScreen's own "Maybe later" path, rather than showing a
+        // screen offering a capability that will never work.
+        redirect: (_, _) => kIsWeb ? Routes.onboardingPersonal : null,
+        builder: (_, _) => themed(() => BiometricScreen()),
+      ),
       GoRoute(
         path: Routes.onboardingPersonal,
         builder: (_, _) => themed(() => OnboardingPersonalDetailsScreen()),

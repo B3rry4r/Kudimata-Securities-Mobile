@@ -24,6 +24,7 @@
 // KYC/suitability state from the server and routes to wherever that state
 // actually says they belong (KYC, suitability, or straight to Home for an
 // already-fully-onboarded account) instead of always restarting Biometric/KYC.
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
@@ -107,6 +108,11 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
         // handing off so it can never leak into a later, unrelated flow.
         app.setLoginPasscodeSetup(false);
         await hydrateGatingStateAndRoute(context);
+      } else if (kIsWeb) {
+        // No local_auth backing store on web — skip straight past biometric
+        // enrolment, same as BiometricScreen's own "Maybe later" path.
+        app.setSignedIn(true);
+        context.go(Routes.onboardingPersonal);
       } else {
         context.go(Routes.biometric);
       }

@@ -71,6 +71,20 @@ class _HomeScreenState extends State<HomeScreen> {
   late final _assetRepo = AssetRepository(AppScope.read(context).apiClient);
   late Future<_HomeData> _future = _load();
 
+  // Tracks AppState.watchlistVersion as of the last _load() so a toggle made
+  // elsewhere (asset_detail_screen.dart, watchlist_screen.dart) is reflected
+  // in the watchlist strip immediately, instead of only on the next
+  // unrelated rebuild of this tab. Seeded from the current version in
+  // initState (a non-listening read) so the very first build doesn't
+  // trigger a redundant second _load().
+  late int _loadedWatchlistVersion;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadedWatchlistVersion = AppScope.read(context).watchlistVersion;
+  }
+
   Future<_HomeData> _load() async {
     // Kick off all five requests before awaiting any, so they run concurrently.
     final userFuture = _userRepo.me();
@@ -96,6 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final watchlistVersion = AppScope.of(context).watchlistVersion;
+    if (watchlistVersion != _loadedWatchlistVersion) {
+      _loadedWatchlistVersion = watchlistVersion;
+      _future = _load();
+    }
+
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(

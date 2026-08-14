@@ -1,11 +1,14 @@
-// Stage 9 — Security (pushed). Change passcode row + biometric & 2FA KSwitches.
-// Biometric reflects AppState.biometricEnabled (client-local, unchanged).
-// Two-factor authentication now fires PATCH /auth/step-up-preference via
-// AuthRepository.setStepUpAuth — registry.json has no GET endpoint for the
-// current AuthSession.stepUpAuthEnabled value, so this screen cannot fetch
-// the real preference on load; it initializes to `false` (the backend's
-// documented default) and lets the PATCH response reflect server state from
-// then on. Mirrors `Security` in settings-screens.jsx.
+// Stage 9 — Security (pushed). Change passcode row + biometric KSwitch.
+// Biometric reflects AppState.biometricEnabled (client-local, unchanged);
+// the row itself is hidden on web (kIsWeb) since there's no local_auth
+// backing store there — same reasoning as biometric_screen.dart being
+// skipped in the web onboarding flow (confirm_passcode_screen.dart).
+//
+// Two-factor authentication was removed from this screen (2026-08-10) — no
+// real 2FA infrastructure exists distinct from the OTP verification the app
+// already does at sign-up/sign-in; the toggle only fired
+// PATCH /auth/step-up-preference with nothing behind it. Mirrors `Security`
+// in settings-screens.jsx, minus that row.
 //
 // "Change passcode" re-enters the onboarding create/confirm-passcode flow
 // (Routes.createPasscode → Routes.confirmPasscode), pushed with
@@ -18,12 +21,11 @@
 // passcode" bottom sheet using its verifyPasscode — a device with no
 // passcode set yet skips straight to the create flow (nothing to confirm
 // against).
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/api/api_exception.dart';
 import 'package:kudimata_securities/data/api/passcode_store.dart';
-import 'package:kudimata_securities/data/repositories/auth_repository.dart';
 import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/screens/onboarding/onboarding_scaffold.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
@@ -38,14 +40,7 @@ class SecurityScreen extends StatefulWidget {
 }
 
 class _SecurityScreenState extends State<SecurityScreen> {
-  late final _authRepo = AuthRepository(AppScope.read(context).apiClient);
   final _passcodeStore = PasscodeStore();
-
-  // No GET /auth/step-up-preference (or equivalent) exists in registry.json
-  // to read the investor's current value on screen load, so this starts at
-  // the backend's documented default and is corrected by whatever the first
-  // PATCH response returns.
-  bool _twoFa = false;
 
   /// "Change passcode" row: re-enters the create/confirm-passcode flow,
   /// gated behind a "confirm your current passcode" step when a passcode
@@ -68,26 +63,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
     context.push(Routes.createPasscode, extra: true);
   }
 
-  /// Optimistic toggle: flips immediately for instant UI feedback, then
-  /// fires the real PATCH. On success, reconciles with the server's
-  /// authoritative returned value. On failure, reverts and surfaces the
-  /// error — mirrors the pattern in watchlist_screen.dart's _removeTicker.
-  Future<void> _setTwoFa(bool v) async {
-    final previous = _twoFa;
-    setState(() => _twoFa = v);
-    try {
-      final confirmed = await _authRepo.setStepUpAuth(v);
-      if (!mounted) return;
-      setState(() => _twoFa = confirmed);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _twoFa = previous);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
@@ -107,27 +82,18 @@ class _SecurityScreenState extends State<SecurityScreen> {
             first: true,
             onTap: _changePasscode,
           ),
-          KAccountRow(
-            icon: 'fingerprint',
-            title: 'Biometric unlock',
-            sub: 'Unlock with your face or fingerprint',
-            crossAlign: CrossAxisAlignment.start,
-            right: KSwitch(
-              checked: app.biometricEnabled,
-              // SEAM: real biometric enrolment plugs in here.
-              onChanged: (v) => app.setBiometric(v),
+          if (!kIsWeb)
+            KAccountRow(
+              icon: 'fingerprint',
+              title: 'Biometric unlock',
+              sub: 'Unlock with your face or fingerprint',
+              crossAlign: CrossAxisAlignment.start,
+              right: KSwitch(
+                checked: app.biometricEnabled,
+                // SEAM: real biometric enrolment plugs in here.
+                onChanged: (v) => app.setBiometric(v),
+              ),
             ),
-          ),
-          KAccountRow(
-            icon: 'eye',
-            title: 'Two-factor authentication',
-            sub: 'Extra check at sign-in',
-            crossAlign: CrossAxisAlignment.start,
-            right: KSwitch(
-              checked: _twoFa,
-              onChanged: (v) => _setTwoFa(v),
-            ),
-          ),
         ],
       ),
     );

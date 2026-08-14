@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'app/app_state.dart';
 import 'data/api/api_client.dart';
 import 'data/api/auth_token_store.dart';
+import 'data/repositories/watchlist_repository.dart';
 import 'router/app_router.dart';
 import 'screens/kyc/kyc_form_state.dart';
 import 'theme/app_theme.dart';
@@ -47,6 +48,16 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
     _state.kycForm = KycFormState();
     WidgetsBinding.instance.addObserver(this);
     _state.addListener(_onState);
+    // Prime AppState.isWatched() with the investor's real saved watchlist
+    // once startup hydration (signedIn) resolves — see
+    // AppState.hydrateWatchlist's doc comment. Only for a returning,
+    // already-signed-in session; a fresh sign-in/sign-up has nothing to
+    // hydrate yet and its own flows populate the watchlist as it's used.
+    _state.ready.then((_) {
+      if (_state.signedIn) {
+        _state.hydrateWatchlist(WatchlistRepository(_state.apiClient));
+      }
+    });
   }
 
   void _onState() => setState(() {}); // re-resolve brightness on themeMode change

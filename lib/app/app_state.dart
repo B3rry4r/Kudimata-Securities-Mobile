@@ -12,6 +12,7 @@ import 'package:flutter/widgets.dart';
 import '../data/api/api_client.dart';
 import '../data/api/auth_token_store.dart';
 import '../data/api/passcode_store.dart';
+import '../data/repositories/watchlist_repository.dart';
 import '../router/routes.dart';
 import '../screens/kyc/kyc_form_state.dart';
 
@@ -20,7 +21,15 @@ class AppState extends ChangeNotifier {
     Set<String>? watchlistTickers,
     AuthTokenStore? tokenStore,
     PasscodeStore? passcodeStore,
-  })  : _watchlist = watchlistTickers ?? {'MTNN', 'GTCO', 'ZENITHBANK', 'DANGCEM'},
+    // `?? {}` — this used to default to a hardcoded {'MTNN', 'GTCO',
+    // 'ZENITHBANK', 'DANGCEM'} mock set, never hydrated from the real
+    // watchlist. That made asset_detail_screen.dart's save toggle (which
+    // reads AppState.isWatched()) show those 4 tickers as permanently
+    // "saved" regardless of what the investor's account actually had saved
+    // server-side — found live 2026-08-10 ("a particular opened market
+    // screen is always showing toggled"). Starts empty now; see
+    // hydrateWatchlist() below for how it gets populated with real data.
+  })  : _watchlist = watchlistTickers ?? {},
         _tokenStore = tokenStore ?? AuthTokenStore(),
         _passcodeStore = passcodeStore ?? PasscodeStore() {
     ready = _hydrate();
@@ -95,6 +104,36 @@ class AppState extends ChangeNotifier {
   Set<String> get watchlistTickers => Set.unmodifiable(_watchlist);
   bool isWatched(String ticker) => _watchlist.contains(ticker);
 
+  /// Bumped on every real mutation ([toggleWatch]/[addWatch]/[removeWatch])
+  /// — a lightweight "the watchlist changed" signal for screens (home_screen.dart)
+  /// that fetch their OWN server-truth watchlist list rather than reading
+  /// [watchlistTickers] directly, so they know to re-fetch instead of
+  /// showing stale data until the next unrelated rebuild. Not bumped by
+  /// [hydrateWatchlist] itself — that's the initial sync, not a "changed
+  /// elsewhere" event.
+  int watchlistVersion = 0;
+
+  /// Best-effort sync of [watchlistTickers] with the investor's real saved
+  /// list (GET /watchlist-items) — call once after sign-in. Fixes
+  /// [isWatched] (asset_detail_screen.dart's save-toggle icon) showing the
+  /// wrong state for any ticker until this ran at least once — before this
+  /// existed, [_watchlist] started pre-populated with 4 hardcoded demo
+  /// tickers that never matched a real account's actual saved list. Swallows
+  /// failures (network hiccup, not signed in yet) since every screen that
+  /// actually needs the true list already fetches it directly — this is
+  /// only priming [isWatched] for a snappier first paint, not load-bearing.
+  Future<void> hydrateWatchlist(WatchlistRepository repo) async {
+    try {
+      final items = await repo.items();
+      _watchlist
+        ..clear()
+        ..addAll(items.map((a) => a.ticker));
+      notifyListeners();
+    } catch (_) {
+      // best-effort — see doc comment above.
+    }
+  }
+
   void setPasscode(bool v) {
     passcodeSet = v;
     notifyListeners();
@@ -166,11 +205,30 @@ class AppState extends ChangeNotifier {
   /// — a forced sign-out routes back to Routes.signup (see log_in_screen.dart),
   /// so any stale local passcode should go with it rather than surviving to
   /// (mis)gate a future session on this device.
+  ///
+  /// Also the single sign-out path used everywhere (explicit "Sign out" in
+  /// Account, session expiry, splash's invalid-session bounce — see the
+  /// grep-able call sites). Resets kycSubmitted/kycApproved/
+  /// suitabilityComplete/biometricEnabled too (2026-08-10) — these used to
+  /// survive a sign-out, so signing into/creating a DIFFERENT account in the
+  /// same browser tab (web has no natural process restart between accounts)
+  /// inherited the previous account's eligibility state: a fresh signup
+  /// could land on Home already "kycApproved", skipping the KYC gate
+  /// entirely on Add money/Withdraw/Buy/Sell. hydrateGatingStateAndRoute
+  /// (log_in_screen.dart) still re-syncs these from the server on the next
+  /// real login, so this only removes the stale carry-over, not any real
+  /// hydration path.
   Future<void> forceSignOut() async {
     await _tokenStore.clearTokens();
     await _passcodeStore.clearPasscode();
     signedIn = false;
     loginPasscodeSetup = false;
+    kycSubmitted = false;
+    kycApproved = false;
+    suitabilityComplete = false;
+    biometricEnabled = false;
+    _watchlist.clear();
+    watchlistVersion = 0;
     notifyListeners();
   }
 
@@ -186,15 +244,22 @@ class AppState extends ChangeNotifier {
 
   void toggleWatch(String ticker) {
     if (!_watchlist.remove(ticker)) _watchlist.add(ticker);
+    watchlistVersion++;
     notifyListeners();
   }
 
   void addWatch(String ticker) {
-    if (_watchlist.add(ticker)) notifyListeners();
+    if (_watchlist.add(ticker)) {
+      watchlistVersion++;
+      notifyListeners();
+    }
   }
 
   void removeWatch(String ticker) {
-    if (_watchlist.remove(ticker)) notifyListeners();
+    if (_watchlist.remove(ticker)) {
+      watchlistVersion++;
+      notifyListeners();
+    }
   }
 }
 
