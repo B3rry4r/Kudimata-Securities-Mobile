@@ -1,7 +1,13 @@
 // Brand mark + wordmark lockup. Ported from shared.jsx (Mark / Wordmark). The
 // mark keeps its native 15.06×24.6 aspect ratio (2026-08-14: the shield-less
 // "K" mark, replacing the old shield-enclosed one); white variant for ink
-// surfaces.
+// surfaces. Both SVGs use a flat `fill="..."` attribute directly on the path
+// — NOT a CSS `<style>` class referencing a `<linearGradient>` (that's how
+// the design team's source file had the purple variant, and it rendered
+// solid BLACK: flutter_svg/vector_graphics doesn't reliably resolve a
+// gradient fill set via a CSS class selector, and falls back to the SVG
+// spec's default fill, black). Flattened to the same solid #670099 the
+// launcher icon/adaptive-icon background already uses.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../theme/tokens.dart';
