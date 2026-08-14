@@ -1,5 +1,7 @@
 // Brand mark + wordmark lockup. Ported from shared.jsx (Mark / Wordmark). The
-// mark keeps its native 2070×2385 aspect ratio; white variant for ink surfaces.
+// mark keeps its native 15.06×24.6 aspect ratio (2026-08-14: the shield-less
+// "K" mark, replacing the old shield-enclosed one); white variant for ink
+// surfaces.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../theme/tokens.dart';
@@ -15,11 +17,11 @@ class KMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Aspect ratio from the mark's viewBox (2070.02 × 2384.77 — the shield mark).
+    // Aspect ratio from the mark's viewBox (15.06 × 24.6).
     return SvgPicture.asset(
       white ? _markWhite : _markPurple,
       width: size,
-      height: size * 2384.77 / 2070.02,
+      height: size * 24.6 / 15.06,
     );
   }
 }
