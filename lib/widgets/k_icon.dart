@@ -46,6 +46,16 @@ const Map<String, String> _kIconPaths = {
   'transfer': '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/>'
       '<path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
   'send': '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  // Lucide 'camera' — the liveness capture shutter button (BUG-02: was
+  // 'fingerprint', a biometric/Touch-ID affordance, not a photo-capture one).
+  'camera': '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>'
+      '<circle cx="12" cy="13" r="3"/>',
+  // Lucide 'refresh-cw' — liveness.dart's shutter doubles as a "retry camera
+  // init" affordance when the camera couldn't be reached (BUG-02).
+  'refresh': '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>'
+      '<path d="M3 3v5h5"/>'
+      '<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>'
+      '<path d="M16 16h5v5"/>',
   // custom — drawn in the same Lucide idiom (shared.jsx Fingerprint)
   'fingerprint': '<path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>'
       '<path d="M5 19.5C5.5 18 6 16 6 14a6 6 0 0 1 .34-2"/>'

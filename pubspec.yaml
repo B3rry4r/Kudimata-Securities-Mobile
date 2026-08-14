@@ -38,8 +38,13 @@ dependencies:
   flutter_svg: ^2.3.0
   go_router: ^17.3.0
 
-  # Real camera capture for kyc-liveness's selfie step (ImageSource.camera).
-  image_picker: ^1.1.2
+  # Live in-app camera preview + capture for kyc-liveness's selfie step.
+  # Replaced image_picker (2026-08-14, BUG-02): that package's
+  # ImageSource.camera hands off to the OS's separate camera app/activity —
+  # no live preview inside the app's own circular frame, and capture
+  # happened on a different screen entirely. camera gives a real
+  # CameraController + CameraPreview widget rendered in place.
+  camera: ^0.11.2
 
   # Device file picker for kyc-id's ID upload (JPG/PNG/PDF from device
   # storage — image_picker above only covers camera/gallery images, not

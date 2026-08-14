@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required by the `camera` plugin (kyc-liveness's in-app live preview,
+         BUG-02) — direct in-process camera access, unlike image_picker's
+         "hand off to the OS camera app" flow which didn't need this held by
+         our own app. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="Kudimata Securities"
         android:name="${applicationName}"
