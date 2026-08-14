@@ -217,6 +217,20 @@ GoRouter buildRouter(AppState state) {
 // Pragmatic, not draconian: the whole gated flow (onboarding → KYC → suitability)
 // is always allowed so the demo can walk it end-to-end. Only DEEP LINKS into the
 // tab section / pushed detail screens are bounced to /splash when not signed in.
+//
+// 2026-08-14 (BUG-04): also closes the reverse gap — an already-signed-in
+// investor landing back on a pre-auth-only screen via browser back/history
+// (web) or a stray stack entry (native). go_router's `.go()` calls
+// consistently used throughout the auth/onboarding flow keep the app's OWN
+// Navigator flat, but each still reports a distinct browser history entry
+// on web (a go_router/Flutter Router characteristic, not something this
+// app's navigation calls control) — so repeated back-navigation could
+// still walk through /splash, /signup, /otp, /reset even once fully
+// authenticated. Routes.login is deliberately NOT in this block list: it's
+// dual-purpose (LogInScreen._decideMode) — the pre-auth email+password form
+// AND the legitimate returning-user passcode-unlock screen splash_screen.dart
+// itself routes an already-signed-in investor to on every cold start, so
+// bouncing it away here would break that intended flow.
 String? _gateRedirect(AppState state, GoRouterState st) {
   final loc = st.matchedLocation;
 
@@ -232,7 +246,17 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.riskDisclosure, Routes.clientAgreement,
   };
 
-  if (state.signedIn) return null;          // signed in → free roam
+  // Pre-auth-only screens — never legitimately reachable once fully signed
+  // in, regardless of how the app landed there (fresh navigation, stale
+  // history, deep link).
+  const preAuthOnly = <String>{
+    Routes.splash, Routes.signup, Routes.otp, Routes.reset,
+  };
+
+  if (state.signedIn) {
+    if (preAuthOnly.contains(loc)) return Routes.home;
+    return null;                            // otherwise free roam
+  }
   if (gated.contains(loc)) return null;     // gated flow always allowed
   return Routes.splash;                      // any deep link into the app → splash
 }
