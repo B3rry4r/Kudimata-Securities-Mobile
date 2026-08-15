@@ -55,14 +55,35 @@ const double _kDailyLimit = 500000;
 Future<void> showBuyFlow(BuildContext context, Asset asset) async {
   if (!await _ensureEligibleToTrade(context)) return;
   if (!context.mounted) return;
-  await _showAmountSheet(context, asset, side: _Side.buy);
+  await _runTradeFlow(context, asset, side: _Side.buy);
 }
 
 /// Sell flow: amount → review → success. Same gate as [showBuyFlow].
 Future<void> showSellFlow(BuildContext context, Asset asset) async {
   if (!await _ensureEligibleToTrade(context)) return;
   if (!context.mounted) return;
-  await _showAmountSheet(context, asset, side: _Side.sell);
+  await _runTradeFlow(context, asset, side: _Side.sell);
+}
+
+/// Runs the three sheets in sequence, each one only opening once the
+/// previous has FULLY dismissed (awaiting showKSheet's own returned Future,
+/// which resolves exactly when that sheet's route is gone) — rather than
+/// each sheet manually `Navigator.pop()`ing itself and immediately opening
+/// the next sheet on the same still-transitioning root navigator. That
+/// pop-then-immediately-push-again pattern is a known source of a stale
+/// modal barrier (from the sheet still mid-exit-animation) sitting above
+/// the newly-presented sheet and absorbing its taps — reported live as
+/// "even the success purchase modal, the buttons don't respond" (2026-08-15).
+/// Each sheet now returns its result through the SAME showKSheet Future
+/// instead of reaching for Navigator/context itself to chain onward.
+Future<void> _runTradeFlow(BuildContext context, Asset asset, {required _Side side}) async {
+  final amountInput = await _showAmountSheet(context, asset, side: side);
+  if (amountInput == null || !context.mounted) return;
+
+  final placedInput = await _showReviewSheet(context, asset, side: side, input: amountInput);
+  if (placedInput == null || !context.mounted) return;
+
+  await _showSuccessSheet(context, asset, side: side, input: placedInput);
 }
 
 /// Shows a sheet pointing the investor at whichever KYC/suitability step
@@ -142,12 +163,12 @@ class _OrderInput {
 // Step 1 — Amount entry (shared). Naira/shares unit toggle + quick-amount chips.
 // ─────────────────────────────────────────────────────────────────────────────
 
-Future<void> _showAmountSheet(
+Future<_OrderInput?> _showAmountSheet(
   BuildContext context,
   Asset asset, {
   required _Side side,
 }) {
-  return showKSheet<void>(
+  return showKSheet<_OrderInput>(
     context,
     title: side.isSell ? 'Sell ${asset.ticker}' : 'Buy ${asset.ticker}',
     child: _AmountSheet(asset: asset, side: side),
@@ -322,13 +343,14 @@ class _AmountSheetState extends State<_AmountSheet> {
             : KButton(
                 label: 'Review order',
                 onPressed: () {
-                  final input = _OrderInput(
+                  // Pop WITH the result rather than popping-then-immediately-
+                  // showing the review sheet ourselves — see _runTradeFlow's
+                  // doc comment for why that pattern is unsafe here.
+                  Navigator.of(context).pop(_OrderInput(
                     unit: _unit,
                     amountNaira: _amountNaira,
                     units: _units,
-                  );
-                  Navigator.of(context).pop();
-                  _showReviewSheet(context, widget.asset, side: widget.side, input: input);
+                  ));
                 },
               ),
       ],
@@ -340,13 +362,13 @@ class _AmountSheetState extends State<_AmountSheet> {
 // Step 2 — Review order (shared). Summary rows + risk ack + confirm.
 // ─────────────────────────────────────────────────────────────────────────────
 
-void _showReviewSheet(
+Future<_OrderInput?> _showReviewSheet(
   BuildContext context,
   Asset asset, {
   required _Side side,
   required _OrderInput input,
 }) {
-  showKSheet<void>(
+  return showKSheet<_OrderInput>(
     context,
     title: 'Review order',
     child: _ReviewSheet(asset: asset, side: side, input: input),
@@ -472,8 +494,9 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         );
       }
       if (!mounted) return;
-      Navigator.of(context).pop();
-      _showSuccessSheet(context, widget.asset, side: widget.side, input: input);
+      // Pop WITH the result — see _runTradeFlow's doc comment for why this
+      // sheet doesn't show the success sheet itself.
+      Navigator.of(context).pop(input);
     } on ApiException {
       if (!mounted) return;
       setState(() {
@@ -512,7 +535,7 @@ class _SummaryRow extends StatelessWidget {
 // per the design. The orders screen has its own entry points (Home / Wallet).
 // ─────────────────────────────────────────────────────────────────────────────
 
-void _showSuccessSheet(
+Future<void> _showSuccessSheet(
   BuildContext context,
   Asset asset, {
   required _Side side,
@@ -520,7 +543,7 @@ void _showSuccessSheet(
 }) {
   HapticFeedback.lightImpact();
   final amountStr = _formatNaira(input.amountNaira);
-  showKSheet<void>(
+  return showKSheet<void>(
     context,
     child: Padding(
       padding: const EdgeInsets.only(top: 16),
