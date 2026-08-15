@@ -16,13 +16,21 @@ import 'confirm_passcode_screen.dart';
 import 'onboarding_scaffold.dart';
 
 class CreatePasscodeScreen extends StatefulWidget {
-  const CreatePasscodeScreen({super.key, this.reentry = false});
+  const CreatePasscodeScreen({super.key, this.reentry = false, this.email});
 
   /// True when re-entering this flow from Security's "Change passcode"
   /// rather than first-time onboarding. Defaults to false so the ordinary
   /// signup → passcode → biometric → KYC flow is unaffected when this isn't
   /// explicitly set.
   final bool reentry;
+
+  /// The account this new passcode belongs to — known with certainty at
+  /// both call sites that pass it (otp_screen.dart post-signup,
+  /// log_in_screen.dart post-login), threaded through to
+  /// confirm_passcode_screen.dart so it doesn't need to re-derive this via
+  /// an API call. Null for Security's reentry (no fresh login just
+  /// happened) — that screen resolves it itself instead.
+  final String? email;
 
   @override
   State<CreatePasscodeScreen> createState() => _CreatePasscodeScreenState();
@@ -41,7 +49,7 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
     });
     if (_code.length == 6) {
       // Hand the chosen passcode to the confirm step (mismatch checked there).
-      final args = ConfirmPasscodeArgs(code: _code, reentry: widget.reentry);
+      final args = ConfirmPasscodeArgs(code: _code, reentry: widget.reentry, email: widget.email);
       if (widget.reentry) {
         // Push (not go) so the Security/account stack below stays intact —
         // confirm's success pops back through both screens to Security.

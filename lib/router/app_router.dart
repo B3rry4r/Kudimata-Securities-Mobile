@@ -105,8 +105,20 @@ GoRouter buildRouter(AppState state) {
       GoRoute(
         path: Routes.createPasscode,
         // `extra: true` marks re-entry from Security's "Change passcode"
-        // (security_screen.dart) rather than first-time onboarding.
-        builder: (_, st) => themed(() => CreatePasscodeScreen(reentry: st.extra == true)),
+        // (security_screen.dart) rather than first-time onboarding. A
+        // String `extra` instead (otp_screen.dart's post-signup handoff,
+        // log_in_screen.dart's post-login handoff) is the account's email —
+        // known with certainty at both those call sites, so it's threaded
+        // straight through rather than re-derived later via an API call
+        // that could fail (BUG-03 follow-up, 2026-08-15: PasscodeStore's
+        // owner scoping used to resolve the email via GET /users/me right
+        // when the passcode was set — a single transient failure there
+        // permanently mis-scoped the passcode, forcing re-onboarding on
+        // every future login for that account).
+        builder: (_, st) => themed(() => CreatePasscodeScreen(
+              reentry: st.extra == true,
+              email: st.extra is String ? st.extra as String : null,
+            )),
       ),
       GoRoute(
         path: Routes.confirmPasscode,

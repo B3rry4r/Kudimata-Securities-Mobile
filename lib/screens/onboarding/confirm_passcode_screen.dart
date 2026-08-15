@@ -39,17 +39,20 @@ import 'onboarding_scaffold.dart';
 
 /// Payload passed via GoRouter `extra` from create_passcode_screen.dart.
 class ConfirmPasscodeArgs {
-  const ConfirmPasscodeArgs({required this.code, this.reentry = false});
+  const ConfirmPasscodeArgs({required this.code, this.reentry = false, this.email});
 
   /// The passcode chosen on the create step.
   final String code;
 
   /// See [ConfirmPasscodeScreen.reentry].
   final bool reentry;
+
+  /// See [ConfirmPasscodeScreen.email].
+  final String? email;
 }
 
 class ConfirmPasscodeScreen extends StatefulWidget {
-  const ConfirmPasscodeScreen({super.key, this.created, this.reentry = false});
+  const ConfirmPasscodeScreen({super.key, this.created, this.reentry = false, this.email});
 
   /// The passcode chosen on the create step (passed via GoRouter `extra`).
   final String? created;
@@ -59,6 +62,13 @@ class ConfirmPasscodeScreen extends StatefulWidget {
   /// signup → passcode → biometric → KYC flow is unaffected when this isn't
   /// explicitly set.
   final bool reentry;
+
+  /// The account this passcode belongs to, threaded from
+  /// create_passcode_screen.dart — known with certainty for a fresh
+  /// signup/login, so used directly rather than re-derived via an API call.
+  /// Null for Security's reentry, where [_evaluate] falls back to
+  /// GET /users/me since no fresh login just supplied it.
+  final String? email;
 
   @override
   State<ConfirmPasscodeScreen> createState() => _ConfirmPasscodeScreenState();
@@ -89,19 +99,30 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
     if (matches) {
       final app = AppScope.read(context);
       // Scope the passcode to the account that set it (BUG-03 — see
-      // PasscodeStore's file header) — a valid session already exists in
-      // every path that reaches this screen (signup's post-OTP tokens,
-      // log_in_screen.dart's fresh email+password tokens, or an
-      // already-signed-in Security reentry), so GET /users/me resolves the
-      // real owner. Best-effort: a transient failure here just means the
-      // owner check misses on the next login (forces one extra
-      // create/confirm round) rather than blocking passcode creation
-      // outright — never a reason to strand the investor on this screen.
-      var owner = '';
-      try {
-        owner = (await UserRepository(app.apiClient).me()).email;
-      } on ApiException {
-        // best-effort — see comment above.
+      // PasscodeStore's file header). widget.email is known with certainty
+      // for a fresh signup/login (threaded from otp_screen.dart /
+      // log_in_screen.dart via create_passcode_screen.dart) — used
+      // directly, no network round trip. Only Security's reentry lacks it,
+      // so that's the one case that falls back to GET /users/me.
+      //
+      // 2026-08-15 follow-up: this used to ALWAYS resolve the owner via
+      // GET /users/me, even when the email was already known — a single
+      // transient failure there permanently mis-scoped the passcode
+      // (silently stored an empty owner), which then never matched on any
+      // future login, forcing that account through create/confirm +
+      // biometric + personal-details again on every single sign-in
+      // ("I see a few more details screens, I've done all these before").
+      // Still best-effort where a network call is genuinely needed
+      // (reentry): a transient failure there just means the owner check
+      // misses on the next login (forces one extra create/confirm round),
+      // not a reason to strand the investor on this screen.
+      var owner = widget.email ?? '';
+      if (owner.isEmpty) {
+        try {
+          owner = (await UserRepository(app.apiClient).me()).email;
+        } on ApiException {
+          // best-effort — see comment above.
+        }
       }
       // Persist a salted hash of the confirmed passcode so log_in_screen.dart
       // has a real local value to verify a re-entered passcode against — see

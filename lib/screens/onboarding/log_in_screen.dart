@@ -343,7 +343,7 @@ class _LogInScreenState extends State<LogInScreen> {
     }
 
     app.setLoginPasscodeSetup(true);
-    context.go(Routes.createPasscode);
+    context.go(Routes.createPasscode, extra: email);
   }
 
   @override
