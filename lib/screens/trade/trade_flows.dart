@@ -199,6 +199,13 @@ class _AmountSheetState extends State<_AmountSheet> {
   // crash the sheet.
   String? _balanceOrHolding;
 
+  // Raw numeric mirrors of the above (both repos return pre-formatted
+  // display strings) — needed so the quick-amount chips below can compute
+  // an actual value rather than just a label. null until the fetch above
+  // resolves; the "Max"/percentage chips no-op until then.
+  double? _walletBalanceNaira;
+  double? _holdingUnits;
+
   @override
   void initState() {
     super.initState();
@@ -207,17 +214,69 @@ class _AmountSheetState extends State<_AmountSheet> {
 
   Future<void> _loadBalanceOrHolding() async {
     try {
-      final text = widget.side.isSell
-          ? await _holdingsRepo
-              .byTicker(widget.asset.ticker)
-              .then((h) => '${h.units} shares · ${h.marketValue}')
-          : await _walletRepo.balance();
-      if (!mounted) return;
-      setState(() => _balanceOrHolding = text);
+      if (widget.side.isSell) {
+        final h = await _holdingsRepo.byTicker(widget.asset.ticker);
+        if (!mounted) return;
+        setState(() {
+          _balanceOrHolding = '${h.units} shares · ${h.marketValue}';
+          _holdingUnits = double.tryParse(h.units.replaceAll(RegExp('[^0-9.]'), ''));
+        });
+      } else {
+        final balance = await _walletRepo.balance();
+        if (!mounted) return;
+        setState(() {
+          _balanceOrHolding = balance;
+          _walletBalanceNaira = double.tryParse(balance.replaceAll(RegExp('[^0-9.]'), ''));
+        });
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _balanceOrHolding = '—');
     }
+  }
+
+  // Resolves a tapped quick-amount chip to a naira/unit value and writes it
+  // into the amount field in whichever unit [_unit] is currently showing.
+  // Fixed-naira buy chips (₦10k/₦25k/₦50k) always work; "Max" and every sell
+  // percentage chip depend on the balance/holding fetch above and no-op
+  // until it resolves.
+  void _applyQuick(String chip) {
+    double? naira;
+    double? units;
+
+    if (widget.side.isSell) {
+      final holding = _holdingUnits;
+      if (holding == null) return;
+      final pct = switch (chip) {
+        '25%' => 0.25,
+        '50%' => 0.50,
+        '75%' => 0.75,
+        'All' => 1.0,
+        _ => null,
+      };
+      if (pct == null) return;
+      units = holding * pct;
+    } else {
+      naira = switch (chip) {
+        '₦10k' => 10000.0,
+        '₦25k' => 25000.0,
+        '₦50k' => 50000.0,
+        'Max' => _walletBalanceNaira,
+        _ => null,
+      };
+      if (naira == null) return;
+    }
+
+    setState(() {
+      _quick = chip;
+      if (_unit == 'naira') {
+        final value = naira ?? (units! * _price);
+        _amount.text = _formatNaira(value).replaceFirst('₦', '');
+      } else {
+        final value = units ?? (_price > 0 ? naira! / _price : 0);
+        _amount.text = value.toStringAsFixed(1);
+      }
+    });
   }
 
   @override
@@ -322,7 +381,7 @@ class _AmountSheetState extends State<_AmountSheet> {
                 child: KPillChip(
                   label: c,
                   selected: _quick == c,
-                  onTap: () => setState(() => _quick = c),
+                  onTap: () => _applyQuick(c),
                 ),
               ),
             ],
