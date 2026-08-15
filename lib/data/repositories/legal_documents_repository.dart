@@ -4,7 +4,7 @@
 // publishedAt, fileObjectKey}`. It has no counterpart in lib/data/models.dart
 // (out of scope for a per-screen wiring agent to edit, per lib/data/api/
 // README.md), so — mirroring NotificationItem in notifications_repository.dart
-// and BankAccountSummary in wallet_repository.dart — this repository declares
+// and BankAccountSummary in bank_accounts_repository.dart — this repository declares
 // its own small local [LegalDocument] model.
 //
 // GET /legal-documents is a plain (non-paginated) `list<LegalDocument>` per

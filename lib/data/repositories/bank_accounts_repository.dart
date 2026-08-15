@@ -12,18 +12,17 @@
 //   GET    /banks                      list<Bank> — picker for the add-account sheet
 //   POST   /banks/resolve-account-name {bankCode, accountNumber} -> {accountName}
 //
-// `BankAccount`'s response shape (id/bankName/accountNumberMasked/primary) is
-// already modelled by `BankAccountSummary` in wallet_repository.dart (built
-// for the withdraw sheet's destination row off the same GET /bank-accounts
-// endpoint) — reused here rather than duplicating an identical class, per
-// lib/data/api/README.md's note that a resource shape not yet in
-// lib/data/models.dart is a per-screen judgment call, not something to
-// reinvent per repository.
+// `BankAccountSummary` (id/bankName/accountNumberMasked/primary) used to live
+// in wallet_repository.dart (built for the old withdraw sheet's destination
+// row off this same GET /bank-accounts endpoint) — relocated here, its real
+// home, when the non-custodial wallet redesign deleted that repository
+// (supersedes.json S-11 backend / mobile follow-up): bank accounts remain a
+// real, investor-managed feature (a sell's payout / a buy's refund
+// destination) even though the wallet balance concept is gone.
 //
 // Construct with the ONE shared ApiClient:
 //   final _repo = BankAccountsRepository(AppScope.read(context).apiClient);
 import '../api/api_client.dart';
-import 'wallet_repository.dart' show BankAccountSummary;
 
 class BankAccountsRepository {
   const BankAccountsRepository(this._client);
@@ -96,5 +95,28 @@ class Bank {
   factory Bank.fromJson(Map<String, dynamic> json) => Bank(
         code: json['code'] as String? ?? '',
         name: json['name'] as String? ?? '',
+      );
+}
+
+/// A saved payout bank account (registry.json BankAccount resource) — [list]'s
+/// item shape. Relocated from wallet_repository.dart, see this file's header.
+class BankAccountSummary {
+  const BankAccountSummary({
+    required this.id,
+    required this.bankName,
+    required this.accountNumberMasked,
+    required this.primary,
+  });
+
+  final String id;
+  final String bankName;
+  final String accountNumberMasked;
+  final bool primary;
+
+  factory BankAccountSummary.fromJson(Map<String, dynamic> json) => BankAccountSummary(
+        id: json['id'] as String? ?? '',
+        bankName: json['bankName'] as String? ?? '',
+        accountNumberMasked: json['accountNumberMasked'] as String? ?? '',
+        primary: json['primary'] as bool? ?? false,
       );
 }

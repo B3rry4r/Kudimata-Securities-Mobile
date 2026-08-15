@@ -20,10 +20,15 @@
 // has no limit-order selector, so [orderType] defaults to market and
 // [limitPrice] stays unset from this screen.
 //
-// The Order resource shape itself isn't threaded into a domain model here —
-// this call only needs to succeed or throw; the caller already knows the
-// ticker/side/amount it just submitted and renders the existing success UI
-// from that, not from the response body.
+// Non-custodial wallet redesign (backend supersedes.json S-11): a buy order
+// no longer fills synchronously — POST /orders returns the Order with
+// status 'awaiting_payment' plus a `checkoutUrl` the investor must complete
+// a Flutterwave checkout on before it's sent to the broker. [placeOrder] and
+// the new [getOrder] (GET /orders/:id, for trade_flows.dart's post-checkout
+// polling) both return an [OrderResult] instead of discarding the response
+// body — the caller needs `id`/`status`/`checkoutUrl` now, not just a
+// success/failure signal. A sell is unaffected: it still fills immediately
+// (status 'approved'/'pending'), `checkoutUrl` is simply absent.
 //
 // Construct with the ONE shared ApiClient, reached via
 // `AppScope.read(context).apiClient` (see main.dart / AppState.apiClient /
@@ -35,6 +40,15 @@ enum OrderSide { buy, sell }
 
 enum OrderType { market, limit }
 
+enum OrderStatus { awaitingPayment, pending, approved, rejected, expired }
+
+/// POST /orders / GET /orders/:id response, narrowed to what the trade flow
+/// needs. [checkoutUrl] is only ever present on the create response for a
+/// fresh buy — GET /orders/:id never re-issues it (see backend Order.checkoutUrl
+/// doc comment), so trade_flows.dart's polling sheet must have captured it
+/// from [placeOrder]'s own result before it starts polling.
+typedef OrderResult = ({String id, OrderStatus status, String? checkoutUrl});
+
 class OrderPlacementRepository {
   const OrderPlacementRepository(this._client);
   final ApiClient _client;
@@ -43,7 +57,7 @@ class OrderPlacementRepository {
   /// mirrors the Amount sheet's naira/shares toggle (whichever the investor
   /// actually entered). Throws [ApiException] on failure (via
   /// [ApiClient.post]); never throws a raw DioException.
-  Future<void> placeOrder({
+  Future<OrderResult> placeOrder({
     required String ticker,
     required OrderSide side,
     double? units,
@@ -63,6 +77,27 @@ class OrderPlacementRepository {
     if (units != null) data['units'] = units;
     if (amountKobo != null) data['amountKobo'] = amountKobo;
     if (limitPrice != null) data['limitPrice'] = limitPrice;
-    await _client.post('/orders', data: data);
+    final response = await _client.post('/orders', data: data);
+    return _fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// GET /orders/:id — polls a buy's payment/fill status after the investor
+  /// completes (or abandons) the Flutterwave checkout opened from
+  /// [placeOrder]'s `checkoutUrl`.
+  Future<OrderResult> getOrder(String id) async {
+    final response = await _client.get('/orders/$id');
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
+  OrderResult _fromJson(Map<String, dynamic> json) => (
+        id: json['id'] as String? ?? '',
+        status: switch (json['status'] as String?) {
+          'awaiting_payment' => OrderStatus.awaitingPayment,
+          'approved' => OrderStatus.approved,
+          'rejected' => OrderStatus.rejected,
+          'expired' => OrderStatus.expired,
+          _ => OrderStatus.pending,
+        },
+        checkoutUrl: json['checkoutUrl'] as String?,
+      );
 }

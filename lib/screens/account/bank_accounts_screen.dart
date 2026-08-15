@@ -16,8 +16,6 @@ import 'package:flutter/material.dart';
 import 'package:kudimata_securities/app/app_state.dart';
 import 'package:kudimata_securities/data/api/api_exception.dart';
 import 'package:kudimata_securities/data/repositories/bank_accounts_repository.dart';
-import 'package:kudimata_securities/data/repositories/wallet_repository.dart'
-    show BankAccountSummary;
 import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';

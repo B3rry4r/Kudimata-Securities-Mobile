@@ -46,8 +46,8 @@ class KEmptyView extends StatelessWidget {
   const KEmptyView.transactions({super.key, this.onAction})
       : icon = 'transfer',
         title = 'No transactions yet',
-        message = 'Money you add, invest or withdraw will appear here.',
-        actionLabel = 'Add money';
+        message = 'Your buy, sell, and payout activity will appear here.',
+        actionLabel = 'Browse markets';
 
   const KEmptyView.watchlist({super.key, this.onAction})
       : icon = 'eye', // design used a bookmark glyph (not in the fixed KIcon set)

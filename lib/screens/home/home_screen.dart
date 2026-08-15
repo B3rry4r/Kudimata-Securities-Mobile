@@ -34,7 +34,6 @@ import 'package:kudimata_securities/router/routes.dart';
 import 'package:kudimata_securities/screens/shared/state_views.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
 import 'package:kudimata_securities/widgets/widgets.dart';
-import 'package:kudimata_securities/screens/wallet/wallet_flows.dart';
 
 const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 
@@ -201,49 +200,16 @@ class _HomeBody extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // Browsing is open to everyone; only trading/funding require KYC +
-        // suitability (see wallet_flows.dart's showAddMoneyFlow/
-        // showWithdrawFlow and markets/asset_detail_screen.dart's Buy/Sell,
-        // which gate on these same AppState flags — backed server-side too,
-        // OrdersService/TransactionsService). This prompts the investor
-        // toward whichever step of that they haven't finished yet; shows
-        // nothing once both are done. AppScope.of (not .read) so it reacts
-        // live once hydrateGatingStateAndRoute (log_in_screen.dart) or the
+        // Browsing is open to everyone; only trading requires KYC +
+        // suitability (see markets/asset_detail_screen.dart's Buy/Sell,
+        // which gates on these same AppState flags — backed server-side too,
+        // OrdersService). This prompts the investor toward whichever step of
+        // that they haven't finished yet; shows nothing once both are done.
+        // AppScope.of (not .read) so it reacts live once
+        // hydrateGatingStateAndRoute (log_in_screen.dart) or the
         // KYC/suitability flow itself updates these flags.
         _KycPrompt(app: AppScope.of(context)),
-
-        // quick actions
-        Padding(
-          padding: _gut,
-          child: Row(
-            children: [
-              Expanded(
-                child: _QuickAction(
-                  label: 'Add money',
-                  icon: 'arrowDownLeft',
-                  onTap: () => showAddMoneyFlow(context),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _QuickAction(
-                  label: 'Invest',
-                  icon: 'arrowUpRight',
-                  onTap: () => context.go(Routes.markets),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _QuickAction(
-                  label: 'Withdraw',
-                  icon: 'arrowUp',
-                  onTap: () => showWithdrawFlow(context),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 12),
 
         // watchlist strip — GET /watchlist-items is already scoped server-side
         // to the caller's saved tickers, so no local AppState.watchlistTickers
@@ -489,36 +455,7 @@ class _SeeAll extends StatelessWidget {
   }
 }
 
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({required this.label, required this.icon, required this.onTap});
-  final String label;
-  final String icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return KCard(
-      padding: EdgeInsets.zero,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            KIcon(icon, size: 22, color: KColor.ink),
-            const SizedBox(height: 8),
-            Text(label,
-                maxLines: 1,
-                style: KType.micro(color: KColor.ink, w: KWeight.medium)
-                    .copyWith(letterSpacing: 0.01 * 10)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Prompts an investor who can't yet trade/fund toward whichever step
+/// Prompts an investor who can't yet trade toward whichever step
 /// they're missing (see the call site's comment). Renders nothing once
 /// [AppState.kycApproved] and [AppState.suitabilityComplete] are both true.
 /// Reuses the same `_Bubble`/KCard row treatment as `_WatchlistEmptyCard`
