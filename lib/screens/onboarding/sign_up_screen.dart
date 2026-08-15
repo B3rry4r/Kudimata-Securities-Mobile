@@ -28,6 +28,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _fullName = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
 
   bool _showErrors = false;
   bool _busy = false;
@@ -37,12 +38,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool get _fullNameValid => _fullName.text.trim().isNotEmpty;
   bool get _emailValid => _emailPattern.hasMatch(_email.text.trim());
   bool get _passwordValid => _password.text.trim().length >= 8;
+  bool get _confirmPasswordValid =>
+      _confirmPassword.text.trim().isNotEmpty &&
+      _confirmPassword.text.trim() == _password.text.trim();
 
   @override
   void dispose() {
     _fullName.dispose();
     _email.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -85,6 +90,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
               onChanged: _showErrors ? (_) => setState(() {}) : null,
               error: _showErrors && !_passwordValid ? 'Use at least 8 characters' : null,
             ),
+            const SizedBox(height: 16),
+            KInput(
+              label: 'Confirm password',
+              placeholder: 'Re-enter your password',
+              obscure: true,
+              controller: _confirmPassword,
+              onChanged: _showErrors ? (_) => setState(() {}) : null,
+              error: _showErrors && !_confirmPasswordValid ? 'Passwords do not match' : null,
+            ),
             const Spacer(),
             Column(
               children: [
@@ -117,7 +131,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _continue() async {
-    if (!_fullNameValid || !_emailValid || !_passwordValid) {
+    if (!_fullNameValid || !_emailValid || !_passwordValid || !_confirmPasswordValid) {
       setState(() => _showErrors = true);
       return;
     }

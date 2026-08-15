@@ -32,11 +32,13 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   late Future<(PortfolioSummary, List<Holding>)> _future = _load();
 
   Future<(PortfolioSummary, List<Holding>)> _load() async {
-    // Kick off both requests before awaiting either, so they run concurrently.
-    final summaryFuture = _repo.summary();
-    final holdingsFuture = _repo.holdings();
-    final summary = await summaryFuture;
-    final holdingsPage = await holdingsFuture;
+    // Record `.wait`, not fire-then-sequential-await: if summary() rejects
+    // while holdings() is still in flight, sequential awaiting would throw
+    // immediately and leave holdings()'s future unlistened-to — an
+    // "unhandled exception" once it too resolves. `.wait` listens to both
+    // up front regardless of which fails first. See home_screen.dart's
+    // _load() for the same fix with the fuller writeup.
+    final (summary, holdingsPage) = await (_repo.summary(), _repo.holdings()).wait;
     return (summary, holdingsPage.data);
   }
 

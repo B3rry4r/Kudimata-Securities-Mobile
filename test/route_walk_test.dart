@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_client.dart';
 import 'package:kudimata_securities/router/app_router.dart';
 import 'package:kudimata_securities/theme/app_theme.dart';
 import 'package:kudimata_securities/screens/home/home_screen.dart';
@@ -21,7 +22,16 @@ void main() {
       ..kycSubmitted = true
       ..kycApproved = true
       ..suitabilityComplete = true
-      ..signedIn = true;
+      ..signedIn = true
+      // Several tab screens (Home, Markets, Wallet, Account, ...) read
+      // AppScope.read(context).apiClient in repo field initializers — unset
+      // (the `late final` default) throws LateInitializationError the
+      // instant they build, which is exactly the "exception" this test was
+      // catching and failing on for every apiClient-touching route. Real
+      // requests fail against this bogus/unreachable client, surfacing as a
+      // handled KErrorView (per each screen's FutureBuilder), not an
+      // uncaught exception — which is all this test actually asserts on.
+      ..apiClient = ApiClient();
     final router = buildRouter(state);
 
     await tester.pumpWidget(

@@ -176,10 +176,19 @@ class AppState extends ChangeNotifier {
   /// ApiClient's refresh-then-force-sign-out path (see lib/data/api/api_client.dart)
   /// takes over from there.
   Future<void> _hydrateSignedIn() async {
-    final token = await _tokenStore.getAccessToken();
-    if (token != null && token.isNotEmpty) {
-      signedIn = true;
-      notifyListeners();
+    try {
+      final token = await _tokenStore.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        signedIn = true;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Best-effort, like hydrateWatchlist() below — a secure-storage read
+      // failing (corrupted keystore, a first-run platform quirk, no
+      // secure-storage plugin registered at all as in a plain widget test)
+      // should fall back to the safe default (treat as signed out), not
+      // leave [ready] — and therefore splash_screen.dart's unguarded
+      // `await app.ready` — rejected and uncaught.
     }
   }
 
@@ -191,10 +200,14 @@ class AppState extends ChangeNotifier {
   /// cold launch to sign-up — even a returning investor with a valid stored
   /// session and a stored passcode.
   Future<void> _hydratePasscodeSet() async {
-    final has = await _passcodeStore.hasPasscode();
-    if (has) {
-      passcodeSet = true;
-      notifyListeners();
+    try {
+      final has = await _passcodeStore.hasPasscode();
+      if (has) {
+        passcodeSet = true;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Best-effort — see _hydrateSignedIn()'s identical catch above.
     }
   }
 

@@ -86,18 +86,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<_HomeData> _load() async {
-    // Kick off all five requests before awaiting any, so they run concurrently.
-    final userFuture = _userRepo.me();
-    final summaryFuture = _holdingsRepo.summary();
-    final watchlistFuture = _watchlistRepo.items();
-    final holdingsFuture = _holdingsRepo.holdings(pageSize: 5);
-    final trendingFuture = _assetRepo.trending();
-
-    final user = await userFuture;
-    final summary = await summaryFuture;
-    final watchlist = await watchlistFuture;
-    final holdingsPage = await holdingsFuture;
-    final trending = await trendingFuture;
+    // Run all five requests concurrently via the record `.wait` extension —
+    // NOT firing them all then awaiting sequentially (`await a; await b; ...`)
+    // like this used to: if an EARLIER-awaited future rejects, that pattern
+    // throws immediately and abandons the still-in-flight later futures,
+    // which then reject with nothing listening — an "unhandled exception"
+    // (harmless-looking in a real run, but real: extra console noise/crash-
+    // reporting spam, and it's exactly what made
+    // test/theme_toggle_test.dart's Home render intermittently fail once
+    // that test started giving AppState a real (network-dead) apiClient).
+    // `.wait` attaches a listener to every future up front, so none of them
+    // can ever go unhandled, regardless of which one fails first.
+    final (user, summary, watchlist, holdingsPage, trending) = await (
+      _userRepo.me(),
+      _holdingsRepo.summary(),
+      _watchlistRepo.items(),
+      _holdingsRepo.holdings(pageSize: 5),
+      _assetRepo.trending(),
+    ).wait;
 
     return _HomeData(
       user: user,

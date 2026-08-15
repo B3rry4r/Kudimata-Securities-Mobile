@@ -46,10 +46,10 @@ class _WalletScreenState extends State<WalletScreen> {
   late Future<_WalletData> _future = _load();
 
   Future<_WalletData> _load() async {
-    final balanceFuture = _walletRepo.balance();
-    final txnsFuture = _txnRepo.list();
-    final balance = await balanceFuture;
-    final page = await txnsFuture;
+    // Record `.wait`, not fire-then-sequential-await — see home_screen.dart's
+    // _load() for why (an early rejection would otherwise leave the other
+    // future's eventual rejection unlistened-to: an "unhandled exception").
+    final (balance, page) = await (_walletRepo.balance(), _txnRepo.list()).wait;
     return (balance: balance, txns: page.data);
   }
 

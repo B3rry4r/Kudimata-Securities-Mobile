@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kudimata_securities/app/app_state.dart';
+import 'package:kudimata_securities/data/api/api_client.dart';
 import 'package:kudimata_securities/router/app_router.dart';
 import 'package:kudimata_securities/theme/app_theme.dart';
 import 'package:kudimata_securities/theme/tokens.dart';
@@ -81,7 +82,14 @@ void main() {
       ..passcodeSet = true
       ..kycApproved = true
       ..suitabilityComplete = true
-      ..themeMode = ThemeMode.light;
+      ..themeMode = ThemeMode.light
+      // Home reads AppScope.read(context).apiClient in its repo field
+      // initializers (see home_screen.dart) — unset (the `late final`
+      // default) throws LateInitializationError the instant Home builds.
+      // Real requests will fail against this bogus/unreachable client, but
+      // that's fine: Home's Scaffold background (what this test samples)
+      // renders before/regardless of the FutureBuilder's async result.
+      ..apiClient = ApiClient();
     final router = buildRouter(state);
     final key = GlobalKey();
 
