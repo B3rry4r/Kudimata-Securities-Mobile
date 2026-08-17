@@ -39,6 +39,8 @@ import '../screens/kyc/outcome_not_approved.dart';
 // Suitability & agreements.
 import '../screens/suitability/questionnaire_screen.dart';
 import '../screens/suitability/suitability_result_screen.dart';
+import '../screens/suitability/terms_of_service_screen.dart';
+import '../screens/suitability/privacy_policy_screen.dart';
 import '../screens/suitability/risk_disclosure_screen.dart';
 import '../screens/suitability/client_agreement_screen.dart';
 
@@ -162,6 +164,8 @@ GoRouter buildRouter(AppState state) {
       // ── Suitability & agreements ───────────────────────────────────────--
       GoRoute(path: Routes.questionnaire, builder: (_, _) => themed(() => QuestionnaireScreen())),
       GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themed(() => SuitabilityResultScreen())),
+      GoRoute(path: Routes.termsOfService, builder: (_, _) => themed(() => TermsOfServiceScreen())),
+      GoRoute(path: Routes.privacyPolicy, builder: (_, _) => themed(() => PrivacyPolicyScreen())),
       GoRoute(path: Routes.riskDisclosure, builder: (_, _) => themed(() => RiskDisclosureScreen())),
       GoRoute(path: Routes.clientAgreement, builder: (_, _) => themed(() => ClientAgreementScreen())),
 
@@ -255,6 +259,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.kycLiveness, Routes.kycChecking, Routes.kycNextOfKin,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     Routes.questionnaire, Routes.suitabilityResult,
+    Routes.termsOfService, Routes.privacyPolicy,
     Routes.riskDisclosure, Routes.clientAgreement,
   };
 

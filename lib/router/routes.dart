@@ -34,6 +34,10 @@ class Routes {
   // ── Suitability ──────────────────────────────────────────────────────────
   static const String questionnaire = '/suitability';
   static const String suitabilityResult = '/suitability/result';
+  // Legal-acceptance chain, in the order investors step through it:
+  // termsOfService -> privacyPolicy -> riskDisclosure -> clientAgreement.
+  static const String termsOfService = '/suitability/terms';
+  static const String privacyPolicy = '/suitability/privacy';
   static const String riskDisclosure = '/suitability/risk';
   static const String clientAgreement = '/suitability/agreement';
 

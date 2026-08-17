@@ -85,7 +85,9 @@ class _SuitabilityResultBody extends StatelessWidget {
         const Spacer(),
         KButton(
           label: 'Continue',
-          onPressed: () => context.go(Routes.riskDisclosure),
+          // Entry point of the legal-acceptance chain: terms of service ->
+          // privacy policy -> risk disclosure -> client agreement.
+          onPressed: () => context.go(Routes.termsOfService),
         ),
       ],
     );
