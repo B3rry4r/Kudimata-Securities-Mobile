@@ -9,9 +9,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/repositories/legal_documents_repository.dart';
-import 'package:kudimata_securities/screens/shared/state_views.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'account_widgets.dart';
 
 class LegalScreen extends StatefulWidget {

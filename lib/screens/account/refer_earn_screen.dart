@@ -11,11 +11,11 @@
 // and confirms via SnackBar.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/repositories/referral_repository.dart';
-import 'package:kudimata_securities/screens/shared/state_views.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/repositories/referral_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 import 'account_widgets.dart';
 
@@ -61,9 +61,9 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
     _repo.trackShare();
     SharePlus.instance.share(
       ShareParams(
-        text: "Join me on Kudimata Securities! Use my referral code "
+        text: "Join me on Kudimata Invest! Use my referral code "
             "${account.code} when you sign up and we both earn ₦1,000.",
-        subject: 'My Kudimata Securities referral code',
+        subject: 'My Kudimata Invest referral code',
       ),
     );
   }

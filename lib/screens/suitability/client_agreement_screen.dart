@@ -9,12 +9,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:kudimata_securities/widgets/widgets.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/router/routes.dart';
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/api/api_exception.dart';
-import 'package:kudimata_securities/data/repositories/compliance_repository.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 
 /// One numbered, eyebrow-led clause.
 class _Clause {
@@ -43,7 +43,7 @@ class _ClientAgreementScreenState extends State<ClientAgreementScreen> {
   static const List<_Clause> _clauses = [
     _Clause('1 · About this agreement',
         'This agreement sets out the terms between you and Kudimata '
-            'Securities. By accepting, you enter into a binding contract.'),
+            'Invest. By accepting, you enter into a binding contract.'),
     _Clause('2 · Your account',
         'Your account is personal to you. You may not let anyone else use it. '
             'You must give us accurate information and keep it up to date.'),

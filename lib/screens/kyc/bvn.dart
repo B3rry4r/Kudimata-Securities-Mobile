@@ -2,10 +2,10 @@
 // helper. Mirrors Bvn. SEAM: the KYC provider verifies the BVN here.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/router/routes.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import '_kyc_chrome.dart';
 
 // A Nigerian BVN is exactly 11 numeric digits (LumiID `POST /ng/bvn-basic/`

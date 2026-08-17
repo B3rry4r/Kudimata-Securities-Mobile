@@ -3,8 +3,8 @@
 // "STEP n OF 5" progress strip (mirrors StepProgress in kyc-screens.jsx).
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 /// Slim 44px top bar with a single back affordance (Routes use context.pop /
 /// Navigator.maybePop). Mirrors TopBar in the design.

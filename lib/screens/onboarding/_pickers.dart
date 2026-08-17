@@ -21,8 +21,8 @@
 // locally (e.g. the legal document titles) instead of standing up a backend
 // endpoint for something that essentially never changes.
 import 'package:flutter/material.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 /// One entry in the phone country-code list.
 @immutable

@@ -15,11 +15,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/repositories/statements_repository.dart';
-import 'package:kudimata_securities/screens/shared/state_views.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/repositories/statements_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
 class StatementsScreen extends StatefulWidget {

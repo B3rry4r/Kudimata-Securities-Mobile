@@ -4,15 +4,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/api/api_client.dart';
-import 'package:kudimata_securities/router/app_router.dart';
-import 'package:kudimata_securities/theme/app_theme.dart';
-import 'package:kudimata_securities/screens/home/home_screen.dart';
-import 'package:kudimata_securities/screens/portfolio/portfolio_screen.dart';
-import 'package:kudimata_securities/screens/markets/markets_screen.dart';
-import 'package:kudimata_securities/screens/wallet/wallet_screens.dart';
-import 'package:kudimata_securities/screens/account/account_screen.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_client.dart';
+import 'package:kudimata_invest/router/app_router.dart';
+import 'package:kudimata_invest/theme/app_theme.dart';
+import 'package:kudimata_invest/screens/home/home_screen.dart';
+import 'package:kudimata_invest/screens/portfolio/portfolio_screen.dart';
+import 'package:kudimata_invest/screens/markets/markets_screen.dart';
+import 'package:kudimata_invest/screens/wallet/wallet_screens.dart';
+import 'package:kudimata_invest/screens/account/account_screen.dart';
 
 void main() {
   testWidgets('every route renders without exceptions', (tester) async {

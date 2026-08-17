@@ -13,13 +13,13 @@
 // showing a different holding's numbers.
 import 'package:flutter/material.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/models.dart';
-import 'package:kudimata_securities/data/repositories/holdings_repository.dart';
-import 'package:kudimata_securities/screens/shared/state_views.dart';
-import 'package:kudimata_securities/screens/trade/trade_flows.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/models.dart';
+import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/screens/trade/trade_flows.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 class HoldingDetailScreen extends StatefulWidget {
   const HoldingDetailScreen({super.key, required this.ticker});

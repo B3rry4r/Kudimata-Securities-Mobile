@@ -9,12 +9,12 @@
 // follows.
 import 'package:flutter/material.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/models.dart';
-import 'package:kudimata_securities/data/repositories/orders_repository.dart';
-import 'package:kudimata_securities/screens/shared/state_views.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/models.dart';
+import 'package:kudimata_invest/data/repositories/orders_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 class OrderStatusScreen extends StatefulWidget {
   const OrderStatusScreen({super.key});

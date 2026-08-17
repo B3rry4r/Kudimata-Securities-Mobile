@@ -11,9 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:kudimata_securities/router/routes.dart';
-import 'package:kudimata_securities/screens/shared/state_views.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
 // Real contact details — no backend resource exists for this screen's

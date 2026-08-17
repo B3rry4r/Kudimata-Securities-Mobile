@@ -24,16 +24,16 @@
 //   AssetRepository.trending()      GET /assets/trending           — trending list
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/models.dart';
-import 'package:kudimata_securities/data/repositories/asset_repository.dart';
-import 'package:kudimata_securities/data/repositories/holdings_repository.dart';
-import 'package:kudimata_securities/data/repositories/user_repository.dart';
-import 'package:kudimata_securities/data/repositories/watchlist_repository.dart';
-import 'package:kudimata_securities/router/routes.dart';
-import 'package:kudimata_securities/screens/shared/state_views.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/models.dart';
+import 'package:kudimata_invest/data/repositories/asset_repository.dart';
+import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
+import 'package:kudimata_invest/data/repositories/user_repository.dart';
+import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 

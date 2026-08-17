@@ -9,12 +9,12 @@
 // the phone tab was removed since it never did anything (see git history).
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/api/api_exception.dart';
-import 'package:kudimata_securities/data/repositories/auth_repository.dart';
-import 'package:kudimata_securities/router/routes.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/auth_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import 'onboarding_scaffold.dart';
 
 class SignUpScreen extends StatefulWidget {

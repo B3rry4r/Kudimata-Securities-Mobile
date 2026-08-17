@@ -5,7 +5,7 @@
          our own app. -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <application
-        android:label="Kudimata Securities"
+        android:label="Kudimata Invest"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

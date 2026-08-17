@@ -2,9 +2,9 @@
 // purple "Start" primary that enters the linear flow. Mirrors KycIntro.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kudimata_securities/router/routes.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 class _KycRow {
   const _KycRow(this.eyebrow, this.line, this.icon);

@@ -13,12 +13,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/api/api_exception.dart';
-import 'package:kudimata_securities/data/repositories/compliance_repository.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/router/routes.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/router/routes.dart';
 
 /// One eyebrow-led legal section.
 class _Section {
@@ -48,7 +48,7 @@ class _RiskDisclosureScreenState extends State<RiskDisclosureScreen> {
   static const List<_Section> _sections = [
     _Section('What this is',
         'This is a plain-language summary of the risks of investing through '
-            'Kudimata Securities. It does not replace the full terms.'),
+            'Kudimata Invest. It does not replace the full terms.'),
     _Section('The risks',
         'The value of investments can fall as well as rise. You may get back '
             'less than you put in. Past performance does not predict future '

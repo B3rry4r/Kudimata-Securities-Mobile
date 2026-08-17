@@ -7,12 +7,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/api/api_exception.dart';
-import 'package:kudimata_securities/data/repositories/kyc_document_repository.dart';
-import 'package:kudimata_securities/router/routes.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/kyc_document_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import '_kyc_chrome.dart';
 
 class _IdType {

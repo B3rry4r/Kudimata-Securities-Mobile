@@ -13,11 +13,11 @@
 // notifications_screen.dart's `_markRead`): flip immediately, PATCH
 // /notification-preferences/me, revert on failure.
 import 'package:flutter/material.dart';
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/repositories/notification_preferences_repository.dart';
-import 'package:kudimata_securities/screens/shared/state_views.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/repositories/notification_preferences_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
 class NotificationsSettingsScreen extends StatefulWidget {

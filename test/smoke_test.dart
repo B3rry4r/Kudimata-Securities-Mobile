@@ -5,9 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/router/app_router.dart';
-import 'package:kudimata_securities/theme/app_theme.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/router/app_router.dart';
+import 'package:kudimata_invest/theme/app_theme.dart';
 
 void main() {
   testWidgets('Real app boots at splash without exceptions', (tester) async {

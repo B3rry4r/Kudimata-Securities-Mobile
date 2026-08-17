@@ -98,7 +98,7 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
     return AppScope(
       state: _state,
       child: MaterialApp.router(
-        title: 'Kudimata Securities',
+        title: 'Kudimata Invest',
         debugShowCheckedModeBanner: false,
         theme: KTheme.light(),
         darkTheme: KTheme.dark(),

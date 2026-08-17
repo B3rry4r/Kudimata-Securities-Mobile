@@ -4,16 +4,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/router/app_router.dart';
-import 'package:kudimata_securities/router/routes.dart';
-import 'package:kudimata_securities/theme/app_theme.dart';
-import 'package:kudimata_securities/screens/home/home_screen.dart';
-import 'package:kudimata_securities/screens/onboarding/sign_up_screen.dart';
-import 'package:kudimata_securities/screens/onboarding/otp_screen.dart';
-import 'package:kudimata_securities/screens/onboarding/splash_screen.dart';
-import 'package:kudimata_securities/screens/onboarding/reset_passcode_screen.dart';
-import 'package:kudimata_securities/screens/onboarding/log_in_screen.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/router/app_router.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/theme/app_theme.dart';
+import 'package:kudimata_invest/screens/home/home_screen.dart';
+import 'package:kudimata_invest/screens/onboarding/sign_up_screen.dart';
+import 'package:kudimata_invest/screens/onboarding/otp_screen.dart';
+import 'package:kudimata_invest/screens/onboarding/splash_screen.dart';
+import 'package:kudimata_invest/screens/onboarding/reset_passcode_screen.dart';
+import 'package:kudimata_invest/screens/onboarding/log_in_screen.dart';
 
 void main() {
   Future<void> pumpAt(WidgetTester tester, String location) async {

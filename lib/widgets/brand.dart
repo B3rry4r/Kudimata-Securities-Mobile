@@ -32,7 +32,7 @@ class KMark extends StatelessWidget {
   }
 }
 
-/// Mark + "Kudimata Securities" wordmark.
+/// Mark + "Kudimata Invest" wordmark.
 class KWordmark extends StatelessWidget {
   const KWordmark({
     super.key,
@@ -69,7 +69,7 @@ class KWordmark extends StatelessWidget {
               children: [
                 const TextSpan(text: 'Kudimata '),
                 TextSpan(
-                  text: 'Securities',
+                  text: 'Invest',
                   style: TextStyle(fontWeight: KWeight.regular, color: sub),
                 ),
               ],

@@ -1,8 +1,8 @@
 // Stage 9 — Account shared bits. Local-only row/bubble helpers used across the
 // Account hub and its 8 sub-screens. Mirrors the design's IconBubble + Row.
 import 'package:flutter/material.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 /// 38px hairline circle holding a line icon (design `IconBubble`). Falls back to
 /// a safe KIcon name when the requested glyph isn't in the fixed set.

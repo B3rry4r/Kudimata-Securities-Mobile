@@ -7,8 +7,8 @@
 // reachable and real instead of a dead external link.
 import 'package:flutter/material.dart';
 
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
 class _Faq {

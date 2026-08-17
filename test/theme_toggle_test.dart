@@ -8,11 +8,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:kudimata_securities/app/app_state.dart';
-import 'package:kudimata_securities/data/api/api_client.dart';
-import 'package:kudimata_securities/router/app_router.dart';
-import 'package:kudimata_securities/theme/app_theme.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_client.dart';
+import 'package:kudimata_invest/router/app_router.dart';
+import 'package:kudimata_invest/theme/app_theme.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
 
 // Reactive wrapper mirroring main.dart (sets KColor.active each build).
 class _Reactive extends StatefulWidget {

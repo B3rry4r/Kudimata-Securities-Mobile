@@ -3,8 +3,8 @@
 // the design's shared.jsx (these live here, not in lib/widgets, since they are
 // onboarding-only). Monochrome; purple only where the spec calls for it.
 import 'package:flutter/widgets.dart';
-import 'package:kudimata_securities/theme/tokens.dart';
-import 'package:kudimata_securities/widgets/widgets.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 /// Fingerprint glyph in the Lucide idiom (1.5px, no fill). KIcon has 'fingerprint'
 /// but the design draws it directly; we reuse KIcon for consistency.
