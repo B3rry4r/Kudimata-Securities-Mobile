@@ -120,6 +120,18 @@ class LegalDocumentsRepository {
     return _fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// GET /public/legal-documents/content/:kind — unauthenticated mirror of
+  /// [getContent], for sign_up_screen.dart's "By continuing..." links. This
+  /// is the ONE screen with no account/token yet, so it can't call the
+  /// investor-gated route above; the backend registers a second, guardless
+  /// controller for exactly this case (see
+  /// Kudimata-Securities-Backend/src/legal-documents/
+  /// legal-documents-public.controller.ts).
+  Future<LegalDocument> getPublicContent(String kind) async {
+    final response = await _client.get('/public/legal-documents/content/$kind');
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// GET /legal-documents/:id/download-url — presigned S3 GET URL for the
   /// tapped document. Returns just the URL string (see file header).
   Future<String> downloadUrl(String id) async {

@@ -24,6 +24,7 @@ import '../screens/onboarding/biometric_screen.dart';
 import '../screens/onboarding/personal_details_screen.dart';
 import '../screens/onboarding/log_in_screen.dart';
 import '../screens/onboarding/reset_passcode_screen.dart';
+import '../screens/onboarding/legal_preview_screen.dart';
 
 // KYC.
 import '../screens/kyc/kyc_intro.dart';
@@ -104,6 +105,11 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.splash, builder: (_, _) => themed(() => SplashScreen())),
       GoRoute(path: Routes.signup, builder: (_, _) => themed(() => SignUpScreen())),
       GoRoute(path: Routes.otp, builder: (_, _) => themed(() => OtpScreen())),
+      GoRoute(
+        path: Routes.legalPreviewPath,
+        builder: (_, st) =>
+            themed(() => LegalPreviewScreen(kind: st.pathParameters['kind']!)),
+      ),
       GoRoute(
         path: Routes.createPasscode,
         // `extra: true` marks re-entry from Security's "Change passcode"
@@ -287,6 +293,10 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     return null;                            // otherwise free roam
   }
   if (gated.contains(loc)) return null;     // gated flow always allowed
+  // Legal-document preview is reachable pre-signup (sign_up_screen.dart's
+  // "By continuing..." links) — a parameterized route, so a prefix check
+  // rather than the `gated` set's exact-string membership.
+  if (loc.startsWith('/legal-preview/')) return null;
   return Routes.splash;                      // any deep link into the app → splash
 }
 

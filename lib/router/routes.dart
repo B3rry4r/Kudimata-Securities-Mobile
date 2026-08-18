@@ -67,11 +67,19 @@ class Routes {
   static String assetDetail(String ticker) => '/asset/$ticker';
   static String holdingDetail(String ticker) => '/portfolio/holding/$ticker';
   static String transactionDetail(String id) => '/wallet/txn/$id';
+  // Read-only legal-document preview, pushed from sign_up_screen.dart's
+  // "By continuing..." links — the one place a document needs to be
+  // readable before an account (and thus a token) exists. [kind] is one of
+  // 'terms_of_service' | 'privacy_policy' | 'risk_disclosure'. Unlike the
+  // other dynamic routes above, this one is reachable while signed out, so
+  // it also needs an entry in app_router.dart's `_gateRedirect`.
+  static String legalPreview(String kind) => '/legal-preview/$kind';
 
   // Path patterns for GoRoute registration (the router agent uses these).
   static const String assetDetailPath = '/asset/:ticker';
   static const String holdingDetailPath = '/portfolio/holding/:ticker';
   static const String transactionDetailPath = '/wallet/txn/:id';
+  static const String legalPreviewPath = '/legal-preview/:kind';
 
   // ── Account sub-pages (pushed) ───────────────────────────────────────────
   static const String acctPersonal = '/account/personal';

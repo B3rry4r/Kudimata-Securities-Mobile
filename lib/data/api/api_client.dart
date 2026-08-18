@@ -80,11 +80,12 @@ const String kApiBaseUrl = String.fromEnvironment(
   defaultValue: 'http://localhost:3000',
 );
 
-/// Endpoints with `"roles": []` in registry.json's AuthSession resource —
-/// the pre-auth surface itself. These must never receive an Authorization
-/// header (there may be no valid token yet) and must never trigger the
-/// 401-refresh dance (retrying a login/refresh call after "refreshing"
-/// would loop forever).
+/// Endpoints with `"roles": []` in registry.json — the pre-auth surface
+/// itself (the AuthSession resource, plus /public/legal-documents, the one
+/// LegalDocument route with no roles). These must never receive an
+/// Authorization header (there may be no valid token yet) and must never
+/// trigger the 401-refresh dance (retrying a login/refresh call after
+/// "refreshing" would loop forever).
 const _preAuthPaths = <String>[
   '/auth/signup',
   '/auth/verify-email-otp',
@@ -93,6 +94,7 @@ const _preAuthPaths = <String>[
   '/auth/request-password-reset',
   '/staff/auth/login',
   '/staff/auth/verify-totp',
+  '/public/legal-documents',
 ];
 
 bool _isPreAuth(String path) => _preAuthPaths.any((p) => path.contains(p));

@@ -7,6 +7,7 @@
 // resource: POST /auth/signup takes {email, password} and nothing else).
 // The original design mockup had an email/phone segmented control here;
 // the phone tab was removed since it never did anything (see git history).
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -42,12 +43,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _confirmPassword.text.trim().isNotEmpty &&
       _confirmPassword.text.trim() == _password.text.trim();
 
+  // Tap targets for the "By continuing..." line below — pushes a read-only
+  // preview (legal_preview_screen.dart) via GET /public/legal-documents/
+  // content/:kind, the one legal-documents route with no auth requirement,
+  // since there's no account/token yet on this screen.
+  late final _termsTap = TapGestureRecognizer()
+    ..onTap = () => context.push(Routes.legalPreview('terms_of_service'));
+  late final _privacyTap = TapGestureRecognizer()
+    ..onTap = () => context.push(Routes.legalPreview('privacy_policy'));
+  late final _riskTap = TapGestureRecognizer()
+    ..onTap = () => context.push(Routes.legalPreview('risk_disclosure'));
+
   @override
   void dispose() {
     _fullName.dispose();
     _email.dispose();
     _password.dispose();
     _confirmPassword.dispose();
+    _termsTap.dispose();
+    _privacyTap.dispose();
+    _riskTap.dispose();
     super.dispose();
   }
 
@@ -118,10 +133,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
             const SizedBox(height: 16),
             Center(
-              child: Text(
-                'By continuing you agree to our Terms and Risk Disclosure.',
+              child: RichText(
                 textAlign: TextAlign.center,
-                style: KType.micro(color: KColor.ink3),
+                text: TextSpan(
+                  style: KType.micro(color: KColor.ink3),
+                  children: [
+                    const TextSpan(text: "You'll review and accept our "),
+                    TextSpan(
+                      text: 'Terms of Service',
+                      style: KType.micro(color: KColor.ink2)
+                          .copyWith(decoration: TextDecoration.underline),
+                      recognizer: _termsTap,
+                    ),
+                    const TextSpan(text: ', '),
+                    TextSpan(
+                      text: 'Privacy Policy',
+                      style: KType.micro(color: KColor.ink2)
+                          .copyWith(decoration: TextDecoration.underline),
+                      recognizer: _privacyTap,
+                    ),
+                    const TextSpan(text: ' and '),
+                    TextSpan(
+                      text: 'Risk Disclosure',
+                      style: KType.micro(color: KColor.ink2)
+                          .copyWith(decoration: TextDecoration.underline),
+                      recognizer: _riskTap,
+                    ),
+                    const TextSpan(text: ' next.'),
+                  ],
+                ),
               ),
             ),
           ],
