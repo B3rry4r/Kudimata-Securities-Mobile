@@ -1,11 +1,11 @@
 {
-    "name": "kudimata_securities",
-    "short_name": "kudimata_securities",
+    "name": "Kudimata Invest",
+    "short_name": "Kudimata Invest",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#670099",
     "theme_color": "#670099",
-    "description": "A new Flutter project.",
+    "description": "Kudimata Invest — commission-free NGX and US market investing.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
