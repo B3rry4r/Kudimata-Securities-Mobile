@@ -13,6 +13,12 @@ class Routes {
   static const String splash = '/';
   static const String signup = '/signup';
   static const String otp = '/otp';
+  // Terms of service / privacy policy — accepted right after OTP
+  // verification, before passcode/KYC (see terms_of_service_screen.dart).
+  // Path segments still say "suitability" for historical reasons; see the
+  // note above riskDisclosure/clientAgreement below.
+  static const String termsOfService = '/suitability/terms';
+  static const String privacyPolicy = '/suitability/privacy';
   static const String createPasscode = '/passcode/create';
   static const String confirmPasscode = '/passcode/confirm';
   static const String biometric = '/biometric';
@@ -34,10 +40,9 @@ class Routes {
   // ── Suitability ──────────────────────────────────────────────────────────
   static const String questionnaire = '/suitability';
   static const String suitabilityResult = '/suitability/result';
-  // Legal-acceptance chain, in the order investors step through it:
-  // termsOfService -> privacyPolicy -> riskDisclosure -> clientAgreement.
-  static const String termsOfService = '/suitability/terms';
-  static const String privacyPolicy = '/suitability/privacy';
+  // Risk disclosure / client agreement — investment-specific documents,
+  // accepted right after the suitability result (unlike termsOfService/
+  // privacyPolicy above, which moved to account-creation time).
   static const String riskDisclosure = '/suitability/risk';
   static const String clientAgreement = '/suitability/agreement';
 

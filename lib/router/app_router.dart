@@ -164,8 +164,20 @@ GoRouter buildRouter(AppState state) {
       // ── Suitability & agreements ───────────────────────────────────────--
       GoRoute(path: Routes.questionnaire, builder: (_, _) => themed(() => QuestionnaireScreen())),
       GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themed(() => SuitabilityResultScreen())),
-      GoRoute(path: Routes.termsOfService, builder: (_, _) => themed(() => TermsOfServiceScreen())),
-      GoRoute(path: Routes.privacyPolicy, builder: (_, _) => themed(() => PrivacyPolicyScreen())),
+      GoRoute(
+        path: Routes.termsOfService,
+        // `extra` is the account email, threaded from otp_screen.dart's
+        // post-verify handoff — same pattern createPasscode's route uses.
+        builder: (_, st) => themed(
+          () => TermsOfServiceScreen(email: st.extra is String ? st.extra as String : null),
+        ),
+      ),
+      GoRoute(
+        path: Routes.privacyPolicy,
+        builder: (_, st) => themed(
+          () => PrivacyPolicyScreen(email: st.extra is String ? st.extra as String : null),
+        ),
+      ),
       GoRoute(path: Routes.riskDisclosure, builder: (_, _) => themed(() => RiskDisclosureScreen())),
       GoRoute(path: Routes.clientAgreement, builder: (_, _) => themed(() => ClientAgreementScreen())),
 

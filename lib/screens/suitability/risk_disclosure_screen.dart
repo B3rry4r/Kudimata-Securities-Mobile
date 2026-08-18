@@ -1,9 +1,10 @@
 // Suitability — risk disclosure. Content is fetched from the backend
 // (GET /legal-documents/content/risk_disclosure), not hardcoded — see
 // legal_acceptance_screen.dart, the shared widget every one of the four
-// onboarding acceptance screens wraps. Third step in the legal-acceptance
-// chain: terms of service -> privacy policy -> risk disclosure ->
-// client agreement.
+// acceptance screens wraps. Runs right after the suitability questionnaire
+// result — this and client agreement are investment-specific documents,
+// unlike terms of service / privacy policy which are accepted earlier, at
+// account creation (see terms_of_service_screen.dart).
 //
 // Tapping "Agree" persists the acknowledgement server-side (POST
 // /compliance-acknowledgements) via ComplianceRepository before navigating

@@ -1,8 +1,10 @@
 // Suitability — client agreement. Content is fetched from the backend
 // (GET /legal-documents/content/client_agreement), not hardcoded — see
 // legal_acceptance_screen.dart, the shared widget every one of the four
-// onboarding acceptance screens wraps. LAST step in the legal-acceptance
-// chain: terms of service -> privacy policy -> risk disclosure ->
+// acceptance screens wraps. LAST step of onboarding overall — terms of
+// service and privacy policy are accepted earlier at account creation
+// (see terms_of_service_screen.dart); this and risk disclosure are the
+// investment-specific pair that follow suitability: risk disclosure ->
 // client agreement -> home.
 //
 // Accepting posts a ComplianceAcknowledgement (kind: 'client_agreement'),

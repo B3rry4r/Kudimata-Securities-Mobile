@@ -116,7 +116,7 @@ class _OtpScreenState extends State<OtpScreen> {
       final tokens = await _repo.verifyEmailOtp(email: email, code: _digits.join());
       await _tokenStore.saveTokens(tokens.accessToken, tokens.refreshToken ?? '');
       if (!mounted) return;
-      context.go(Routes.createPasscode, extra: email);
+      context.go(Routes.termsOfService, extra: email);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {

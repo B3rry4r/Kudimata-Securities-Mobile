@@ -85,9 +85,12 @@ class _SuitabilityResultBody extends StatelessWidget {
         const Spacer(),
         KButton(
           label: 'Continue',
-          // Entry point of the legal-acceptance chain: terms of service ->
-          // privacy policy -> risk disclosure -> client agreement.
-          onPressed: () => context.go(Routes.termsOfService),
+          // Terms of service / privacy policy are accepted earlier, right
+          // after OTP verification (see terms_of_service_screen.dart) —
+          // from here suitability hands off straight to the two
+          // investment-specific documents: risk disclosure -> client
+          // agreement.
+          onPressed: () => context.go(Routes.riskDisclosure),
         ),
       ],
     );

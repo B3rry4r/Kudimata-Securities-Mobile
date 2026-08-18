@@ -13,10 +13,13 @@
 // terms_of_service_screen.dart) are thin wrappers supplying kind/copy/
 // navigation — kept separate from this shared widget because each one's
 // post-accept behavior genuinely differs (three are a plain "go to the next
-// step in the chain"; the last, client agreement, also completes
-// suitability and signs the investor in) — folding that into a callback
-// parameter here is the actual shared shape, not an excuse to merge four
-// screens that don't otherwise differ.
+// step"; the last, client agreement, also completes suitability and signs
+// the investor in) — folding that into a callback parameter here is the
+// actual shared shape, not an excuse to merge four screens that don't
+// otherwise differ. Not one continuous chain: terms of service -> privacy
+// policy run right after OTP verification (account-creation consent);
+// risk disclosure -> client agreement run right after the suitability
+// result (investment-specific documents) — see terms_of_service_screen.dart.
 import 'package:flutter/material.dart';
 
 import 'package:kudimata_invest/widgets/widgets.dart';
