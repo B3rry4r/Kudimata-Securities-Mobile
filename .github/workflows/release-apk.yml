@@ -74,10 +74,10 @@ jobs:
           } > android/key.properties
 
       - name: Build release APK
-        run: flutter build apk --release --dart-define=API_BASE_URL=http://165.232.109.251
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://kudimata-securities-backend-production.up.railway.app
 
       - name: Build release AAB (Play Store upload format)
-        run: flutter build appbundle --release --dart-define=API_BASE_URL=http://165.232.109.251
+        run: flutter build appbundle --release --dart-define=API_BASE_URL=https://kudimata-securities-backend-production.up.railway.app
 
       - name: Resolve release tag
         id: meta

@@ -1,4 +1,4 @@
-package com.kudi.kudimata
+package com.kudimata.securities
 
 import io.flutter.embedding.android.FlutterActivity
 
