@@ -582,34 +582,48 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   final suitabilityRepo = SuitabilityRepository(app.apiClient);
 
   KycSubmissionStatus? kyc;
+  // Only a real 404 means "never submitted" — anything else (a transient
+  // network blip, a 401 racing the just-issued token, a 5xx) is NOT the
+  // same signal, but used to be treated identically ("nothing confirmed
+  // yet"). That silently downgraded an investor who really has a
+  // KYC-under-review/approved submission to kycSubmitted=false on nothing
+  // more than one failed call, which then wrongly showed Home's "Complete
+  // your KYC" prompt instead of "Your KYC is under review" — reported
+  // 2026-08-19 ("why is Complete KYC still showing on an account that KYC
+  // is under review"). A non-404 failure now leaves kycSubmitted/kycApproved
+  // exactly as AppState already had them (both still default false on a
+  // genuinely fresh cold start, so a brand-new investor sees no behavior
+  // change) rather than overwriting a real known state with a wrong one.
+  var kycFetchFailed = false;
   try {
     kyc = await kycRepo.me();
-  } on ApiException {
-    // 404 (no submission ever made) is the expected shape here for a
-    // brand-new/never-KYC'd account; any other failure is treated the same
-    // way — "nothing confirmed yet" — rather than stranding the investor on
-    // a dead loading state. The KYC flow's own screens surface a sharper
-    // error if a real problem recurs there.
-    kyc = null;
-  }
-
-  final kycSubmitted = kyc != null;
-  final kycApproved = kyc?.isApproved ?? false;
-
-  bool suitabilityComplete = false;
-  if (kycApproved) {
-    try {
-      await suitabilityRepo.me();
-      suitabilityComplete = true;
-    } on ApiException {
-      // 404 -> genuinely not submitted yet.
-      suitabilityComplete = false;
+  } on ApiException catch (e) {
+    if (e.statusCode == 404) {
+      kyc = null;
+    } else {
+      kycFetchFailed = true;
     }
   }
 
-  app.setKycSubmitted(kycSubmitted);
-  app.setKycApproved(kycApproved);
-  app.setSuitabilityComplete(suitabilityComplete);
+  if (!kycFetchFailed) {
+    final kycSubmitted = kyc != null;
+    final kycApproved = kyc?.isApproved ?? false;
+
+    bool suitabilityComplete = false;
+    if (kycApproved) {
+      try {
+        await suitabilityRepo.me();
+        suitabilityComplete = true;
+      } on ApiException {
+        // 404 -> genuinely not submitted yet.
+        suitabilityComplete = false;
+      }
+    }
+
+    app.setKycSubmitted(kycSubmitted);
+    app.setKycApproved(kycApproved);
+    app.setSuitabilityComplete(suitabilityComplete);
+  }
   app.setSignedIn(true);
 
   if (!context.mounted) return;
