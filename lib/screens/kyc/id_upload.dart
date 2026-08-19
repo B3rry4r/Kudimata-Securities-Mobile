@@ -75,7 +75,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const KycTopBar(),
+            KycTopBar(onBack: () => context.go(Routes.kycBvn)),
             const KycStepProgress(current: 2),
             Expanded(
               child: SingleChildScrollView(

@@ -6,8 +6,12 @@ import 'package:flutter/widgets.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
-/// Slim 44px top bar with a single back affordance (Routes use context.pop /
-/// Navigator.maybePop). Mirrors TopBar in the design.
+/// Slim 44px top bar with a single back affordance. The `onBack ?? maybePop`
+/// fallback below only works for a PUSHED route — every KYC screen advances
+/// with `context.go(...)`, which doesn't add a Navigator entry to pop, so
+/// `maybePop()` silently no-ops. Every KYC screen using this bar MUST pass an
+/// explicit `onBack: () => context.go(Routes.kycX)` pointing at the previous
+/// step (found live 2026-08-19: every back chevron in the KYC flow was dead).
 class KycTopBar extends StatelessWidget {
   const KycTopBar({super.key, this.onBack});
   final VoidCallback? onBack;

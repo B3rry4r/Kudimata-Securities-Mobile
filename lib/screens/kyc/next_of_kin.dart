@@ -94,7 +94,7 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const KycTopBar(),
+            KycTopBar(onBack: () => context.go(Routes.kycLiveness)),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

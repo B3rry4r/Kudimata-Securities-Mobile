@@ -59,7 +59,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const KycTopBar(),
+            KycTopBar(onBack: () => context.go(Routes.kycLiveness)),
             const KycStepProgress(current: 5),
             Expanded(
               child: Padding(

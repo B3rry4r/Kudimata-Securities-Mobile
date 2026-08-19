@@ -54,7 +54,7 @@ class _BvnScreenState extends State<BvnScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const KycTopBar(),
+            KycTopBar(onBack: () => context.go(Routes.kycIntro)),
             const KycStepProgress(current: 1),
             Expanded(
               child: SingleChildScrollView(
