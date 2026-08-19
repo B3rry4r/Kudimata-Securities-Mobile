@@ -324,7 +324,11 @@ class _AssetDetailBody extends StatelessWidget {
                 child: KButton(
                   label: 'Sell',
                   variant: KButtonVariant.secondary,
-                  onPressed: () => showSellFlow(context, asset),
+                  // Disabled when this investor doesn't hold the asset
+                  // (holding == null, see this file's header) — there was
+                  // nothing stopping a Sell attempt on a position of zero
+                  // shares before this, reported 2026-08-19.
+                  onPressed: holding == null ? null : () => showSellFlow(context, asset),
                 ),
               ),
               const SizedBox(width: 10),
