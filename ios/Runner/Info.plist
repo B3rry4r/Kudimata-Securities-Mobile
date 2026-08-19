@@ -68,6 +68,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Kudimata Securities needs camera access to capture documents and liveness photos for KYC verification.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Kudimata Securities does not record audio. This permission is required by the camera library used for KYC document/liveness capture.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Kudimata Securities needs access to your photo library to select identity and verification documents for upload.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
