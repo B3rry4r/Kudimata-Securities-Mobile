@@ -1,6 +1,11 @@
-// KYC 4 — liveness selfie (step 3 of 4). A framed selfie capture: a live
-// front-camera preview inside a circle with a dashed guidance ring (or the
-// captured photo once taken), plus a round shutter button.
+// KYC 4 — liveness selfie (step 3 of 4). On mobile: a framed selfie capture
+// — a live front-camera preview inside a circle with a dashed guidance
+// ring (or the captured photo once taken), plus a round shutter button. On
+// web: a file picker instead (2026-08-19) — package:camera's web support is
+// unreliable across browsers for this kind of in-place capture UI, and
+// testing against real LumiID production keys needs a dependable path to
+// actually get a selfie uploaded, not a flaky live preview. Both paths
+// converge on the exact same upload flow (_uploadAndContinue).
 //
 // Real camera capture (package:camera, in-app live preview + in-place
 // takePicture()) + the shared presigned-upload flow: POST
@@ -19,8 +24,11 @@
 // one). Rewritten on package:camera for a real CameraPreview rendered in
 // place and an in-app shutter that captures without leaving this screen.
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -45,20 +53,22 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
   Future<void>? _initializing;
   String? _cameraError;
 
-  String? _capturedPath;
+  String? _capturedPath; // mobile: package:camera's captured file path.
+  Uint8List? _pickedBytes; // web: file_picker's picked bytes (no real path).
   bool _busy = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) return; // web never touches the camera — see file header.
     WidgetsBinding.instance.addObserver(this);
     _initializing = _initCamera();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    if (!kIsWeb) WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
   }
@@ -67,7 +77,7 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
   // re-acquire on resume, the standard package:camera lifecycle pattern
   // (its own README documents this exact observer). Skipped once a photo's
   // already been taken; nothing to keep a live feed running for at that
-  // point.
+  // point. Mobile-only — see initState.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final controller = _controller;
@@ -137,9 +147,9 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Spacer(),
-                    // Selfie frame: captured photo, else the live preview,
-                    // else a placeholder (still initializing, or the camera
-                    // couldn't be reached) — with a dashed guidance ring.
+                    // Selfie frame: captured/picked photo, else the live
+                    // preview (mobile only), else a placeholder — with a
+                    // dashed guidance ring.
                     SizedBox(
                       width: 240,
                       height: 240,
@@ -169,7 +179,7 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                       ),
                     ),
                     const SizedBox(height: 28),
-                    Text(_error ?? _cameraError ?? 'Center your face',
+                    Text(_error ?? _cameraError ?? (kIsWeb ? 'Upload a selfie' : 'Center your face'),
                         textAlign: TextAlign.center,
                         style: KType.title(color: (_error ?? _cameraError) != null ? KColor.loss : null)),
                     const SizedBox(height: 10),
@@ -178,15 +188,26 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                             ? 'Tap below to try again'
                             : _error != null
                                 ? 'Tap the button to try again'
-                                : (_busy ? 'Uploading...' : 'and hold still'),
+                                : (_busy
+                                    ? 'Uploading...'
+                                    : kIsWeb
+                                        ? 'A clear, front-facing photo of yourself'
+                                        : 'and hold still'),
                         textAlign: TextAlign.center,
                         style: KType.body(color: KColor.ink2)),
                     const Spacer(),
                     // Round shutter — captures in place (no navigation to a
                     // separate camera screen) when a live preview is ready;
-                    // retries camera init if it previously failed.
+                    // retries camera init if it previously failed. On web,
+                    // opens the file picker instead.
                     GestureDetector(
-                      onTap: _busy ? null : (_cameraError != null ? () => setState(() => _initializing = _initCamera()) : _capture),
+                      onTap: _busy
+                          ? null
+                          : (kIsWeb
+                              ? _pickFile
+                              : (_cameraError != null
+                                  ? () => setState(() => _initializing = _initCamera())
+                                  : _capture)),
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 72,
@@ -202,8 +223,13 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                         ),
                         child: _busy
                             ? KSpinner(size: 26, color: KColor.featureInk)
-                            : KIcon(_cameraError != null ? 'refresh' : 'camera',
-                                size: 30, stroke: 1.9, color: KColor.featureInk),
+                            : KIcon(
+                                kIsWeb
+                                    ? 'upload'
+                                    : (_cameraError != null ? 'refresh' : 'camera'),
+                                size: 30,
+                                stroke: 1.9,
+                                color: KColor.featureInk),
                       ),
                     ),
                   ],
@@ -217,6 +243,15 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
   }
 
   Widget _buildFrameContent() {
+    if (kIsWeb) {
+      if (_pickedBytes != null) {
+        return ClipOval(
+          child: Image.memory(_pickedBytes!, width: 238, height: 238, fit: BoxFit.cover),
+        );
+      }
+      return KIcon('upload', size: 64, color: KColor.ink3);
+    }
+
     if (_capturedPath != null) {
       return ClipOval(
         child: Image.file(
@@ -263,6 +298,31 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
     );
   }
 
+  /// Web path: file_picker instead of a live camera (see file header).
+  /// Converges on the same upload flow as [_capture].
+  Future<void> _pickFile() async {
+    setState(() => _error = null);
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final picked = result.files.single;
+    final bytes = picked.bytes;
+    if (bytes == null) {
+      setState(() => _error = "Couldn't read that file. Please try again.");
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _pickedBytes = bytes;
+    });
+    await _uploadAndContinue(bytes, picked.name.isNotEmpty ? picked.name : 'liveness-selfie.jpg');
+  }
+
   Future<void> _capture() async {
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized || controller.value.isTakingPicture) {
@@ -291,11 +351,18 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
     await controller.dispose();
     _controller = null;
 
+    final bytes = await shot.readAsBytes();
+    await _uploadAndContinue(bytes, shot.name.isNotEmpty ? shot.name : 'liveness-selfie.jpg');
+  }
+
+  /// Shared tail for both capture paths: presigned upload -> register on
+  /// [KycFormState] -> advance to kyc-checking. `_busy`/`_capturedPath`/
+  /// `_pickedBytes` are set by the caller before this runs.
+  Future<void> _uploadAndContinue(Uint8List bytes, String fileName) async {
     try {
-      final bytes = await shot.readAsBytes();
       final upload = await _repo.requestUploadUrl(
         documentKind: 'liveness_selfie',
-        documentName: shot.name.isNotEmpty ? shot.name : 'liveness-selfie.jpg',
+        documentName: fileName,
       );
       await _repo.putFile(upload.uploadUrl, bytes, contentType: 'image/jpeg');
 

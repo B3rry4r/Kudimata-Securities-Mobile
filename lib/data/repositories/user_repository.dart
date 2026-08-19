@@ -20,7 +20,9 @@ class UserRepository {
 
   UserProfile _fromJson(Map<String, dynamic> json) {
     return UserProfile(
-      fullName: json['fullName'] as String? ?? '',
+      firstName: json['firstName'] as String? ?? '',
+      middleName: json['middleName'] as String?,
+      lastName: json['lastName'] as String? ?? '',
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       tier: json['tier'] as String? ?? '',
@@ -40,7 +42,9 @@ class UserRepository {
     final response = await _client.get('/users/me');
     final json = response.data as Map<String, dynamic>;
     return PersonalInfo(
-      fullName: json['fullName'] as String? ?? '',
+      firstName: json['firstName'] as String? ?? '',
+      middleName: json['middleName'] as String?,
+      lastName: json['lastName'] as String? ?? '',
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       dob: _formatDob(json['dob'] as String?),
@@ -53,7 +57,7 @@ class UserRepository {
   /// PATCH /users/me — self-service partial profile update. Every param is
   /// optional; only the fields passed are sent, matching the backend's
   /// UpdateMeDto (Kudimata-Securities-Backend
-  /// src/users/dto/update-me.dto.ts: fullName?/phone?/residentialAddress?/
+  /// src/users/dto/update-me.dto.ts: firstName?/middleName?/lastName?/phone?/residentialAddress?/
   /// dob?/city?/state?, all independently optional, `phone` validated
   /// server-side against `/^\+[1-9]\d{7,14}$/` and `dob` an ISO-8601 date —
   /// callers must normalize both before calling this). Used by
@@ -62,7 +66,9 @@ class UserRepository {
   /// BVN and no longer asks for these, 2026-08-07) and
   /// account/personal_info_screen.dart's "Edit details" sheet.
   Future<void> updateProfile({
-    String? fullName,
+    String? firstName,
+    String? middleName,
+    String? lastName,
     String? phone,
     String? residentialAddress,
     String? dob,
@@ -70,7 +76,9 @@ class UserRepository {
     String? state,
   }) async {
     final body = <String, dynamic>{};
-    if (fullName != null) body['fullName'] = fullName;
+    if (firstName != null) body['firstName'] = firstName;
+    if (middleName != null) body['middleName'] = middleName;
+    if (lastName != null) body['lastName'] = lastName;
     if (phone != null) body['phone'] = phone;
     if (residentialAddress != null) body['residentialAddress'] = residentialAddress;
     if (dob != null) body['dob'] = dob;
@@ -101,7 +109,9 @@ class UserRepository {
 /// [UserRepository.personalInfo].
 class PersonalInfo {
   const PersonalInfo({
-    required this.fullName,
+    required this.firstName,
+    this.middleName,
+    required this.lastName,
     required this.email,
     required this.phone,
     required this.dob,
@@ -110,11 +120,19 @@ class PersonalInfo {
     required this.state,
   });
 
-  final String fullName;
+  final String firstName;
+  final String? middleName;
+  final String lastName;
   final String email;
   final String phone;
   final String dob; // preformatted "14 Mar 1996", or "—" if none on file
   final String residentialAddress; // or "—" if none on file
   final String city; // or "—" if none on file
   final String state; // or "—" if none on file
+
+  /// Composed display string — see UserProfile.fullName's same getter for
+  /// why this stays a getter rather than a stored field.
+  String get fullName => [firstName, middleName, lastName]
+      .where((p) => p != null && p.trim().isNotEmpty)
+      .join(' ');
 }

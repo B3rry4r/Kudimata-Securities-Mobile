@@ -180,7 +180,8 @@ class MockData {
 
   // ── Demo user ────────────────────────────────────────────────────────────
   static const UserProfile user = UserProfile(
-    fullName: 'Ada Okeke',
+    firstName: 'Ada',
+    lastName: 'Okeke',
     email: 'ada.okeke@email.com',
     phone: '+234 803 555 0192',
     tier: 'Premium',

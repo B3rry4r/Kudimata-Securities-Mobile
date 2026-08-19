@@ -1,7 +1,7 @@
 // Stage 9 — Personal info (pushed). Read-only KInput-style rows: tracked
 // UPPERCASE label + tabular value. Mirrors `PersonalInfo` in extra-screens.jsx.
 //
-// Wired to GET /users/me (UserRepository.personalInfo — fullName/email/
+// Wired to GET /users/me (UserRepository.personalInfo — firstName/middleName/lastName/email/
 // phone/dob/residentialAddress) and GET /kyc-submissions/me
 // (KycRepository.me — masked bvn) per lib/data/api/README.md's
 // FutureBuilder convention. Both are fetched together with Future.wait so
@@ -143,7 +143,10 @@ class _PersonalInfoBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rows = <(String, String)>[
-      ('Full name', info.fullName),
+      ('First name', info.firstName),
+      if (info.middleName != null && info.middleName!.trim().isNotEmpty)
+        ('Middle name', info.middleName!),
+      ('Last name', info.lastName),
       ('Date of birth', info.dob),
       ('Email', info.email),
       ('Phone', info.phone),
@@ -243,7 +246,9 @@ class _EditPersonalInfoSheet extends StatefulWidget {
 }
 
 class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
-  late final _name = TextEditingController(text: widget.info.fullName);
+  late final _firstName = TextEditingController(text: widget.info.firstName);
+  late final _middleName = TextEditingController(text: widget.info.middleName ?? '');
+  late final _lastName = TextEditingController(text: widget.info.lastName);
   late final _phone = TextEditingController(text: widget.info.phone);
   // The repository renders a missing value as '—' for display; don't
   // prefill that placeholder into an editable field.
@@ -261,7 +266,9 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
 
   @override
   void dispose() {
-    _name.dispose();
+    _firstName.dispose();
+    _middleName.dispose();
+    _lastName.dispose();
     _phone.dispose();
     _addr.dispose();
     _city.dispose();
@@ -275,7 +282,9 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
 
   Future<void> _save() async {
     final normalizedPhone = _normalizePhoneToE164(_phone.text);
-    final valid = _name.text.trim().isNotEmpty && normalizedPhone != null;
+    final valid = _firstName.text.trim().isNotEmpty &&
+        _lastName.text.trim().isNotEmpty &&
+        normalizedPhone != null;
     if (!valid) {
       setState(() => _showErrors = true);
       return;
@@ -286,7 +295,9 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
     });
     try {
       await widget.repo.updateProfile(
-        fullName: _name.text.trim(),
+        firstName: _firstName.text.trim(),
+        middleName: _middleName.text.trim().isEmpty ? null : _middleName.text.trim(),
+        lastName: _lastName.text.trim(),
         phone: normalizedPhone,
         residentialAddress: _addr.text.trim().isEmpty ? null : _addr.text.trim(),
         city: _city.text.trim().isEmpty ? null : _city.text.trim(),
@@ -310,12 +321,29 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
       mainAxisSize: MainAxisSize.min,
       children: [
         KInput(
-          label: 'Full name',
-          placeholder: 'Chidi Okafor',
-          controller: _name,
+          label: 'First name',
+          placeholder: 'Chidi',
+          controller: _firstName,
           onChanged: _showErrors ? (_) => setState(() {}) : null,
-          error:
-              _showErrors && _name.text.trim().isEmpty ? 'Enter your full name' : null,
+          error: _showErrors && _firstName.text.trim().isEmpty
+              ? 'Enter your first name'
+              : null,
+        ),
+        const SizedBox(height: 16),
+        KInput(
+          label: 'Middle name (optional)',
+          placeholder: 'Emeka',
+          controller: _middleName,
+        ),
+        const SizedBox(height: 16),
+        KInput(
+          label: 'Last name',
+          placeholder: 'Okafor',
+          controller: _lastName,
+          onChanged: _showErrors ? (_) => setState(() {}) : null,
+          error: _showErrors && _lastName.text.trim().isEmpty
+              ? 'Enter your last name'
+              : null,
         ),
         const SizedBox(height: 16),
         KInput(

@@ -105,16 +105,28 @@ class AppNotification {
 @immutable
 class UserProfile {
   const UserProfile({
-    required this.fullName,
+    required this.firstName,
+    this.middleName,
+    required this.lastName,
     required this.email,
     required this.phone,
     required this.tier,
     required this.memberSince,
   });
 
-  final String fullName;
+  final String firstName;
+  final String? middleName;
+  final String lastName;
   final String email;
   final String phone;
   final String tier; // e.g. "Premium"
   final String memberSince; // e.g. "2023"
+
+  /// Composed display string — split into firstName/middleName/lastName
+  /// 2026-08-19 (BVN/NIN verification needs a real first/last to compare
+  /// against the registry's own name fields), kept as one getter here so
+  /// every existing greeting/label call site doesn't need rewriting.
+  String get fullName => [firstName, middleName, lastName]
+      .where((p) => p != null && p.trim().isNotEmpty)
+      .join(' ');
 }

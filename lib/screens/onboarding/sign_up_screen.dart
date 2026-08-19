@@ -26,7 +26,9 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final _fullName = TextEditingController();
+  final _firstName = TextEditingController();
+  final _middleName = TextEditingController();
+  final _lastName = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
@@ -36,7 +38,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
-  bool get _fullNameValid => _fullName.text.trim().isNotEmpty;
+  // firstName/lastName required, middleName optional — split from one
+  // "Full name" field 2026-08-19 so BVN/NIN verification has a real
+  // first/last to compare against the registry's own name fields.
+  bool get _firstNameValid => _firstName.text.trim().isNotEmpty;
+  bool get _lastNameValid => _lastName.text.trim().isNotEmpty;
   bool get _emailValid => _emailPattern.hasMatch(_email.text.trim());
   bool get _passwordValid => _password.text.trim().length >= 8;
   bool get _confirmPasswordValid =>
@@ -56,7 +62,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
-    _fullName.dispose();
+    _firstName.dispose();
+    _middleName.dispose();
+    _lastName.dispose();
     _email.dispose();
     _password.dispose();
     _confirmPassword.dispose();
@@ -79,12 +87,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
             const KScreenHead(title: 'Create your account'),
             const SizedBox(height: 28),
             KInput(
-              label: 'Full name',
+              label: 'First name',
               icon: 'profile',
-              placeholder: 'Ada Obi',
-              controller: _fullName,
+              placeholder: 'Ada',
+              controller: _firstName,
               onChanged: _showErrors ? (_) => setState(() {}) : null,
-              error: _showErrors && !_fullNameValid ? 'Enter your full name' : null,
+              error: _showErrors && !_firstNameValid ? 'Enter your first name' : null,
+            ),
+            const SizedBox(height: 16),
+            KInput(
+              label: 'Middle name (optional)',
+              icon: 'profile',
+              placeholder: 'Chioma',
+              controller: _middleName,
+            ),
+            const SizedBox(height: 16),
+            KInput(
+              label: 'Last name',
+              icon: 'profile',
+              placeholder: 'Obi',
+              controller: _lastName,
+              onChanged: _showErrors ? (_) => setState(() {}) : null,
+              error: _showErrors && !_lastNameValid ? 'Enter your last name' : null,
             ),
             const SizedBox(height: 16),
             KInput(
@@ -171,17 +195,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _continue() async {
-    if (!_fullNameValid || !_emailValid || !_passwordValid || !_confirmPasswordValid) {
+    if (!_firstNameValid || !_lastNameValid || !_emailValid || !_passwordValid || !_confirmPasswordValid) {
       setState(() => _showErrors = true);
       return;
     }
-    final fullName = _fullName.text.trim();
+    final firstName = _firstName.text.trim();
+    final middleName = _middleName.text.trim();
+    final lastName = _lastName.text.trim();
     final email = _email.text.trim();
     final password = _password.text.trim();
     setState(() => _busy = true);
     final repo = AuthRepository(AppScope.read(context).apiClient);
     try {
-      await repo.signUp(email: email, password: password, fullName: fullName);
+      await repo.signUp(
+        email: email,
+        password: password,
+        firstName: firstName,
+        middleName: middleName.isEmpty ? null : middleName,
+        lastName: lastName,
+      );
       if (!mounted) return;
       context.go(Routes.otp, extra: email);
     } on ApiException catch (e) {

@@ -120,13 +120,26 @@ class KycFormState extends ChangeNotifier {
   }
 
   /// Assembles the exact `POST /kyc-submissions` request body — bvn, nin,
-  /// documentType, and nextOfKin (object) — per registry.json's KycSubmission
-  /// POST endpoint. address/city/state are deliberately omitted (see file
-  /// header): KycSubmissionsService falls back to the investor's on-file
-  /// User record, populated by the onboarding personal-details step. Call
-  /// this from the next-of-kin screen's submit handler, once fields
-  /// collected earlier in the flow are read through this shared holder.
+  /// documentType, nextOfKin (object), and (2026-08-19) livenessSelfieObjectKey
+  /// — per registry.json's KycSubmission POST endpoint. address/city/state
+  /// are deliberately omitted (see file header): KycSubmissionsService falls
+  /// back to the investor's on-file User record, populated by the onboarding
+  /// personal-details step. Call this from the next-of-kin screen's submit
+  /// handler, once fields collected earlier in the flow are read through
+  /// this shared holder.
+  ///
+  /// livenessSelfieObjectKey is the object key liveness.dart already
+  /// registered here via [registerUploadedDocument] BEFORE this submission
+  /// exists — including it lets the backend fold a real LumiID liveness
+  /// check into vendorDecision synchronously, alongside bvn/nin, instead of
+  /// leaving it permanently unverified. Omitted entirely (not even a null)
+  /// when no selfie was captured, matching the backend field's optional
+  /// contract.
   Map<String, dynamic> toSubmissionBody() {
+    final selfie = _documents
+        .where((d) => d.documentKind == 'liveness_selfie')
+        .map((d) => d.objectKey)
+        .lastOrNull;
     return {
       'bvn': bvn,
       'nin': nin,
@@ -136,6 +149,7 @@ class KycFormState extends ChangeNotifier {
         'relationship': nextOfKinRelationship,
         'phone': nextOfKinPhone,
       },
+      if (selfie != null) 'livenessSelfieObjectKey': selfie,
     };
   }
 

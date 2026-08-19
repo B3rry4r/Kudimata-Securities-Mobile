@@ -56,6 +56,10 @@ const Map<String, String> _kIconPaths = {
       '<path d="M3 3v5h5"/>'
       '<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>'
       '<path d="M16 16h5v5"/>',
+  // Lucide 'upload' — liveness.dart's web variant (file-picker selfie
+  // upload, no live camera preview on web) uses this in place of 'camera'.
+  'upload': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>'
+      '<polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
   // custom — drawn in the same Lucide idiom (shared.jsx Fingerprint)
   'fingerprint': '<path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>'
       '<path d="M5 19.5C5.5 18 6 16 6 14a6 6 0 0 1 .34-2"/>'

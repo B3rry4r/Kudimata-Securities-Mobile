@@ -46,18 +46,29 @@ class AuthRepository {
   final ApiClient _client;
 
   /// Mirrors the sign-up screen's Continue action. POST /auth/signup
-  /// {email, password, fullName} — registry.json's response shape is
-  /// `EmailOtp`, but no screen renders any of its fields yet (the OTP screen
-  /// still shows a static demo address), so this only surfaces
-  /// success/failure via [ApiException] and returns void; the caller
-  /// navigates to Routes.otp with the entered email once this completes.
-  /// `fullName` became required backend-side 2026-08-07 so Home can greet
-  /// the investor by name instead of falling back to their email.
-  Future<void> signUp({required String email, required String password, required String fullName}) async {
+  /// {email, password, firstName, middleName?, lastName} — registry.json's
+  /// response shape is `EmailOtp`, but no screen renders any of its fields
+  /// yet (the OTP screen still shows a static demo address), so this only
+  /// surfaces success/failure via [ApiException] and returns void; the
+  /// caller navigates to Routes.otp with the entered email once this
+  /// completes. Name became required backend-side 2026-08-07 so Home can
+  /// greet the investor by name instead of falling back to their email —
+  /// split from one `fullName` field into firstName/middleName?/lastName
+  /// 2026-08-19 so BVN/NIN verification has a real first/last to compare
+  /// against the registry's own name fields.
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required String firstName,
+    String? middleName,
+    required String lastName,
+  }) async {
     await _client.post('/auth/signup', data: {
       'email': email,
       'password': password,
-      'fullName': fullName,
+      'firstName': firstName,
+      if (middleName != null && middleName.isNotEmpty) 'middleName': middleName,
+      'lastName': lastName,
     });
   }
 

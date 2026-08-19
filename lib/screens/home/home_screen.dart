@@ -152,7 +152,7 @@ class _HomeBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final first = data.user.fullName.split(' ').first;
+    final first = data.user.firstName;
 
     return ListView(
       // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
