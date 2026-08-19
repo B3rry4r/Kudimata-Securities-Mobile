@@ -18,7 +18,14 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.kudi.kudimata"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned to 36, not flutter.compileSdkVersion (34 on this project's
+    // Flutter version) — flutter_plugin_android_lifecycle (pulled in
+    // transitively by camera/file_picker) requires compiling against 36+;
+    // CI failed with "file_picker is currently compiled against android-34"
+    // until this was pinned explicitly. compileSdk only affects which SDK
+    // APIs are available at compile time, not runtime behavior — that's
+    // targetSdk (left at flutter.targetSdkVersion, untouched) and minSdk.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
