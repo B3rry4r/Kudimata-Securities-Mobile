@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Kudimata Securities</string>
+	<string>Kudimata Invest</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Kudimata Securities</string>
+	<string>Kudimata Invest</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -67,15 +67,15 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Kudimata Securities needs camera access to capture documents and liveness photos for KYC verification.</string>
+	<string>Kudimata Invest needs camera access to capture documents and liveness photos for KYC verification.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Kudimata Securities does not record audio. This permission is required by the camera library used for KYC document/liveness capture.</string>
+	<string>Kudimata Invest does not record audio. This permission is required by the camera library used for KYC document/liveness capture.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Kudimata Securities needs access to your photo library to select identity and verification documents for upload.</string>
+	<string>Kudimata Invest needs access to your photo library to select identity and verification documents for upload.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Kudimata Securities needs permission to save images to your photo library.</string>
+	<string>Kudimata Invest needs permission to save images to your photo library.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Kudimata Securities requires location access to verify regional compliance and security requirements.</string>
+	<string>Kudimata Invest requires location access to verify regional compliance and security requirements.</string>
 </dict>
 </plist>
 

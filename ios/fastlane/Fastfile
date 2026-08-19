@@ -33,7 +33,7 @@ platform :ios do
     match(
       type: "appstore",
       readonly: true,
-      app_identifier: "com.kudimata.securities",
+      app_identifier: "com.kudi.kudimata",
       git_url: ENV["MATCH_GIT_URL"],
       git_basic_authorization: Base64.strict_encode64(
         "#{ENV['MATCH_GIT_TOKEN']}:x-oauth-basic"
@@ -47,7 +47,7 @@ platform :ios do
     # -----------------------------
     # Get profile and team info from the installed profile
     # -----------------------------
-    profile_path = ENV["sigh_com.kudimata.securities_appstore_profile-path"]
+    profile_path = ENV["sigh_com.kudi.kudimata_appstore_profile-path"]
     UI.message("Profile path: #{profile_path}")
 
     require 'plist'
@@ -72,7 +72,7 @@ platform :ios do
       use_automatic_signing: false,
       path: "Runner.xcodeproj",
       team_id: actual_team_id,
-      bundle_identifier: "com.kudimata.securities",
+      bundle_identifier: "com.kudi.kudimata",
       profile_uuid: profile_uuid,
       code_sign_identity: "iPhone Distribution",
       build_configurations: ["Release"]
@@ -110,7 +110,7 @@ platform :ios do
     Dir.chdir("..") do
       sh("flutter", "build", "ios", "--release", "--no-codesign",
          "--build-number=#{new_build_number}",
-         "--dart-define=API_BASE_URL=https://kudimata-securities-backend-production.up.railway.app",
+         "--dart-define=API_BASE_URL=https://alpha.kudimatasecurities.com",
          "--obfuscate", "--split-debug-info=build/app/outputs/symbols")
     end
 
@@ -124,7 +124,7 @@ platform :ios do
       export_options: {
         teamID: actual_team_id,
         provisioningProfiles: {
-          "com.kudimata.securities" => profile_uuid
+          "com.kudi.kudimata" => profile_uuid
         }
       },
       clean: false,
