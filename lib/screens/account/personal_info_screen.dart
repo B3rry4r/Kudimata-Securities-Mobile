@@ -22,10 +22,12 @@
 // deliberately non-editable here ("contact support") — an existing,
 // unrelated product decision this change doesn't touch.
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -151,6 +153,16 @@ class _PersonalInfoBody extends StatelessWidget {
       ('BVN', bvn),
     ];
 
+    // BVN and date of birth are blank for exactly one reason: this investor
+    // hasn't submitted KYC yet (BVN comes from the KYC flow itself; DOB from
+    // the post-signup onboarding step that leads into it) — never a data
+    // bug. Found live 2026-08-19: the screen just showed blank "—" rows with
+    // no explanation, which reads as broken. Route straight to the KYC
+    // intro instead of the dead-end "contact support" copy, which only
+    // makes sense for an investor who HAS already verified and wants to
+    // correct one of these otherwise-locked fields.
+    final missingKyc = bvn == '—' || info.dob == '—';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -181,13 +193,27 @@ class _PersonalInfoBody extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Text(
-            'To change your date of birth or BVN, contact support.',
-            style: KType.body(color: KColor.ink3),
+        if (missingKyc)
+          KAccountCard(
+            children: [
+              KAccountRow(
+                icon: 'profile',
+                title: 'Complete your KYC',
+                sub: 'Verify your BVN and identity to fill in these details',
+                right: const KRowChevron(),
+                first: true,
+                onTap: () => context.push(Routes.kycIntro),
+              ),
+            ],
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(
+              'To change your date of birth or BVN, contact support.',
+              style: KType.body(color: KColor.ink3),
+            ),
           ),
-        ),
         const SizedBox(height: 16),
         // Opens a showKSheet form (full name / phone / residential address)
         // pre-filled with the values above, backed by PATCH /users/me — see
