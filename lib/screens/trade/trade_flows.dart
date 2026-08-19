@@ -1,4 +1,4 @@
-// Kudimata Securities — Stage 6: Trade buy/sell flows as bottom sheets.
+// Kudimata Invest — Stage 6: Trade buy/sell flows as bottom sheets.
 // Mirrors trade-screens.jsx: AmountSheet (+ over-limit error state), ReviewSheet,
 // SuccessSheet — shared between Buy and Sell via a `side` flag. Each flow is a
 // sequence of showKSheet presentations; the launching screen (asset detail) stays
@@ -17,27 +17,16 @@
 // naira/shares toggle) and threads it through Review -> confirm -> the
 // `POST /orders` payload -> the Success message.
 //
-// FIXED BUG (was: the Amount sheet's "Holding" line was a hardcoded
-// "120 shares · ₦32,208" literal, unrelated to the investor's real position
-// size). The Amount sheet now fetches HoldingsRepository.byTicker (sell,
-// `GET /holdings/:ticker`) once in initState and shows the resolved figure —
-// "…" while loading, "—" if the fetch fails, since this is a secondary
-// informational element and must not block or crash the trade flow.
-//
-// NON-CUSTODIAL WALLET REDESIGN (backend supersedes.json S-11): Kudimata
-// holds no client funds, so a buy has no stored balance to show or "Max"
-// against (dropped from the Amount sheet's buy-side chips/line below) — a
-// buy now opens a Flutterwave checkout after Review and only reaches the
-// broker once payment is confirmed, via the new Awaiting-payment step
-// between Review and Success (order_placement_repository.dart's
-// [OrderResult] — POST /orders now returns `status: 'awaiting_payment'` +
-// `checkoutUrl` for a buy instead of filling synchronously). Sell is
-// unaffected — it still fills immediately.
-import 'dart:async';
-
+// FIXED BUG (was: the Amount sheet's "Balance"/"Holding" line was a
+// hardcoded "₦310,400" / "120 shares · ₦32,208" literal, unrelated to the
+// investor's real wallet balance or real position size). The Amount sheet
+// now fetches WalletRepository.balance() (buy, `GET /wallet-balance`) or
+// HoldingsRepository.byTicker (sell, `GET /holdings/:ticker`) once in
+// initState and shows the resolved figure — "…" while loading, "—" if the
+// fetch fails, since this is a secondary informational element and must not
+// block or crash the trade flow.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -45,6 +34,7 @@ import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/order_placement_repository.dart';
+import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/router/routes.dart';
@@ -90,23 +80,10 @@ Future<void> _runTradeFlow(BuildContext context, Asset asset, {required _Side si
   final amountInput = await _showAmountSheet(context, asset, side: side);
   if (amountInput == null || !context.mounted) return;
 
-  final placed = await _showReviewSheet(context, asset, side: side, input: amountInput);
-  if (placed == null || !context.mounted) return;
+  final placedInput = await _showReviewSheet(context, asset, side: side, input: amountInput);
+  if (placedInput == null || !context.mounted) return;
 
-  // Buy only: payment was just collected via a Flutterwave checkout, but the
-  // order hasn't reached the broker yet — wait for it to resolve before
-  // declaring success. Sell never returns 'awaitingPayment' (it fills
-  // synchronously), so this step is skipped entirely for a sell.
-  if (placed.order.status == OrderStatus.awaitingPayment) {
-    final resolved = await _showAwaitingPaymentSheet(context, order: placed.order);
-    if (resolved == null || !context.mounted) return;
-    if (resolved.status == OrderStatus.rejected || resolved.status == OrderStatus.expired) {
-      await _showPaymentOutcomeFailureSheet(context, expired: resolved.status == OrderStatus.expired);
-      return;
-    }
-  }
-
-  await _showSuccessSheet(context, asset, side: side, input: placed.input);
+  await _showSuccessSheet(context, asset, side: side, input: placedInput);
 }
 
 /// Shows a sheet pointing the investor at whichever KYC/suitability step
@@ -209,48 +186,60 @@ class _AmountSheet extends StatefulWidget {
 
 class _AmountSheetState extends State<_AmountSheet> {
   late final TextEditingController _amount = TextEditingController(text: '50,000');
+  late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
   late final _holdingsRepo = HoldingsRepository(AppScope.read(context).apiClient);
   String _unit = 'naira';
   late String _quick = widget.side.isSell ? '50%' : '₦50k';
 
-  // Holding line (sell only) — fetched once when the sheet opens (GET
-  // /holdings/:ticker), replacing the old hardcoded '120 shares · ₦32,208'
-  // literal. null while the fetch is in flight; '—' if it fails — this is a
-  // secondary informational element, not the core trade flow, so a failure
-  // here must not block or crash the sheet. No buy-side equivalent: Kudimata
-  // holds no client funds, so there's no wallet balance to show or "Max"
-  // against (see this file's header — S-11).
-  String? _holdingLabel;
+  // Balance (buy) / Holding (sell) line — fetched once when the sheet opens
+  // (GET /wallet-balance or GET /holdings/:ticker), replacing the old
+  // hardcoded '₦310,400' / '120 shares · ₦32,208' literals. null while the
+  // fetch is in flight; '—' if it fails — this is a secondary informational
+  // element, not the core trade flow, so a failure here must not block or
+  // crash the sheet.
+  String? _balanceOrHolding;
 
-  // Raw numeric mirror of the above — needed so the percentage chips below
-  // can compute an actual value rather than just a label. null until the
-  // fetch resolves; those chips no-op until then.
+  // Raw numeric mirrors of the above (both repos return pre-formatted
+  // display strings) — needed so the quick-amount chips below can compute
+  // an actual value rather than just a label. null until the fetch above
+  // resolves; the "Max"/percentage chips no-op until then.
+  double? _walletBalanceNaira;
   double? _holdingUnits;
 
   @override
   void initState() {
     super.initState();
-    if (widget.side.isSell) _loadHolding();
+    _loadBalanceOrHolding();
   }
 
-  Future<void> _loadHolding() async {
+  Future<void> _loadBalanceOrHolding() async {
     try {
-      final h = await _holdingsRepo.byTicker(widget.asset.ticker);
-      if (!mounted) return;
-      setState(() {
-        _holdingLabel = '${h.units} shares · ${h.marketValue}';
-        _holdingUnits = double.tryParse(h.units.replaceAll(RegExp('[^0-9.]'), ''));
-      });
+      if (widget.side.isSell) {
+        final h = await _holdingsRepo.byTicker(widget.asset.ticker);
+        if (!mounted) return;
+        setState(() {
+          _balanceOrHolding = '${h.units} shares · ${h.marketValue}';
+          _holdingUnits = double.tryParse(h.units.replaceAll(RegExp('[^0-9.]'), ''));
+        });
+      } else {
+        final balance = await _walletRepo.balance();
+        if (!mounted) return;
+        setState(() {
+          _balanceOrHolding = balance;
+          _walletBalanceNaira = double.tryParse(balance.replaceAll(RegExp('[^0-9.]'), ''));
+        });
+      }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _holdingLabel = '—');
+      setState(() => _balanceOrHolding = '—');
     }
   }
 
   // Resolves a tapped quick-amount chip to a naira/unit value and writes it
   // into the amount field in whichever unit [_unit] is currently showing.
-  // Fixed-naira buy chips (₦10k/₦25k/₦50k) always work; sell's percentage
-  // chips depend on the holding fetch above and no-op until it resolves.
+  // Fixed-naira buy chips (₦10k/₦25k/₦50k) always work; "Max" and every sell
+  // percentage chip depend on the balance/holding fetch above and no-op
+  // until it resolves.
   void _applyQuick(String chip) {
     double? naira;
     double? units;
@@ -272,6 +261,7 @@ class _AmountSheetState extends State<_AmountSheet> {
         '₦10k' => 10000.0,
         '₦25k' => 25000.0,
         '₦50k' => 50000.0,
+        'Max' => _walletBalanceNaira,
         _ => null,
       };
       if (naira == null) return;
@@ -314,7 +304,8 @@ class _AmountSheetState extends State<_AmountSheet> {
   @override
   Widget build(BuildContext context) {
     final isSell = widget.side.isSell;
-    final chips = isSell ? const ['25%', '50%', '75%', 'All'] : const ['₦10k', '₦25k', '₦50k'];
+    final chips =
+        isSell ? const ['25%', '50%', '75%', 'All'] : const ['₦10k', '₦25k', '₦50k', 'Max'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,36 +343,33 @@ class _AmountSheetState extends State<_AmountSheet> {
           ),
         ],
 
-        // Holding line + ghost shortcut — sell only. No buy-side equivalent
-        // (no wallet balance; see this file's header — S-11).
-        if (isSell) ...[
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: KType.body(color: KColor.ink2),
-                    children: [
-                      const TextSpan(text: 'Holding '),
-                      TextSpan(
-                        text: _holdingLabel ?? '…',
-                        style: KType.body(color: KColor.ink, w: KWeight.medium).tnum,
-                      ),
-                    ],
-                  ),
+        // Holding / balance line + ghost shortcut.
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: KType.body(color: KColor.ink2),
+                  children: [
+                    TextSpan(text: isSell ? 'Holding ' : 'Balance '),
+                    TextSpan(
+                      text: _balanceOrHolding ?? '…',
+                      style: KType.body(color: KColor.ink, w: KWeight.medium).tnum,
+                    ),
+                  ],
                 ),
               ),
-              KButton(
-                label: 'Sell all',
-                variant: KButtonVariant.ghost,
-                size: KButtonSize.sm,
-                fullWidth: false,
-                onPressed: () {}, // shortcut affordance — mirrors design (no-op here)
-              ),
-            ],
-          ),
-        ],
+            ),
+            KButton(
+              label: isSell ? 'Sell all' : 'Add money',
+              variant: KButtonVariant.ghost,
+              size: KButtonSize.sm,
+              fullWidth: false,
+              onPressed: () {}, // shortcut affordance — mirrors design (no-op here)
+            ),
+          ],
+        ),
 
         // Quick-amount chips.
         const SizedBox(height: 16),
@@ -433,22 +421,13 @@ class _AmountSheetState extends State<_AmountSheet> {
 // Step 2 — Review order (shared). Summary rows + risk ack + confirm.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// What Review hands back once POST /orders succeeds — the investor's
-/// original input (for Success's message) plus the placed [OrderResult]
-/// (for the buy-only Awaiting-payment step, which needs its id/checkoutUrl).
-class _PlacedOrder {
-  const _PlacedOrder({required this.input, required this.order});
-  final _OrderInput input;
-  final OrderResult order;
-}
-
-Future<_PlacedOrder?> _showReviewSheet(
+Future<_OrderInput?> _showReviewSheet(
   BuildContext context,
   Asset asset, {
   required _Side side,
   required _OrderInput input,
 }) {
-  return showKSheet<_PlacedOrder>(
+  return showKSheet<_OrderInput>(
     context,
     title: 'Review order',
     child: _ReviewSheet(asset: asset, side: side, input: input),
@@ -560,15 +539,14 @@ class _ReviewSheetState extends State<_ReviewSheet> {
     final side = widget.side.isSell ? OrderSide.sell : OrderSide.buy;
     final input = widget.input;
     try {
-      final OrderResult order;
       if (input.unit == 'shares') {
-        order = await _repo.placeOrder(
+        await _repo.placeOrder(
           ticker: widget.asset.ticker,
           side: side,
           units: input.units,
         );
       } else {
-        order = await _repo.placeOrder(
+        await _repo.placeOrder(
           ticker: widget.asset.ticker,
           side: side,
           amountKobo: (input.amountNaira * 100).round(),
@@ -576,8 +554,8 @@ class _ReviewSheetState extends State<_ReviewSheet> {
       }
       if (!mounted) return;
       // Pop WITH the result — see _runTradeFlow's doc comment for why this
-      // sheet doesn't show the next step itself.
-      Navigator.of(context).pop(_PlacedOrder(input: input, order: order));
+      // sheet doesn't show the success sheet itself.
+      Navigator.of(context).pop(input);
     } on ApiException {
       if (!mounted) return;
       setState(() {
@@ -609,142 +587,6 @@ class _SummaryRow extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Step 2.5 — Awaiting payment (buy only). Opens the Flutterwave checkout
-// [OrderResult.checkoutUrl] and polls GET /orders/:id until the webhook-
-// driven backend moves the order off 'awaiting_payment' (S-11). No deep
-// link/redirect callback is configured in this app, so polling — not a
-// return-URL handoff — is how this app finds out payment landed.
-// ─────────────────────────────────────────────────────────────────────────────
-
-const _kPollInterval = Duration(seconds: 3);
-
-Future<OrderResult?> _showAwaitingPaymentSheet(
-  BuildContext context, {
-  required OrderResult order,
-}) {
-  return showKSheet<OrderResult>(
-    context,
-    title: 'Complete payment',
-    child: _AwaitingPaymentSheet(order: order),
-  );
-}
-
-class _AwaitingPaymentSheet extends StatefulWidget {
-  const _AwaitingPaymentSheet({required this.order});
-  final OrderResult order;
-
-  @override
-  State<_AwaitingPaymentSheet> createState() => _AwaitingPaymentSheetState();
-}
-
-class _AwaitingPaymentSheetState extends State<_AwaitingPaymentSheet> {
-  late final _repo = OrderPlacementRepository(AppScope.read(context).apiClient);
-  Timer? _poll;
-  bool _opening = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _openCheckout();
-    _poll = Timer.periodic(_kPollInterval, (_) => _checkStatus());
-  }
-
-  @override
-  void dispose() {
-    _poll?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _openCheckout() async {
-    final url = widget.order.checkoutUrl;
-    if (url == null || url.isEmpty) return;
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    setState(() => _opening = true);
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      // Best-effort — the "Open checkout" button below lets the investor
-      // retry the hand-off manually; polling keeps running regardless.
-    } finally {
-      if (mounted) setState(() => _opening = false);
-    }
-  }
-
-  Future<void> _checkStatus() async {
-    try {
-      final result = await _repo.getOrder(widget.order.id);
-      if (!mounted) return;
-      if (result.status != OrderStatus.awaitingPayment) {
-        _poll?.cancel();
-        Navigator.of(context).pop(result);
-      }
-    } catch (_) {
-      // Transient network hiccup — the next tick tries again.
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 8),
-        const Center(
-          child: SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(strokeWidth: 3),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'Complete your payment in the browser, then come back here — '
-          'this updates automatically once we receive it.',
-          textAlign: TextAlign.center,
-          style: KType.body(color: KColor.ink2),
-        ),
-        const SizedBox(height: 22),
-        KButton(
-          label: 'Open checkout',
-          loading: _opening,
-          onPressed: _opening ? null : _openCheckout,
-        ),
-        const SizedBox(height: 10),
-        KButton(
-          label: "I'll do this later",
-          variant: KButtonVariant.ghost,
-          onPressed: () => Navigator.of(context).pop(null),
-        ),
-      ],
-    );
-  }
-}
-
-/// Shown when the awaiting-payment step resolves to something other than a
-/// fill: the checkout window expired unpaid (nothing was captured), or
-/// payment succeeded but the broker couldn't fill the order (already being
-/// auto-refunded server-side — see backend OrdersService.resolveBuyPaymentOutcome).
-Future<void> _showPaymentOutcomeFailureSheet(BuildContext context, {required bool expired}) {
-  return showKSheet<void>(
-    context,
-    child: Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: KStatusView(
-        tone: KStatusTone.error,
-        title: expired ? 'Checkout expired' : 'Order not filled',
-        message: expired
-            ? "Your checkout window closed before payment was completed. Nothing was charged — try again whenever you're ready."
-            : 'Your payment was received, but the order could not be filled. It\'s being refunded to your bank account.',
-        primary: 'Done',
-        onPrimary: () => Navigator.of(context).pop(),
-      ),
-    ),
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

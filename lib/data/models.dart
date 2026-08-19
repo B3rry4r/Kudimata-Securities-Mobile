@@ -57,7 +57,7 @@ class Holding {
   final Trend returnTrend;
 }
 
-enum TxnType { fund, withdraw, buy, sell, convert, refund }
+enum TxnType { fund, withdraw, buy, sell, convert }
 
 enum TxnStatus { completed, pending, failed }
 

@@ -1,16 +1,17 @@
-// Kudimata Securities — Wallet screens: WalletScreen (root tab — transaction
-// history only) and TransactionDetailScreen (pushed; KStatusView-style
-// summary + detail rows). NGX-only: no USD wallet / Convert flow in the UI
-// (HIDE phase — TxnType.convert stays as dead code below).
+// Kudimata Invest — Stage 8: Wallet screens. Mirrors wallet-screens.jsx:
+// WalletScreen (root tab — naira BalancePanel, action row, recent
+// transactions) and TransactionDetailScreen (pushed; KStatusView-style summary +
+// detail rows). NGX-only: no USD wallet / Convert flow in the UI (HIDE phase —
+// TxnType.convert stays as dead code below). The money-movement flows
+// (Add money / Withdraw) live in wallet_flows.dart as bottom-sheet sequences.
 //
-// NON-CUSTODIAL WALLET REDESIGN (backend supersedes.json S-11): Kudimata
-// holds no client funds, so there is no stored balance to show and no
-// standalone Add money / Withdraw action — a buy collects payment through
-// its own checkout step (trade_flows.dart) and a sell/a failed buy's refund
-// pays out automatically. This screen is now purely
-// TransactionRepository.list()-backed history — the KBalancePanel, action
-// row, and wallet_flows.dart's showAddMoneyFlow/showWithdrawFlow sheets they
-// launched are gone.
+// WalletScreen is wired per lib/data/api/README.md's FutureBuilder
+// convention: WalletRepository.balance() (GET /wallet-balance) replaces the
+// hardcoded '₦310,400.00' KBalancePanel literal, and
+// TransactionRepository.list() (GET /transactions) replaces MockData.txns.
+// Both are fetched together (started concurrently, awaited into one record)
+// so the screen has a single loading/error state, matching the README's
+// one-future-per-screen shape.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,11 +22,16 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/transaction_repository.dart';
+import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
+
+import 'wallet_flows.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1 · WALLET HOME (root tab — shell provides the bottom nav).
 // ─────────────────────────────────────────────────────────────────────────────
+
+typedef _WalletData = ({String balance, List<Txn> txns});
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -35,12 +41,16 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
   late final _txnRepo = TransactionRepository(AppScope.read(context).apiClient);
-  late Future<List<Txn>> _future = _load();
+  late Future<_WalletData> _future = _load();
 
-  Future<List<Txn>> _load() async {
-    final page = await _txnRepo.list();
-    return page.data;
+  Future<_WalletData> _load() async {
+    // Record `.wait`, not fire-then-sequential-await — see home_screen.dart's
+    // _load() for why (an early rejection would otherwise leave the other
+    // future's eventual rejection unlistened-to: an "unhandled exception").
+    final (balance, page) = await (_walletRepo.balance(), _txnRepo.list()).wait;
+    return (balance: balance, txns: page.data);
   }
 
   @override
@@ -54,7 +64,7 @@ class _WalletScreenState extends State<WalletScreen> {
             setState(() => _future = _load());
             await _future;
           },
-          child: FutureBuilder<List<Txn>>(
+          child: FutureBuilder<_WalletData>(
             future: _future,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -65,7 +75,8 @@ class _WalletScreenState extends State<WalletScreen> {
                   onPrimary: () => setState(() => _future = _load()),
                 );
               }
-              return _WalletBody(txns: snapshot.data!);
+              final data = snapshot.data!;
+              return _WalletBody(balance: data.balance, txns: data.txns);
             },
           ),
         ),
@@ -74,8 +85,10 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 }
 
+// Same widget tree the mock version built — fed live balance/txns.
 class _WalletBody extends StatelessWidget {
-  const _WalletBody({required this.txns});
+  const _WalletBody({required this.balance, required this.txns});
+  final String balance;
   final List<Txn> txns;
 
   @override
@@ -85,7 +98,33 @@ class _WalletBody extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 100),
       children: [
         const KScreenHead(title: 'Wallet'),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+
+        // Naira wallet — the one rich ink surface on this screen.
+        KBalancePanel(label: 'Naira wallet', balance: balance),
+        const SizedBox(height: 12),
+
+        // Action row — Add money / Withdraw (sheet flows).
+        Row(
+          children: [
+            Expanded(
+              child: _ActionTile(
+                icon: 'arrowDownLeft',
+                label: 'Add money',
+                onTap: () => showAddMoneyFlow(context),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(
+                icon: 'arrowUp',
+                label: 'Withdraw',
+                onTap: () => showWithdrawFlow(context),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
 
         // Recent header — eyebrow + Orders shortcut.
         Padding(
@@ -106,7 +145,7 @@ class _WalletBody extends StatelessWidget {
 
         // Transactions list — tap a row → transaction detail.
         if (txns.isEmpty)
-          KEmptyView.transactions(onAction: () => context.go(Routes.markets))
+          KEmptyView.transactions(onAction: () => showAddMoneyFlow(context))
         else
           KCard(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -118,6 +157,34 @@ class _WalletBody extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+// 1/2-width action tile — line icon over a label.
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({required this.icon, required this.label, required this.onTap});
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return KCard(
+      padding: EdgeInsets.zero,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            KIcon(icon, size: 22),
+            const SizedBox(height: 8),
+            Text(label,
+                style: KType.label(color: KColor.ink).copyWith(letterSpacing: 0, height: 1.0)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -135,7 +202,6 @@ class _TxnRow extends StatelessWidget {
         TxnType.buy => 'markets',
         TxnType.sell => 'markets',
         TxnType.convert => 'transfer',
-        TxnType.refund => 'arrowDownLeft',
       };
 
   @override
@@ -218,7 +284,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         TxnType.buy => 'Buy',
         TxnType.sell => 'Sell',
         TxnType.convert => 'Conversion',
-        TxnType.refund => 'Refund',
       };
 
   (KStatusTone, String, Color) _status(TxnStatus s) => switch (s) {

@@ -300,14 +300,15 @@ class AppState extends ChangeNotifier {
   }
 }
 
-/// Where an investor should go next to become eligible to trade, or
+/// Where an investor should go next to become eligible to trade/fund, or
 /// null if they already can ([AppState.kycApproved] &&
 /// [AppState.suitabilityComplete]). Browsing itself is never gated —
 /// this only matters at the specific points that need it: home_screen.dart's
-/// prompt card, and the Buy/Sell entry points (trade_flows.dart), which all
-/// call this so the copy and routing stay consistent everywhere it's
-/// surfaced. Purely a UX convenience — the real enforcement is server-side
-/// (OrdersService in the backend re-checks this before acting).
+/// prompt card, and the Buy/Sell/Add money/Withdraw entry points
+/// (trade_flows.dart, wallet_flows.dart), which all call this so the copy
+/// and routing stay consistent everywhere it's surfaced. Purely a UX
+/// convenience — the real enforcement is server-side (OrdersService/
+/// TransactionsService in the backend both re-check this before acting).
 class TradingEligibilityGap {
   const TradingEligibilityGap({required this.title, required this.message, required this.route});
   final String title;

@@ -13,12 +13,14 @@
 //   POST   /banks/resolve-account-name {bankCode, accountNumber} -> {accountName}
 //
 // `BankAccountSummary` (id/bankName/accountNumberMasked/primary) used to live
-// in wallet_repository.dart (built for the old withdraw sheet's destination
-// row off this same GET /bank-accounts endpoint) — relocated here, its real
-// home, when the non-custodial wallet redesign deleted that repository
-// (supersedes.json S-11 backend / mobile follow-up): bank accounts remain a
-// real, investor-managed feature (a sell's payout / a buy's refund
-// destination) even though the wallet balance concept is gone.
+// in wallet_repository.dart (built for the withdraw sheet's destination row
+// off this same GET /bank-accounts endpoint) — relocated here 2026-08-15
+// (S-11's mobile follow-up, which briefly deleted wallet_repository.dart
+// entirely) and kept here on the custodial-wallet restoration: bank accounts
+// are a real, standalone, investor-managed feature (a sell's payout / a
+// buy's refund / a withdraw's destination) independent of the wallet
+// balance concept, so this stays their real home — wallet_repository.dart
+// imports [BankAccountSummary] from here rather than re-declaring it.
 //
 // Construct with the ONE shared ApiClient:
 //   final _repo = BankAccountsRepository(AppScope.read(context).apiClient);
