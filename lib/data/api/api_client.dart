@@ -188,58 +188,70 @@ class ApiClient {
         // is just a bad login/refresh, not a stale-session 401 to recover
         // from — recovering it would recurse).
         if (response?.statusCode == 401 && !_isPreAuth(path)) {
-          try {
-            final refreshToken = await _tokenStore.getRefreshToken();
-            if (refreshToken == null || refreshToken.isEmpty) {
-              throw const ApiException(
-                code: ApiException.sessionExpiredCode,
-                message: 'No session to refresh.',
-                statusCode: 401,
-              );
-            }
+          final refreshToken = await _tokenStore.getRefreshToken();
+          if (refreshToken == null || refreshToken.isEmpty) {
+            // Genuinely nothing to recover with — force sign-out.
+            return handler.reject(await _forceSignOutAndReject(error));
+          }
 
-            // Bare Dio (no interceptors) so this call can't recurse into
-            // this same 401 handler.
-            final refreshDio = Dio(BaseOptions(baseUrl: kApiBaseUrl));
-            final refreshResponse = await refreshDio.post<Map<String, dynamic>>(
+          // Bare Dio (no interceptors) so this call can't recurse into this
+          // same 401 handler. Same 15s timeouts as the main client — an
+          // unset timeout here means Dio waits indefinitely on a bad
+          // connection before this whole retry-or-fail decision even starts.
+          final refreshDio = Dio(BaseOptions(
+            baseUrl: kApiBaseUrl,
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
+          ));
+          late final Response<Map<String, dynamic>> refreshResponse;
+          try {
+            refreshResponse = await refreshDio.post<Map<String, dynamic>>(
               '/auth/refresh',
               data: {'refreshToken': refreshToken},
             );
-            final body = refreshResponse.data ?? const {};
-            final newAccess = body['accessToken'] as String?;
-            final newRefresh = (body['refreshToken'] as String?) ?? refreshToken;
-            if (newAccess == null || newAccess.isEmpty) {
-              throw const ApiException(
-                code: ApiException.sessionExpiredCode,
-                message: 'Session refresh returned no token.',
-                statusCode: 401,
-              );
+          } on DioException catch (refreshError) {
+            final refreshStatus = refreshError.response?.statusCode;
+            if (refreshStatus == 401 || refreshStatus == 403) {
+              // The server explicitly rejected the refresh token itself
+              // (expired/revoked) — genuinely a dead session.
+              return handler.reject(await _forceSignOutAndReject(error));
             }
-            await _tokenStore.saveTokens(newAccess, newRefresh);
+            // Anything else (timeout, no connectivity, DNS failure, a 5xx
+            // from the refresh endpoint) is TRANSIENT — the refresh token
+            // itself might be perfectly valid. Found live: a bare `catch`
+            // here treated every one of these identically to a genuinely
+            // dead session, force-signing investors out (wiping their local
+            // passcode too) over a single flaky-network moment during a
+            // routine access-token refresh — every 15 minutes, per
+            // INVESTOR_ACCESS_TTL on the backend. Don't sign out; just fail
+            // this one request so the caller's normal error handling
+            // (KErrorView + retry) takes over, and the NEXT 401 tries the
+            // refresh again with the same still-valid refresh token.
+            return handler.reject(_networkErrorReject(error));
+          }
 
-            // Retry the original request exactly once with the new token.
+          final body = refreshResponse.data ?? const {};
+          final newAccess = body['accessToken'] as String?;
+          final newRefresh = (body['refreshToken'] as String?) ?? refreshToken;
+          if (newAccess == null || newAccess.isEmpty) {
+            // The server responded 2xx but with a malformed body — a server
+            // bug, not proof this refresh token is invalid. Same reasoning
+            // as above: fail this request, don't destroy the session over it.
+            return handler.reject(_networkErrorReject(error));
+          }
+          await _tokenStore.saveTokens(newAccess, newRefresh);
+
+          // Retry the original request exactly once with the new token. A
+          // failure here is whatever that request's own failure is (could be
+          // unrelated to auth entirely, e.g. a 404/500 on THIS endpoint) —
+          // not a session-expired signal either.
+          try {
             final retryOptions = error.requestOptions;
             retryOptions.headers['Authorization'] = 'Bearer $newAccess';
             final retryResponse = await dio.fetch<dynamic>(retryOptions);
             return handler.resolve(retryResponse);
-          } catch (_) {
-            // Refresh failed (expired/revoked refresh token, or the retry
-            // itself failed) — clear tokens and surface a distinct signal
-            // the app uses to force sign-out.
-            await _tokenStore.clearTokens();
-            _onSessionExpired?.call();
-            return handler.reject(
-              DioException(
-                requestOptions: error.requestOptions,
-                response: response,
-                type: DioExceptionType.badResponse,
-                error: const ApiException(
-                  code: ApiException.sessionExpiredCode,
-                  message: 'Your session has expired. Please sign in again.',
-                  statusCode: 401,
-                ),
-              ),
-            );
+          } on DioException catch (retryError) {
+            return handler.reject(_networkErrorReject(retryError));
           }
         }
 
@@ -264,19 +276,44 @@ class ApiClient {
         }
 
         // ── Anything else (timeout, no connectivity, 5xx with no body) ──
-        return handler.reject(
-          DioException(
-            requestOptions: error.requestOptions,
-            response: response,
-            type: error.type,
-            error: ApiException(
-              code: 'NETWORK_ERROR',
-              message: error.message ?? 'Something went wrong. Please try again.',
-              statusCode: response?.statusCode,
-            ),
-          ),
-        );
+        return handler.reject(_networkErrorReject(error));
       },
+    );
+  }
+
+  /// The genuine "this session is really dead" path — clears tokens and
+  /// fires [_onSessionExpired]. Only call this when the SERVER has
+  /// explicitly rejected the refresh token, or none was stored to begin
+  /// with — never for a merely transient failure (see the 401 handler
+  /// above's writeup).
+  Future<DioException> _forceSignOutAndReject(DioException original) async {
+    await _tokenStore.clearTokens();
+    _onSessionExpired?.call();
+    return DioException(
+      requestOptions: original.requestOptions,
+      response: original.response,
+      type: DioExceptionType.badResponse,
+      error: const ApiException(
+        code: ApiException.sessionExpiredCode,
+        message: 'Your session has expired. Please sign in again.',
+        statusCode: 401,
+      ),
+    );
+  }
+
+  /// A plain, non-session-ending failure for this one request — tokens/
+  /// passcode stay intact so the next attempt (or the next natural 401) can
+  /// just try the refresh again.
+  DioException _networkErrorReject(DioException original) {
+    return DioException(
+      requestOptions: original.requestOptions,
+      response: original.response,
+      type: original.type,
+      error: ApiException(
+        code: 'NETWORK_ERROR',
+        message: original.message ?? 'Something went wrong. Please try again.',
+        statusCode: original.response?.statusCode,
+      ),
     );
   }
 }
