@@ -132,6 +132,29 @@ class ApiClient {
 
   final AuthTokenStore _tokenStore;
 
+  /// Coordinates concurrent 401s onto a SINGLE /auth/refresh exchange
+  /// (2026-08-20 fix — reported: "why the heck would I be refreshed and
+  /// logged out instead of passcode" / "few more details screen keeps
+  /// happening", including once mid-meeting). Root cause: the backend's
+  /// refresh token ROTATES (auth.service.ts's refresh() revokes the
+  /// session behind the presented token the instant it's used
+  /// successfully). This app now runs several independent polling timers
+  /// (Home's KYC/portfolio polls, Wallet's balance poll) — when the
+  /// ~15-minute access token expires while more than one of them is
+  /// active, EACH one's 401 independently used to fire its own
+  /// `/auth/refresh` call with the same not-yet-rotated refresh token.
+  /// Whichever landed first rotated it successfully; every other
+  /// concurrent call then presented an already-revoked refresh token and
+  /// got a real 401 back — which this handler correctly treats as "the
+  /// refresh token itself is dead", force-signing out (wiping the local
+  /// passcode too, per forceSignOut()) a session that was actually still
+  /// perfectly valid. Now only ONE refresh call is ever in flight at a
+  /// time; any request that 401s while one is already running just awaits
+  /// this SAME Future instead of starting a competing one. Reset back to
+  /// null inside _performRefresh's own `finally`, so the next genuine
+  /// expiry starts a fresh exchange rather than reusing a stale result.
+  Future<({String? accessToken, bool sessionDead})>? _pendingRefresh;
+
   /// Invoked once when a 401 could not be silently resolved (refresh failed
   /// or no refresh token existed). Wire this to `AppState.forceSignOut` at
   /// app-root construction time so the gated router falls back to sign-in.
@@ -201,52 +224,28 @@ class ApiClient {
             return handler.reject(await _forceSignOutAndReject(error));
           }
 
-          // Bare Dio (no interceptors) so this call can't recurse into this
-          // same 401 handler. Same 15s timeouts as the main client — an
-          // unset timeout here means Dio waits indefinitely on a bad
-          // connection before this whole retry-or-fail decision even starts.
-          final refreshDio = Dio(BaseOptions(
-            baseUrl: kApiBaseUrl,
-            connectTimeout: const Duration(seconds: 15),
-            receiveTimeout: const Duration(seconds: 15),
-          ));
-          late final Response<Map<String, dynamic>> refreshResponse;
-          try {
-            refreshResponse = await refreshDio.post<Map<String, dynamic>>(
-              '/auth/refresh',
-              data: {'refreshToken': refreshToken},
-            );
-          } on DioException catch (refreshError) {
-            final refreshStatus = refreshError.response?.statusCode;
-            if (refreshStatus == 401 || refreshStatus == 403) {
-              // The server explicitly rejected the refresh token itself
-              // (expired/revoked) — genuinely a dead session.
-              return handler.reject(await _forceSignOutAndReject(error));
-            }
-            // Anything else (timeout, no connectivity, DNS failure, a 5xx
-            // from the refresh endpoint) is TRANSIENT — the refresh token
-            // itself might be perfectly valid. Found live: a bare `catch`
-            // here treated every one of these identically to a genuinely
-            // dead session, force-signing investors out (wiping their local
-            // passcode too) over a single flaky-network moment during a
-            // routine access-token refresh — every 15 minutes, per
-            // INVESTOR_ACCESS_TTL on the backend. Don't sign out; just fail
-            // this one request so the caller's normal error handling
-            // (KErrorView + retry) takes over, and the NEXT 401 tries the
-            // refresh again with the same still-valid refresh token.
-            return handler.reject(_networkErrorReject(error));
-          }
+          // SINGLE-FLIGHT — see _pendingRefresh's doc comment. Whichever
+          // concurrent 401 gets here FIRST starts the one real exchange;
+          // every other one just awaits that same Future instead of
+          // firing its own competing /auth/refresh call.
+          _pendingRefresh ??= _performRefresh(refreshToken);
+          final result = await _pendingRefresh!;
 
-          final body = refreshResponse.data ?? const {};
-          final newAccess = body['accessToken'] as String?;
-          final newRefresh = (body['refreshToken'] as String?) ?? refreshToken;
-          if (newAccess == null || newAccess.isEmpty) {
-            // The server responded 2xx but with a malformed body — a server
-            // bug, not proof this refresh token is invalid. Same reasoning
-            // as above: fail this request, don't destroy the session over it.
+          if (result.sessionDead) {
+            // The server explicitly rejected the refresh token itself
+            // (expired/revoked) — genuinely a dead session.
+            return handler.reject(await _forceSignOutAndReject(error));
+          }
+          if (result.accessToken == null) {
+            // Transient failure (timeout, no connectivity, DNS failure, a
+            // 5xx from the refresh endpoint, or a malformed 2xx body) —
+            // the refresh token itself might be perfectly valid. Don't
+            // sign out; just fail this one request so the caller's normal
+            // error handling (KErrorView + retry) takes over, and the
+            // NEXT 401 tries the refresh again with the same still-valid
+            // refresh token.
             return handler.reject(_networkErrorReject(error));
           }
-          await _tokenStore.saveTokens(newAccess, newRefresh);
 
           // Retry the original request exactly once with the new token. A
           // failure here is whatever that request's own failure is (could be
@@ -254,7 +253,7 @@ class ApiClient {
           // not a session-expired signal either.
           try {
             final retryOptions = error.requestOptions;
-            retryOptions.headers['Authorization'] = 'Bearer $newAccess';
+            retryOptions.headers['Authorization'] = 'Bearer ${result.accessToken}';
             final retryResponse = await dio.fetch<dynamic>(retryOptions);
             return handler.resolve(retryResponse);
           } on DioException catch (retryError) {
@@ -286,6 +285,60 @@ class ApiClient {
         return handler.reject(_networkErrorReject(error));
       },
     );
+  }
+
+  /// The one real /auth/refresh exchange for a batch of concurrent 401s —
+  /// see [_pendingRefresh]'s doc comment for why this exists as its own
+  /// single-flight-guarded method rather than running inline per-request.
+  /// `sessionDead: true` means the server explicitly rejected this refresh
+  /// token (expired/revoked/already-rotated-away) — a genuine dead
+  /// session. `accessToken: null` with `sessionDead: false` means a
+  /// transient failure (timeout, no connectivity, a 5xx, or a malformed
+  /// 2xx body) that says nothing about whether the refresh token itself
+  /// is still good.
+  Future<({String? accessToken, bool sessionDead})> _performRefresh(String refreshToken) async {
+    try {
+      // Bare Dio (no interceptors) so this call can't recurse into this
+      // same 401 handler. Same 15s timeouts as the main client — an
+      // unset timeout here means Dio waits indefinitely on a bad
+      // connection before this whole retry-or-fail decision even starts.
+      final refreshDio = Dio(BaseOptions(
+        baseUrl: kApiBaseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+      ));
+      late final Response<Map<String, dynamic>> refreshResponse;
+      try {
+        refreshResponse = await refreshDio.post<Map<String, dynamic>>(
+          '/auth/refresh',
+          data: {'refreshToken': refreshToken},
+        );
+      } on DioException catch (refreshError) {
+        final refreshStatus = refreshError.response?.statusCode;
+        if (refreshStatus == 401 || refreshStatus == 403) {
+          return (accessToken: null, sessionDead: true);
+        }
+        return (accessToken: null, sessionDead: false);
+      }
+
+      final body = refreshResponse.data ?? const {};
+      final newAccess = body['accessToken'] as String?;
+      final newRefresh = (body['refreshToken'] as String?) ?? refreshToken;
+      if (newAccess == null || newAccess.isEmpty) {
+        // The server responded 2xx but with a malformed body — a server
+        // bug, not proof this refresh token is invalid.
+        return (accessToken: null, sessionDead: false);
+      }
+      await _tokenStore.saveTokens(newAccess, newRefresh);
+      return (accessToken: newAccess, sessionDead: false);
+    } finally {
+      // Cleared BEFORE this Future actually completes (a `finally` runs
+      // ahead of the function returning), so every concurrent awaiter
+      // still reads the correct shared result — this only affects the
+      // NEXT 401 that arrives afterward, which correctly starts a fresh
+      // exchange instead of reusing this (already-resolved) one.
+      _pendingRefresh = null;
+    }
   }
 
   /// The genuine "this session is really dead" path — clears tokens and
