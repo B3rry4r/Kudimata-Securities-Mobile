@@ -150,7 +150,35 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
         // No local_auth backing store on web — skip straight past biometric
         // enrolment, same as BiometricScreen's own "Maybe later" path.
         app.setSignedIn(true);
-        context.go(Routes.onboardingPersonal);
+        // Skip "a few more details" entirely when this account already has
+        // it all on file (2026-08-20 fix — reported: "few more details
+        // that has been collected before??"). This branch used to assume
+        // reaching passcode-confirm via the signup path meant "must be a
+        // first-timer", unconditionally forcing onboardingPersonal — but
+        // ANY scenario that forces a fresh local passcode lands here too
+        // (a new device, cleared browser storage, or the concurrent-
+        // refresh bug just fixed in api_client.dart's force-sign-out
+        // path), even for an already-fully-onboarded returning investor,
+        // and used to make them re-enter DOB/address/city/state/phone
+        // that's already saved server-side.
+        var alreadyComplete = false;
+        try {
+          final info = await UserRepository(app.apiClient).personalInfo();
+          alreadyComplete = info.dob != '—' &&
+              info.residentialAddress != '—' &&
+              info.city != '—' &&
+              info.state != '—' &&
+              info.phone.isNotEmpty;
+        } on ApiException {
+          // Best-effort — a failed check just falls through to asking
+          // again, same as this screen's behavior before this fix existed.
+        }
+        if (!mounted) return;
+        if (alreadyComplete) {
+          await hydrateGatingStateAndRoute(context);
+        } else {
+          context.go(Routes.onboardingPersonal);
+        }
       } else {
         context.go(Routes.biometric);
       }
