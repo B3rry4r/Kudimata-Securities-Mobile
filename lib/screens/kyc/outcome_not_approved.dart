@@ -108,7 +108,7 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
       case 'rejected':
         return _buildRejected(result);
       case 'flagged':
-        return _buildFlagged();
+        return _buildFlagged(result);
       case 'expired':
         return _buildExpired();
       default:
@@ -125,12 +125,34 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
     }
   }
 
+  /// Plain-language reasons, derived from the real per-check signals
+  /// (2026-08-20 fix — reported: "on the dashboard and on the app WE CAN'T
+  /// TELL WHAT WAS WRONG... not manual review, if rejected they should see
+  /// the reason"). Only lists checks that actually FAILED (false) — a null
+  /// signal means that check never ran, not a problem. Empty when there's
+  /// no per-check breakdown to draw from (an older submission from before
+  /// this fix, or a decision made for some other reason).
+  List<String> _failedChecks(KycSubmissionStatus result) {
+    final s = result.verificationSignals;
+    if (s == null) return const [];
+    return [
+      if (s.nin == false) 'Your NIN could not be verified',
+      if (s.bvn == false) 'Your BVN could not be verified',
+      if (s.name == false) "Your name didn't match your registered ID",
+      if (s.dob == false) "Your date of birth didn't match your registered ID",
+      if (s.liveness == false) "Your selfie didn't pass the liveness check",
+    ];
+  }
+
   Widget _buildRejected(KycSubmissionStatus result) {
-    final message = result.flagDetail?.trim().isNotEmpty == true
-        ? result.flagDetail!
-        : (result.flagReason?.trim().isNotEmpty == true
-            ? result.flagReason!
-            : "We weren't able to verify your details.");
+    final reasons = _failedChecks(result);
+    final message = reasons.isNotEmpty
+        ? '${reasons.join('. ')}.'
+        : (result.flagDetail?.trim().isNotEmpty == true
+            ? result.flagDetail!
+            : (result.flagReason?.trim().isNotEmpty == true
+                ? result.flagReason!
+                : "We weren't able to verify your details."));
     final canResubmit = result.canResubmit;
     return KStatusView(
       tone: KStatusTone.error,
@@ -143,12 +165,15 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
     );
   }
 
-  Widget _buildFlagged() {
+  Widget _buildFlagged(KycSubmissionStatus result) {
+    final reasons = _failedChecks(result);
+    final message = reasons.isNotEmpty
+        ? "${reasons.join('. ')}. One of our team is taking a closer look — we'll notify you once it's resolved."
+        : "One of our team needs to take a closer look at your submission. We'll notify you once it's resolved.";
     return KStatusView(
       tone: KStatusTone.pending,
       title: 'Your account needs manual review',
-      message:
-          "One of our team needs to take a closer look at your submission. We'll notify you once it's resolved.",
+      message: message,
       secondary: 'Back to home',
       onSecondary: () => context.go(Routes.home),
     );

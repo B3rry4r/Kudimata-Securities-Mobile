@@ -60,6 +60,7 @@ class KycSubmissionStatus {
     this.maxAttempts = 1,
     this.currentStep,
     this.totalSteps,
+    this.verificationSignals,
   });
 
   final String status;
@@ -73,12 +74,48 @@ class KycSubmissionStatus {
   final int? currentStep;
   final int? totalSteps;
 
+  /// The real per-check verification breakdown (2026-08-20 fix — reported:
+  /// "on the dashboard and on the app WE CAN'T TELL WHAT WAS WRONG" for a
+  /// rejected/flagged account). Null entries mean that check never ran
+  /// (e.g. no liveness selfie yet); `false` is an actual reason to
+  /// reject/flag. See outcome_not_approved.dart's _failedChecks for how
+  /// this becomes plain-language copy.
+  final KycVerificationSignals? verificationSignals;
+
   bool get isApproved => status == 'approved';
   bool get isDraft => status == 'draft';
 
   /// Whether the investor still has a resubmission attempt available, per
   /// KycSubmission's `attemptCount`/`maxAttempts` (registry.json).
   bool get canResubmit => attemptCount < maxAttempts;
+}
+
+/// See [KycSubmissionStatus.verificationSignals]. Each field: true (passed),
+/// false (failed — a real reason to reject/flag), null (never attempted).
+class KycVerificationSignals {
+  const KycVerificationSignals({
+    required this.nin,
+    required this.bvn,
+    required this.name,
+    required this.dob,
+    required this.liveness,
+  });
+
+  factory KycVerificationSignals.fromJson(Map<String, dynamic> json) {
+    return KycVerificationSignals(
+      nin: json['nin'] as bool?,
+      bvn: json['bvn'] as bool?,
+      name: json['name'] as bool?,
+      dob: json['dob'] as bool?,
+      liveness: json['liveness'] as bool?,
+    );
+  }
+
+  final bool? nin;
+  final bool? bvn;
+  final bool? name;
+  final bool? dob;
+  final bool? liveness;
 }
 
 class KycRepository {
@@ -189,6 +226,9 @@ class KycRepository {
       maxAttempts: json['maxAttempts'] as int? ?? 1,
       currentStep: json['currentStep'] as int?,
       totalSteps: json['totalSteps'] as int?,
+      verificationSignals: json['verificationSignals'] != null
+          ? KycVerificationSignals.fromJson(json['verificationSignals'] as Map<String, dynamic>)
+          : null,
     );
   }
 
