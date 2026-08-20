@@ -87,8 +87,19 @@ class _HomeScreenState extends State<HomeScreen> {
   // investor just sits on Home — without this, they'd only see it after
   // force-quitting/relaunching, since hydrateGatingStateAndRoute otherwise
   // only runs once, at login. Same 8s interval submitted.dart's own polling
-  // uses, for consistency; stops itself the moment kycApproved flips true —
-  // no point re-checking a decision that already landed.
+  // uses, for consistency; stops itself once the outcome is final either
+  // way (approved, or a genuine terminal rejected/flagged/expired).
+  //
+  // Starts whenever `!kycApproved` — NOT gated on `kycSubmitted` (fixed
+  // 2026-08-20, reported: "why am I seeing complete kyc on my account
+  // that has already been approved"). refreshKycGatingState only updates
+  // AppState's flags when GET /kyc-submissions/me actually succeeds; if
+  // that ONE call fails for any reason at login (a network blip, or the
+  // API being mid-restart at that exact moment), kycSubmitted/kycApproved
+  // silently stay at their `false` defaults — a fully-approved investor
+  // then looks identical to a brand-new one, with nothing to self-correct
+  // it, since the old `kycSubmitted &&` guard never let polling start in
+  // that state at all.
   Timer? _kycPollTimer;
   static const _kycPollInterval = Duration(seconds: 8);
 
@@ -97,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadedWatchlistVersion = AppScope.read(context).watchlistVersion;
     final app = AppScope.read(context);
-    if (app.kycSubmitted && !app.kycApproved) {
+    if (!app.kycApproved) {
       _kycPollTimer = Timer.periodic(_kycPollInterval, (_) => _pollKycStatus());
     }
   }
