@@ -122,11 +122,16 @@ class KErrorView extends StatelessWidget {
         secondary = null,
         onSecondary = null;
 
-  /// Order failure (design: ErrOrderFailed).
-  const KErrorView.orderFailed({super.key, this.onPrimary, this.onSecondary})
+  /// Order failure (design: ErrOrderFailed). [message] lets a caller surface
+  /// the REAL backend reason (e.g. "Your wallet balance is not sufficient
+  /// to cover this order.") instead of always showing the generic fallback
+  /// below — added 2026-08-20 after a report that a genuinely-correct
+  /// insufficient-balance rejection just looked like an unexplained generic
+  /// failure, since trade_flows.dart's catch used to discard
+  /// ApiException.message entirely.
+  const KErrorView.orderFailed({super.key, this.onPrimary, this.onSecondary, String? message})
       : title = 'Order failed',
-        message =
-            "Your order didn't go through. No money has left your wallet.",
+        message = message ?? "Your order didn't go through. No money has left your wallet.",
         primary = 'Try again',
         secondary = 'Back';
 

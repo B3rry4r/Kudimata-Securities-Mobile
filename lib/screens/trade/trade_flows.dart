@@ -455,10 +455,17 @@ class _ReviewSheetState extends State<_ReviewSheet> {
   bool _placing = false;
   bool _failed = false;
 
+  /// The real backend reason for the most recent failure (e.g. "Your wallet
+  /// balance is not sufficient to cover this order.") — 2026-08-20 fix, see
+  /// KErrorView.orderFailed's doc comment. Null falls back to that
+  /// constructor's generic copy (a genuine network/unknown failure).
+  String? _failureMessage;
+
   @override
   Widget build(BuildContext context) {
     if (_failed) {
       return KErrorView.orderFailed(
+        message: _failureMessage,
         onPrimary: () {
           setState(() => _failed = false);
           _confirm();
@@ -556,11 +563,12 @@ class _ReviewSheetState extends State<_ReviewSheet> {
       // Pop WITH the result — see _runTradeFlow's doc comment for why this
       // sheet doesn't show the success sheet itself.
       Navigator.of(context).pop(input);
-    } on ApiException {
+    } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
         _placing = false;
         _failed = true;
+        _failureMessage = e.message;
       });
     }
   }

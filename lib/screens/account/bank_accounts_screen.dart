@@ -246,6 +246,25 @@ class _AddBankAccountSheetState extends State<_AddBankAccountSheet> {
     super.dispose();
   }
 
+  /// Opens the full bank list in its own picker sheet (2026-08-20 fix —
+  /// reported: "bank account screen shows a long dropdown before I see
+  /// where to input my account number... bad UX"). The full list of NGX
+  /// banks (dozens of rows) used to render inline, ABOVE the account-number
+  /// field, pushing it far down the sheet — sometimes off-screen entirely.
+  /// Now the form shows one compact selector row; tapping it opens the list
+  /// (with a search field, since it's long) in a separate sheet, and
+  /// selecting a bank collapses straight back to that one row.
+  Future<void> _pickBank(List<Bank> banks) async {
+    final picked = await showKSheet<Bank>(
+      context,
+      title: 'Select bank',
+      child: _BankPickerSheet(banks: banks, selected: _bank),
+    );
+    if (picked == null) return;
+    setState(() => _bank = picked);
+    _maybeResolveName();
+  }
+
   bool get _canSubmit =>
       _bank != null && _accountNumber.text.trim().length >= 10 && !_busy;
 
@@ -323,21 +342,32 @@ class _AddBankAccountSheetState extends State<_AddBankAccountSheet> {
             if (banks.isEmpty)
               Text('No banks available.', style: KType.body(color: KColor.ink3))
             else
-              KCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < banks.length; i++)
-                      _BankOptionRow(
-                        bank: banks[i],
-                        selected: _bank?.code == banks[i].code,
-                        first: i == 0,
-                        onTap: () {
-                          setState(() => _bank = banks[i]);
-                          _maybeResolveName();
-                        },
+              GestureDetector(
+                onTap: () => _pickBank(banks),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  height: 50,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: KColor.paper,
+                    borderRadius: BorderRadius.circular(KRadii.input),
+                    border: Border.all(color: KColor.hairline, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _bank?.name ?? 'Select bank',
+                          style: KType.body(
+                            color: _bank == null ? KColor.ink3 : KColor.ink,
+                            w: KWeight.medium,
+                          ),
+                        ),
                       ),
-                  ],
+                      const SizedBox(width: 10),
+                      const KRowChevron(),
+                    ],
+                  ),
                 ),
               ),
             const SizedBox(height: 20),
@@ -370,6 +400,76 @@ class _AddBankAccountSheetState extends State<_AddBankAccountSheet> {
           ],
         );
       },
+    );
+  }
+}
+
+/// The full bank list, in its own sheet (see _pickBank's doc comment) —
+/// pushed OVER the add-account sheet rather than inlined in it. Includes a
+/// search field since NGX's bank list runs to several dozen entries; typing
+/// filters the (already-fetched) list client-side, no extra network call.
+class _BankPickerSheet extends StatefulWidget {
+  const _BankPickerSheet({required this.banks, required this.selected});
+  final List<Bank> banks;
+  final Bank? selected;
+
+  @override
+  State<_BankPickerSheet> createState() => _BankPickerSheetState();
+}
+
+class _BankPickerSheetState extends State<_BankPickerSheet> {
+  final _search = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _query.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? widget.banks
+        : widget.banks.where((b) => b.name.toLowerCase().contains(query)).toList();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KInput(
+          controller: _search,
+          placeholder: 'Search banks',
+          icon: 'search',
+          onChanged: (v) => setState(() => _query = v),
+        ),
+        const SizedBox(height: 14),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 360),
+          child: filtered.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Text('No banks match "$query".',
+                      style: KType.body(color: KColor.ink3)),
+                )
+              : SingleChildScrollView(
+                  child: KCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < filtered.length; i++)
+                          _BankOptionRow(
+                            bank: filtered[i],
+                            selected: widget.selected?.code == filtered[i].code,
+                            first: i == 0,
+                            onTap: () => Navigator.of(context).pop(filtered[i]),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }
