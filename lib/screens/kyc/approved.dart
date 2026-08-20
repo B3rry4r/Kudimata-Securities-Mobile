@@ -105,12 +105,21 @@ class _ApprovedScreenState extends State<ApprovedScreen> {
 
   Widget _buildForStatus(String status) {
     if (status == 'approved') {
+      // Goes straight to Home, not the suitability questionnaire
+      // (2026-08-20 fix — the questionnaire is no longer part of the
+      // mandatory post-KYC flow at all: "make the assessment optional or
+      // hide it for now — the one that comes after KYC". Removing it from
+      // tradingEligibilityGap alone wasn't enough — this screen's single
+      // button was still the only way forward, and it went straight to
+      // the questionnaire regardless). The questionnaire screen itself is
+      // unchanged and still reachable for anyone who wants to complete it
+      // voluntarily.
       return KStatusView(
         tone: KStatusTone.success,
         title: "You're verified",
         message: 'Your money is ready to invest.',
         primary: 'Start investing',
-        onPrimary: () => context.go(Routes.questionnaire),
+        onPrimary: () => context.go(Routes.home),
       );
     }
     if (status == 'pending' || status == 'review') {
