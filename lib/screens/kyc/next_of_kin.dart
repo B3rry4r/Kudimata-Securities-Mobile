@@ -56,6 +56,13 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
       if (!mounted) return;
       setState(() => _busy = false);
       _showErrorSheet(context, message: e.message);
+    } catch (_) {
+      // Widened from `on ApiException` only (2026-08-20) — any OTHER
+      // exception type used to leave `_busy` stuck true forever (a
+      // permanent loading spinner on the final submit button).
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _showErrorSheet(context, message: 'Something went wrong. Please try again.');
     }
   }
 

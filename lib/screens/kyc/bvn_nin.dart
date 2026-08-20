@@ -68,10 +68,16 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
       context.go(Routes.kycId);
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = e.message;
-      });
+      setState(() => _error = e.message);
+    } catch (_) {
+      // Widened from `on ApiException` only (2026-08-20) — any OTHER
+      // exception type used to propagate uncaught, which left `_busy`
+      // stuck true forever (a permanent loading spinner) since nothing
+      // reset it; see kyc_intro.dart's fix for the report that caught this.
+      if (!mounted) return;
+      setState(() => _error = 'Something went wrong. Please try again.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 

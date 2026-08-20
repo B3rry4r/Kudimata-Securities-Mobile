@@ -45,6 +45,14 @@ class _CheckingScreenState extends State<CheckingScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
+    } catch (_) {
+      // Widened from `on ApiException` only (2026-08-20) — any OTHER
+      // exception type used to leave `_error` unset, which meant the
+      // spinner + "Checking your selfie…" copy stayed up forever with no
+      // way to retry, since this build() only shows the retry UI once
+      // `_error` is non-null.
+      if (!mounted) return;
+      setState(() => _error = 'Something went wrong. Please try again.');
     }
   }
 

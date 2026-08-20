@@ -389,6 +389,15 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
         _busy = false;
         _error = e.message;
       });
+    } catch (_) {
+      // Widened from `on ApiException` only (2026-08-20) — any OTHER
+      // exception type used to leave `_busy` stuck true forever (a
+      // permanent loading spinner over the selfie).
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'Something went wrong. Please try again.';
+      });
     }
   }
 }

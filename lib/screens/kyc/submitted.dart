@@ -102,6 +102,13 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = e.message);
+    } catch (_) {
+      // Widened from `on ApiException` only (2026-08-20) — any OTHER
+      // exception type used to leave `_errorMessage` unset (so the pending
+      // spinner stayed up) AND no follow-up poll scheduled, stranding the
+      // investor on this screen forever.
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Something went wrong. Please try again.');
     }
   }
 

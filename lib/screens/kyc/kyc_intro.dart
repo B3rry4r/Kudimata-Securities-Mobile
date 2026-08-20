@@ -12,7 +12,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
-import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -63,14 +62,22 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
         context.go(_stepRoutes[draft.currentStep] ?? Routes.kycBvn);
         return;
       }
-    } on ApiException {
-      // Best-effort — if the resume check itself fails, fall through to a
-      // normal fresh start rather than stranding the investor on this
-      // screen. Step 1 re-checks/re-creates a draft regardless.
+      context.go(Routes.kycBvn);
+    } catch (_) {
+      // Best-effort — if the resume check itself fails for ANY reason
+      // (network, an unexpected response shape, not just ApiException —
+      // widened 2026-08-20 after this got reported stuck on the loading
+      // spinner forever despite the underlying request succeeding: a
+      // narrower `on ApiException` catch let some other exception type
+      // propagate uncaught, which meant `_busy` never got reset since the
+      // `finally` below didn't exist yet either), fall through to a normal
+      // fresh start rather than stranding the investor on this screen. Step
+      // 1 re-checks/re-creates a draft regardless.
+      if (!mounted) return;
+      context.go(Routes.kycBvn);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
-    if (!mounted) return;
-    setState(() => _busy = false);
-    context.go(Routes.kycBvn);
   }
 
   @override
