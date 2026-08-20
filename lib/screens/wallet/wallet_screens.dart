@@ -388,10 +388,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Future<void> _getReceipt() async {
     setState(() => _receiptBusy = true);
     try {
+      // Backend note (transaction_repository.dart's receiptUrl() doc
+      // comment): receipt generation is a known stub — a placeholder URL,
+      // no real PDF, and NO email is ever sent from this endpoint. This
+      // copy used to promise "check your email shortly" (2026-08-20,
+      // reported: "transaction get receipt is not sending nothing to my
+      // mail" — correct, nothing ever does), which was actively false
+      // rather than just an unfinished feature. Says so honestly instead
+      // until real receipt generation + delivery exists.
       await _repo.receiptUrl(widget.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Receipt requested — check your email shortly.')),
+        const SnackBar(content: Text('Receipts are not available yet — check back soon.')),
       );
     } on ApiException catch (e) {
       if (!mounted) return;

@@ -8,12 +8,22 @@
 // fetched together with Future.wait behind ONE `_future` field/FutureBuilder
 // — a single loading/error state for the whole pushed screen, same as every
 // other single-`_future` screen in this app; there's no cross-section
-// dependency that would justify two independent FutureBuilders. Tapping a
-// row's download button fetches a presigned URL (GET
-// /statements/:id/download-url) and launches it externally — there is no
-// in-app document viewer to build one for (same seam legal_screen.dart uses).
+// dependency that would justify two independent FutureBuilders.
+//
+// DOWNLOAD (2026-08-20 — "what are the statements and documents section
+// for??"): each row's download button used to fetch a presigned URL (GET
+// /statements/:id/download-url) and launch it externally. The backend's
+// own statements.service.ts header comment documents that no real PDF is
+// ever generated in this phase — every row's fileObjectKey points at an
+// S3 object that was never uploaded, so that URL always 404s (S3
+// NoSuchKey) the moment it's opened, the same gap Account -> Legal hit
+// before it stopped using S3 links entirely. Statements are real binary
+// PDFs, not text content this app already has server-side (unlike a legal
+// document's sections), so there's no in-app-viewer workaround available
+// here — the button now tells the investor honestly that downloads
+// aren't ready yet, instead of silently launching a link that just shows
+// a raw S3 error in their browser.
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/statements_repository.dart';
@@ -42,17 +52,21 @@ class _StatementsScreenState extends State<StatementsScreen> {
   }
 
   Future<void> _download(Statement statement) async {
-    try {
-      final url = await _repo.downloadUrl(statement.id);
-      if (url.isEmpty) return;
-      final uri = Uri.tryParse(url);
-      if (uri == null) return;
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      // No in-app surface to report this on (an icon-only download button)
-      // — matches this screen's original no-op-on-failure seam; the
-      // download is a best-effort external hand-off.
-    }
+    // Backend note (statements.service.ts's own header comment): no real
+    // PDF is ever rendered in this phase — every statement/contract-note
+    // row's fileObjectKey points at an S3 object that was never actually
+    // uploaded, so the presigned URL this fetches 404s (S3 NoSuchKey) the
+    // moment it's opened, same underlying gap the Account -> Legal screen
+    // hit before it stopped using S3 links entirely. Statements are real
+    // binary PDFs (not text content this app already has, like a legal
+    // document's sections), so there's no equivalent in-app-viewer
+    // workaround available here — this now tells the investor honestly
+    // that it isn't ready, instead of silently launching a link that was
+    // just going to show a raw S3 XML error in their browser.
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Downloads are not available yet — check back soon.')),
+    );
   }
 
   @override
