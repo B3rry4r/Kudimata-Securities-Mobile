@@ -13,10 +13,10 @@ class Routes {
   static const String splash = '/';
   static const String signup = '/signup';
   static const String otp = '/otp';
-  // Terms of service + privacy policy — ONE combined screen/tick
-  // (2026-08-20 consolidation, see terms_and_privacy_screen.dart), accepted
-  // right after OTP verification, before passcode/KYC. Path segment still
-  // says "suitability" for historical reasons; see the note above
+  // Terms of service + privacy policy + risk disclosure — ONE combined
+  // screen/tick (2026-08-20 consolidation, see terms_and_privacy_screen.dart),
+  // accepted right after OTP verification, before passcode/KYC. Path segment
+  // still says "suitability" for historical reasons; see the note above
   // riskDisclosure below.
   static const String termsOfService = '/suitability/terms';
   static const String createPasscode = '/passcode/create';
@@ -45,11 +45,14 @@ class Routes {
   // ── Suitability ──────────────────────────────────────────────────────────
   static const String questionnaire = '/suitability';
   static const String suitabilityResult = '/suitability/result';
-  // Risk disclosure + client agreement — ONE combined screen/tick
-  // (2026-08-20 consolidation, see risk_and_agreement_screen.dart),
-  // investment-specific documents accepted right after the suitability
-  // result (unlike termsOfService above, which moved to account-creation
-  // time).
+  // Client agreement — its own single-document screen (see
+  // client_agreement_screen.dart), accepted right after the suitability
+  // result. Risk Disclosure used to be paired with it here too, but moved
+  // up to join termsOfService above (2026-08-20) — Client Agreement is the
+  // one document that stays gated behind suitability, since it's the actual
+  // binding contract to become a trading client. Path segment/constant name
+  // (riskDisclosure, '/suitability/risk') is unchanged from before that
+  // move, purely to avoid an unnecessary router churn.
   static const String riskDisclosure = '/suitability/risk';
 
   // ── Tab roots (StatefulShellRoute / indexedStack) ────────────────────────

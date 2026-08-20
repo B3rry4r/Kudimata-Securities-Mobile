@@ -1,28 +1,28 @@
-// Shared scaffold for the two onboarding legal-acceptance screens: terms of
-// service + privacy policy (account creation), and risk disclosure + client
-// agreement (post-suitability). Each screen in this app's flow now covers
-// a PAIR of documents with ONE checkbox and ONE accept action — previously
-// each of the four documents was its own screen with its own tick,
-// requiring 4 separate taps total (2026-08-20, user directive: "the terms
-// of service and privacy policy... why should not be two ticks... users
-// should read through all and click one agree checkbox that covers it
-// all" — same complaint, same fix, for risk disclosure + client
-// agreement).
+// Shared scaffold for the onboarding legal-acceptance screens. Each screen
+// in this app's flow covers a GROUP of documents with ONE checkbox and ONE
+// accept action (2026-08-20 consolidation — every one of the four legal
+// documents used to be its own screen with its own tick, requiring 4
+// separate taps total; user directive: "the terms of service and privacy
+// policy... why should not be two ticks... users should read through all
+// and click one agree checkbox that covers it all").
 //
-// Fetches BOTH documents (GET /legal-documents/content/:kind, called once
-// per kind) and renders them in one scrollable view with a divider between
-// them — content is still backend-driven, not hardcoded, same as before.
-// Tapping the primary button posts BOTH acknowledgements in sequence
-// (POST /compliance-acknowledgements — one call per kind; there is no
-// combined-kind endpoint, and none is needed) and then runs whatever the
-// specific pairing needs to happen next.
+// Widened from a fixed two-document pairing to an arbitrary-length `kinds`
+// list the same day (further user directive: "the privacy policy, terms
+// of service and risk disclosure... stack them in one screen so user just
+// scrolls down and accept one time not moving between screens") — Client
+// Agreement was deliberately NOT named in that request, so it now stands
+// alone on its own single-document screen built on this same widget (see
+// client_agreement_screen.dart) rather than being folded in too.
 //
-// The two concrete screens (terms_and_privacy_screen.dart,
-// risk_and_agreement_screen.dart) are thin wrappers supplying the two
-// kinds/copy/navigation — kept separate from this shared widget since each
-// pairing's post-accept behavior genuinely differs (terms+privacy just
-// continues to passcode creation; risk+agreement also completes
-// suitability and signs the investor in).
+// Fetches every document (GET /legal-documents/content/:kind, called once
+// per kind, all concurrently via `.wait`) and renders them in one
+// scrollable view with a divider between each — content is still
+// backend-driven, not hardcoded, same as before. Tapping the primary button
+// posts one acknowledgement per kind IN ORDER (POST
+// /compliance-acknowledgements — there is no combined-kind endpoint, and
+// none is needed); if any one of them fails, the ones after it never fire
+// (never record "agreed to X" without also recording "agreed to" everything
+// the investor was shown before it).
 import 'package:flutter/material.dart';
 
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -33,51 +33,45 @@ import 'package:kudimata_invest/data/repositories/legal_documents_repository.dar
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 
-class DualLegalAcceptanceScreen extends StatefulWidget {
-  const DualLegalAcceptanceScreen({
+class LegalAcceptanceScreen extends StatefulWidget {
+  const LegalAcceptanceScreen({
     super.key,
-    required this.firstKind,
-    required this.secondKind,
+    required this.kinds,
     required this.screenTitle,
     required this.checkboxLabel,
     required this.buttonLabel,
     required this.onAccepted,
-  });
+  }) : assert(kinds.length > 0, 'LegalAcceptanceScreen needs at least one document kind');
 
-  /// 'terms_of_service' | 'privacy_policy' | 'risk_disclosure' | 'client_agreement'.
-  final String firstKind;
-  final String secondKind;
+  /// One or more of 'terms_of_service' | 'privacy_policy' | 'risk_disclosure'
+  /// | 'client_agreement', in the order they should be read/acknowledged.
+  final List<String> kinds;
   final String screenTitle;
   final String checkboxLabel;
   final String buttonLabel;
 
-  /// Runs after BOTH acknowledgements are successfully persisted (in order:
-  /// firstKind, then secondKind) — the specific pairing's own next-step
-  /// navigation (and, for the last pairing in onboarding, completing it).
+  /// Runs after EVERY kind's acknowledgement is successfully persisted, in
+  /// `kinds` order — the specific screen's own next-step navigation (and,
+  /// for the last one in onboarding, completing it).
   final Future<void> Function(BuildContext context) onAccepted;
 
   @override
-  State<DualLegalAcceptanceScreen> createState() => _DualLegalAcceptanceScreenState();
+  State<LegalAcceptanceScreen> createState() => _LegalAcceptanceScreenState();
 }
 
-class _DualLegalAcceptanceScreenState extends State<DualLegalAcceptanceScreen> {
+class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
   late final _legalRepo = LegalDocumentsRepository(AppScope.read(context).apiClient);
   late final _complianceRepo = ComplianceRepository(AppScope.read(context).apiClient);
-  late Future<(LegalDocument, LegalDocument)> _future = _load();
+  late Future<List<LegalDocument>> _future = _load();
 
   bool _agreed = false;
   bool _submitting = false;
   String? _error;
 
-  Future<(LegalDocument, LegalDocument)> _load() async {
-    // Both documents are independent GETs — fetched concurrently (`.wait`,
-    // matching this app's usual two-future-one-screen convention) rather
-    // than sequentially, so a slow first document doesn't delay the second.
-    final (first, second) = await (
-      _legalRepo.getContent(widget.firstKind),
-      _legalRepo.getContent(widget.secondKind),
-    ).wait;
-    return (first, second);
+  Future<List<LegalDocument>> _load() async {
+    // Independent GETs, fetched concurrently rather than sequentially so a
+    // slow document doesn't delay the rest.
+    return Future.wait(widget.kinds.map(_legalRepo.getContent));
   }
 
   Future<void> _accept() async {
@@ -86,11 +80,11 @@ class _DualLegalAcceptanceScreenState extends State<DualLegalAcceptanceScreen> {
       _error = null;
     });
     try {
-      // Sequential, not parallel — if the first acknowledgement fails, the
-      // second must not fire (never record "agreed to the client
-      // agreement" without also recording "agreed to risk disclosure").
-      await _complianceRepo.acknowledge(kind: widget.firstKind);
-      await _complianceRepo.acknowledge(kind: widget.secondKind);
+      // Sequential, not parallel — if an earlier acknowledgement fails, the
+      // later ones must not fire.
+      for (final kind in widget.kinds) {
+        await _complianceRepo.acknowledge(kind: kind);
+      }
       if (!mounted) return;
       await widget.onAccepted(context);
     } on ApiException catch (e) {
@@ -115,7 +109,7 @@ class _DualLegalAcceptanceScreenState extends State<DualLegalAcceptanceScreen> {
               KScreenHead(title: widget.screenTitle),
               const SizedBox(height: 16),
               Expanded(
-                child: FutureBuilder<(LegalDocument, LegalDocument)>(
+                child: FutureBuilder<List<LegalDocument>>(
                   future: _future,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -126,10 +120,10 @@ class _DualLegalAcceptanceScreenState extends State<DualLegalAcceptanceScreen> {
                         onPrimary: () => setState(() => _future = _load()),
                       );
                     }
-                    final (first, second) = snapshot.data!;
-                    // Checkbox + accept button only render once BOTH
-                    // documents have actually loaded — agreeing to
-                    // something you never saw isn't a real acceptance.
+                    final docs = snapshot.data!;
+                    // Checkbox + accept button only render once EVERY
+                    // document has actually loaded — agreeing to something
+                    // you never saw isn't a real acceptance.
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -141,11 +135,14 @@ class _DualLegalAcceptanceScreenState extends State<DualLegalAcceptanceScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  ..._buildDocument(first),
-                                  const SizedBox(height: 28),
-                                  Container(height: 1, color: KColor.hairline),
-                                  const SizedBox(height: 28),
-                                  ..._buildDocument(second),
+                                  for (var i = 0; i < docs.length; i++) ...[
+                                    if (i != 0) ...[
+                                      const SizedBox(height: 28),
+                                      Container(height: 1, color: KColor.hairline),
+                                      const SizedBox(height: 28),
+                                    ],
+                                    ..._buildDocument(docs[i]),
+                                  ],
                                 ],
                               ),
                             ),

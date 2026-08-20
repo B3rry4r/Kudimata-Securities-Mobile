@@ -42,7 +42,7 @@ import '../screens/kyc/outcome_not_approved.dart';
 import '../screens/suitability/questionnaire_screen.dart';
 import '../screens/suitability/suitability_result_screen.dart';
 import '../screens/suitability/terms_and_privacy_screen.dart';
-import '../screens/suitability/risk_and_agreement_screen.dart';
+import '../screens/suitability/client_agreement_screen.dart';
 
 // Tab roots.
 import '../screens/home/home_screen.dart';
@@ -182,7 +182,7 @@ GoRouter buildRouter(AppState state) {
       ),
       // Combined risk-disclosure + client-agreement screen (2026-08-20
       // consolidation) — one tick covers both.
-      GoRoute(path: Routes.riskDisclosure, builder: (_, _) => themed(() => RiskAndAgreementScreen())),
+      GoRoute(path: Routes.riskDisclosure, builder: (_, _) => themed(() => ClientAgreementScreen())),
 
       // ── Pushed detail (top-level — cover the shell, no tab bar) ─────────--
       GoRoute(path: Routes.notifications, builder: (_, _) => themed(() => NotificationsScreen())),

@@ -98,7 +98,7 @@ class _LegalList extends StatelessWidget {
 }
 
 /// Read-only in-app viewer for a single LegalDocument's sections — no
-/// checkbox/accept affordance (unlike DualLegalAcceptanceScreen, which this
+/// checkbox/accept affordance (unlike LegalAcceptanceScreen, which this
 /// mirrors the rendering of), since this is a settings-side reference view
 /// of a document already accepted (or not yet reached) during onboarding,
 /// not an acceptance flow. Uses the SAME `sections` content GET
