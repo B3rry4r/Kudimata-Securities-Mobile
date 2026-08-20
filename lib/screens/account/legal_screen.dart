@@ -3,15 +3,27 @@
 //
 // Wired to the LegalDocument resource per lib/data/api/README.md's
 // FutureBuilder convention: GET /legal-documents replaces the old hardcoded
-// `_docs` list, and tapping a row fetches a presigned download URL (GET
-// /legal-documents/:id/download-url) and launches it externally — there is
-// no in-app document viewer to build one for.
+// `_docs` list.
+//
+// IN-APP VIEWER (2026-08-20, user directive: "why can't the legal side of
+// the app be the same process instead of links?") — previously tapping a
+// row fetched a presigned S3 download URL (GET /legal-documents/:id/
+// download-url) and launched it externally. That URL pointed at a
+// fileObjectKey that was never actually uploaded to S3 (a known,
+// pre-existing gap — every doc's fileObjectKey is a placeholder), so this
+// always 404'd (S3 NoSuchKey) in practice. GET /legal-documents already
+// returns each document's full `sections` content (same DTO the four
+// onboarding acceptance screens' GET /legal-documents/content/:kind uses —
+// see legal_documents_repository.dart's LegalDocument), so this screen now
+// pushes an in-app read-only viewer instead of ever touching S3 at all —
+// one process for legal content everywhere in the app, not two.
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
 class LegalScreen extends StatefulWidget {
@@ -25,18 +37,10 @@ class _LegalScreenState extends State<LegalScreen> {
   late final _repo = LegalDocumentsRepository(AppScope.read(context).apiClient);
   late Future<List<LegalDocument>> _future = _repo.list();
 
-  Future<void> _open(LegalDocument doc) async {
-    try {
-      final url = await _repo.downloadUrl(doc.id);
-      if (url.isEmpty) return;
-      final uri = Uri.tryParse(url);
-      if (uri == null) return;
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      // No in-app surface to report this on (a chevron row, not a form) —
-      // matches this screen's original no-op-on-failure seam; the download
-      // is a best-effort external hand-off.
-    }
+  void _open(LegalDocument doc) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => _LegalDocumentViewerScreen(doc: doc)),
+    );
   }
 
   @override
@@ -89,6 +93,59 @@ class _LegalList extends StatelessWidget {
             onTap: () => onTap(docs[i]),
           ),
       ],
+    );
+  }
+}
+
+/// Read-only in-app viewer for a single LegalDocument's sections — no
+/// checkbox/accept affordance (unlike DualLegalAcceptanceScreen, which this
+/// mirrors the rendering of), since this is a settings-side reference view
+/// of a document already accepted (or not yet reached) during onboarding,
+/// not an acceptance flow. Uses the SAME `sections` content GET
+/// /legal-documents already returned in this screen's list() call — no
+/// second network request.
+class _LegalDocumentViewerScreen extends StatelessWidget {
+  const _LegalDocumentViewerScreen({required this.doc});
+  final LegalDocument doc;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: KColor.bg,
+      appBar: KDetailHeader(title: doc.title),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(KSpace.gutter, 20, KSpace.gutter, 32),
+          child: doc.sections.isEmpty
+              ? const KEmptyView(
+                  icon: 'card',
+                  title: 'No content yet',
+                  message: "This document's content hasn't been published yet.",
+                )
+              : SingleChildScrollView(
+                  child: KCard(
+                    padding: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(doc.sub, style: KType.micro(color: KColor.ink3).tnum),
+                          const SizedBox(height: 18),
+                          for (var i = 0; i < doc.sections.length; i++) ...[
+                            if (i != 0) const SizedBox(height: 22),
+                            KEyebrow(doc.sections[i].heading),
+                            const SizedBox(height: 8),
+                            Text(doc.sections[i].body, style: KType.body(color: KColor.ink2)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }
