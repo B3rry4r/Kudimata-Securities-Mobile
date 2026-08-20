@@ -577,6 +577,20 @@ class _LogInScreenState extends State<LogInScreen> {
 /// those flags accurately so Home can show the right "Complete your KYC"
 /// prompt (or none, if already done) — never to redirect away from Home.
 Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
+  await refreshKycGatingState(context);
+  if (!context.mounted) return;
+  AppScope.read(context).setSignedIn(true);
+  context.go(Routes.home);
+}
+
+/// The actual KYC/suitability fetch + AppState update [hydrateGatingStateAndRoute]
+/// runs at login — pulled out on its own (2026-08-20, "poll the KYC endpoint
+/// ... so we can see changes instantly without refreshing since no realtime
+/// yet") so home_screen.dart can call it repeatedly while the investor sits
+/// on Home waiting for a staff decision (or the new auto-approve), without
+/// also re-running the sign-in/navigate side effects this only needs once,
+/// at login.
+Future<void> refreshKycGatingState(BuildContext context) async {
   final app = AppScope.read(context);
   final kycRepo = KycRepository(app.apiClient);
   final suitabilityRepo = SuitabilityRepository(app.apiClient);
@@ -632,8 +646,4 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
     app.setSuitabilityComplete(suitabilityComplete);
     app.setKycDraftProgress(kyc?.isDraft == true ? kyc!.currentStep : null, kyc?.isDraft == true ? kyc!.totalSteps : null);
   }
-  app.setSignedIn(true);
-
-  if (!context.mounted) return;
-  context.go(Routes.home);
 }

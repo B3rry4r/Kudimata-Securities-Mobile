@@ -78,6 +78,33 @@ class WalletRepository {
     return _formatNaira(kobo);
   }
 
+  /// GET /transactions/dev-fund/enabled (2026-08-20, "I need an easy way to
+  /// simulate funding an account... when flutterwave is on test"). The
+  /// backend gates this on the SAME sandbox-vs-live signal
+  /// FlutterwaveAdapter itself uses (FLWSECK_TEST- vs FLWSECK-), so this
+  /// button can never appear pointed at a live Flutterwave key, however this
+  /// gets called. Never throws on a network failure — just hides the
+  /// button, same treatment as any other "nice to have" affordance.
+  Future<bool> devFundEnabled() async {
+    try {
+      final response = await _client.get('/transactions/dev-fund/enabled');
+      final json = response.data as Map<String, dynamic>;
+      return json['enabled'] as bool? ?? false;
+    } on Object {
+      return false;
+    }
+  }
+
+  /// POST /transactions/dev-fund — instantly credits the wallet in sandbox
+  /// mode, no real Flutterwave checkout involved. Unlike [fund], the
+  /// returned Transaction is already `completed`.
+  Future<Txn> devFund({required int amountKobo}) async {
+    final response = await _client.post('/transactions/dev-fund', data: {
+      'amountKobo': amountKobo,
+    });
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// POST /transactions/fund. [amountKobo] is the amount the Add money sheet
   /// collected, converted from its entered naira string; [method] is
   /// 'card' or 'transfer' (registry.json enum) — advisory only now, since

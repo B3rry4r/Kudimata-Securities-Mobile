@@ -12,6 +12,7 @@
 // Both are fetched together (started concurrently, awaited into one record)
 // so the screen has a single loading/error state, matching the README's
 // one-future-per-screen shape.
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,7 +32,7 @@ import 'wallet_flows.dart';
 // 1 · WALLET HOME (root tab — shell provides the bottom nav).
 // ─────────────────────────────────────────────────────────────────────────────
 
-typedef _WalletData = ({String balance, List<Txn> txns});
+typedef _WalletData = ({String balance, List<Txn> txns, bool devFundEnabled});
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -45,12 +46,71 @@ class _WalletScreenState extends State<WalletScreen> {
   late final _txnRepo = TransactionRepository(AppScope.read(context).apiClient);
   late Future<_WalletData> _future = _load();
 
+  // POLLING (2026-08-20, "poll the... wallets so we can see changes
+  // instantly without refreshing since no realtime yet"). A test-fund tap,
+  // a real Flutterwave webhook landing, or a market order filling can all
+  // move the balance while this tab just sits open — this silently
+  // refetches in the background (no spinner, no error state of its own; a
+  // single flaky tick just leaves the last-good numbers showing) rather
+  // than reassigning `_future`, which would otherwise flash the whole
+  // screen back to KLoadingView on every tick.
+  Timer? _pollTimer;
+  static const _pollInterval = Duration(seconds: 8);
+  bool _devFundBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _silentRefresh());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
   Future<_WalletData> _load() async {
     // Record `.wait`, not fire-then-sequential-await — see home_screen.dart's
     // _load() for why (an early rejection would otherwise leave the other
     // future's eventual rejection unlistened-to: an "unhandled exception").
-    final (balance, page) = await (_walletRepo.balance(), _txnRepo.list()).wait;
-    return (balance: balance, txns: page.data);
+    final (balance, page, devFundEnabled) =
+        await (_walletRepo.balance(), _txnRepo.list(), _walletRepo.devFundEnabled()).wait;
+    return (balance: balance, txns: page.data, devFundEnabled: devFundEnabled);
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final data = await _load();
+      if (!mounted) return;
+      setState(() => _future = Future.value(data));
+    } on Object {
+      // A poll tick failing (flaky network blip) shouldn't blank out an
+      // already-loaded screen — just try again next tick.
+    }
+  }
+
+  Future<void> _devFund() async {
+    setState(() => _devFundBusy = true);
+    try {
+      // ₦10,000 — a fixed, convenient amount for exercising the market-buy
+      // wallet-balance gate (see the backend's applyWalletSideEffect); not
+      // user-entered, since this is a one-tap test convenience, not a real
+      // funding flow.
+      await _walletRepo.devFund(amountKobo: 1_000_000);
+      if (!mounted) return;
+      final data = await _load();
+      if (!mounted) return;
+      setState(() => _future = Future.value(data));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Added ₦10,000 (test funding)')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _devFundBusy = false);
+    }
   }
 
   @override
@@ -76,7 +136,13 @@ class _WalletScreenState extends State<WalletScreen> {
                 );
               }
               final data = snapshot.data!;
-              return _WalletBody(balance: data.balance, txns: data.txns);
+              return _WalletBody(
+                balance: data.balance,
+                txns: data.txns,
+                showDevFund: data.devFundEnabled,
+                devFundBusy: _devFundBusy,
+                onDevFund: _devFund,
+              );
             },
           ),
         ),
@@ -87,9 +153,22 @@ class _WalletScreenState extends State<WalletScreen> {
 
 // Same widget tree the mock version built — fed live balance/txns.
 class _WalletBody extends StatelessWidget {
-  const _WalletBody({required this.balance, required this.txns});
+  const _WalletBody({
+    required this.balance,
+    required this.txns,
+    required this.showDevFund,
+    required this.devFundBusy,
+    required this.onDevFund,
+  });
   final String balance;
   final List<Txn> txns;
+
+  /// True only when the backend reports Flutterwave is on a sandbox key
+  /// (GET /transactions/dev-fund/enabled) — never shown against a live key,
+  /// however this build got configured.
+  final bool showDevFund;
+  final bool devFundBusy;
+  final VoidCallback onDevFund;
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +203,20 @@ class _WalletBody extends StatelessWidget {
             ),
           ],
         ),
+
+        // Sandbox-only convenience (2026-08-20) — an instant ₦10,000 test
+        // credit, no real Flutterwave checkout, for exercising the
+        // wallet-balance gate on a market buy. Only ever rendered when the
+        // backend itself confirms Flutterwave is on a sandbox key.
+        if (showDevFund) ...[
+          const SizedBox(height: 10),
+          KButton(
+            label: 'Add ₦10,000 (test funding)',
+            variant: KButtonVariant.ghost,
+            loading: devFundBusy,
+            onPressed: devFundBusy ? null : onDevFund,
+          ),
+        ],
         const SizedBox(height: 28),
 
         // Recent header — eyebrow + Orders shortcut.

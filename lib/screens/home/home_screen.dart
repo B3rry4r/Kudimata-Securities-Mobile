@@ -22,6 +22,7 @@
 //     HoldingsRepository already resolves — see that file's header. pageSize: 5
 //     keeps this a "preview" card, matching its "See all → portfolio" link)
 //   AssetRepository.trending()      GET /assets/trending           — trending list
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -31,6 +32,7 @@ import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/onboarding/log_in_screen.dart' show refreshKycGatingState;
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -79,10 +81,39 @@ class _HomeScreenState extends State<HomeScreen> {
   // trigger a redundant second _load().
   late int _loadedWatchlistVersion;
 
+  // POLLING (2026-08-20, "poll the KYC endpoint... so we can see changes
+  // instantly without refreshing since no realtime yet"). A staff decision
+  // (or the auto-approve path) can flip AppState.kycApproved while an
+  // investor just sits on Home — without this, they'd only see it after
+  // force-quitting/relaunching, since hydrateGatingStateAndRoute otherwise
+  // only runs once, at login. Same 8s interval submitted.dart's own polling
+  // uses, for consistency; stops itself the moment kycApproved flips true —
+  // no point re-checking a decision that already landed.
+  Timer? _kycPollTimer;
+  static const _kycPollInterval = Duration(seconds: 8);
+
   @override
   void initState() {
     super.initState();
     _loadedWatchlistVersion = AppScope.read(context).watchlistVersion;
+    final app = AppScope.read(context);
+    if (app.kycSubmitted && !app.kycApproved) {
+      _kycPollTimer = Timer.periodic(_kycPollInterval, (_) => _pollKycStatus());
+    }
+  }
+
+  Future<void> _pollKycStatus() async {
+    await refreshKycGatingState(context);
+    if (!mounted) return;
+    if (AppScope.read(context).kycApproved) {
+      _kycPollTimer?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _kycPollTimer?.cancel();
+    super.dispose();
   }
 
   Future<_HomeData> _load() async {
