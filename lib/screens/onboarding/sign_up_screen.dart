@@ -110,6 +110,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
               onChanged: _showErrors ? (_) => setState(() {}) : null,
               error: _showErrors && !_lastNameValid ? 'Enter your last name' : null,
             ),
+            const SizedBox(height: 14),
+            // 2026-08-20 directive: "a note or something that tells users
+            // beautifully please and not hard to miss, that name must
+            // match what is on their bvn and nin" — a real reason for
+            // this, not just a suggestion: kyc-submissions.service.ts's
+            // name cross-check (namesMatch) compares whatever the
+            // investor typed HERE against the registry's own name on the
+            // BVN/NIN record, and a mismatch is a genuine reject reason.
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: KColor.indicatorTint,
+                borderRadius: KRadii.cardR,
+                border: Border.all(color: KColor.indicator.withValues(alpha: 0.24), width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Use your legal name',
+                      style: KType.cardTitle(color: KColor.indicator, w: KWeight.semibold)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Enter your name exactly as it appears on your BVN and NIN — a mismatch here will fail identity verification later.',
+                    style: KType.micro(color: KColor.ink2),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
             KInput(
               label: 'Email',
