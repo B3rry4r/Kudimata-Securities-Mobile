@@ -606,7 +606,14 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   }
 
   if (!kycFetchFailed) {
-    final kycSubmitted = kyc != null;
+    // A row that's still 'draft' (2026-08-20, phased KYC) is NOT a real
+    // submission — findMine/GET /kyc-submissions/me returns the investor's
+    // MOST RECENT row regardless of status, and a fresh draft's
+    // `submittedAt` defaults to creation time, so it's often the most
+    // recent row while it's in progress. Treating any non-null `kyc` as
+    // "submitted" (the old logic) would wrongly flip kycSubmitted=true for
+    // someone who's only, say, 2/5 steps into KYC.
+    final kycSubmitted = kyc != null && !kyc.isDraft;
     final kycApproved = kyc?.isApproved ?? false;
 
     bool suitabilityComplete = false;
@@ -623,6 +630,7 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
     app.setKycSubmitted(kycSubmitted);
     app.setKycApproved(kycApproved);
     app.setSuitabilityComplete(suitabilityComplete);
+    app.setKycDraftProgress(kyc?.isDraft == true ? kyc!.currentStep : null, kyc?.isDraft == true ? kyc!.totalSteps : null);
   }
   app.setSignedIn(true);
 

@@ -1,17 +1,16 @@
-// KYC 6 — next of kin (post-check; no step strip). Name / relationship / phone.
-// Mirrors NextOfKin. Continue submits the application: POST /kyc-submissions
-// with the fields accumulated across the earlier KYC screens (KycFormState),
-// then registers any documents uploaded earlier (id_upload.dart / liveness.dart)
-// against the new submission id, then sets kycSubmitted and advances to the
-// Submitted (pending review) screen. See lib/data/api/README.md,
-// lib/data/repositories/kyc_repository.dart (submission) and
-// lib/data/repositories/kyc_document_repository.dart (document
-// registration).
+// KYC 7 — next of kin (step 5 of 5, final). Name / relationship / phone.
+// Continue finalizes the draft: POST /kyc-submissions/draft/finalize
+// (2026-08-20, phased-KYC directive — was POST /kyc-submissions, the
+// all-at-once call, before this) — requires steps 2-4 (id document,
+// liveness, utility bill) already done, computes the real vendorDecision
+// from everything accumulated across the earlier steps, and leaves
+// 'draft' for good. Then sets kycSubmitted, clears the held draft id
+// (KycFormState.reset), and advances to the Submitted (pending review)
+// screen. See lib/data/repositories/kyc_repository.dart.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
-import 'package:kudimata_invest/data/repositories/kyc_document_repository.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -41,29 +40,16 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
 
   Future<void> _submit() async {
     final app = AppScope.read(context);
-    final kycForm = app.kycForm;
-    kycForm.setNextOfKinName(_name.text);
-    kycForm.setNextOfKinRelationship(_rel.text);
-    kycForm.setNextOfKinPhone(_phone.text);
-
     setState(() => _busy = true);
     final repo = KycRepository(app.apiClient);
-    final docRepo = KycDocumentRepository(app.apiClient);
     try {
-      final submissionId = await repo.submit(kycForm.toSubmissionBody());
-      // Documents uploaded on kyc-id / kyc-liveness could only stash
-      // objectKey+documentKind in KycFormState (no kycSubmissionId existed
-      // yet). Register every accumulated document against the submission
-      // that now exists, completing that handoff.
-      for (final doc in kycForm.documents) {
-        await docRepo.registerDocument(
-          kycSubmissionId: submissionId,
-          objectKey: doc.objectKey,
-          documentName: _documentName(doc.documentKind),
-          documentKind: doc.documentKind,
-        );
-      }
+      await repo.finalizeDraft(
+        nextOfKinName: _name.text,
+        nextOfKinRelationship: _rel.text,
+        nextOfKinPhone: _phone.text,
+      );
       if (!mounted) return;
+      app.kycForm.reset();
       app.setKycSubmitted(true);
       context.go(Routes.kycSubmitted);
     } on ApiException catch (e) {
@@ -73,19 +59,6 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
     }
   }
 
-  /// registry.json's KycDocument has no separate "display name" collected
-  /// anywhere upstream — only objectKey + documentKind survive to this
-  /// screen (KycFormState.documents) — so this derives a human-readable
-  /// `documentName` from the enum kind for the POST /kyc-documents body.
-  String _documentName(String kind) => switch (kind) {
-        'nin' => 'NIN',
-        'passport' => 'Passport',
-        'drivers_licence' => "Driver's licence",
-        'proof_of_address' => 'Proof of address',
-        'liveness_selfie' => 'Liveness selfie',
-        _ => kind,
-      };
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,7 +67,8 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KycTopBar(onBack: () => context.go(Routes.kycLiveness)),
+            KycTopBar(onBack: () => context.go(Routes.kycUtilityBill)),
+            const KycStepProgress(total: 5, current: 5),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

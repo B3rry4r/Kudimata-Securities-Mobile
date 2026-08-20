@@ -56,10 +56,10 @@ void main() {
       '/signup', '/otp', '/passcode/create', '/passcode/confirm', '/biometric',
       '/onboarding/personal', '/login', '/reset',
       // kyc
-      '/kyc', '/kyc/bvn', '/kyc/id', '/kyc/liveness',
+      '/kyc', '/kyc/bvn', '/kyc/id', '/kyc/liveness', '/kyc/utility-bill',
       '/kyc/next-of-kin', '/kyc/submitted', '/kyc/approved',
       // suitability
-      '/suitability', '/suitability/result', '/suitability/risk', '/suitability/agreement',
+      '/suitability', '/suitability/result', '/suitability/terms', '/suitability/risk',
     ];
 
     // Let a page transition fully settle so we test one route at a time (the

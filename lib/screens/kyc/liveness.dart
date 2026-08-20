@@ -1,21 +1,20 @@
-// KYC 4 — liveness selfie (step 3 of 4). On mobile: a framed selfie capture
+// KYC 4 — liveness selfie (step 3 of 5). On mobile: a framed selfie capture
 // — a live front-camera preview inside a circle with a dashed guidance
 // ring (or the captured photo once taken), plus a round shutter button. On
 // web: a file picker instead (2026-08-19) — package:camera's web support is
 // unreliable across browsers for this kind of in-place capture UI, and
-// testing against real LumiID production keys needs a dependable path to
-// actually get a selfie uploaded, not a flaky live preview. Both paths
-// converge on the exact same upload flow (_uploadAndContinue).
+// testing against real production keys needs a dependable path to actually
+// get a selfie uploaded, not a flaky live preview. Both paths converge on
+// the exact same upload flow (_uploadAndContinue).
 //
 // Real camera capture (package:camera, in-app live preview + in-place
 // takePicture()) + the shared presigned-upload flow: POST
 // /kyc-documents/upload-url -> PUT the bytes to the returned uploadUrl ->
-// KycFormState.registerUploadedDocument(objectKey, 'liveness_selfie'). See
-// lib/data/repositories/kyc_document_repository.dart for why the PUT
-// bypasses the shared ApiClient, and kyc_form_state.dart for why this screen
-// does NOT call POST /kyc-documents itself (no kycSubmissionId exists yet —
-// that only comes from the final POST /kyc-submissions call on the
-// next-of-kin screen).
+// POST /kyc-documents (registers against the draft created on step 1 —
+// see lib/screens/kyc/kyc_form_state.dart). The ACTUAL liveness
+// verification doesn't happen here — this screen only gets the selfie
+// uploaded+registered; kyc-checking (next screen, repurposed 2026-08-20)
+// is what calls POST /kyc-submissions/draft/liveness to trigger it.
 //
 // 2026-08-14 (BUG-02): previously used image_picker's ImageSource.camera,
 // which hands off to the OS's own camera app on a separate screen — no live
@@ -138,7 +137,7 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(onBack: () => context.go(Routes.kycId)),
-            const KycStepProgress(current: 3),
+            const KycStepProgress(total: 5, current: 3),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -355,19 +354,32 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
     await _uploadAndContinue(bytes, shot.name.isNotEmpty ? shot.name : 'liveness-selfie.jpg');
   }
 
-  /// Shared tail for both capture paths: presigned upload -> register on
-  /// [KycFormState] -> advance to kyc-checking. `_busy`/`_capturedPath`/
+  /// Shared tail for both capture paths: presigned upload -> register
+  /// against the draft (POST /kyc-documents) -> advance to kyc-checking,
+  /// which triggers the actual verification. `_busy`/`_capturedPath`/
   /// `_pickedBytes` are set by the caller before this runs.
   Future<void> _uploadAndContinue(Uint8List bytes, String fileName) async {
+    final draftId = AppScope.read(context).kycForm.draftId;
+    if (draftId == null) {
+      setState(() {
+        _busy = false;
+        _error = 'Something went wrong — please restart verification.';
+      });
+      return;
+    }
+
     try {
       final upload = await _repo.requestUploadUrl(
         documentKind: 'liveness_selfie',
         documentName: fileName,
       );
       await _repo.putFile(upload.uploadUrl, bytes, contentType: 'image/jpeg');
-
-      if (!mounted) return;
-      AppScope.read(context).kycForm.registerUploadedDocument(upload.objectKey, 'liveness_selfie');
+      await _repo.registerDocument(
+        kycSubmissionId: draftId,
+        objectKey: upload.objectKey,
+        documentName: 'Liveness selfie',
+        documentKind: 'liveness_selfie',
+      );
 
       if (!mounted) return;
       context.go(Routes.kycChecking);

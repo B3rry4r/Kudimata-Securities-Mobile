@@ -80,6 +80,16 @@ class AppState extends ChangeNotifier {
   bool kycSubmitted = false;
   bool kycApproved = false;
   bool suitabilityComplete = false;
+
+  /// Which of the 5 phased-KYC steps (2026-08-20) an in-progress draft is
+  /// resuming at, and the fixed total — both null when there's no known
+  /// in-progress draft (never started, or already finalized/decided).
+  /// Populated by hydrateGatingStateAndRoute (log_in_screen.dart) alongside
+  /// kycSubmitted/kycApproved; read by tradingEligibilityGap below to show
+  /// Home's "Complete your KYC — N/5 done" prompt and resume at the right
+  /// step instead of always restarting at step 1.
+  int? kycDraftStep;
+  int? kycDraftTotal;
   bool signedIn = false;
 
   /// True while a fresh email+password login (log_in_screen.dart) is
@@ -156,6 +166,15 @@ class AppState extends ChangeNotifier {
 
   void setSuitabilityComplete(bool v) {
     suitabilityComplete = v;
+    notifyListeners();
+  }
+
+  /// Sets both together — a draft's step/total are only ever meaningful as
+  /// a pair (see [kycDraftStep]'s doc comment). Pass `null` for both to
+  /// clear (no known in-progress draft).
+  void setKycDraftProgress(int? step, int? total) {
+    kycDraftStep = step;
+    kycDraftTotal = total;
     notifyListeners();
   }
 
@@ -263,6 +282,8 @@ class AppState extends ChangeNotifier {
     kycSubmitted = false;
     kycApproved = false;
     suitabilityComplete = false;
+    kycDraftStep = null;
+    kycDraftTotal = null;
     biometricEnabled = false;
     _watchlist.clear();
     watchlistVersion = 0;
@@ -316,8 +337,29 @@ class TradingEligibilityGap {
   final String route;
 }
 
+/// Maps a phased-KYC currentStep (2-5) to the route it resumes into — same
+/// table kyc_intro.dart's own resume check uses, duplicated rather than
+/// shared cross-file per this codebase's per-screen convention (see e.g.
+/// trade_flows.dart/wallet_flows.dart's own duplicated
+/// _ensureEligibleToTrade/_ensureEligibleToTransact).
+const _kycStepRoutes = {
+  2: Routes.kycId,
+  3: Routes.kycLiveness,
+  4: Routes.kycUtilityBill,
+  5: Routes.kycNextOfKin,
+};
+
 TradingEligibilityGap? tradingEligibilityGap(AppState app) {
   if (!app.kycSubmitted) {
+    final step = app.kycDraftStep;
+    final total = app.kycDraftTotal;
+    if (step != null && total != null) {
+      return TradingEligibilityGap(
+        title: 'Complete your KYC — $step/$total done',
+        message: 'Pick up where you left off',
+        route: _kycStepRoutes[step] ?? Routes.kycIntro,
+      );
+    }
     return const TradingEligibilityGap(
       title: 'Complete your KYC',
       message: 'Verify your identity to start investing',

@@ -1,26 +1,36 @@
 // Kudimata Securities — KYC repository.
 //
-// One resource per lib/data/api/README.md's convention, backing the final
-// kyc-next-of-kin screen's real submission. registry.json's KycSubmission
-// resource:
-//   POST /kyc-submissions  body {bvn,nin,documentType,nextOfKin,address}
-//                          -> KycSubmission (has `id`)
+// One resource per lib/data/api/README.md's convention. registry.json's
+// KycSubmission resource, PHASED as of 2026-08-20 (user directive: "we need
+// to break the KYC into parts not all at one submit"):
+//   POST /kyc-submissions/draft            {bvn,nin} -> KycSubmission (step 1)
+//   POST /kyc-submissions/draft/liveness   (no body) -> KycSubmission (step 3)
+//   POST /kyc-submissions/draft/finalize   {nextOfKin,address?,city?,state?}
+//                                                     -> KycSubmission (step 5)
+//   GET  /kyc-submissions/draft            -> KycSubmission | null (resume)
+//   GET  /kyc-submissions/me               -> KycSubmission (any status)
 //
-// Document upload + registration (POST /kyc-documents/upload-url, the S3
-// PUT, and POST /kyc-documents) lives in KycDocumentRepository
-// (kyc_document_repository.dart) — see that file's header for the full
-// flow, including why document *registration* can only happen after
-// [submit] returns a real `kycSubmissionId` (lib/screens/kyc/next_of_kin.dart
-// loops over `KycFormState.documents` and calls
-// `KycDocumentRepository.registerDocument` once per entry, right after its
-// own [submit] call succeeds).
+// Steps 2 (id document) and 4 (utility bill) are plain document uploads —
+// see KycDocumentRepository, unchanged by the phased-KYC directive.
+//
+// The old all-at-once `POST /kyc-submissions` (bvn+nin+documentType+
+// nextOfKin+address in one call) still exists server-side but is
+// superseded — nothing in this app calls it any more as of this pass.
 import '../api/api_client.dart';
 
-/// The subset of `KycSubmission` (registry.json) the kyc-submitted screen
-/// needs to decide where to route next. `status` is the authoritative field
-/// (`pending|review|approved|rejected|flagged|expired`); `vendorDecision`
-/// (`no_decision|rejected|approved`) is LumiID's synchronous NIN/BVN check
-/// result, surfaced alongside it for completeness.
+/// The subset of `KycSubmission` (registry.json) the KYC flow's screens
+/// need. `status` is the authoritative field
+/// (`draft|pending|review|approved|rejected|flagged|expired`); `vendorDecision`
+/// (`no_decision|rejected|approved`) is the verification provider's
+/// synchronous NIN/BVN check result, surfaced alongside it for completeness.
+///
+/// `id` (2026-08-20, phased KYC) is the draft/submission id — needed by
+/// id_upload.dart/liveness.dart/utility_bill.dart to register a document
+/// against it (`POST /kyc-documents {kycSubmissionId: id, ...}`).
+///
+/// `currentStep`/`totalSteps` (2026-08-20, phased KYC) are present only
+/// while `status == 'draft'` — see KycFlowStep's doc comment for how a
+/// step number maps to a route.
 ///
 /// `bvn` (added for the account-personal screen's masked "BVN" row) is
 /// optional and defaults to null so the existing kyc-submitted/kyc-approved
@@ -39,23 +49,30 @@ import '../api/api_client.dart';
 class KycSubmissionStatus {
   const KycSubmissionStatus({
     required this.status,
+    this.id,
     this.vendorDecision,
     this.bvn,
     this.flagReason,
     this.flagDetail,
     this.attemptCount = 0,
     this.maxAttempts = 1,
+    this.currentStep,
+    this.totalSteps,
   });
 
   final String status;
+  final String? id;
   final String? vendorDecision;
   final String? bvn; // masked "••• 4821" — see [KycRepository.me]
   final String? flagReason;
   final String? flagDetail;
   final int attemptCount;
   final int maxAttempts;
+  final int? currentStep;
+  final int? totalSteps;
 
   bool get isApproved => status == 'approved';
+  bool get isDraft => status == 'draft';
 
   /// Whether the investor still has a resubmission attempt available, per
   /// KycSubmission's `attemptCount`/`maxAttempts` (registry.json).
@@ -66,25 +83,70 @@ class KycRepository {
   const KycRepository(this._client);
   final ApiClient _client;
 
-  /// POST /kyc-submissions. [body] is exactly
-  /// `KycFormState.toSubmissionBody()`'s shape. Returns the new
-  /// KycSubmission's `id`.
-  Future<String> submit(Map<String, dynamic> body) async {
-    final response = await _client.post('/kyc-submissions', data: body);
-    final data = response.data as Map<String, dynamic>;
-    return data['id'] as String;
+  /// POST /kyc-submissions/draft (phased KYC step 1) — bvn + nin. Creates
+  /// the draft KycSubmission everything else in the flow operates on, or
+  /// re-verifies the SAME existing draft if one is already in progress
+  /// (redoing step 1, e.g. fixing a typo, is safe to call again).
+  Future<KycSubmissionStatus> draftStep1({required String bvn, required String nin}) async {
+    final response = await _client.post('/kyc-submissions/draft', data: {'bvn': bvn, 'nin': nin});
+    return _fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// GET /kyc-submissions/me — the current user's own KycSubmission. The
-  /// next-of-kin screen's [submit] call only surfaces the new submission's
-  /// `id` (needed immediately, to attach documents); it does not stash the
-  /// rest of that response anywhere accessible. The kyc-submitted screen
-  /// re-fetches here so it can route on the REAL review outcome (LumiID's
-  /// synchronous NIN/BVN checks may already have decided it) rather than a
-  /// fixed timer. The kyc-approved screen also calls this defensively on
-  /// mount, re-confirming `status` is genuinely `approved` before flipping
-  /// AppState.kycApproved rather than trusting unconditionally that it was
-  /// only reached after kyc-submitted enforced that same check.
+  /// POST /kyc-submissions/draft/liveness (phased KYC step 3) — no body.
+  /// Requires the liveness selfie to already be uploaded+registered
+  /// (KycDocumentRepository, documentKind='liveness_selfie') against the
+  /// current draft; this call is what actually triggers the verification.
+  Future<KycSubmissionStatus> verifyDraftLiveness() async {
+    final response = await _client.post('/kyc-submissions/draft/liveness');
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// POST /kyc-submissions/draft/finalize (phased KYC step 5) — next of kin
+  /// + address. Requires steps 2-4 (id document, liveness, utility bill)
+  /// already done, or this throws [ApiException] (400) naming which step
+  /// is missing. Turns the draft into a real, reviewable submission —
+  /// `status` leaves 'draft' on success.
+  Future<KycSubmissionStatus> finalizeDraft({
+    required String nextOfKinName,
+    required String nextOfKinRelationship,
+    required String nextOfKinPhone,
+    String? address,
+    String? city,
+    String? state,
+  }) async {
+    final response = await _client.post('/kyc-submissions/draft/finalize', data: {
+      'nextOfKin': {
+        'name': nextOfKinName,
+        'relationship': nextOfKinRelationship,
+        'phone': nextOfKinPhone,
+      },
+      'address': ?address,
+      'city': ?city,
+      'state': ?state,
+    });
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// GET /kyc-submissions/draft (resume support) — the investor's current
+  /// in-progress draft, or null if there is none (never started, or
+  /// already finalized/decided). kyc_intro.dart's "Start" button and
+  /// hydrateGatingStateAndRoute (log_in_screen.dart) both call this to
+  /// resume at the right step instead of always restarting at step 1.
+  Future<KycSubmissionStatus?> getDraft() async {
+    final response = await _client.get('/kyc-submissions/draft');
+    final data = response.data;
+    if (data == null) return null;
+    return _fromJson(data as Map<String, dynamic>);
+  }
+
+  /// GET /kyc-submissions/me — the current user's own KycSubmission
+  /// (whatever it currently is — draft or a real decided/pending one). The
+  /// kyc-submitted screen re-fetches here so it can route on the REAL
+  /// review outcome rather than a fixed timer. The kyc-approved screen also
+  /// calls this defensively on mount, re-confirming `status` is genuinely
+  /// `approved` before flipping AppState.kycApproved rather than trusting
+  /// unconditionally that it was only reached after kyc-submitted enforced
+  /// that same check.
   ///
   /// Also backs the account-personal screen's masked "BVN" row (the
   /// [bvn]/[KycSubmissionStatus.bvn] field). Per
@@ -99,15 +161,21 @@ class KycRepository {
   /// prefix instead of asterisks.
   Future<KycSubmissionStatus> me() async {
     final response = await _client.get('/kyc-submissions/me');
-    final json = response.data as Map<String, dynamic>;
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
+  KycSubmissionStatus _fromJson(Map<String, dynamic> json) {
     return KycSubmissionStatus(
       status: json['status'] as String? ?? 'pending',
+      id: json['id'] as String?,
       vendorDecision: json['vendorDecision'] as String?,
       bvn: _maskBvn(json['bvn'] as String?),
       flagReason: json['flagReason'] as String?,
       flagDetail: json['flagDetail'] as String?,
       attemptCount: json['attemptCount'] as int? ?? 0,
       maxAttempts: json['maxAttempts'] as int? ?? 1,
+      currentStep: json['currentStep'] as int?,
+      totalSteps: json['totalSteps'] as int?,
     );
   }
 

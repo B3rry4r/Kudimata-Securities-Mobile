@@ -13,12 +13,12 @@ class Routes {
   static const String splash = '/';
   static const String signup = '/signup';
   static const String otp = '/otp';
-  // Terms of service / privacy policy — accepted right after OTP
-  // verification, before passcode/KYC (see terms_of_service_screen.dart).
-  // Path segments still say "suitability" for historical reasons; see the
-  // note above riskDisclosure/clientAgreement below.
+  // Terms of service + privacy policy — ONE combined screen/tick
+  // (2026-08-20 consolidation, see terms_and_privacy_screen.dart), accepted
+  // right after OTP verification, before passcode/KYC. Path segment still
+  // says "suitability" for historical reasons; see the note above
+  // riskDisclosure below.
   static const String termsOfService = '/suitability/terms';
-  static const String privacyPolicy = '/suitability/privacy';
   static const String createPasscode = '/passcode/create';
   static const String confirmPasscode = '/passcode/confirm';
   static const String biometric = '/biometric';
@@ -32,6 +32,11 @@ class Routes {
   static const String kycId = '/kyc/id';
   static const String kycLiveness = '/kyc/liveness';
   static const String kycChecking = '/kyc/checking';
+  // Utility bill upload — step 4 of 5 (2026-08-20 phased-KYC directive:
+  // "we need to collect Utility bill"). documentKind 'proof_of_address'
+  // already existed in the backend schema; this is the first screen that
+  // actually collects it.
+  static const String kycUtilityBill = '/kyc/utility-bill';
   static const String kycNextOfKin = '/kyc/next-of-kin';
   static const String kycSubmitted = '/kyc/submitted';
   static const String kycApproved = '/kyc/approved';
@@ -40,11 +45,12 @@ class Routes {
   // ── Suitability ──────────────────────────────────────────────────────────
   static const String questionnaire = '/suitability';
   static const String suitabilityResult = '/suitability/result';
-  // Risk disclosure / client agreement — investment-specific documents,
-  // accepted right after the suitability result (unlike termsOfService/
-  // privacyPolicy above, which moved to account-creation time).
+  // Risk disclosure + client agreement — ONE combined screen/tick
+  // (2026-08-20 consolidation, see risk_and_agreement_screen.dart),
+  // investment-specific documents accepted right after the suitability
+  // result (unlike termsOfService above, which moved to account-creation
+  // time).
   static const String riskDisclosure = '/suitability/risk';
-  static const String clientAgreement = '/suitability/agreement';
 
   // ── Tab roots (StatefulShellRoute / indexedStack) ────────────────────────
   static const String home = '/home';

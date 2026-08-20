@@ -1,26 +1,19 @@
-// KYC 5 — checking (step 4 of 4). A centred spinner that auto-advances to the
-// next-of-kin step after a short delay (mocks the provider review). Mirrors
-// Checking. SEAM: the KYC provider's verification result replaces this timer.
+// KYC 5 — verifying liveness (interstitial between step 3 and step 4 of 5).
+// A centred spinner while the REAL liveness check runs server-side.
 //
-// WIRING NOTE (kyc-checking pass): confirmed against
-// .pipeline/fragments/kyc-checking.json — reads: [KycVerification.status]
-// with no gating condition described, actions: [], uiStatesHandled: only
-// "checking" (entered unconditionally on build, left unconditionally on the
-// timer). There is no incremental-verification endpoint mid-KYC-collection:
-// the whole submission (bvn/nin/documentType/nextOfKin/address) goes to the
-// backend in ONE `POST /kyc-submissions` call from the next-of-kin screen
-// (see kyc_form_state.dart). Gating this screen's advance on KycFormState
-// fields was considered and rejected: the fields required by that POST body
-// (bvn, nin, documentType) belong to earlier screens (kyc-bvn, kyc-id), not
-// to anything collected here, and `nin` in particular has no collecting UI
-// anywhere yet (documented gap, see kyc_form_state.dart lines 28-33) — so a
-// field-presence gate here would just block on a gap that belongs to a
-// different screen's wiring pass, not this one's. Real validation happens
-// where the real call happens: on kyc-next-of-kin's submit. This timer stays
-// as a client-side UX pacing beat with no backend counterpart to wire.
-import 'dart:async';
+// REPURPOSED 2026-08-20 (phased-KYC directive): previously a pure UX-pacing
+// timer with no backend call at all ("SEAM: the KYC provider's verification
+// result replaces this timer" — this pass IS that replacement). Now calls
+// POST /kyc-submissions/draft/liveness, which reads the selfie
+// liveness.dart already uploaded+registered against the draft and actually
+// runs the check. On success, advances to the utility-bill step (step 4);
+// on failure, shows a retryable error state rather than silently
+// continuing — this is a real verification call now, not a mocked delay.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -34,21 +27,25 @@ class CheckingScreen extends StatefulWidget {
 }
 
 class _CheckingScreenState extends State<CheckingScreen> {
-  Timer? _timer;
+  late final _repo = KycRepository(AppScope.read(context).apiClient);
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    // SEAM: replace this delay with the real KYC provider verification result.
-    _timer = Timer(const Duration(milliseconds: 2200), () {
-      if (mounted) context.go(Routes.kycNextOfKin);
-    });
+    _verify();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  Future<void> _verify() async {
+    setState(() => _error = null);
+    try {
+      await _repo.verifyDraftLiveness();
+      if (!mounted) return;
+      context.go(Routes.kycUtilityBill);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    }
   }
 
   @override
@@ -60,19 +57,27 @@ class _CheckingScreenState extends State<CheckingScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(onBack: () => context.go(Routes.kycLiveness)),
-            const KycStepProgress(current: 5),
+            const KycStepProgress(total: 5, current: 3),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    KSpinner(size: 40, stroke: 2, color: KColor.ink),
-                    const SizedBox(height: 22),
-                    Text('Checking your details…',
-                        textAlign: TextAlign.center,
-                        style: KType.section()),
-                  ],
+                  children: _error != null
+                      ? [
+                          Text("Couldn't verify your selfie",
+                              textAlign: TextAlign.center, style: KType.section()),
+                          const SizedBox(height: 10),
+                          Text(_error!, textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),
+                          const SizedBox(height: 22),
+                          KButton(label: 'Try again', onPressed: _verify),
+                        ]
+                      : [
+                          KSpinner(size: 40, stroke: 2, color: KColor.ink),
+                          const SizedBox(height: 22),
+                          Text('Checking your selfie…',
+                              textAlign: TextAlign.center, style: KType.section()),
+                        ],
                 ),
               ),
             ),

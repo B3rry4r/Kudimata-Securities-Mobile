@@ -1,15 +1,12 @@
 // Kudimata Securities — KYC document repository.
 //
 // See lib/data/api/README.md for the shared convention. The ONE canonical
-// repository (previously duplicated as three near-identical
-// implementations — KycDocumentsRepository and part of KycRepository — now
-// merged here) backing the presigned-upload flow used by kyc-id (ID
-// document), kyc-liveness (selfie), and kyc-next-of-kin (registration), per
-// registry.json's `KycDocument` resource:
+// repository backing the presigned-upload flow used by kyc-id (ID
+// document, step 2), kyc-liveness (selfie, step 3), and utility_bill.dart
+// (proof of address, step 4), per registry.json's `KycDocument` resource:
 //
 //   1. POST /kyc-documents/upload-url  {documentKind, documentName}
 //      -> {uploadUrl, objectKey}                          [requestUploadUrl]
-//      Used by kyc-id and kyc-liveness.
 //   2. PUT the raw file bytes directly to `uploadUrl`.                [putFile]
 //      `uploadUrl` is a presigned object-storage URL, NOT a
 //      Kudimata-Securities-Backend endpoint — it must NOT go through the
@@ -20,21 +17,16 @@
 //      presigned URL points at. A bare `Dio()` is used instead — the exact
 //      same reasoning api_client.dart itself uses for its own token-refresh
 //      call (`Dio(BaseOptions(baseUrl: kApiBaseUrl))`, "no interceptors").
-//      Used by kyc-liveness; kyc-id does this PUT itself with a bare
-//      `package:http` client instead (same reasoning, different client) —
-//      see lib/screens/kyc/id_upload.dart.
+//      Used by kyc-liveness; kyc-id/utility_bill.dart do this PUT themselves
+//      with a bare `package:http` client instead (same reasoning, different
+//      client).
 //   3. POST /kyc-documents {kycSubmissionId, objectKey, documentName,
-//      documentKind} — registers the document against a REAL KYC
-//      submission. `kycSubmissionId` only exists after the final
-//      `POST /kyc-submissions` call (next-of-kin screen, last of 5) — so
-//      this step cannot run from kyc-id or kyc-liveness. Those screens
-//      instead call [requestUploadUrl] (+ [putFile] for kyc-liveness), then
-//      accumulate `objectKey` via `KycFormState.registerUploadedDocument`
-//      (see lib/screens/kyc/kyc_form_state.dart) for kyc-next-of-kin to
-//      register once a submission id exists. [registerDocument] is called
-//      by kyc-next-of-kin, once per accumulated document, right after its
-//      own `POST /kyc-submissions` call (via KycRepository.submit,
-//      kyc_repository.dart) succeeds — not used by kyc-id/kyc-liveness.
+//      documentKind} — registers the document against the draft
+//      KycSubmission (2026-08-20, phased KYC: the draft already exists by
+//      this point, created on step 1 — see KycFormState.draftId,
+//      lib/screens/kyc/kyc_form_state.dart), so all three screens above
+//      call [registerDocument] IMMEDIATELY after their own upload
+//      completes, rather than deferring registration to a later bulk call.
 //
 // Construct with the ONE shared ApiClient, reached via
 // `AppScope.read(context).apiClient`:
@@ -105,10 +97,10 @@ class KycDocumentRepository {
     }
   }
 
-  /// POST /kyc-documents — registers an already-uploaded object against a
-  /// real KYC submission. Only callable once a `kycSubmissionId` exists
-  /// (i.e. after `POST /kyc-submissions` on the next-of-kin screen) — see
-  /// file header. Not used by kyc-id or kyc-liveness themselves.
+  /// POST /kyc-documents — registers an already-uploaded object against the
+  /// draft KycSubmission. Called by kyc-id, kyc-liveness, and
+  /// utility_bill.dart immediately after their own upload completes — see
+  /// file header.
   Future<void> registerDocument({
     required String kycSubmissionId,
     required String objectKey,

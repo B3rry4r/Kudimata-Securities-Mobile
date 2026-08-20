@@ -1,13 +1,9 @@
-// KYC 3 — ID upload (step 2 of 5). ID-type chips + a file dropzone wired to
-// the real presigned-upload flow (registry.json "KycDocument": POST
-// /kyc-documents/upload-url -> presigned S3 PUT -> POST /kyc-documents;
-// see lib/data/repositories/kyc_document_repository.dart). NIN itself
-// moved to bvn_nin.dart (step 1) — 2026-08-20 phased-KYC directive.
-//
-// Registers the uploaded document IMMEDIATELY (POST /kyc-documents), unlike
-// the old flow — a real draft KycSubmission already exists by this point
-// (created on step 1), so there's no more need to stash the objectKey in
-// KycFormState for a later bulk registration.
+// KYC 6 — utility bill upload (step 4 of 5). NEW screen (2026-08-20,
+// phased-KYC directive: "we need to collect Utility bill") — documentKind
+// 'proof_of_address' already existed in the backend schema, it just was
+// never collected anywhere in the KYC flow's UI until now. Mirrors
+// id_upload.dart's file-dropzone pattern (no ID-type chips needed — there's
+// only one kind of document here).
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -20,39 +16,20 @@ import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import '_kyc_chrome.dart';
 
-class _IdType {
-  const _IdType(this.id, this.label);
-  final String id;
-  final String label;
-}
-
-class IdUploadScreen extends StatefulWidget {
-  const IdUploadScreen({super.key});
+class UtilityBillScreen extends StatefulWidget {
+  const UtilityBillScreen({super.key});
 
   @override
-  State<IdUploadScreen> createState() => _IdUploadScreenState();
+  State<UtilityBillScreen> createState() => _UtilityBillScreenState();
 }
 
-class _IdUploadScreenState extends State<IdUploadScreen> {
-  static const _types = [
-    _IdType('nin', 'NIN'),
-    _IdType('passport', 'Passport'),
-    _IdType('licence', "Driver's licence"),
-  ];
-
-  String _type = 'nin';
-
+class _UtilityBillScreenState extends State<UtilityBillScreen> {
   KFileInfo? _file;
   bool _uploading = false;
   String? _uploadError;
   bool _showErrors = false;
 
   late final _repo = KycDocumentRepository(AppScope.read(context).apiClient);
-
-  // id_upload.dart's local chip ids are 'nin' | 'passport' | 'licence';
-  // KycSubmission.documentType (and KycDocument.documentKind) is
-  // enum(nin,passport,drivers_licence,...) — map 'licence' accordingly.
-  String get _documentKind => _type == 'licence' ? 'drivers_licence' : _type;
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +39,8 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KycTopBar(onBack: () => context.go(Routes.kycBvn)),
-            const KycStepProgress(total: 5, current: 2),
+            KycTopBar(onBack: () => context.go(Routes.kycLiveness)),
+            const KycStepProgress(total: 5, current: 4),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -71,31 +48,21 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const KScreenHead(title: 'Upload your ID'),
-                    const SizedBox(height: 20),
-                    const KEyebrow('ID type'),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final t in _types)
-                          KPillChip(
-                            label: t.label,
-                            selected: _type == t.id,
-                            onTap: () => setState(() => _type = t.id),
-                          ),
-                      ],
+                    const KScreenHead(title: 'Upload a utility bill'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'A recent electricity, water, or waste bill with your name and address — no older than 3 months.',
+                      style: KType.body(color: KColor.ink2),
                     ),
                     const SizedBox(height: 24),
                     KFileUpload(
-                      label: 'Upload your ID',
+                      label: 'Upload your utility bill',
                       hint: 'JPG or PDF, up to 10MB',
                       prompt: _uploading ? 'Uploading…' : 'Tap to upload, or take a photo',
                       helper: _uploading ? 'Uploading your document…' : null,
                       error: _uploadError ??
                           (_showErrors && _file == null
-                              ? 'Upload your ID document to continue'
+                              ? 'Upload a utility bill to continue'
                               : null),
                       disabled: _uploading,
                       file: _file,
@@ -125,16 +92,6 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
     );
   }
 
-  // ID type chip picker + file dropzone:
-  //   1. POST /kyc-documents/upload-url {documentKind, documentName}
-  //      -> {uploadUrl, objectKey}                      (KycDocumentRepository)
-  //   2. PUT the picked file's bytes to `uploadUrl` directly — a bare
-  //      `package:http` client, NOT the shared ApiClient/Dio instance, since
-  //      that instance's interceptor would attach this app's own
-  //      Authorization header to the S3 request.
-  //   3. POST /kyc-documents {kycSubmissionId, objectKey, documentName,
-  //      documentKind} — the draft from step 1 already exists, so this
-  //      registers immediately rather than deferring to a later bulk call.
   Future<void> _pickAndUpload() async {
     final draftId = AppScope.read(context).kycForm.draftId;
     if (draftId == null) {
@@ -160,10 +117,9 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
       _uploadError = null;
     });
 
-    final documentKind = _documentKind;
     try {
       final uploadUrl = await _repo.requestUploadUrl(
-        documentKind: documentKind,
+        documentKind: 'proof_of_address',
         documentName: picked.name,
       );
       final putResponse = await http.put(
@@ -177,8 +133,8 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
       await _repo.registerDocument(
         kycSubmissionId: draftId,
         objectKey: uploadUrl.objectKey,
-        documentName: _documentName(documentKind),
-        documentKind: documentKind,
+        documentName: 'Proof of address',
+        documentKind: 'proof_of_address',
       );
       if (!mounted) return;
       setState(() {
@@ -200,13 +156,6 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
     }
   }
 
-  String _documentName(String kind) => switch (kind) {
-        'nin' => 'NIN',
-        'passport' => 'Passport',
-        'drivers_licence' => "Driver's licence",
-        _ => kind,
-      };
-
   String _contentTypeFor(String fileName) {
     final lower = fileName.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
@@ -219,6 +168,6 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
       setState(() => _showErrors = true);
       return;
     }
-    context.go(Routes.kycLiveness);
+    context.go(Routes.kycNextOfKin);
   }
 }

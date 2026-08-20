@@ -28,10 +28,11 @@ import '../screens/onboarding/legal_preview_screen.dart';
 
 // KYC.
 import '../screens/kyc/kyc_intro.dart';
-import '../screens/kyc/bvn.dart';
+import '../screens/kyc/bvn_nin.dart';
 import '../screens/kyc/id_upload.dart';
 import '../screens/kyc/liveness.dart';
 import '../screens/kyc/checking.dart';
+import '../screens/kyc/utility_bill.dart';
 import '../screens/kyc/next_of_kin.dart';
 import '../screens/kyc/submitted.dart';
 import '../screens/kyc/approved.dart';
@@ -40,10 +41,8 @@ import '../screens/kyc/outcome_not_approved.dart';
 // Suitability & agreements.
 import '../screens/suitability/questionnaire_screen.dart';
 import '../screens/suitability/suitability_result_screen.dart';
-import '../screens/suitability/terms_of_service_screen.dart';
-import '../screens/suitability/privacy_policy_screen.dart';
-import '../screens/suitability/risk_disclosure_screen.dart';
-import '../screens/suitability/client_agreement_screen.dart';
+import '../screens/suitability/terms_and_privacy_screen.dart';
+import '../screens/suitability/risk_and_agreement_screen.dart';
 
 // Tab roots.
 import '../screens/home/home_screen.dart';
@@ -158,10 +157,11 @@ GoRouter buildRouter(AppState state) {
 
       // ── KYC ───────────────────────────────────────────────────────────--
       GoRoute(path: Routes.kycIntro, builder: (_, _) => themed(() => KycIntroScreen())),
-      GoRoute(path: Routes.kycBvn, builder: (_, _) => themed(() => BvnScreen())),
+      GoRoute(path: Routes.kycBvn, builder: (_, _) => themed(() => BvnNinScreen())),
       GoRoute(path: Routes.kycId, builder: (_, _) => themed(() => IdUploadScreen())),
       GoRoute(path: Routes.kycLiveness, builder: (_, _) => themed(() => LivenessScreen())),
       GoRoute(path: Routes.kycChecking, builder: (_, _) => themed(() => CheckingScreen())),
+      GoRoute(path: Routes.kycUtilityBill, builder: (_, _) => themed(() => UtilityBillScreen())),
       GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => themed(() => NextOfKinScreen())),
       GoRoute(path: Routes.kycSubmitted, builder: (_, _) => themed(() => SubmittedScreen())),
       GoRoute(path: Routes.kycApproved, builder: (_, _) => themed(() => ApprovedScreen())),
@@ -174,18 +174,15 @@ GoRouter buildRouter(AppState state) {
         path: Routes.termsOfService,
         // `extra` is the account email, threaded from otp_screen.dart's
         // post-verify handoff — same pattern createPasscode's route uses.
+        // Combined terms-of-service + privacy-policy screen (2026-08-20
+        // consolidation) — one tick covers both.
         builder: (_, st) => themed(
-          () => TermsOfServiceScreen(email: st.extra is String ? st.extra as String : null),
+          () => TermsAndPrivacyScreen(email: st.extra is String ? st.extra as String : null),
         ),
       ),
-      GoRoute(
-        path: Routes.privacyPolicy,
-        builder: (_, st) => themed(
-          () => PrivacyPolicyScreen(email: st.extra is String ? st.extra as String : null),
-        ),
-      ),
-      GoRoute(path: Routes.riskDisclosure, builder: (_, _) => themed(() => RiskDisclosureScreen())),
-      GoRoute(path: Routes.clientAgreement, builder: (_, _) => themed(() => ClientAgreementScreen())),
+      // Combined risk-disclosure + client-agreement screen (2026-08-20
+      // consolidation) — one tick covers both.
+      GoRoute(path: Routes.riskDisclosure, builder: (_, _) => themed(() => RiskAndAgreementScreen())),
 
       // ── Pushed detail (top-level — cover the shell, no tab bar) ─────────--
       GoRoute(path: Routes.notifications, builder: (_, _) => themed(() => NotificationsScreen())),
@@ -274,11 +271,10 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.createPasscode, Routes.confirmPasscode,
     Routes.biometric, Routes.login, Routes.reset,
     Routes.kycIntro, Routes.kycBvn, Routes.kycId,
-    Routes.kycLiveness, Routes.kycChecking, Routes.kycNextOfKin,
+    Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill, Routes.kycNextOfKin,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     Routes.questionnaire, Routes.suitabilityResult,
-    Routes.termsOfService, Routes.privacyPolicy,
-    Routes.riskDisclosure, Routes.clientAgreement,
+    Routes.termsOfService, Routes.riskDisclosure,
   };
 
   // Pre-auth-only screens — never legitimately reachable once fully signed

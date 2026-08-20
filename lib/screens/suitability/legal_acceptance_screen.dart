@@ -1,25 +1,28 @@
-// Shared scaffold for the four onboarding legal-acceptance screens: terms
-// of service, privacy policy, risk disclosure, client agreement. Fetches
-// the CURRENT document for a given `kind` from the backend
-// (GET /legal-documents/content/:kind) and renders its sections — content
-// is no longer hardcoded per screen, so an update to any of these four
-// documents never requires a mobile release. Tapping the primary button
-// posts the acknowledgement (POST /compliance-acknowledgements {kind}; the
-// backend resolves and stamps the current version/document id itself) and
-// then runs whatever the specific screen needs to happen next.
+// Shared scaffold for the two onboarding legal-acceptance screens: terms of
+// service + privacy policy (account creation), and risk disclosure + client
+// agreement (post-suitability). Each screen in this app's flow now covers
+// a PAIR of documents with ONE checkbox and ONE accept action — previously
+// each of the four documents was its own screen with its own tick,
+// requiring 4 separate taps total (2026-08-20, user directive: "the terms
+// of service and privacy policy... why should not be two ticks... users
+// should read through all and click one agree checkbox that covers it
+// all" — same complaint, same fix, for risk disclosure + client
+// agreement).
 //
-// The four concrete screens (risk_disclosure_screen.dart,
-// client_agreement_screen.dart, privacy_policy_screen.dart,
-// terms_of_service_screen.dart) are thin wrappers supplying kind/copy/
-// navigation — kept separate from this shared widget because each one's
-// post-accept behavior genuinely differs (three are a plain "go to the next
-// step"; the last, client agreement, also completes suitability and signs
-// the investor in) — folding that into a callback parameter here is the
-// actual shared shape, not an excuse to merge four screens that don't
-// otherwise differ. Not one continuous chain: terms of service -> privacy
-// policy run right after OTP verification (account-creation consent);
-// risk disclosure -> client agreement run right after the suitability
-// result (investment-specific documents) — see terms_of_service_screen.dart.
+// Fetches BOTH documents (GET /legal-documents/content/:kind, called once
+// per kind) and renders them in one scrollable view with a divider between
+// them — content is still backend-driven, not hardcoded, same as before.
+// Tapping the primary button posts BOTH acknowledgements in sequence
+// (POST /compliance-acknowledgements — one call per kind; there is no
+// combined-kind endpoint, and none is needed) and then runs whatever the
+// specific pairing needs to happen next.
+//
+// The two concrete screens (terms_and_privacy_screen.dart,
+// risk_and_agreement_screen.dart) are thin wrappers supplying the two
+// kinds/copy/navigation — kept separate from this shared widget since each
+// pairing's post-accept behavior genuinely differs (terms+privacy just
+// continues to passcode creation; risk+agreement also completes
+// suitability and signs the investor in).
 import 'package:flutter/material.dart';
 
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -30,10 +33,11 @@ import 'package:kudimata_invest/data/repositories/legal_documents_repository.dar
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 
-class LegalAcceptanceScreen extends StatefulWidget {
-  const LegalAcceptanceScreen({
+class DualLegalAcceptanceScreen extends StatefulWidget {
+  const DualLegalAcceptanceScreen({
     super.key,
-    required this.kind,
+    required this.firstKind,
+    required this.secondKind,
     required this.screenTitle,
     required this.checkboxLabel,
     required this.buttonLabel,
@@ -41,28 +45,40 @@ class LegalAcceptanceScreen extends StatefulWidget {
   });
 
   /// 'terms_of_service' | 'privacy_policy' | 'risk_disclosure' | 'client_agreement'.
-  final String kind;
+  final String firstKind;
+  final String secondKind;
   final String screenTitle;
   final String checkboxLabel;
   final String buttonLabel;
 
-  /// Runs after the acknowledgement is successfully persisted — the
-  /// specific screen's own next-step navigation (and, for the last screen
-  /// in the chain, completing onboarding).
+  /// Runs after BOTH acknowledgements are successfully persisted (in order:
+  /// firstKind, then secondKind) — the specific pairing's own next-step
+  /// navigation (and, for the last pairing in onboarding, completing it).
   final Future<void> Function(BuildContext context) onAccepted;
 
   @override
-  State<LegalAcceptanceScreen> createState() => _LegalAcceptanceScreenState();
+  State<DualLegalAcceptanceScreen> createState() => _DualLegalAcceptanceScreenState();
 }
 
-class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
+class _DualLegalAcceptanceScreenState extends State<DualLegalAcceptanceScreen> {
   late final _legalRepo = LegalDocumentsRepository(AppScope.read(context).apiClient);
   late final _complianceRepo = ComplianceRepository(AppScope.read(context).apiClient);
-  late Future<LegalDocument> _future = _legalRepo.getContent(widget.kind);
+  late Future<(LegalDocument, LegalDocument)> _future = _load();
 
   bool _agreed = false;
   bool _submitting = false;
   String? _error;
+
+  Future<(LegalDocument, LegalDocument)> _load() async {
+    // Both documents are independent GETs — fetched concurrently (`.wait`,
+    // matching this app's usual two-future-one-screen convention) rather
+    // than sequentially, so a slow first document doesn't delay the second.
+    final (first, second) = await (
+      _legalRepo.getContent(widget.firstKind),
+      _legalRepo.getContent(widget.secondKind),
+    ).wait;
+    return (first, second);
+  }
 
   Future<void> _accept() async {
     setState(() {
@@ -70,7 +86,11 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
       _error = null;
     });
     try {
-      await _complianceRepo.acknowledge(kind: widget.kind);
+      // Sequential, not parallel — if the first acknowledgement fails, the
+      // second must not fire (never record "agreed to the client
+      // agreement" without also recording "agreed to risk disclosure").
+      await _complianceRepo.acknowledge(kind: widget.firstKind);
+      await _complianceRepo.acknowledge(kind: widget.secondKind);
       if (!mounted) return;
       await widget.onAccepted(context);
     } on ApiException catch (e) {
@@ -95,7 +115,7 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
               KScreenHead(title: widget.screenTitle),
               const SizedBox(height: 16),
               Expanded(
-                child: FutureBuilder<LegalDocument>(
+                child: FutureBuilder<(LegalDocument, LegalDocument)>(
                   future: _future,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -103,14 +123,13 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                     }
                     if (snapshot.hasError) {
                       return KErrorView(
-                        onPrimary: () =>
-                            setState(() => _future = _legalRepo.getContent(widget.kind)),
+                        onPrimary: () => setState(() => _future = _load()),
                       );
                     }
-                    final doc = snapshot.data!;
-                    // Checkbox + accept button only render once the content
-                    // has actually loaded — agreeing to something you never
-                    // saw isn't a real acceptance.
+                    final (first, second) = snapshot.data!;
+                    // Checkbox + accept button only render once BOTH
+                    // documents have actually loaded — agreeing to
+                    // something you never saw isn't a real acceptance.
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -122,13 +141,11 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  for (var i = 0; i < doc.sections.length; i++) ...[
-                                    if (i != 0) const SizedBox(height: 22),
-                                    KEyebrow(doc.sections[i].heading),
-                                    const SizedBox(height: 8),
-                                    Text(doc.sections[i].body,
-                                        style: KType.body(color: KColor.ink2)),
-                                  ],
+                                  ..._buildDocument(first),
+                                  const SizedBox(height: 28),
+                                  Container(height: 1, color: KColor.hairline),
+                                  const SizedBox(height: 28),
+                                  ..._buildDocument(second),
                                 ],
                               ),
                             ),
@@ -158,11 +175,6 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                                 loading: _submitting,
                                 onPressed: _agreed && !_submitting ? _accept : null,
                               ),
-                              const SizedBox(height: 12),
-                              Center(
-                                child: Text(doc.sub,
-                                    style: KType.micro(color: KColor.ink3).tnum),
-                              ),
                             ],
                           ),
                         ),
@@ -176,5 +188,20 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildDocument(LegalDocument doc) {
+    return [
+      KEyebrow(doc.title),
+      const SizedBox(height: 4),
+      Text(doc.sub, style: KType.micro(color: KColor.ink3).tnum),
+      const SizedBox(height: 14),
+      for (var i = 0; i < doc.sections.length; i++) ...[
+        if (i != 0) const SizedBox(height: 22),
+        KEyebrow(doc.sections[i].heading),
+        const SizedBox(height: 8),
+        Text(doc.sections[i].body, style: KType.body(color: KColor.ink2)),
+      ],
+    ];
   }
 }
