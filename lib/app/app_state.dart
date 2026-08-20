@@ -421,13 +421,15 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
       route: Routes.kycSubmitted,
     );
   }
-  if (!app.suitabilityComplete) {
-    return const TradingEligibilityGap(
-      title: 'Complete your risk profile',
-      message: 'A few questions before you can start investing',
-      route: Routes.questionnaire,
-    );
-  }
+  // Suitability is no longer a hard gate on trading/funding (2026-08-20
+  // directive: "make the assessment optional or hide it for now — the one
+  // that comes after KYC"). KYC approval alone is now enough to reach
+  // Buy/Sell/Add money/Withdraw — the questionnaire itself, and
+  // kyc-approved's "Start investing" entry into it, are UNCHANGED and
+  // still reachable for anyone who wants to complete it voluntarily; this
+  // just stops it from blocking anyone who doesn't. Not deleted, matching
+  // this codebase's "supersede, don't remove" convention — restore this
+  // block to re-enable the hard gate later.
   return null;
 }
 
