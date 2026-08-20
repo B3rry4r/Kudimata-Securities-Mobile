@@ -73,7 +73,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: _error != null
                       ? [
-                          Text("Couldn't verify your selfie",
+                          Text("Couldn't complete your face liveness check",
                               textAlign: TextAlign.center, style: KType.section()),
                           const SizedBox(height: 10),
                           Text(_error!, textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),
@@ -83,7 +83,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       : [
                           KSpinner(size: 40, stroke: 2, color: KColor.ink),
                           const SizedBox(height: 22),
-                          Text('Checking your selfie…',
+                          Text('Checking your face liveness…',
                               textAlign: TextAlign.center, style: KType.section()),
                         ],
                 ),

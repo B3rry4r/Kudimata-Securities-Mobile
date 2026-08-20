@@ -178,7 +178,7 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                       ),
                     ),
                     const SizedBox(height: 28),
-                    Text(_error ?? _cameraError ?? (kIsWeb ? 'Upload a selfie' : 'Center your face'),
+                    Text(_error ?? _cameraError ?? (kIsWeb ? 'Upload a face liveness photo' : 'Center your face'),
                         textAlign: TextAlign.center,
                         style: KType.title(color: (_error ?? _cameraError) != null ? KColor.loss : null)),
                     const SizedBox(height: 10),
@@ -377,7 +377,10 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
       await _repo.registerDocument(
         kycSubmissionId: draftId,
         objectKey: upload.objectKey,
-        documentName: 'Liveness selfie',
+        // Display name only (documentKind stays the real 'liveness_selfie'
+        // enum value below, untouched) — 2026-08-20, "please don't use
+        // selfie wording for face liveness check".
+        documentName: 'Face liveness check',
         documentKind: 'liveness_selfie',
       );
 

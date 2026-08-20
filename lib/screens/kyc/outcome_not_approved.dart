@@ -148,7 +148,7 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
       if (s.bvn == false) 'Your BVN could not be verified',
       if (s.name == false) "Your name didn't match your registered ID",
       if (s.dob == false) "Your date of birth didn't match your registered ID",
-      if (s.liveness == false) "Your selfie didn't pass the liveness check",
+      if (s.liveness == false) "Your face liveness check didn't pass",
     ];
   }
 
