@@ -166,7 +166,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
               onChanged: _showErrors ? (_) => setState(() {}) : null,
               error: _showErrors && !_confirmPasswordValid ? 'Passwords do not match' : null,
             ),
-            const Spacer(),
+            // Fixed gap, not `Spacer()` (2026-08-20 fix — reported:
+            // "confirm password and the continue button are joined
+            // together"). KOnboardBody wraps this Column in an
+            // IntrinsicHeight sized to at least the viewport height, so
+            // Spacer() only has room to expand while total content is
+            // SHORTER than the viewport — adding the name-match notice
+            // card above pushed this form's content past that point, so
+            // Spacer collapsed to zero and the button landed flush
+            // against the field above it. A fixed gap is correct
+            // regardless of how tall the content above it gets.
+            const SizedBox(height: 28),
             Column(
               children: [
                 KButton(
