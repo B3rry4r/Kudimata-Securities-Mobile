@@ -140,8 +140,15 @@ class ApiClient {
   Future<Response<dynamic>> get(String path, {Map<String, dynamic>? queryParameters}) =>
       _guard(() => dio.get(path, queryParameters: queryParameters));
 
-  Future<Response<dynamic>> post(String path, {Object? data}) =>
-      _guard(() => dio.post(path, data: data));
+  /// [options] lets a caller override the default 15s connect/receive
+  /// timeout for a single call — e.g. KycRepository.verifyDraftLiveness(),
+  /// whose backend-side LumiID call now has its own longer, dedicated
+  /// timeout (2026-08-20: "liveness works but... the timer is too low" —
+  /// the backend timeout was raised, but this client's own 15s default was
+  /// still cutting the wait short before that longer backend response ever
+  /// arrived).
+  Future<Response<dynamic>> post(String path, {Object? data, Options? options}) =>
+      _guard(() => dio.post(path, data: data, options: options));
 
   Future<Response<dynamic>> patch(String path, {Object? data}) =>
       _guard(() => dio.patch(path, data: data));

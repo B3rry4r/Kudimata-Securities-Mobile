@@ -16,6 +16,8 @@
 // The old all-at-once `POST /kyc-submissions` (bvn+nin+documentType+
 // nextOfKin+address in one call) still exists server-side but is
 // superseded — nothing in this app calls it any more as of this pass.
+import 'package:dio/dio.dart' show Options;
+
 import '../api/api_client.dart';
 
 /// The subset of `KycSubmission` (registry.json) the KYC flow's screens
@@ -96,8 +98,19 @@ class KycRepository {
   /// Requires the liveness selfie to already be uploaded+registered
   /// (KycDocumentRepository, documentKind='liveness_selfie') against the
   /// current draft; this call is what actually triggers the verification.
+  ///
+  /// Uses a longer receive timeout than ApiClient's 15s default (2026-08-20:
+  /// "liveness works but... the timer is too low") — a real face-liveness
+  /// ML pass on the backend's LumiID call can genuinely take longer than a
+  /// plain lookup (the backend itself now allows up to 45s for that one
+  /// call — see LumiidAdapter.verifyLiveness), so this client needs to wait
+  /// at least that long too, or it gives up and shows a timeout error
+  /// before the backend's own (successful) response ever arrives.
   Future<KycSubmissionStatus> verifyDraftLiveness() async {
-    final response = await _client.post('/kyc-submissions/draft/liveness');
+    final response = await _client.post(
+      '/kyc-submissions/draft/liveness',
+      options: Options(receiveTimeout: const Duration(seconds: 60)),
+    );
     return _fromJson(response.data as Map<String, dynamic>);
   }
 
