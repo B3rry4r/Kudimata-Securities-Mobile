@@ -46,14 +46,18 @@ class _WalletScreenState extends State<WalletScreen> {
   late final _txnRepo = TransactionRepository(AppScope.read(context).apiClient);
   late Future<_WalletData> _future = _load();
 
+  /// The data actually rendered once the first silent poll succeeds — see
+  /// home_screen.dart's identical field for the full writeup of why this
+  /// exists (2026-08-20 fix: reassigning `_future` on every poll tick, this
+  /// screen's own earlier approach, made FutureBuilder flash back to
+  /// ConnectionState.waiting for one frame each time — "when I said poll,
+  /// I didn't say poll and keep... flashing my screen").
+  _WalletData? _data;
+
   // POLLING (2026-08-20, "poll the... wallets so we can see changes
   // instantly without refreshing since no realtime yet"). A test-fund tap,
   // a real Flutterwave webhook landing, or a market order filling can all
-  // move the balance while this tab just sits open — this silently
-  // refetches in the background (no spinner, no error state of its own; a
-  // single flaky tick just leaves the last-good numbers showing) rather
-  // than reassigning `_future`, which would otherwise flash the whole
-  // screen back to KLoadingView on every tick.
+  // move the balance while this tab just sits open.
   Timer? _pollTimer;
   static const _pollInterval = Duration(seconds: 8);
   bool _devFundBusy = false;
@@ -83,7 +87,7 @@ class _WalletScreenState extends State<WalletScreen> {
     try {
       final data = await _load();
       if (!mounted) return;
-      setState(() => _future = Future.value(data));
+      setState(() => _data = data);
     } on Object {
       // A poll tick failing (flaky network blip) shouldn't blank out an
       // already-loaded screen — just try again next tick.
@@ -101,7 +105,7 @@ class _WalletScreenState extends State<WalletScreen> {
       if (!mounted) return;
       final data = await _load();
       if (!mounted) return;
-      setState(() => _future = Future.value(data));
+      setState(() => _data = data);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Added ₦10,000 (test funding)')),
       );
@@ -120,22 +124,37 @@ class _WalletScreenState extends State<WalletScreen> {
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
+          // Pull-to-refresh updates `_data` too (not `_future`) — its own
+          // spinner already shows above the content, so blanking the WHOLE
+          // body back to KLoadingView underneath it as well would be a
+          // second, jarring loading flash on top of the first.
           onRefresh: () async {
-            setState(() => _future = _load());
-            await _future;
+            try {
+              final data = await _load();
+              if (!mounted) return;
+              setState(() => _data = data);
+            } on Object {
+              // A failed manual refresh just leaves the last-good numbers
+              // showing — same treatment as a failed silent poll tick.
+            }
           },
           child: FutureBuilder<_WalletData>(
             future: _future,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const KLoadingView();
+              // Prefer the freshest polled/refreshed data over the
+              // FutureBuilder's own snapshot — see `_data`'s doc comment.
+              final effective = _data ?? snapshot.data;
+              if (effective == null) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const KLoadingView();
+                }
+                if (snapshot.hasError) {
+                  return KErrorView(
+                    onPrimary: () => setState(() => _future = _load()),
+                  );
+                }
               }
-              if (snapshot.hasError) {
-                return KErrorView(
-                  onPrimary: () => setState(() => _future = _load()),
-                );
-              }
-              final data = snapshot.data!;
+              final data = effective!;
               return _WalletBody(
                 balance: data.balance,
                 txns: data.txns,

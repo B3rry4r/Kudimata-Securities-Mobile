@@ -32,6 +32,7 @@ import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/screens/onboarding/log_in_screen.dart' show refreshKycGatingState;
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -50,6 +51,7 @@ class _HomeData {
     required this.watchlist,
     required this.holdings,
     required this.trending,
+    required this.walletBalance,
   });
 
   final UserProfile user;
@@ -57,6 +59,13 @@ class _HomeData {
   final List<Asset> watchlist;
   final List<Asset> holdings;
   final List<Asset> trending;
+
+  /// Preformatted "₦10,000.00" (WalletRepository.balance()) — 2026-08-20
+  /// directive: "can we see amount in funded wallet too on the home
+  /// screen somewhere please... or in the portfolio card". Added onto the
+  /// SAME concurrent load/poll cycle the rest of this screen already
+  /// runs, rather than a separate fetch.
+  final String walletBalance;
 }
 
 class HomeScreen extends StatefulWidget {
@@ -71,7 +80,23 @@ class _HomeScreenState extends State<HomeScreen> {
   late final _holdingsRepo = HoldingsRepository(AppScope.read(context).apiClient);
   late final _watchlistRepo = WatchlistRepository(AppScope.read(context).apiClient);
   late final _assetRepo = AssetRepository(AppScope.read(context).apiClient);
+  late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
   late Future<_HomeData> _future = _load();
+
+  /// The data actually rendered — set once the FIRST silent poll succeeds,
+  /// and from then on preferred over the FutureBuilder's own snapshot (see
+  /// build()). This is what lets _silentRefresh() update the screen
+  /// WITHOUT ever touching `_future` — reassigning `_future` on every poll
+  /// tick (this screen's own earlier approach) made FutureBuilder drop
+  /// back to ConnectionState.waiting for one frame every time, flashing
+  /// the whole screen back to KLoadingView (2026-08-20 fix — reported:
+  /// "when I said poll, I didn't say poll and keep refreshing and
+  /// flashing my screen... when there is data change the UI should be
+  /// updated like it's real time"). Reset to null on an intentional
+  /// reload (watchlist change, manual retry) so THOSE still show the
+  /// loading state, same as before — only the silent background poll
+  /// skips it.
+  _HomeData? _data;
 
   // Tracks AppState.watchlistVersion as of the last _load() so a toggle made
   // elsewhere (asset_detail_screen.dart, watchlist_screen.dart) is reflected
@@ -133,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final data = await _load();
       if (!mounted) return;
-      setState(() => _future = Future.value(data));
+      setState(() => _data = data);
     } on Object {
       // A poll tick failing (flaky network blip) shouldn't blank out an
       // already-loaded screen — just try again next tick.
@@ -172,12 +197,13 @@ class _HomeScreenState extends State<HomeScreen> {
     // that test started giving AppState a real (network-dead) apiClient).
     // `.wait` attaches a listener to every future up front, so none of them
     // can ever go unhandled, regardless of which one fails first.
-    final (user, summary, watchlist, holdingsPage, trending) = await (
+    final (user, summary, watchlist, holdingsPage, trending, walletBalance) = await (
       _userRepo.me(),
       _holdingsRepo.summary(),
       _watchlistRepo.items(),
       _holdingsRepo.holdings(pageSize: 5),
       _assetRepo.trending(),
+      _walletRepo.balance(),
     ).wait;
 
     return _HomeData(
@@ -186,6 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
       watchlist: watchlist,
       holdings: holdingsPage.data.map((h) => h.asset).toList(),
       trending: trending,
+      walletBalance: walletBalance,
     );
   }
 
@@ -195,6 +222,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (watchlistVersion != _loadedWatchlistVersion) {
       _loadedWatchlistVersion = watchlistVersion;
       _future = _load();
+      // An intentional reload SHOULD show the loading state — only a
+      // silent background poll skips it. Dropping the last poll's data
+      // here means this reload's own FutureBuilder snapshot drives the
+      // screen until it resolves, same as before polling existed.
+      _data = null;
     }
 
     return Scaffold(
@@ -204,15 +236,25 @@ class _HomeScreenState extends State<HomeScreen> {
         child: FutureBuilder<_HomeData>(
           future: _future,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const KLoadingView();
+            // Prefer the freshest silently-polled data over the
+            // FutureBuilder's own (possibly stale, or momentarily
+            // "waiting" if `_future` was just reassigned above) snapshot —
+            // see `_data`'s doc comment.
+            final effective = _data ?? snapshot.data;
+            if (effective == null) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const KLoadingView();
+              }
+              if (snapshot.hasError) {
+                return KErrorView.failedLoad(
+                  onPrimary: () => setState(() {
+                    _future = _load();
+                    _data = null;
+                  }),
+                );
+              }
             }
-            if (snapshot.hasError) {
-              return KErrorView.failedLoad(
-                onPrimary: () => setState(() => _future = _load()),
-              );
-            }
-            return _HomeBody(data: snapshot.data!);
+            return _HomeBody(data: effective!);
           },
         ),
       ),
@@ -272,6 +314,13 @@ class _HomeBody extends StatelessWidget {
               onDark: true,
               height: 120,
             ),
+            // 2026-08-20 directive: "can we see amount in funded wallet
+            // too on the home screen somewhere please... or in the
+            // portfolio card" — a compact row inside the SAME ink panel,
+            // rather than a whole second surface. Polled alongside
+            // everything else this screen already fetches (see
+            // _HomeData.walletBalance).
+            action: _WalletBalanceRow(balance: data.walletBalance),
           ),
         ),
         const SizedBox(height: 16),
@@ -490,6 +539,30 @@ class _HomeBody extends StatelessWidget {
 }
 
 // ── Local bits ───────────────────────────────────────────────────────────────
+
+/// Compact "Wallet balance · ₦X" row inside the portfolio panel's own
+/// `action` slot — see the balance panel's own comment above for why.
+class _WalletBalanceRow extends StatelessWidget {
+  const _WalletBalanceRow({required this.balance});
+  final String balance;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(top: 16),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: KColor.featureInk2.withValues(alpha: 0.16), width: 1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Wallet balance', style: KType.label(color: KColor.featureInk2)),
+          Text(balance, style: KType.body(color: KColor.featureInk, w: KWeight.semibold).tnum),
+        ],
+      ),
+    );
+  }
+}
 
 class _Avatar extends StatelessWidget {
   const _Avatar({required this.initial});
