@@ -144,9 +144,19 @@ class KycRepository {
   /// at least that long too, or it gives up and shows a timeout error
   /// before the backend's own (successful) response ever arrives.
   Future<KycSubmissionStatus> verifyDraftLiveness() async {
+    // Both connectTimeout AND receiveTimeout need overriding, not just
+    // receiveTimeout (2026-08-20 follow-up fix — still hit a 15s timeout
+    // after the first attempt: the error was Dio's CONNECT-timeout message,
+    // not receive-timeout. On Flutter web, Dio's XHR-based adapter has no
+    // real separate connect/receive phases, so connectTimeout — left at
+    // its 15s BaseOptions default — was still the one governing this
+    // whole long-running call).
     final response = await _client.post(
       '/kyc-submissions/draft/liveness',
-      options: Options(receiveTimeout: const Duration(seconds: 60)),
+      options: Options(
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
+      ),
     );
     return _fromJson(response.data as Map<String, dynamic>);
   }
