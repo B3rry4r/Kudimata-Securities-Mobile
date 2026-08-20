@@ -356,27 +356,28 @@ class TradingEligibilityGap {
   final String route;
 }
 
-/// Maps a phased-KYC currentStep (2-5) to the route it resumes into — same
-/// table kyc_intro.dart's own resume check uses, duplicated rather than
-/// shared cross-file per this codebase's per-screen convention (see e.g.
-/// trade_flows.dart/wallet_flows.dart's own duplicated
-/// _ensureEligibleToTrade/_ensureEligibleToTransact).
-const _kycStepRoutes = {
-  2: Routes.kycId,
-  3: Routes.kycLiveness,
-  4: Routes.kycUtilityBill,
-  5: Routes.kycNextOfKin,
-};
-
 TradingEligibilityGap? tradingEligibilityGap(AppState app) {
   if (!app.kycSubmitted) {
     final step = app.kycDraftStep;
     final total = app.kycDraftTotal;
     if (step != null && total != null) {
+      // ALWAYS routes to kyc-intro, never straight to the specific step
+      // screen (fixed 2026-08-20 — reported: after refreshing the app
+      // mid-flow, tapping this prompt jumped straight to e.g. Utility
+      // Bill, which immediately failed with "something went wrong,
+      // restart verification"). Every step screen after step 1 needs
+      // AppState.kycForm.draftId already set — the ONLY place that gets
+      // fetched and populated is kyc-intro's own "Start" handler
+      // (GET /kyc-submissions/draft). A fresh page load/app relaunch
+      // resets kycForm.draftId to null (it's in-memory only), so jumping
+      // straight to a step screen skipped that fetch entirely and every
+      // upload on that screen failed. kyc-intro's "Start" button now does
+      // that fetch and resumes at the right step itself — one extra tap,
+      // but the draft id is always populated correctly first.
       return TradingEligibilityGap(
         title: 'Complete your KYC — $step/$total done',
         message: 'Pick up where you left off',
-        route: _kycStepRoutes[step] ?? Routes.kycIntro,
+        route: Routes.kycIntro,
       );
     }
     return const TradingEligibilityGap(
