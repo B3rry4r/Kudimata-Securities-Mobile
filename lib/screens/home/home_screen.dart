@@ -103,6 +103,21 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _kycPollTimer;
   static const _kycPollInterval = Duration(seconds: 8);
 
+  // POLLING (2026-08-20, "when I buy a stock I can't see the changes on
+  // home screen immediately... poll, we would do real time web sockets
+  // later"). A buy/sell fill changes portfolio value and the holdings
+  // preview, but this screen otherwise only reloads on a manual
+  // pull-to-refresh or an unrelated rebuild (e.g. a watchlist toggle
+  // elsewhere) — so a fresh trade made from Markets/asset-detail didn't
+  // show up here until the investor did something else first. Silently
+  // re-fetches in the background (no spinner, no error state of its own —
+  // a flaky tick just leaves the last-good numbers showing, same
+  // treatment wallet_screens.dart's own silent refresh uses) rather than
+  // reassigning `_future` naively, which would otherwise flash the whole
+  // screen back to KLoadingView on every tick.
+  Timer? _portfolioPollTimer;
+  static const _portfolioPollInterval = Duration(seconds: 8);
+
   @override
   void initState() {
     super.initState();
@@ -110,6 +125,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final app = AppScope.read(context);
     if (!app.kycApproved) {
       _kycPollTimer = Timer.periodic(_kycPollInterval, (_) => _pollKycStatus());
+    }
+    _portfolioPollTimer = Timer.periodic(_portfolioPollInterval, (_) => _silentRefresh());
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final data = await _load();
+      if (!mounted) return;
+      setState(() => _future = Future.value(data));
+    } on Object {
+      // A poll tick failing (flaky network blip) shouldn't blank out an
+      // already-loaded screen — just try again next tick.
     }
   }
 
@@ -129,6 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _kycPollTimer?.cancel();
+    _portfolioPollTimer?.cancel();
     super.dispose();
   }
 
