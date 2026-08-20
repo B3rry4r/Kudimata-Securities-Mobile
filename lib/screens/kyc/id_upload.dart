@@ -36,11 +36,40 @@ class IdUploadScreen extends StatefulWidget {
 class _IdUploadScreenState extends State<IdUploadScreen> {
   static const _types = [
     _IdType('nin', 'NIN'),
-    _IdType('passport', 'Passport'),
+    _IdType('passport', 'International passport'),
     _IdType('licence', "Driver's licence"),
+    _IdType('voters_card', "Voter's card"),
   ];
 
   String _type = 'nin';
+
+  /// Opens the ID-type list in its own sheet instead of a row of pill chips
+  /// (2026-08-20 fix — reported: "the UI doesn't properly show users that
+  /// you have to select rather she felt she had to upload all"). A `Wrap`
+  /// of same-looking selectable chips reads ambiguously as "pick some/all
+  /// of these", especially once a 4th option was added; a single compact
+  /// field showing ONE chosen value (same pattern bank_accounts_screen.dart
+  /// already uses for its bank picker) makes "pick exactly one" obvious.
+  Future<void> _pickType() async {
+    final picked = await showKSheet<String>(
+      context,
+      title: 'ID type',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < _types.length; i++)
+            _IdTypeRow(
+              label: _types[i].label,
+              selected: _type == _types[i].id,
+              first: i == 0,
+              onTap: () => Navigator.of(context).pop(_types[i].id),
+            ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    setState(() => _type = picked);
+  }
 
   KFileInfo? _file;
   bool _uploading = false;
@@ -75,17 +104,30 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
                     const SizedBox(height: 20),
                     const KEyebrow('ID type'),
                     const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final t in _types)
-                          KPillChip(
-                            label: t.label,
-                            selected: _type == t.id,
-                            onTap: () => setState(() => _type = t.id),
-                          ),
-                      ],
+                    GestureDetector(
+                      onTap: _pickType,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        height: 50,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: KColor.paper,
+                          borderRadius: BorderRadius.circular(KRadii.input),
+                          border: Border.all(color: KColor.hairline, width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _types.firstWhere((t) => t.id == _type).label,
+                                style: KType.body(color: KColor.ink, w: KWeight.medium),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            KIcon('chevronRight', size: 20, color: KColor.ink3),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     KFileUpload(
@@ -202,8 +244,9 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
 
   String _documentName(String kind) => switch (kind) {
         'nin' => 'NIN',
-        'passport' => 'Passport',
+        'passport' => 'International passport',
         'drivers_licence' => "Driver's licence",
+        'voters_card' => "Voter's card",
         _ => kind,
       };
 
@@ -220,5 +263,41 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
       return;
     }
     context.go(Routes.kycLiveness);
+  }
+}
+
+/// One row in the ID-type picker sheet — same shape as
+/// bank_accounts_screen.dart's own _BankOptionRow, duplicated rather than
+/// shared per this codebase's per-screen small-widget convention.
+class _IdTypeRow extends StatelessWidget {
+  const _IdTypeRow({
+    required this.label,
+    required this.selected,
+    required this.first,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final bool first;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+        decoration: BoxDecoration(
+          border: first ? null : Border(top: BorderSide(color: KColor.hairline, width: 1)),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(label, style: KType.cardTitle())),
+            if (selected) const KIcon('check', size: 18),
+          ],
+        ),
+      ),
+    );
   }
 }

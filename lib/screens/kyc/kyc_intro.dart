@@ -34,9 +34,11 @@ class KycIntroScreen extends StatefulWidget {
 class _KycIntroScreenState extends State<KycIntroScreen> {
   static const _rows = [
     _KycRow('IDENTITY', 'Your BVN — Bank Verification Number.', 'profile'),
-    _KycRow('DOCUMENT', 'A government ID — NIN, passport or licence.', 'card'),
-    // Liveness selfie — fingerprint/profile motif (no camera icon in the set).
-    _KycRow('SELFIE', 'A quick liveness check to match your face.', 'fingerprint'),
+    _KycRow('DOCUMENT', 'A government ID — NIN, international passport, licence or voter\'s card.', 'card'),
+    // Face liveness check — fingerprint/profile motif (no camera icon in
+    // the set). Eyebrow renamed from 'SELFIE' 2026-08-20 ("please don't
+    // use selfie wording for face liveness check").
+    _KycRow('FACE LIVENESS', 'A quick liveness check to match your face.', 'fingerprint'),
   ];
 
   bool _busy = false;
