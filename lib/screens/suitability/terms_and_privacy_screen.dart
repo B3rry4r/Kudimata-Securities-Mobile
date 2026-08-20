@@ -1,18 +1,21 @@
-// Onboarding — terms of service + privacy policy + risk disclosure, all
-// combined into one screen with one checkbox (2026-08-20 consolidation; see
-// legal_acceptance_screen.dart for the general shape). Sits right after OTP
-// verification, before passcode/KYC/suitability.
+// Onboarding — ALL FOUR legal documents (terms of service, privacy policy,
+// risk disclosure, client agreement) combined into one screen with one
+// checkbox (2026-08-20 consolidation; see legal_acceptance_screen.dart for
+// the general shape). Sits right after OTP verification, before
+// passcode/KYC/suitability — this is now the ONLY legal-acceptance screen
+// in onboarding.
 //
-// Risk Disclosure moved here from its old post-suitability pairing with
-// Client Agreement (2026-08-20, user directive: "the privacy policy, terms
-// of service and risk disclosure... stack them in one screen so user just
-// scrolls down and accept one time not moving between screens" — Client
-// Agreement wasn't named, so it stayed behind on its own screen; see
-// client_agreement_screen.dart). Reading general risk information early,
-// before KYC/suitability even start, is a defensible ordering on its own —
-// it's the CLIENT AGREEMENT (a binding contract to actually become a
-// trading client) that stays gated behind a completed suitability
-// assessment.
+// Risk Disclosure and Client Agreement both moved here in two passes the
+// same day. First Risk Disclosure joined Terms+Privacy (user directive:
+// "the privacy policy, terms of service and risk disclosure... stack them
+// in one screen" — Client Agreement wasn't named that time, so it briefly
+// stayed on its own post-suitability screen, client_agreement_screen.dart).
+// Then Client Agreement joined too (follow-up directive: "move client
+// agreement to the beginning, let users accept it all in the terms and
+// disclosures") — client_agreement_screen.dart and the post-suitability
+// legal step are gone; suitability_result_screen.dart now goes straight
+// from the questionnaire result to Home, since every document is already
+// accepted by the time KYC even starts.
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,9 +33,10 @@ class TermsAndPrivacyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LegalAcceptanceScreen(
-      kinds: const ['terms_of_service', 'privacy_policy', 'risk_disclosure'],
+      kinds: const ['terms_of_service', 'privacy_policy', 'risk_disclosure', 'client_agreement'],
       screenTitle: 'Terms & Disclosures',
-      checkboxLabel: 'I have read and agree to the Terms of Service, Privacy Policy, and Risk Disclosure',
+      checkboxLabel:
+          'I have read and agree to the Terms of Service, Privacy Policy, Risk Disclosure, and Client Agreement',
       buttonLabel: 'Agree and continue',
       onAccepted: (context) async => context.go(Routes.createPasscode, extra: email),
     );

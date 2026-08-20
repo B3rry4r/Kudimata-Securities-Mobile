@@ -85,12 +85,19 @@ class _SuitabilityResultBody extends StatelessWidget {
         const Spacer(),
         KButton(
           label: 'Continue',
-          // Terms of service / privacy policy are accepted earlier, right
-          // after OTP verification (see terms_of_service_screen.dart) —
-          // from here suitability hands off straight to the two
-          // investment-specific documents: risk disclosure -> client
-          // agreement.
-          onPressed: () => context.go(Routes.riskDisclosure),
+          // All four legal documents (terms of service, privacy policy,
+          // risk disclosure, client agreement) are accepted upfront, right
+          // after OTP verification (see terms_and_privacy_screen.dart) —
+          // 2026-08-20, "move client agreement to the beginning, let users
+          // accept it all in the terms and disclosures". This is now the
+          // LAST step of onboarding: complete suitability, sign in, go
+          // straight to Home.
+          onPressed: () {
+            final app = AppScope.read(context);
+            app.setSuitabilityComplete(true);
+            app.setSignedIn(true);
+            context.go(Routes.home);
+          },
         ),
       ],
     );

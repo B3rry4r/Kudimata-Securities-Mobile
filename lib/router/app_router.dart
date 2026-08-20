@@ -42,7 +42,6 @@ import '../screens/kyc/outcome_not_approved.dart';
 import '../screens/suitability/questionnaire_screen.dart';
 import '../screens/suitability/suitability_result_screen.dart';
 import '../screens/suitability/terms_and_privacy_screen.dart';
-import '../screens/suitability/client_agreement_screen.dart';
 
 // Tab roots.
 import '../screens/home/home_screen.dart';
@@ -174,15 +173,15 @@ GoRouter buildRouter(AppState state) {
         path: Routes.termsOfService,
         // `extra` is the account email, threaded from otp_screen.dart's
         // post-verify handoff — same pattern createPasscode's route uses.
-        // Combined terms-of-service + privacy-policy screen (2026-08-20
-        // consolidation) — one tick covers both.
+        // ALL FOUR legal documents in one screen/one tick (2026-08-20
+        // consolidation, final pass — see TermsAndPrivacyScreen's own doc
+        // comment). This is the only legal-acceptance route left; the old
+        // post-suitability Client Agreement route/screen are gone —
+        // suitability_result_screen.dart goes straight to Home now.
         builder: (_, st) => themed(
           () => TermsAndPrivacyScreen(email: st.extra is String ? st.extra as String : null),
         ),
       ),
-      // Combined risk-disclosure + client-agreement screen (2026-08-20
-      // consolidation) — one tick covers both.
-      GoRoute(path: Routes.riskDisclosure, builder: (_, _) => themed(() => ClientAgreementScreen())),
 
       // ── Pushed detail (top-level — cover the shell, no tab bar) ─────────--
       GoRoute(path: Routes.notifications, builder: (_, _) => themed(() => NotificationsScreen())),
@@ -274,7 +273,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill, Routes.kycNextOfKin,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     Routes.questionnaire, Routes.suitabilityResult,
-    Routes.termsOfService, Routes.riskDisclosure,
+    Routes.termsOfService,
   };
 
   // Pre-auth-only screens — never legitimately reachable once fully signed

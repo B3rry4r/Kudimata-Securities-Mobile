@@ -323,7 +323,7 @@ class _LogInScreenState extends State<LogInScreen> {
   /// existing passcode, not force recreating it every time. AppState.signedIn
   /// is deliberately NOT set true in the create-passcode branch: this app's
   /// existing convention (see otp_screen.dart's post-verify handoff, and
-  /// client_agreement_screen.dart setting it only once suitability is
+  /// suitability_result_screen.dart setting it only once suitability is
   /// genuinely complete) only flips it once the investor is fully through
   /// every gate, so `_gateRedirect` (app_router.dart) never free-roams
   /// someone whose real KYC/suitability state hasn't been hydrated and

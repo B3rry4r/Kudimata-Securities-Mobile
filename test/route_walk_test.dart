@@ -59,7 +59,7 @@ void main() {
       '/kyc', '/kyc/bvn', '/kyc/id', '/kyc/liveness', '/kyc/utility-bill',
       '/kyc/next-of-kin', '/kyc/submitted', '/kyc/approved',
       // suitability
-      '/suitability', '/suitability/result', '/suitability/terms', '/suitability/risk',
+      '/suitability', '/suitability/result', '/suitability/terms',
     ];
 
     // Let a page transition fully settle so we test one route at a time (the

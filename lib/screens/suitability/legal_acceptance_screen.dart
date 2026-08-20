@@ -9,10 +9,13 @@
 // Widened from a fixed two-document pairing to an arbitrary-length `kinds`
 // list the same day (further user directive: "the privacy policy, terms
 // of service and risk disclosure... stack them in one screen so user just
-// scrolls down and accept one time not moving between screens") — Client
-// Agreement was deliberately NOT named in that request, so it now stands
-// alone on its own single-document screen built on this same widget (see
-// client_agreement_screen.dart) rather than being folded in too.
+// scrolls down and accept one time not moving between screens" — Client
+// Agreement wasn't named that time, so it briefly stood alone on its own
+// screen, then joined the rest on a follow-up directive the same day:
+// "move client agreement to the beginning, let users accept it all in the
+// terms and disclosures"). All four documents now go through this ONE
+// widget, in ONE screen (terms_and_privacy_screen.dart) — there is no
+// longer a second legal-acceptance screen anywhere in onboarding.
 //
 // Fetches every document (GET /legal-documents/content/:kind, called once
 // per kind, all concurrently via `.wait`) and renders them in one
