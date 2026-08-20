@@ -89,7 +89,8 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
       }
       if (result.status == 'rejected' ||
           result.status == 'flagged' ||
-          result.status == 'expired') {
+          result.status == 'expired' ||
+          result.isRejectedWithRoomToRetry) {
         context.go(Routes.kycOutcome);
         return;
       }

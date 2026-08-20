@@ -395,6 +395,7 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
   // AppState.kycOutcomeStatus's doc comment).
   switch (app.kycOutcomeStatus) {
     case 'rejected':
+    case 'rejected_retry': // staff reject with resubmission room left — see KycSubmissionStatus.isRejectedWithRoomToRetry
       return const TradingEligibilityGap(
         title: "Your KYC wasn't approved",
         message: 'See what to do next',

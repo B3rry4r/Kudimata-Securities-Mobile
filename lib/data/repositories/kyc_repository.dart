@@ -88,6 +88,16 @@ class KycSubmissionStatus {
   /// Whether the investor still has a resubmission attempt available, per
   /// KycSubmission's `attemptCount`/`maxAttempts` (registry.json).
   bool get canResubmit => attemptCount < maxAttempts;
+
+  /// True when a staff member just rejected this submission but
+  /// resubmission room remains — the backend's updateDecision() sends
+  /// status back to 'pending' in that case (not a terminal 'rejected'),
+  /// per the frozen contract's own status-transition rule, but it DOES
+  /// persist the reason onto flagReason/flagDetail (2026-08-20 fix). A
+  /// plain not-yet-decided 'pending' submission never has flagReason set —
+  /// only this exact path does — so this is an unambiguous signal, not a
+  /// guess. Fixes: "it was rejected but app still told me under review".
+  bool get isRejectedWithRoomToRetry => status == 'pending' && flagReason != null;
 }
 
 /// See [KycSubmissionStatus.verificationSignals]. Each field: true (passed),

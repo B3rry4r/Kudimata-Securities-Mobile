@@ -647,8 +647,16 @@ Future<void> refreshKycGatingState(BuildContext context) async {
     app.setKycDraftProgress(kyc?.isDraft == true ? kyc!.currentStep : null, kyc?.isDraft == true ? kyc!.totalSteps : null);
     // See AppState.kycOutcomeStatus's doc comment — a genuine hard
     // rejected/flagged/expired outcome must not collapse into the same
-    // "still pending" bucket a not-yet-decided submission does.
+    // "still pending" bucket a not-yet-decided submission does. A staff
+    // reject with resubmission room left (kyc.isRejectedWithRoomToRetry)
+    // sends `status` back to 'pending' rather than a terminal value, so it
+    // needs its own sentinel here too, or Home would show "under review"
+    // for a submission that was genuinely just rejected.
     const terminalOutcomes = {'rejected', 'flagged', 'expired'};
-    app.setKycOutcomeStatus(terminalOutcomes.contains(kyc?.status) ? kyc!.status : null);
+    app.setKycOutcomeStatus(
+      kyc?.isRejectedWithRoomToRetry == true
+          ? 'rejected_retry'
+          : (terminalOutcomes.contains(kyc?.status) ? kyc!.status : null),
+    );
   }
 }

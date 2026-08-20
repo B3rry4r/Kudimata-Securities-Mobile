@@ -104,6 +104,14 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
   }
 
   Widget _buildForStatus(KycSubmissionStatus result) {
+    // Checked before the switch — a staff reject with resubmission room
+    // left sends status back to 'pending' (not a terminal value), per the
+    // backend's own contract, so it can't be a normal switch case on
+    // `status` alone. See isRejectedWithRoomToRetry's doc comment. Fixes:
+    // "it was rejected but app still told me under review".
+    if (result.isRejectedWithRoomToRetry) {
+      return _buildRejected(result);
+    }
     switch (result.status) {
       case 'rejected':
         return _buildRejected(result);
