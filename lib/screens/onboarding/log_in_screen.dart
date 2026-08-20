@@ -645,5 +645,10 @@ Future<void> refreshKycGatingState(BuildContext context) async {
     app.setKycApproved(kycApproved);
     app.setSuitabilityComplete(suitabilityComplete);
     app.setKycDraftProgress(kyc?.isDraft == true ? kyc!.currentStep : null, kyc?.isDraft == true ? kyc!.totalSteps : null);
+    // See AppState.kycOutcomeStatus's doc comment — a genuine hard
+    // rejected/flagged/expired outcome must not collapse into the same
+    // "still pending" bucket a not-yet-decided submission does.
+    const terminalOutcomes = {'rejected', 'flagged', 'expired'};
+    app.setKycOutcomeStatus(terminalOutcomes.contains(kyc?.status) ? kyc!.status : null);
   }
 }

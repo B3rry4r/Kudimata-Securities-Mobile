@@ -90,6 +90,19 @@ class AppState extends ChangeNotifier {
   /// step instead of always restarting at step 1.
   int? kycDraftStep;
   int? kycDraftTotal;
+
+  /// One of 'rejected' | 'flagged' | 'expired', or null while there's no
+  /// known terminal-non-approved outcome (never submitted, still
+  /// pending/review, or approved). 2026-08-20 fix — reported: "a rejected
+  /// account is showing needs manual review [on Home]... thats a hard
+  /// wall." Before this existed, tradingEligibilityGap() below only ever
+  /// checked the boolean kycApproved, so a genuine hard REJECTION looked
+  /// identical to a submission still quietly awaiting a decision — Home's
+  /// prompt always said "Your KYC is under review" and routed to the
+  /// pending-polling screen, regardless of how final the real outcome
+  /// actually was. Populated by refreshKycGatingState (log_in_screen.dart)
+  /// alongside kycSubmitted/kycApproved.
+  String? kycOutcomeStatus;
   bool signedIn = false;
 
   /// True while a fresh email+password login (log_in_screen.dart) is
@@ -175,6 +188,11 @@ class AppState extends ChangeNotifier {
   void setKycDraftProgress(int? step, int? total) {
     kycDraftStep = step;
     kycDraftTotal = total;
+    notifyListeners();
+  }
+
+  void setKycOutcomeStatus(String? v) {
+    kycOutcomeStatus = v;
     notifyListeners();
   }
 
@@ -284,6 +302,7 @@ class AppState extends ChangeNotifier {
     suitabilityComplete = false;
     kycDraftStep = null;
     kycDraftTotal = null;
+    kycOutcomeStatus = null;
     biometricEnabled = false;
     _watchlist.clear();
     watchlistVersion = 0;
@@ -365,6 +384,33 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
       message: 'Verify your identity to start investing',
       route: Routes.kycIntro,
     );
+  }
+  // Checked BEFORE the generic "still pending" fallback below — a real
+  // rejected/flagged/expired outcome is a genuinely different situation
+  // from "quietly awaiting a decision" and deserves accurate copy + a
+  // route to kyc-outcome (which shows the real per-status message), not
+  // "under review" + a route to the pending-polling screen regardless of
+  // how final the actual outcome is (2026-08-20 fix — see
+  // AppState.kycOutcomeStatus's doc comment).
+  switch (app.kycOutcomeStatus) {
+    case 'rejected':
+      return const TradingEligibilityGap(
+        title: "Your KYC wasn't approved",
+        message: 'See what to do next',
+        route: Routes.kycOutcome,
+      );
+    case 'flagged':
+      return const TradingEligibilityGap(
+        title: 'Your account needs manual review',
+        message: "We'll notify you once it's resolved",
+        route: Routes.kycOutcome,
+      );
+    case 'expired':
+      return const TradingEligibilityGap(
+        title: 'Your KYC submission expired',
+        message: 'Please verify your identity again',
+        route: Routes.kycOutcome,
+      );
   }
   if (!app.kycApproved) {
     return const TradingEligibilityGap(

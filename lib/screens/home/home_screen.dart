@@ -105,7 +105,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _pollKycStatus() async {
     await refreshKycGatingState(context);
     if (!mounted) return;
-    if (AppScope.read(context).kycApproved) {
+    final app = AppScope.read(context);
+    // Stop once the outcome is final either way — approved, or a genuine
+    // terminal rejected/flagged/expired (2026-08-20 fix, see
+    // AppState.kycOutcomeStatus) — no point re-checking a decision that's
+    // already landed.
+    if (app.kycApproved || app.kycOutcomeStatus != null) {
       _kycPollTimer?.cancel();
     }
   }
