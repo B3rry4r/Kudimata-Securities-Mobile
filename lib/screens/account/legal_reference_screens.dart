@@ -154,17 +154,60 @@ class _PartnerDisclosuresScreenState extends State<PartnerDisclosuresScreen> {
       title: 'Who executes your trades',
       backLabel: 'Back to the receipt',
       onBack: () => Navigator.of(context).maybePop(),
-      summary: FutureBuilder<String?>(
-        future: _original,
-        builder: (context, snapshot) => KDocumentSummary(
-          kind: 'Third-party disclosure',
-          title: 'Kudimata places the order, a licensed broker executes it',
-          summary: 'Kudimata Invest is the app. Your order reaches the NGX through a '
-              'dealing-member broker, and your shares sit in your own name at the CSCS — '
-              'not with us and not with them.',
-          points: _points,
-          original: snapshot.data,
-        ),
+      summary: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Canvas #94's own partner-logos row (Kudimata mark · divider ·
+          // executing-broker logo) — was missing entirely; the real
+          // Blue Marina lockup asset lives in the design bundle
+          // (assets/partners/blue-marina.png) and is now imported into
+          // this app the same way the illustration/brand assets already
+          // were, rather than left out or faked with text.
+          const _PartnerLogoRow(),
+          const SizedBox(height: 12),
+          FutureBuilder<String?>(
+            future: _original,
+            builder: (context, snapshot) => KDocumentSummary(
+              kind: 'Third-party disclosure',
+              title: 'Kudimata places the order, a licensed broker executes it',
+              summary: 'Kudimata Invest is the app. Your order reaches the NGX through a '
+                  'dealing-member broker, and your shares sit in your own name at the CSCS — '
+                  'not with us and not with them.',
+              points: _points,
+              original: snapshot.data,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Canvas #94's bordered "who executes your trades" logo strip: the
+/// Kudimata mark, a hairline divider, then each executing broker's real
+/// logo. Only Blue Marina today — a second broker would add a second
+/// image here, per the canvas's own footer note ("a second partner simply
+/// adds a second image").
+class _PartnerLogoRow extends StatelessWidget {
+  const _PartnerLogoRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: KColor.paper,
+        border: Border.all(color: KColor.hairline, width: 1),
+        borderRadius: KRadii.cardR,
+      ),
+      child: Row(
+        children: [
+          const KMark(size: 16), // width 16 -> height ~26, matching canvas's size=26 (height-set) mark
+          const SizedBox(width: 14),
+          Container(width: 1, height: 24, color: KColor.hairline),
+          const SizedBox(width: 14),
+          Image.asset('assets/partners/blue-marina.png', height: 18, fit: BoxFit.contain),
+        ],
       ),
     );
   }

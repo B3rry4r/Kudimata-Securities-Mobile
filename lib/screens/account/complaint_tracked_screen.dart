@@ -38,7 +38,7 @@ typedef ComplaintSummary = Complaint;
 /// wire model — computed from [Complaint.timeline]/[Complaint.status] by
 /// [ComplaintTrackedScreen._timelineSteps]; `state` drives the medallion
 /// tint/icon colour and title colour, see `_ComplaintStepRow`.
-enum _ComplaintStepState { done, active }
+enum _ComplaintStepState { done, active, upcoming }
 
 class _ComplaintTimelineStep {
   const _ComplaintTimelineStep({
@@ -81,6 +81,14 @@ class ComplaintTrackedScreen extends StatelessWidget {
   /// one forward-looking "active" row narrating where things stand now when
   /// the complaint hasn't reached a terminal state — no fabricated
   /// timestamps for steps that haven't happened yet.
+  ///
+  /// 2026-08-24: canvas s88 always shows the FULL 3-stage roadmap (logged →
+  /// under review → escalate to the SEC), with the not-yet-reached stage
+  /// rendered inactive/greyed rather than omitted — that third stage was
+  /// missing entirely here for a non-escalated complaint. Its date isn't
+  /// fabricated: escalation becomes available the day after the real
+  /// `answerDueAt` SLA date, matching canvas's own worked example exactly
+  /// (due 30 Mar -> "Available from 31 Mar").
   List<_ComplaintTimelineStep> _timelineSteps() {
     final entries = complaint.timeline ?? const <ComplaintTimelineEntry>[];
     final steps = [
@@ -101,6 +109,18 @@ class ComplaintTrackedScreen extends StatelessWidget {
               : 'Under review',
           subtitle: 'Answer due by ${_formatDay(complaint.answerDueAt)}',
           state: _ComplaintStepState.active,
+        ),
+      );
+    }
+    if (complaint.status != ComplaintStatus.escalated &&
+        complaint.status != ComplaintStatus.resolved) {
+      final escalatesFrom = complaint.answerDueAt.add(const Duration(days: 1));
+      steps.add(
+        _ComplaintTimelineStep(
+          icon: 'shield',
+          title: 'Escalate to the SEC',
+          subtitle: 'Available from ${_formatDay(escalatesFrom)} if unresolved',
+          state: _ComplaintStepState.upcoming,
         ),
       );
     }
@@ -202,6 +222,7 @@ class _ComplaintStepRow extends StatelessWidget {
         // (medallion tint, icon colour, title colour)
         _ComplaintStepState.done => (KColor.statusApprovedTint, KColor.gain, KColor.ink),
         _ComplaintStepState.active => (KColor.indicatorTint, KColor.indicator, KColor.ink),
+        _ComplaintStepState.upcoming => (KColor.track, KColor.ink2, KColor.ink2),
       };
 
   @override

@@ -21,10 +21,13 @@ import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/corporate_actions_repository.dart';
+import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'corporate_actions_widgets.dart';
+
+typedef _ScreenData = ({List<RightsIssueListItem> items, String walletBalance});
 
 class RightsIssueScreen extends StatefulWidget {
   const RightsIssueScreen({super.key});
@@ -35,7 +38,17 @@ class RightsIssueScreen extends StatefulWidget {
 
 class _RightsIssueScreenState extends State<RightsIssueScreen> {
   late final _repo = CorporateActionsRepository(AppScope.read(context).apiClient);
-  late Future<List<RightsIssueListItem>> _future = _repo.rightsIssues();
+  late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
+  late Future<_ScreenData> _future = _load();
+
+  // Canvas #s82's KInput carries a real "Wallet ₦214,300.00 · part of the
+  // entitlement is fine" helper — fetched alongside the rights-issue list
+  // rather than a second screen-level FutureBuilder, same combined-load
+  // convention every other screen in this app uses.
+  Future<_ScreenData> _load() async {
+    final (items, walletBalance) = await (_repo.rightsIssues(), _walletRepo.balance()).wait;
+    return (items: items, walletBalance: walletBalance);
+  }
 
   RightsIssueListItem? _pickRelevant(List<RightsIssueListItem> items) {
     for (final item in items) {
@@ -46,7 +59,7 @@ class _RightsIssueScreenState extends State<RightsIssueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<RightsIssueListItem>>(
+    return FutureBuilder<_ScreenData>(
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -60,12 +73,12 @@ class _RightsIssueScreenState extends State<RightsIssueScreen> {
             title: 'Rights issue',
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: KErrorView(onPrimary: () => setState(() => _future = _repo.rightsIssues())),
+              child: KErrorView(onPrimary: () => setState(() => _future = _load())),
             ),
           );
         }
-        final items = snapshot.data ?? const <RightsIssueListItem>[];
-        final item = _pickRelevant(items);
+        final data = snapshot.data!;
+        final item = _pickRelevant(data.items);
         if (item == null) {
           return const KCorpActionScaffold(
             title: 'Rights issue',
@@ -81,7 +94,12 @@ class _RightsIssueScreenState extends State<RightsIssueScreen> {
         }
         return KCorpActionScaffold(
           title: '${item.ticker} rights issue',
-          child: _RightsIssueDetail(key: ValueKey(item.id), repo: _repo, item: item),
+          child: _RightsIssueDetail(
+            key: ValueKey(item.id),
+            repo: _repo,
+            item: item,
+            walletBalance: data.walletBalance,
+          ),
         );
       },
     );
@@ -89,9 +107,15 @@ class _RightsIssueScreenState extends State<RightsIssueScreen> {
 }
 
 class _RightsIssueDetail extends StatefulWidget {
-  const _RightsIssueDetail({super.key, required this.repo, required this.item});
+  const _RightsIssueDetail({
+    super.key,
+    required this.repo,
+    required this.item,
+    required this.walletBalance,
+  });
   final CorporateActionsRepository repo;
   final RightsIssueListItem item;
+  final String walletBalance;
 
   @override
   State<_RightsIssueDetail> createState() => _RightsIssueDetailState();
@@ -237,13 +261,15 @@ class _RightsIssueDetailState extends State<_RightsIssueDetail> {
             numeric: true,
             keyboardType: TextInputType.number,
             suffix: 'of ${r.entitlementUnits}',
+            helper: 'Wallet ${widget.walletBalance} · part of the entitlement is fine',
             onChanged: _onChanged,
           ),
           const SizedBox(height: 12),
-          const KExplainPanel(
+          KExplainPanel(
             title: 'What happens if I ignore it?',
-            body: 'Your slice of the company gets smaller. Neither choice is wrong — taking it '
-                'up only makes sense if you still want more of this stock.',
+            body: 'Your slice of ${r.ticker} gets smaller and you keep your '
+                '${_formatNaira(r.entitlementUnits * r.subscriptionPriceKobo)}. Neither choice is '
+                'wrong — taking it up only makes sense if you still want more ${r.ticker}.',
           ),
           const SizedBox(height: 20),
           KButton(

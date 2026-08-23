@@ -108,6 +108,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     final rows = _filtered;
     return KAccountSubScaffold(
       title: 'Help & support',
+      // Canvas s56 pins "File a complaint" to the bottom of the screen
+      // (margin-top:auto), not as the last item in the scrolling list.
+      footer: KButton(
+        label: 'File a complaint',
+        variant: KButtonVariant.secondary,
+        onPressed: _fileComplaint,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -194,12 +201,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             tone: KNudgeTone.warm,
             title: 'Report fraud',
             body: 'If you think someone else is in your account, freeze it first — then call $_kSupportPhone.',
-          ),
-          const SizedBox(height: 24),
-          KButton(
-            label: 'File a complaint',
-            variant: KButtonVariant.secondary,
-            onPressed: _fileComplaint,
           ),
         ],
       ),

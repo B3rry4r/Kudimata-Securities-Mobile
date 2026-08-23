@@ -43,6 +43,7 @@ const List<String> _relationships = [
 class _NextOfKinScreenState extends State<NextOfKinScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
+  final _email = TextEditingController();
   String? _relationship;
   bool _showErrors = false;
   bool _prefilled = false;
@@ -51,6 +52,7 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
   void dispose() {
     _name.dispose();
     _phone.dispose();
+    _email.dispose();
     super.dispose();
   }
 
@@ -64,6 +66,7 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
     final form = AppScope.read(context).kycForm;
     _name.text = form.nextOfKinName ?? '';
     _phone.text = form.nextOfKinPhone ?? '';
+    _email.text = form.nextOfKinEmail ?? '';
     _relationship = form.nextOfKinRelationship;
   }
 
@@ -100,6 +103,7 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
           name: _name.text.trim(),
           relationship: _relationship!,
           phone: _phone.text.trim(),
+          email: _email.text.trim().isEmpty ? null : _email.text.trim(),
         );
     context.go(Routes.kycReview);
   }
@@ -161,6 +165,15 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
                               onChanged: (_) {
                                 if (_showErrors) setState(() {});
                               }),
+                          const SizedBox(height: 16),
+                          // Canvas s21's 4th field — optional, no validation.
+                          KInput(
+                            label: 'Email',
+                            placeholder: 'Optional',
+                            icon: 'mail',
+                            keyboardType: TextInputType.emailAddress,
+                            controller: _email,
+                          ),
                         ],
                       ),
                     ),

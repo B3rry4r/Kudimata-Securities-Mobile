@@ -140,7 +140,13 @@ class KAccountCard extends StatelessWidget {
 /// Pushed-screen scaffold: KDetailHeader + scrollable body with 20px gutters.
 /// (Root tab supplies its own Scaffold without a bottom nav — the shell adds it.)
 class KAccountSubScaffold extends StatelessWidget {
-  const KAccountSubScaffold({super.key, required this.title, required this.child, this.headerTrailing});
+  const KAccountSubScaffold({
+    super.key,
+    required this.title,
+    required this.child,
+    this.headerTrailing,
+    this.footer,
+  });
   final String title;
   final Widget child;
 
@@ -150,6 +156,14 @@ class KAccountSubScaffold extends StatelessWidget {
   /// app's "extend, don't fork a shared component" convention.
   final Widget? headerTrailing;
 
+  /// Renders OUTSIDE the scrolling `child`, pinned to the bottom of the
+  /// screen — several canvas screens using this scaffold put their final
+  /// action button at `margin-top:auto` (e.g. Help & support's "File a
+  /// complaint", screen 56) rather than as the last scrolled item. Added
+  /// as a prop, per the same "extend, don't fork" convention as
+  /// [headerTrailing], rather than a second scaffold widget.
+  final Widget? footer;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -157,10 +171,22 @@ class KAccountSubScaffold extends StatelessWidget {
       appBar: KDetailHeader(title: title, trailing: headerTrailing),
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-              KSpace.gutter, 20, KSpace.gutter, 32),
-          child: child,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                    KSpace.gutter, 20, KSpace.gutter, 32),
+                child: child,
+              ),
+            ),
+            if (footer != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    KSpace.gutter, 0, KSpace.gutter, 20),
+                child: footer,
+              ),
+          ],
         ),
       ),
     );

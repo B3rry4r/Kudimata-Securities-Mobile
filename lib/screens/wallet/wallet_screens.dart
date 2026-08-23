@@ -272,12 +272,15 @@ class _TxnRow extends StatelessWidget {
 
   // Map ledger type to a glyph from the fixed KIcon set. mockup-raw/s40.html
   // line 19: the fund-in row uses icon "arrowDown", not "arrowDownLeft".
+  // mockup-raw/s40.html line 20: the dividend row uses icon "wallet" in a
+  // sun-tint circle, distinct from a plain fund-in (arrowDown/indicator).
   String get _icon => switch (txn.type) {
         TxnType.fund => 'arrowDown',
         TxnType.withdraw => 'arrowUp',
         TxnType.buy => 'markets',
         TxnType.sell => 'markets',
         TxnType.convert => 'transfer',
+        TxnType.dividend => 'wallet',
       };
 
   // Colored icon circle per ledger type (2026-08-22 "Soft Landing" —
@@ -287,6 +290,7 @@ class _TxnRow extends StatelessWidget {
         TxnType.fund => (KColor.indicatorTint, KColor.indicator),
         TxnType.buy || TxnType.sell => (KColor.track, KColor.ink2),
         TxnType.withdraw || TxnType.convert => (KColor.sunTint, KColor.sunPress),
+        TxnType.dividend => (KColor.sunTint, KColor.sunPress),
       };
 
   @override

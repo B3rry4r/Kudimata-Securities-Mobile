@@ -1,18 +1,22 @@
 // Stage 7 · Order status (pushed; route Routes.orderStatus). Lists the user's
-// buy/sell orders with per-order status via KBadge. Empty state uses
-// KStatusView. KDetailHeader (back chevron, no tab bar).
+// buy/sell orders with per-order status via KStatusPill. KDetailHeader (back
+// chevron, no tab bar).
 //
-// Wired to GET /transactions (buy/sell subset) via OrdersRepository.orders()
-// — see lib/data/repositories/orders_repository.dart for why this screen's
-// data comes from the Transaction resource rather than registry.json's Order
-// resource, and lib/data/api/README.md for the FutureBuilder convention this
-// follows.
+// 2026-08-24 rewrite: wired to the REAL `GET /orders` resource via
+// OrdersRepository.myOrders() — see that repository's header comment for why
+// this is now correct (investor-scoped GET /orders exists for real, and real
+// Order rows exist for real — the previous Transaction-based approach was
+// permanently empty against the live backend). Also wires the real "Cancel"
+// button: PATCH /orders/:id/cancel via OrdersRepository.cancel(), previously
+// impossible to reach a valid order id from this screen's old data source.
 import 'package:flutter/material.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/orders_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/markets/market_hours.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -27,22 +31,48 @@ class OrderStatusScreen extends StatefulWidget {
 
 class _OrderStatusScreenState extends State<OrderStatusScreen> {
   late final _repo = OrdersRepository(AppScope.read(context).apiClient);
-  late Future<List<Txn>> _future = _repo.orders();
+  late Future<List<Order>> _future = _repo.myOrders();
 
-  // "Open"/"All" (spec 44's SegmentedControl, default "Open"). Txn.status
-  // here is already the 3-value collapsed view (completed/pending/failed —
-  // see OrdersRepository._statusFromJson), so "Open" == still-pending;
-  // there is no separate "queued" sub-state to filter on at this layer.
+  // "Open"/"All" (spec 44's SegmentedControl, default "Open"). "Open" means
+  // still-pending (not yet filled, rejected or cancelled) — the real Order
+  // resource's own `status` field, not a derived collapse.
   String _filter = 'open';
+
+  Future<void> _cancel(BuildContext context, Order order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Cancel the ${order.ticker} order?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep order')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancel order'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await _repo.cancel(order.id);
+      if (!context.mounted) return;
+      setState(() => _future = _repo.myOrders());
+    } on ApiException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final marketOpen = isNgxOpenNow();
     return Scaffold(
       backgroundColor: KColor.bg,
       appBar: const KDetailHeader(title: 'Orders'),
       body: SafeArea(
         top: false,
-        child: FutureBuilder<List<Txn>>(
+        child: FutureBuilder<List<Order>>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -51,12 +81,22 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
             if (snapshot.hasError) {
               return KErrorView(
                 title: "Couldn't load orders",
-                onPrimary: () => setState(() => _future = _repo.orders()),
+                onPrimary: () => setState(() => _future = _repo.myOrders()),
               );
             }
             final all = snapshot.data!;
             final orders =
-                _filter == 'open' ? all.where((t) => t.status == TxnStatus.pending).toList() : all;
+                _filter == 'open' ? all.where((o) => o.status == 'pending').toList() : all;
+            // Canvas s44's single destructive button cancels "the" one
+            // pending order — this app's real data can have zero, one, or
+            // several. Matches the canvas exactly for the common (single
+            // pending order) case; with more than one, cancelling the
+            // OLDEST pending order first (a reasonable, honest default —
+            // there is no per-row cancel affordance in the canvas to defer
+            // to instead).
+            final cancellable = all.where((o) => o.status == 'pending').toList()
+              ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            final toCancel = cancellable.isEmpty ? null : cancellable.first;
             return Column(
               children: [
                 Padding(
@@ -74,7 +114,12 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
                 Expanded(
                   child: orders.isEmpty
                       ? const _EmptyOrders()
-                      : _OrderList(orders: orders),
+                      : _OrderList(
+                          orders: orders,
+                          marketOpen: marketOpen,
+                          cancellableOrder: toCancel,
+                          onCancel: () => _cancel(context, toCancel!),
+                        ),
                 ),
               ],
             );
@@ -85,11 +130,19 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
   }
 }
 
-/// The list of order rows — identical to the mock version's widget tree,
-/// just fed from live `Txn` data instead of `MockData.txns`.
+/// The list of order rows — fed from live `Order` data (see
+/// OrdersRepository.myOrders).
 class _OrderList extends StatelessWidget {
-  const _OrderList({required this.orders});
-  final List<Txn> orders;
+  const _OrderList({
+    required this.orders,
+    required this.marketOpen,
+    required this.cancellableOrder,
+    required this.onCancel,
+  });
+  final List<Order> orders;
+  final bool marketOpen;
+  final Order? cancellableOrder;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +164,7 @@ class _OrderList extends StatelessWidget {
                         ? null
                         : Border(top: BorderSide(color: KColor.hairline, width: 1)),
                   ),
-                  child: _OrderRow(txn: orders[i]),
+                  child: _OrderRow(order: orders[i], marketOpen: marketOpen),
                 ),
             ],
           ),
@@ -128,45 +181,23 @@ class _OrderList extends StatelessWidget {
         ),
         // mockup-raw/s44.html line 22: footer padding-top is 18, not 16.
         const SizedBox(height: 18),
-        // mockup-raw/s44.html line 23: a destructive "Cancel the MTNN
-        // order" button precedes "Go to my portfolio" — still deliberately
-        // NOT added, but the reason has narrowed (2026-08-24 re-check):
-        //
-        // The backend NOW has a real, working cancel endpoint —
-        // `PATCH /orders/:id/cancel` (investor role, own order only, 422
-        // via ApiException.message if the order isn't `pending` any more)
-        // — and OrdersRepository.cancel(orderId) above calls it correctly.
-        // That part of the old gap is closed.
-        //
-        // What's NOT closed: this screen's list is sourced from
-        // `GET /transactions` (see OrdersRepository's own header comment —
-        // investors have no `GET /orders` list endpoint, only
-        // staff/compliance roles do), and the wire `Transaction` shape
-        // carries no `orderId` field at all — confirmed against
-        // Kudimata-Securities-Backend/src/common/types/transaction.types.ts
-        // and prisma/schema.prisma's `Transaction.orderId` comment ("NOT a
-        // registry.json wire field... Internal linkage only"). So every
-        // `Txn` row here only has a *Transaction* id, never the *Order* id
-        // `cancel()` needs — passing `txn.id` to it would 404 against the
-        // Order table on every single call, not genuinely cancel anything.
-        // Wiring the button against that id would be exactly the kind of
-        // "looks wired, silently fails" affordance this app's own
-        // conventions rule out.
-        //
-        // (Independently re-confirmed while researching this: no code path
-        // in TransactionsService ever creates a buy/sell Transaction row
-        // today either, so this screen's list is empty against the live
-        // backend regardless — a separate, deeper, pre-existing gap, not
-        // introduced by this pass.)
-        //
-        // Real fix needs either an investor-scoped `GET /orders` list, or
-        // `orderId` added to the Transaction wire shape — backend work, out
-        // of scope for a mobile-only pass. Once either lands, wire this
-        // button using OrdersRepository.cancel(orderId), with a confirm
-        // dialog (see freeze_account_screen.dart's AlertDialog pattern) and
-        // a `setState(() => _future = _repo.orders())` refresh on success —
-        // exactly the shape this repository's cancel() is already built to
-        // support.
+        // mockup-raw/s44.html line 23: a destructive "Cancel the {ticker}
+        // order" button — real now (PATCH /orders/:id/cancel via
+        // OrdersRepository.cancel, real order id from the real GET /orders
+        // list). Canvas shows exactly one cancellable order; this app's
+        // real data can have several pending at once, so the button
+        // targets the OLDEST pending order (see build()'s `cancellableOrder`
+        // — a reasonable, honest default since the canvas gives no
+        // per-row cancel affordance to defer to instead) and is simply
+        // absent when nothing is cancellable.
+        if (cancellableOrder != null) ...[
+          KButton(
+            label: 'Cancel the ${cancellableOrder!.ticker} order',
+            variant: KButtonVariant.destructive,
+            onPressed: onCancel,
+          ),
+          const SizedBox(height: 10),
+        ],
         KButton(
           label: 'Go to my portfolio',
           variant: KButtonVariant.ghost,
@@ -178,13 +209,33 @@ class _OrderList extends StatelessWidget {
 }
 
 /// One order row — title + units/price subtitle, StatusPill inline to the
-/// right. mockup-raw/s44.html: `[title+subtitle flex:1] [StatusPill]` — was
-/// stacking the pill below the subtitle and adding an amount/date column
-/// the mockup doesn't show in this list (that pairing belongs to the
-/// Wallet activity list, s40, not Orders).
+/// right. mockup-raw/s44.html: `[title+subtitle flex:1] [StatusPill]`.
 class _OrderRow extends StatelessWidget {
-  const _OrderRow({required this.txn});
-  final Txn txn;
+  const _OrderRow({required this.order, required this.marketOpen});
+  final Order order;
+  final bool marketOpen;
+
+  String get _title {
+    final verb = order.side == 'sell' ? 'Sell' : 'Buy';
+    return '$verb ${order.ticker} · ${order.units}';
+  }
+
+  String get _orderTypeLabel => order.orderType == 'limit' ? 'Limit' : 'Market';
+
+  String get _subtitle {
+    switch (order.status) {
+      case 'approved':
+        return '$_orderTypeLabel · ${_formatKobo(order.value)} · ${_formatDateTime(order.createdAt)}';
+      case 'pending':
+        return marketOpen
+            ? '$_orderTypeLabel · ${_formatKobo(order.value)} · ${_formatDateTime(order.createdAt)}'
+            : 'Queued · market opens 10:00';
+      case 'rejected':
+      case 'cancelled':
+      default:
+        return '$_orderTypeLabel order · not completed';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -200,36 +251,70 @@ class _OrderRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(txn.title, style: KType.cardTitle().copyWith(height: 20 / 15)),
+                Text(_title, style: KType.cardTitle().copyWith(height: 20 / 15)),
                 const SizedBox(height: 4),
-                Text(txn.subtitle, style: KType.micro(color: KColor.ink3).tnum),
+                Text(_subtitle, style: KType.micro(color: KColor.ink3).tnum),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          _StatusBadge(status: txn.status),
+          _StatusBadge(status: order.status, marketOpen: marketOpen),
         ],
       ),
     );
   }
 }
 
-/// Status pill mapped from TxnStatus (2026-08-22 "Soft Landing" —
-/// screen-specs.md #44 calls for the shared StatusPill vocabulary, not a
-/// bespoke badge).
+/// Status pill mapped from the real Order.status (2026-08-22 "Soft Landing"
+/// — screen-specs.md #44 calls for the shared StatusPill vocabulary).
+/// Canvas distinguishes "Filling" (actively in progress) from "Queued"
+/// (held until the NGX reopens) — both are the real `pending` status; the
+/// split uses the same client-side market-hours heuristic markets_screen.dart
+/// already relies on (no separate "queued" field exists on Order).
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-  final TxnStatus status;
+  const _StatusBadge({required this.status, required this.marketOpen});
+  final String status;
+  final bool marketOpen;
 
   @override
   Widget build(BuildContext context) {
     final (KStatus status_, String label) = switch (status) {
-      TxnStatus.completed => (KStatus.approved, 'Filled'),
-      TxnStatus.pending => (KStatus.review, 'Filling'),
-      TxnStatus.failed => (KStatus.rejected, 'Cancelled'),
+      'approved' => (KStatus.approved, 'Filled'),
+      'pending' => marketOpen ? (KStatus.pending, 'Filling') : (KStatus.review, 'Queued'),
+      _ => (KStatus.rejected, 'Cancelled'),
     };
     return KStatusPill(status: status_, label: label, small: true);
   }
+}
+
+/// Minor-unit integer (kobo) -> "₦1,234.56" with thousands separators —
+/// same grouping convention as every other repository's own `_formatKobo`.
+String _formatKobo(int? minorUnits) {
+  final abs = (minorUnits ?? 0).abs();
+  final major = abs ~/ 100;
+  final minor = (abs % 100).toString().padLeft(2, '0');
+  final majorStr = major.toString();
+  final buf = StringBuffer();
+  for (var i = 0; i < majorStr.length; i++) {
+    final posFromEnd = majorStr.length - i;
+    buf.write(majorStr[i]);
+    if (posFromEnd > 1 && posFromEnd % 3 == 1) buf.write(',');
+  }
+  return '₦$buf.$minor';
+}
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// ISO-8601 timestamp -> "24 Jun 2026 · 14:35" (matching the rest of the app).
+String _formatDateTime(String iso) {
+  final dt = DateTime.tryParse(iso)?.toLocal();
+  if (dt == null) return '';
+  final hh = dt.hour.toString().padLeft(2, '0');
+  final mm = dt.minute.toString().padLeft(2, '0');
+  return '${dt.day} ${_months[dt.month - 1]} ${dt.year} · $hh:$mm';
 }
 
 class _EmptyOrders extends StatelessWidget {

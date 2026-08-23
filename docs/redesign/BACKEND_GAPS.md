@@ -455,3 +455,109 @@ Roughly highest-leverage-first, independent of screen numbering:
 7. Corporate actions, complaints, price alerts, dormancy/lockout,
    closure, tax documents, and the smaller §14 data gaps — each a real,
    standalone feature; sequence by product priority.
+
+## 16. 2026-08-24 full-app exactness sweep — every screen re-checked against the canvas
+
+Triggered by the user's blunt "THE DESIGNS ACROSS ALL SCREENS HAS NOT BEEN
+MATCHED TO DESIGN SPEC... EVERYTHING SHOULD MATCH." Not a re-audit that
+documents deviations and moves on (that's what produced the Home/Markets/
+Asset-detail problem this same day) — 11 parallel passes, each owning a
+disjoint set of screens/files, each required to FIX real deviations
+directly and verify with `flutter analyze`, not just report them.
+
+**Real bugs found and fixed** (selected — see git log for the full list,
+every commit is scoped and self-describing):
+- **Orders screen was permanently empty** — sourced from `GET
+  /transactions`, which no code path ever populates for a buy/sell. Now
+  uses the real, investor-scoped `GET /orders` (added earlier the same
+  day) — real list, real StatusPill states, a working Cancel button.
+- **Holding detail's "Dividends received" / "Your orders in {ticker}"**
+  were marked as gaps and omitted; both are real now (same `GET /orders`
+  fix, plus `GET /dividends` already carrying a per-payout ticker) — wired
+  in.
+- **Wallet's transaction list had no icon/colour case for `dividend`**
+  transactions (added earlier the same day) — would have silently
+  rendered a real dividend payout with the wrong icon.
+- **Terms & disclosures (canvas s05, `legal_acceptance_screen.dart`)** was
+  a structurally different, much heavier screen than the canvas — every
+  document's full text rendered inline, not the canvas's compact
+  tappable row-list. Rebuilt to match; also fixed the mock screenshot
+  fixture, which had no case for `/legal-documents/content/:kind` at all
+  (blank titles, "V · READ" badges — a fixture gap, not a real-backend
+  one).
+- **KYC "Checking your details" (s23)** had no real per-signal checklist,
+  just a generic pending message — now uses the real
+  `KycVerificationSignals` the backend already returns.
+- **Bank accounts (s64)** rows were missing the account holder's name and
+  real "added {date}" — both existed on the backend already
+  (`createdAt`), just never parsed/fetched.
+- **Contract note (s66)** was missing the entire "Executed through Blue
+  Marina" band the canvas shows — real partner (confirmed against the
+  actual Client Agreement), real logo asset, just never imported/built.
+- **Rights issue (s82)** was missing the real wallet-balance helper text
+  and used generic explain-panel copy instead of the real ticker/cost
+  figures.
+- **Tax documents (s85)** dividend summary card was a static "not tracked
+  yet" notice written before the Dividends module existed — now pulls
+  real `GET /dividends/summary`.
+- **Complaint tracked (s88)** silently dropped the canvas's third,
+  not-yet-reached timeline stage ("Escalate to the SEC") instead of
+  showing it inactive — restored, with a real (not fabricated) date
+  derived from the complaint's own SLA deadline.
+- **Suitability result (s28)** copy claimed this product offers "NGX-
+  listed ETFs and bonds" — this app carries no fixed-income instruments
+  at all (`AssetClass` is ngx/us/etf only). Removed the false claim.
+- Partner-disclosures logo row (s94), a wrong button label ("Done" →
+  "Save choices" on s91), and two stale/inaccurate code comments
+  (dormancy backend, order cancellation) that were undermining features
+  that actually already work — all fixed.
+- **Next of kin (s21)** — added the missing optional Email field, real
+  end-to-end: `NextOfKin.email` on the backend (additive, no migration —
+  the field is stored in a schema-less `nextOfKin` Json column), both KYC
+  submission DTOs, `KycFormState`, and the screen itself.
+- Search results (s31) now show the real sector under each ticker.
+
+**Genuine remaining gaps, confirmed real (not fixed, need real
+backend/product work)**:
+- **DCS sell-proceeds payout redirect** — `Order.destinationBankAccountId`
+  is stored and validated, but `OrdersService` still always credits the
+  wallet regardless; nothing redirects the actual payout. Needs the same
+  transfer logic `TransactionsService` already uses for withdrawals,
+  reused inside order settlement. `OrderPlacementRepository.placeOrder()`
+  on mobile doesn't send the field yet either — not worth closing until
+  the backend side is real.
+- **Order partial-fill data model doesn't exist** — no `filledUnits`/
+  `fills[]`/per-fill contract notes anywhere on `Order`.
+  `order_fill_progress_screen.dart` (s80) is built and ready but has no
+  route and no real data source.
+- **AGM meeting date/venue** — canvas's copy names a real date/venue;
+  `AgmMeeting` has neither field.
+- **Tax document generation has no trigger** — `generateTaxDocument()`
+  exists server-side but nothing calls it (no controller endpoint, no
+  scheduled job) — `wht_credit_note`/`annual_tax_summary` requests will
+  always come back empty even once wired. `statements_repository.dart`'s
+  `StatementKind` enum also needs the two new values added on mobile.
+- **Transaction has no short reference field** (unlike `Order`, which got
+  one earlier this day) — transaction-detail's "Reference" row shows a
+  raw UUID.
+- **Withdrawal fee is genuinely ₦0.00** — no fee logic exists server-side
+  for withdrawals; canvas's "₦50.00" is unbacked example copy, not a real
+  figure to match.
+- **Contract note is only reachable from Statements** — canvas also wants
+  it reachable from Orders (#44) and Holding detail (#39); those
+  entry-point links don't exist yet. Its own fee/commission/VAT breakdown
+  is also unavailable — `Order` has no persisted fee fields (the 1.35%
+  shown at placement is computed client-side and never saved).
+- **Personal info's "Investor profile" card** omits "Answered {date}" —
+  `SuitabilityResult` has no `computedAt` reaching the client.
+- **Watchlist rows** show just the ticker, not canvas's "TICKER · added
+  {date}" — no date-added field on the watchlist API.
+- **Referral stats** show 2 of the canvas's 3 example fields — real
+  product-model mismatch (`ReferralAccount` pays real cash with no
+  verifying-vs-joined split; canvas assumes an AI-credit reward with a
+  3-stat breakdown). Worth reconciling upstream, not a wiring bug.
+
+Every one of the above was independently verified against the actual
+code (not assumed from a prior doc's claim) — several entries in this
+file were themselves found to be stale during this pass and corrected
+(see the "Order cancellation" and dormancy-backend entries above).

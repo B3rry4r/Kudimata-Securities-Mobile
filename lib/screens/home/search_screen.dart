@@ -263,7 +263,10 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               child: KAssetRow(
                 name: assets[i].name,
-                ticker: assets[i].ticker,
+                ticker: assets[i].sector == null
+                    ? assets[i].ticker
+                    : '${assets[i].ticker} · ${assets[i].sector}',
+                initialsSource: assets[i].ticker,
                 price: assets[i].price,
                 change: assets[i].change,
                 trend: _k(assets[i].trend),

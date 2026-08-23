@@ -113,8 +113,16 @@ class _SuitabilityResultBody extends StatelessWidget {
                       const SizedBox(height: 12),
                       _UnlockRow(icon: 'check', color: KColor.gain, label: 'NGX shares and ETFs'),
                       const SizedBox(height: 12),
-                      _UnlockRow(icon: 'check', color: KColor.gain, label: 'NGX-listed ETFs and bonds'),
-                      const SizedBox(height: 12),
+                      // Canvas #s28's second row literally says "NGX-listed
+                      // ETFs and bonds" — dropped here, not ported verbatim:
+                      // this product carries NO fixed-income instruments at
+                      // all (see lib/data/models.dart's AssetClass doc
+                      // comment, "No fixed income — by design"). Repeating
+                      // "bonds" would tell an investor they can buy a
+                      // product this app has never offered — a product
+                      // invariant overriding the canvas's literal copy, per
+                      // this codebase's own established rule (see the
+                      // referral-terms "never cash" correction elsewhere).
                       _UnlockRow(
                         icon: 'alert',
                         color: KColor.ink3,

@@ -1,12 +1,14 @@
-// 06 · Document, in plain English — NEW SCREEN (2026-08-22 "Soft Landing"
-// redesign, docs/redesign/screen-specs.md screen 06). Part of the AI/
+// 06 · Document, in plain English — canvas screen 06. Part of the AI/
 // comprehension layer: a generated plain-English summary sits ABOVE the raw
-// legal text, with the original always one tap away. NOT YET WIRED into
-// lib/router/routes.dart / app_router.dart, and the summary content below is
-// STATIC placeholder copy — there is no backend endpoint yet that generates
-// a real per-document summary (see docs/redesign/PLAN.md). Built ready for
-// both once that lands; the real original document text should come from
-// LegalDocumentsRepository.getContent(kind), same as legal_acceptance_screen.dart.
+// legal text, with the original always one tap away. STALE COMMENT FIXED
+// 2026-08-24: this IS wired now — reused by legal_preview_screen.dart
+// (pre-signup, unauthenticated preview from sign_up_screen.dart's "By
+// continuing..." links, real original text via
+// LegalDocumentsRepository.getPublicContent) via `Routes.legalPreview`.
+// `summary`/`points` are still static per-document copy, not generated —
+// no backend endpoint exists that generates a real per-document summary
+// (see docs/redesign/BACKEND_GAPS.md's AI-comprehension-layer section);
+// `original` is real.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/theme/tokens.dart';

@@ -2,8 +2,9 @@
 // `HoldingDetail`, made data-driven by ticker. mockup-raw/s39.html: a custom
 // two-line header (name + "Your holding · TICKER"), a bare hero price (NOT a
 // KBalancePanel — s39 has no purple panel at all), a divided key/value card,
-// and the Sell / Buy more footer. No price chart on this screen — s39's own
-// footer note says "price chart lives on 33, one tap from the name".
+// a "Your orders in {ticker}" list, and the Sell / Buy more footer. No price
+// chart on this screen — s39's own footer note says "price chart lives on
+// 33, one tap from the name".
 //
 // Wired to GET /holdings/:ticker via HoldingsRepository.byTicker (see
 // lib/data/api/README.md's FutureBuilder convention). That endpoint's own
@@ -13,11 +14,27 @@
 // (MockData.holdingByTicker(ticker) ?? MockData.portfolioHoldings.first): an
 // unrecognized/failed ticker now surfaces KErrorView instead of silently
 // showing a different holding's numbers.
+//
+// 2026-08-24: "Dividends received" and "Your orders in {ticker}" were
+// previously omitted as backend gaps — re-checked and both are now real:
+// GET /dividends (DividendRepository.history, added this session) carries a
+// real per-payout `ticker` field, and GET /orders (investor-scoped, added
+// this session — see OrdersRepository's header) carries a real `ticker` on
+// every Order. Both are fetched here and filtered client-side by ticker
+// (same "local filter over a generous page" convention this app already
+// uses for search/asset-list). "Executing broker" is still genuinely
+// omitted: Order/Holding have no brokerId/brokerCode field anywhere
+// (confirmed against prisma/schema.prisma) — "Blue Marina" is the canvas's
+// own placeholder co-branding, not a real integrated partner relationship
+// this backend models, so showing it would fabricate a business
+// relationship, not just fill in a missing field.
 import 'package:flutter/material.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/models.dart';
+import 'package:kudimata_invest/data/repositories/dividend_repository.dart' as div;
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
+import 'package:kudimata_invest/data/repositories/orders_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/screens/trade/trade_flows.dart';
@@ -34,11 +51,18 @@ class HoldingDetailScreen extends StatefulWidget {
   State<HoldingDetailScreen> createState() => _HoldingDetailScreenState();
 }
 
-typedef _HoldingDetailData = ({Holding holding, String cscsNumber});
+typedef _HoldingDetailData = ({
+  Holding holding,
+  String cscsNumber,
+  int dividendsReceivedKobo,
+  List<Order> ownOrders,
+});
 
 class _HoldingDetailScreenState extends State<HoldingDetailScreen> {
   late final _repo = HoldingsRepository(AppScope.read(context).apiClient);
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
+  late final _dividendRepo = div.DividendRepository(AppScope.read(context).apiClient);
+  late final _ordersRepo = OrdersRepository(AppScope.read(context).apiClient);
   late Future<_HoldingDetailData> _future = _load();
 
   // "Held in CSCS · CHN 1234567890" (spec 39) — cscsNumber is a real User
@@ -48,8 +72,23 @@ class _HoldingDetailScreenState extends State<HoldingDetailScreen> {
   // convention (a second, self-contained GET /users/me call per screen that
   // needs different fields — see personalInfo()'s own doc comment).
   Future<_HoldingDetailData> _load() async {
-    final (holding, info) = await (_repo.byTicker(widget.ticker), _userRepo.personalInfo()).wait;
-    return (holding: holding, cscsNumber: info.cscsNumber);
+    final (holding, info, dividendPage, orders) = await (
+      _repo.byTicker(widget.ticker),
+      _userRepo.personalInfo(),
+      _dividendRepo.history(pageSize: 200),
+      _ordersRepo.myOrders(),
+    ).wait;
+    final dividendsReceivedKobo = dividendPage.data
+        .where((d) => d.ticker == widget.ticker)
+        .fold<int>(0, (sum, d) => sum + d.netKobo);
+    final ownOrders = orders.where((o) => o.ticker == widget.ticker).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return (
+      holding: holding,
+      cscsNumber: info.cscsNumber,
+      dividendsReceivedKobo: dividendsReceivedKobo,
+      ownOrders: ownOrders,
+    );
   }
 
   @override
@@ -81,7 +120,12 @@ class _HoldingDetailScreenState extends State<HoldingDetailScreen> {
                       );
                     }
                     final data = snapshot.data!;
-                    return _HoldingDetailBody(holding: data.holding, cscsNumber: data.cscsNumber);
+                    return _HoldingDetailBody(
+                      holding: data.holding,
+                      cscsNumber: data.cscsNumber,
+                      dividendsReceivedKobo: data.dividendsReceivedKobo,
+                      ownOrders: data.ownOrders,
+                    );
                   }),
                 ),
               ],
@@ -133,9 +177,16 @@ class _Header extends StatelessWidget {
 /// `build()`, just parameterized on the fetched `Holding` instead of
 /// `MockData.holdingByTicker`.
 class _HoldingDetailBody extends StatelessWidget {
-  const _HoldingDetailBody({required this.holding, required this.cscsNumber});
+  const _HoldingDetailBody({
+    required this.holding,
+    required this.cscsNumber,
+    required this.dividendsReceivedKobo,
+    required this.ownOrders,
+  });
   final Holding holding;
   final String cscsNumber;
+  final int dividendsReceivedKobo;
+  final List<Order> ownOrders;
 
   @override
   Widget build(BuildContext context) {
@@ -162,27 +213,15 @@ class _HoldingDetailBody extends StatelessWidget {
               // Divided key/value card — mockup-raw/s39.html lines 14-21:
               // Shares / Average cost / Market price / Dividends received /
               // Held in / Executing broker, each a hairline-divided row, NOT
-              // the 2x2 KStatCard grid this screen used to render (that grid
-              // isn't in the design at all).
+              // the 2x2 KStatCard grid this design doesn't use here.
               //
-              // "Dividends received" and "Executing broker" are deliberately
-              // NOT added:
-              //  - Dividends received: no such field exists anywhere on the
-              //    Holding/Transaction wire types (checked the backend's
-              //    actual types directly); there's no per-holding dividend
-              //    total to report yet.
-              //  - Executing broker: Order/Holding have no brokerId/
-              //    brokerCode at all (confirmed against prisma/schema.prisma)
-              //    — this app is single-broker today, and "Blue Marina" is
-              //    the mockup's own placeholder co-branding, not a real
-              //    partner this build integrates with. Showing it would be
-              //    fabricating a business relationship, not just missing a
-              //    field.
-              // A "Your orders in {ticker}" list (also spec 39) is likewise
-              // omitted: no investor-facing endpoint returns order history
-              // filtered by ticker — GET /orders (list) is staff-only, and
-              // Transaction (the one investor-scoped resource this app can
-              // read) carries no ticker field at all.
+              // "Dividends received" is now real (see file header — GET
+              // /dividends carries a real per-payout ticker). "Executing
+              // broker" is still genuinely omitted — no brokerId/brokerCode
+              // field exists anywhere on Order/Holding (confirmed against
+              // prisma/schema.prisma); "Blue Marina" is the canvas's own
+              // placeholder co-branding, not a real partner relationship
+              // this backend models yet.
               KCard(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
                 child: Column(
@@ -191,10 +230,34 @@ class _HoldingDetailBody extends StatelessWidget {
                     _KVRow(label: 'Shares', value: holding.units),
                     _KVRow(label: 'Average cost', value: holding.avgPrice),
                     _KVRow(label: 'Market price', value: asset.price),
+                    _KVRow(label: 'Dividends received', value: _formatKobo(dividendsReceivedKobo)),
                     _KVRow(label: 'Held in', value: 'CSCS · CHN $cscsNumber', last: true),
                   ],
                 ),
               ),
+
+              if (ownOrders.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text('Your orders in ${asset.ticker}'.upper, style: KType.label(color: KColor.ink3)),
+                const SizedBox(height: 10),
+                KCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < ownOrders.length; i++)
+                        Container(
+                          decoration: BoxDecoration(
+                            border: i == ownOrders.length - 1
+                                ? null
+                                : Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
+                          ),
+                          child: _OwnOrderRow(order: ownOrders[i]),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -207,6 +270,74 @@ class _HoldingDetailBody extends StatelessWidget {
       ],
     );
   }
+}
+
+/// One row of the "Your orders in {ticker}" list — mockup-raw/s39.html:
+/// "Bought 60 · ₦238.00" / "04 Feb 2026 · settled" + a small StatusPill.
+class _OwnOrderRow extends StatelessWidget {
+  const _OwnOrderRow({required this.order});
+  final Order order;
+
+  @override
+  Widget build(BuildContext context) {
+    final verb = order.side == 'sell' ? 'Sold' : 'Bought';
+    final (KStatus status, String label, String descriptor) = switch (order.status) {
+      'approved' => (KStatus.approved, 'Filled', 'settled'),
+      'pending' => (KStatus.review, 'Filling', 'pending'),
+      _ => (KStatus.rejected, 'Cancelled', 'not completed'),
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('$verb ${order.units} · ${_formatKobo(order.price)}',
+                    style: KType.data(color: KColor.ink)),
+                Text('${_formatDate(order.createdAt)} · $descriptor'.upper,
+                    style: KType.micro(color: KColor.ink3)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          KStatusPill(status: status, label: label, small: true),
+        ],
+      ),
+    );
+  }
+}
+
+/// Minor-unit integer (kobo) -> "₦1,234.56" — same grouping convention every
+/// other repository/screen in this app already uses.
+String _formatKobo(int? minorUnits) {
+  final abs = (minorUnits ?? 0).abs();
+  final major = abs ~/ 100;
+  final minor = (abs % 100).toString().padLeft(2, '0');
+  final majorStr = major.toString();
+  final buf = StringBuffer();
+  for (var i = 0; i < majorStr.length; i++) {
+    final posFromEnd = majorStr.length - i;
+    buf.write(majorStr[i]);
+    if (posFromEnd > 1 && posFromEnd % 3 == 1) buf.write(',');
+  }
+  return '₦$buf.$minor';
+}
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// ISO-8601 timestamp -> "04 Feb 2026" (date only — this row's own
+/// descriptor word carries the status, matching the canvas's "settled").
+String _formatDate(String iso) {
+  final dt = DateTime.tryParse(iso)?.toLocal();
+  if (dt == null) return '';
+  return '${dt.day.toString().padLeft(2, '0')} ${_months[dt.month - 1]} ${dt.year}';
 }
 
 /// One hairline-divided key/value row — mockup-raw/s39.html's details card

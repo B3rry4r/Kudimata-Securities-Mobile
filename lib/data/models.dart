@@ -68,7 +68,12 @@ class Holding {
   final Trend returnTrend;
 }
 
-enum TxnType { fund, withdraw, buy, sell, convert }
+// 'dividend' added 2026-08-24 — matches the backend's TransactionType enum
+// (a dividend payout credits the wallet via its own real Transaction row,
+// see DividendsService). Canvas s40 gives it a distinct icon/tint (wallet ·
+// sun) from a plain fund-in (arrowDown · indicator) — see wallet_screens.dart's
+// `_TxnRow`.
+enum TxnType { fund, withdraw, buy, sell, convert, dividend }
 
 enum TxnStatus { completed, pending, failed }
 

@@ -44,10 +44,21 @@ class KycFormState extends ChangeNotifier {
   String? nextOfKinRelationship;
   String? nextOfKinPhone;
 
-  void setNextOfKin({required String name, required String relationship, required String phone}) {
+  /// Optional — canvas screen 21 offers an email field; backend's
+  /// `NextOfKin.email` (added 2026-08-24) is optional too, so this stays
+  /// null rather than blocking Continue when left blank.
+  String? nextOfKinEmail;
+
+  void setNextOfKin({
+    required String name,
+    required String relationship,
+    required String phone,
+    String? email,
+  }) {
     nextOfKinName = name;
     nextOfKinRelationship = relationship;
     nextOfKinPhone = phone;
+    nextOfKinEmail = email;
     notifyListeners();
   }
 
@@ -96,6 +107,7 @@ class KycFormState extends ChangeNotifier {
     nextOfKinName = null;
     nextOfKinRelationship = null;
     nextOfKinPhone = null;
+    nextOfKinEmail = null;
     selfieCapturedAt = null;
     pepWho = null;
     pepPosition = null;

@@ -36,6 +36,11 @@ class TermsAndPrivacyScreen extends StatelessWidget {
       kinds: const ['terms_of_service', 'privacy_policy', 'risk_disclosure', 'client_agreement'],
       screenTitle: 'Terms & disclosures',
       screenBody: 'Four documents, one agreement. Each one has a plain-English summary.',
+      // Canvas s05's own "Step 2 of 4" — same mid-flow indicator convention
+      // otp_screen.dart (Step 1)/create_passcode_screen.dart (Step 3)/
+      // biometric_screen.dart (Step 4) already use; this screen was
+      // missing it entirely.
+      stepLabel: 'Step 2 of 4',
       checkboxLabel: 'I have read and agree to all four documents',
       checkboxDescription: 'Terms of Service · Privacy Policy · Risk Disclosure · Client Agreement',
       buttonLabel: 'Accept and continue',

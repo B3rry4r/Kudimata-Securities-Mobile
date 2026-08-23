@@ -185,7 +185,12 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
           style: KType.data(color: KColor.ink3),
         ),
         const SizedBox(height: 24),
-        KButton(label: 'Done', onPressed: () => Navigator.of(context).maybePop()),
+        // Canvas #91's own button label is "Save choices", not "Done" —
+        // this screen's toggles already save on every tap (optimistic PUT
+        // per-switch, see _toggleImproveApp/_toggleProductEmails above), so
+        // this button's only real job is closing the screen; label
+        // corrected to match without changing that behavior.
+        KButton(label: 'Save choices', onPressed: () => Navigator.of(context).maybePop()),
       ],
     );
   }

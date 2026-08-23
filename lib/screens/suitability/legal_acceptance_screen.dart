@@ -18,10 +18,13 @@
 // longer a second legal-acceptance screen anywhere in onboarding.
 //
 // Fetches every document (GET /legal-documents/content/:kind, called once
-// per kind, all concurrently via `.wait`) and renders them in one
-// scrollable view with a divider between each — content is still
-// backend-driven, not hardcoded, same as before. Tapping the primary button
-// posts one acknowledgement per kind IN ORDER (POST
+// per kind, all concurrently via `.wait`) and renders a canvas-s05 row-list
+// — name + real "vN · Read" badge, tap opens that one document's
+// plain-English preview (Routes.documentSummary) — NOT the full text of
+// every document inline on this screen (2026-08-24 fix: it used to render
+// every section of every document inline here, a structurally different,
+// much heavier screen than the canvas's checklist-then-link pattern).
+// Tapping the primary button posts one acknowledgement per kind IN ORDER (POST
 // /compliance-acknowledgements — there is no combined-kind endpoint, and
 // none is needed); if any one of them fails, the ones after it never fire
 // (never record "agreed to X" without also recording "agreed to" everything
@@ -35,7 +38,8 @@ import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
-import 'package:kudimata_invest/screens/onboarding/document_summary_screen.dart';
+import 'package:kudimata_invest/screens/onboarding/onboarding_scaffold.dart' show KOnboardTopBar;
+import 'package:kudimata_invest/screens/onboarding/document_summary_screen.dart' show DocumentSummaryArgs;
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:go_router/go_router.dart';
 
@@ -55,12 +59,21 @@ const Map<String, String> _kPlainEnglishSummary = {
       'The formal terms of your relationship with Kudimata as your broker — how your orders are handled, how your money and shares are held, and what happens if something goes wrong.',
 };
 
+/// Display titles per kind — canvas s05's document-list row labels.
+const Map<String, String> _kDocTitle = {
+  'terms_of_service': 'Terms of Service',
+  'privacy_policy': 'Privacy Policy',
+  'risk_disclosure': 'Risk Disclosure',
+  'client_agreement': 'Client Agreement',
+};
+
 class LegalAcceptanceScreen extends StatefulWidget {
   const LegalAcceptanceScreen({
     super.key,
     required this.kinds,
     required this.screenTitle,
     this.screenBody,
+    this.stepLabel,
     required this.checkboxLabel,
     this.checkboxDescription,
     required this.buttonLabel,
@@ -72,6 +85,12 @@ class LegalAcceptanceScreen extends StatefulWidget {
   final List<String> kinds;
   final String screenTitle;
   final String? screenBody;
+
+  /// Canvas s05's "Step 2 of 4" mid-flow indicator (KOnboardTopBar, the same
+  /// convention otp_screen.dart/create_passcode_screen.dart/
+  /// biometric_screen.dart already use) — null renders no top bar at all,
+  /// for a future non-onboarding caller of this same widget.
+  final String? stepLabel;
   final String checkboxLabel;
   final String? checkboxDescription;
   final String buttonLabel;
@@ -122,144 +141,158 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
     }
   }
 
+  void _openDoc(LegalDocument doc) {
+    context.push(
+      Routes.documentSummary,
+      extra: DocumentSummaryArgs(
+        docTitle: doc.title,
+        summary: _kPlainEnglishSummary[doc.kind] ??
+            'A generated plain-English summary of this document.',
+        original: doc.sections.map((s) => '${s.heading}\n${s.body}').join('\n\n'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              KScreenHead(title: widget.screenTitle, body: widget.screenBody),
-              const SizedBox(height: 16),
-              Expanded(
-                child: FutureBuilder<List<LegalDocument>>(
-                  future: _future,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const KLoadingView();
-                    }
-                    if (snapshot.hasError) {
-                      return KErrorView(
-                        onPrimary: () => setState(() => _future = _load()),
-                      );
-                    }
-                    final docs = snapshot.data!;
-                    // Checkbox + accept button only render once EVERY
-                    // document has actually loaded — agreeing to something
-                    // you never saw isn't a real acceptance.
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: KCard(
-                            padding: EdgeInsets.zero,
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.stepLabel != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                child: KOnboardTopBar(stepLabel: widget.stepLabel),
+              ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    KScreenHead(title: widget.screenTitle, body: widget.screenBody),
+                    const SizedBox(height: 18),
+                    FutureBuilder<List<LegalDocument>>(
+                      future: _future,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const KLoadingView();
+                        }
+                        if (snapshot.hasError) {
+                          return KErrorView(
+                            onPrimary: () => setState(() => _future = _load()),
+                          );
+                        }
+                        final docs = snapshot.data!;
+                        // Checkbox + accept button only render once EVERY
+                        // document has actually loaded — agreeing to
+                        // something you never saw isn't a real acceptance.
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Canvas s05: a compact row-list — each document
+                            // is a tappable row (name + real "vN · Read"
+                            // badge) that opens its OWN plain-English
+                            // preview screen; the full text does NOT render
+                            // inline here. Was previously showing every
+                            // section of every document inline on this one
+                            // screen — a structurally different, much
+                            // heavier screen than the canvas's quick
+                            // checklist-then-link pattern.
+                            Container(
+                              decoration: BoxDecoration(
+                                color: KColor.paper,
+                                border: Border.all(color: KColor.hairline),
+                                borderRadius: KRadii.cardR,
+                              ),
+                              clipBehavior: Clip.antiAlias,
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  for (var i = 0; i < docs.length; i++) ...[
-                                    if (i != 0) ...[
-                                      const SizedBox(height: 28),
-                                      Container(height: 1, color: KColor.hairline),
-                                      const SizedBox(height: 28),
-                                    ],
-                                    ..._buildDocument(docs[i]),
-                                  ],
+                                  for (var i = 0; i < docs.length; i++)
+                                    _DocRow(
+                                      doc: docs[i],
+                                      showDivider: i != docs.length - 1,
+                                      onTap: () => _openDoc(docs[i]),
+                                    ),
                                 ],
                               ),
                             ),
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.only(top: 16),
-                          decoration: BoxDecoration(
-                            border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 2026-08-22 "Soft Landing" — screen-specs.md
-                              // screen 05: grape-toned (not warm) NudgeCard
-                              // for the "you can lose money" risk warning.
-                              const KNudgeCard(
-                                tone: KNudgeTone.grape,
-                                body:
-                                    "Share prices fall as well as rise. Only invest money you won't need for the next few years.",
-                              ),
-                              const SizedBox(height: 14),
-                              if (_error != null) ...[
-                                Text(_error!, style: KType.body(color: KColor.loss)),
-                                const SizedBox(height: 12),
-                              ],
-                              KCheckbox(
-                                checked: _agreed,
-                                onChanged: (v) => setState(() => _agreed = v),
-                                label: widget.checkboxLabel,
-                                description: widget.checkboxDescription,
-                              ),
-                              const SizedBox(height: 14),
-                              KButton(
-                                label: widget.buttonLabel,
-                                loading: _submitting,
-                                onPressed: _agreed && !_submitting ? _accept : null,
-                              ),
+                            const SizedBox(height: 18),
+                            const KNudgeCard(
+                              tone: KNudgeTone.grape,
+                              title: 'You can lose money',
+                              body:
+                                  "Share prices fall as well as rise. Only invest money you won't need for the next few years.",
+                            ),
+                            const SizedBox(height: 18),
+                            if (_error != null) ...[
+                              Text(_error!, style: KType.body(color: KColor.loss)),
+                              const SizedBox(height: 12),
                             ],
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                            KCheckbox(
+                              checked: _agreed,
+                              onChanged: (v) => setState(() => _agreed = v),
+                              label: widget.checkboxLabel,
+                              description: widget.checkboxDescription,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+              child: KButton(
+                label: widget.buttonLabel,
+                loading: _submitting,
+                onPressed: _agreed && !_submitting ? _accept : null,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  List<Widget> _buildDocument(LegalDocument doc) {
-    return [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                KEyebrow(doc.title),
-                const SizedBox(height: 4),
-                Text(doc.sub, style: KType.micro(color: KColor.ink3).tnum),
-              ],
-            ),
-          ),
-          KExplainTrigger(
-            label: 'Plain English',
-            variant: KExplainTriggerVariant.inline,
-            onTap: () => context.push(
-              Routes.documentSummary,
-              extra: DocumentSummaryArgs(
-                docTitle: doc.title,
-                summary: _kPlainEnglishSummary[doc.kind] ??
-                    'A generated plain-English summary of this document.',
-                original: doc.sections.map((s) => '${s.heading}\n${s.body}').join('\n\n'),
+/// One canvas s05 document row: name + "v{version} · Read" (real
+/// [LegalDocument.versionLabel], not a placeholder), tap → the document's
+/// plain-English preview.
+class _DocRow extends StatelessWidget {
+  const _DocRow({required this.doc, required this.showDivider, required this.onTap});
+  final LegalDocument doc;
+  final bool showDivider;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          border: showDivider
+              ? Border(bottom: BorderSide(color: KColor.hairline, width: 1))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _kDocTitle[doc.kind] ?? doc.title,
+                style: KType.cardTitle(),
               ),
             ),
-          ),
-        ],
+            Text('v${doc.versionLabel} · Read'.upper, style: KType.micro(color: KColor.ink3)),
+          ],
+        ),
       ),
-      const SizedBox(height: 14),
-      for (var i = 0; i < doc.sections.length; i++) ...[
-        if (i != 0) const SizedBox(height: 22),
-        KEyebrow(doc.sections[i].heading),
-        const SizedBox(height: 8),
-        Text(doc.sections[i].body, style: KType.body(color: KColor.ink2)),
-      ],
-    ];
+    );
   }
 }

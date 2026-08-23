@@ -421,6 +421,37 @@ Map<String, dynamic> _kycDraft() => {
       'verificationSignals': {'nin': true, 'bvn': true, 'name': true, 'dob': true, 'liveness': true},
     };
 
+// GET /legal-documents/content/:kind (and the /public/ mirror) — the four
+// onboarding acceptance documents plus 'privacy_policy'/'client_agreement'
+// reused by legal_screen.dart/legal_reference_screens.dart. Real title/
+// versionLabel/sections so legal_acceptance_screen.dart's row list and
+// legal_reference_screens.dart's KDocumentSummary reveal actually render
+// content in a screenshot, instead of silently falling through to the
+// generic `{}` fallback (found blank titles/"V · READ" badges this way).
+Map<String, dynamic> _legalDocument(String kind) {
+  const titles = {
+    'terms_of_service': 'Terms of Service',
+    'privacy_policy': 'Privacy Policy',
+    'risk_disclosure': 'Risk Disclosure',
+    'client_agreement': 'Client Agreement',
+  };
+  return {
+    'id': 'LD-$kind',
+    'title': titles[kind] ?? kind,
+    'versionLabel': '1.0',
+    'publishedAt': '2026-06-25T00:00:00.000Z',
+    'fileObjectKey': 'legal/$kind-v1.pdf',
+    'kind': kind,
+    'sections': [
+      {
+        'heading': 'What this covers',
+        'body': 'A plain-English summary of the ${titles[kind] ?? kind} document, '
+            'covering what it means for you as an investor on Kudimata.',
+      },
+    ],
+  };
+}
+
 // GET /banks — a small realistic subset (bank_dcs_screen.dart's picker).
 final _banks = [
   {'code': '058', 'name': 'Guaranty Trust Bank'},
@@ -545,6 +576,10 @@ class MockApiAdapter implements HttpClientAdapter {
     // with real-looking data, and for chn_screen.dart/declarations_screen.dart's
     // resume-prefill fetch.
     if (path == '/kyc-submissions/draft') return _kycDraft();
+    if (path.startsWith('/legal-documents/content/') ||
+        path.startsWith('/public/legal-documents/content/')) {
+      return _legalDocument(path.split('/').last);
+    }
     if (path == '/banks') return _banks;
     if (path == '/banks/resolve-account-name') return {'accountName': 'ADEBAYO OKONKWO'};
     if (path == '/notification-preferences/me') {

@@ -158,15 +158,18 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             tone: KNudgeTone.sun,
             title: 'Price alerts',
             body: "We'll notify you if a name on this list moves more than 5% in a day. Nothing else — no daily noise.",
-            // Screen 86 (s86.html) — per-asset alert thresholds, now wired
-            // to a real PriceAlert CRUD backend (see
-            // price_alerts_screen.dart's header). The threshold/on-off state
-            // itself is genuinely saved server-side; that backend's own
-            // notification-delivery scheduler isn't wired yet, so this
-            // card's "We'll notify you..." promise is currently ahead of
-            // what actually fires — flagged in price_alerts_screen.dart's
-            // header rather than rewritten here, since this screen is owned
-            // by concurrent work outside this change's scope.
+            // 2026-08-24 re-checked: canvas's static s46 markup shows this
+            // NudgeCard with no action button, BUT the canvas's own footer
+            // note on s86 (Price alerts) explicitly names "Watchlist (46)"
+            // as one of only two real entry points into that screen (the
+            // other, Notification settings, doesn't carry an equivalent
+            // link either — grepped, `Routes.priceAlerts` has exactly ONE
+            // call site in the whole app: this one). Removing this button
+            // would make the entire Price alerts screen — a real, working,
+            // backend-CRUD-backed feature — permanently unreachable from
+            // anywhere in the app. Kept: the canvas's intended navigation
+            // graph outranks a literal read of one static frame that has no
+            // way to draw a "tap this whole card" affordance.
             action: KButton(
               label: 'Manage price alerts',
               variant: KButtonVariant.secondary,

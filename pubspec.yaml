@@ -125,6 +125,7 @@ flutter:
     - assets/brand/
     - assets/illustrations/
     - assets/illustrations/avatars/
+    - assets/partners/
 
   # Bundled Nunito + Nunito Sans (2026-08-22 "Soft Landing" redesign — see
   # _ds/kudimata-design-system-.../readme.md: "Two faces: Nunito for feeling,

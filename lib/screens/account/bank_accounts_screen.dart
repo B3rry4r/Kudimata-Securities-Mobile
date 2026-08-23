@@ -17,6 +17,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart';
+import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -32,9 +33,21 @@ class BankAccountsScreen extends StatefulWidget {
 
 class _BankAccountsScreenState extends State<BankAccountsScreen> {
   late final _repo = BankAccountsRepository(AppScope.read(context).apiClient);
-  late Future<List<BankAccountSummary>> _future = _repo.list();
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
+  late Future<(List<BankAccountSummary> accounts, String holderName)> _future = _load();
 
-  void _reload() => setState(() => _future = _repo.list());
+  // Canvas #s64's per-account "Adebayo Okonkwo · added 14 Mar 2026" line
+  // isn't a field on BankAccount at all — every linked account MUST be in
+  // the investor's own name (this screen's own footer text says so, and
+  // it's enforced server-side against BVN) — so the holder name is just
+  // this investor's own registered name, fetched once alongside the list
+  // rather than invented per-row.
+  Future<(List<BankAccountSummary>, String)> _load() async {
+    final (accounts, user) = await (_repo.list(), _userRepo.me()).wait;
+    return (accounts, '${user.firstName} ${user.lastName}'.trim());
+  }
+
+  void _reload() => setState(() => _future = _load());
 
   Future<void> _openAdd() async {
     final added = await showKSheet<bool>(
@@ -78,7 +91,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Bank accounts',
-      child: FutureBuilder<List<BankAccountSummary>>(
+      child: FutureBuilder<(List<BankAccountSummary>, String)>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -93,7 +106,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
               child: KErrorView(onPrimary: _reload),
             );
           }
-          final accounts = snapshot.data ?? const <BankAccountSummary>[];
+          final (accounts, holderName) = snapshot.data ?? const (<BankAccountSummary>[], '');
           // screen-specs.md spec 64 (2026-08-23 exactness pass, re-verified
           // against the canvas mockup's real #s64 markup): the primary
           // account renders as its own self-contained card — icon, name,
@@ -127,6 +140,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                 for (final account in primary) ...[
                   _PrimaryAccountCard(
                     account: account,
+                    holderName: holderName,
                     onSeeMandate: () => context.push(Routes.acctStatements),
                     onWithdrawMandate: () =>
                         context.push(Routes.acctWithdrawMandate, extra: account),
@@ -135,7 +149,11 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                   const SizedBox(height: 14),
                 ],
                 for (final account in others) ...[
-                  _SecondaryAccountRow(account: account, onTap: () => _openActions(account)),
+                  _SecondaryAccountRow(
+                    account: account,
+                    holderName: holderName,
+                    onTap: () => _openActions(account),
+                  ),
                   const SizedBox(height: 14),
                 ],
               ],
@@ -197,11 +215,13 @@ class _StatusIconBubble extends StatelessWidget {
 class _PrimaryAccountCard extends StatelessWidget {
   const _PrimaryAccountCard({
     required this.account,
+    required this.holderName,
     required this.onSeeMandate,
     required this.onWithdrawMandate,
     required this.onTap,
   });
   final BankAccountSummary account;
+  final String holderName;
   final VoidCallback onSeeMandate;
   final VoidCallback onWithdrawMandate;
   final VoidCallback onTap;
@@ -231,9 +251,14 @@ class _PrimaryAccountCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(account.bankName, style: KType.cardTitle()),
-                      Text('${account.accountNumberMasked} · added',
-                          style: KType.data(color: KColor.ink2)),
+                      Text('${account.bankName} ${account.accountNumberMasked}',
+                          style: KType.cardTitle()),
+                      Text(
+                        account.addedDate == null
+                            ? holderName
+                            : '$holderName · added ${account.addedDate}',
+                        style: KType.data(color: KColor.ink2),
+                      ),
                     ],
                   ),
                 ),
@@ -268,8 +293,9 @@ class _PrimaryAccountCard extends StatelessWidget {
 /// no inline mandate actions. Tapping still opens the set-primary/remove
 /// sheet — real backend functionality the mockup doesn't need to show.
 class _SecondaryAccountRow extends StatelessWidget {
-  const _SecondaryAccountRow({required this.account, required this.onTap});
+  const _SecondaryAccountRow({required this.account, required this.holderName, required this.onTap});
   final BankAccountSummary account;
+  final String holderName;
   final VoidCallback onTap;
 
   @override
@@ -293,8 +319,9 @@ class _SecondaryAccountRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(account.bankName, style: KType.cardTitle()),
-                  Text('${account.accountNumberMasked} · funding only',
+                  Text('${account.bankName} ${account.accountNumberMasked}',
+                      style: KType.cardTitle()),
+                  Text('$holderName · funding only',
                       style: KType.data(color: KColor.ink2)),
                 ],
               ),

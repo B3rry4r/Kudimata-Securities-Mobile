@@ -6,26 +6,17 @@
 // existing `assets/illustrations/account-suspended.svg`, which already
 // matches the canvas's illustration name exactly.
 //
-// REAL GAP (flagged per the cluster brief's "flag every real gap honestly"
-// rule): there is no dormancy concept anywhere in the backend today.
-// `UserRepository`/`PersonalInfo.accountStatus` is the only account-state
-// signal that exists (a raw string like 'active'/'suspended' per its own
-// doc comment) — no 'dormant' value or 12-month-idle detection is
-// documented or implemented anywhere in the repositories this app has.
-// This screen is fully built and wired for real DATA (the holdings total
-// via `HoldingsRepository.summary()`), but nothing today actually ROUTES an
-// investor here automatically on sign-in — that needs a real backend
-// dormancy signal plus a router-level check, both outside a per-screen
-// wiring agent's scope (and `lib/router/app_router.dart` is explicitly
-// off-limits for this cluster).
-//
-// "Reactivate my account" also has no dedicated backend action (no
-// `POST /users/me/reactivate` exists). Per the design canvas's own note —
-// "Reactivate re-confirms personal details" — this pushes the existing,
-// real Personal info screen (`Routes.acctPersonal`), which is the closest
-// working action available; that is a judgment call, not a verified
-// reactivation flow, and is called out here rather than invented as a fake
-// "reactivated!" success state.
+// STALE COMMENT CORRECTED 2026-08-24 (was claiming no dormancy backend
+// exists — it does): `AccountStatus` has a real 'dormant' value,
+// `UsersService.checkAndApplyDormancy` promotes active -> dormant after 12
+// idle months and runs on every login (`AuthService.login`), and
+// `log_in_screen.dart`'s `hydrateGatingStateAndRoute` routes here
+// automatically when `PersonalInfo.accountStatus == 'dormant'`. "Reactivate
+// my account" pushing the real Personal info screen is also a verified
+// reactivation path, not a guess — `UsersService.updateProfile` explicitly
+// flips a dormant account back to 'active' on a successful update
+// ("Reactivate re-confirms personal details", matching the canvas's own
+// note exactly). Nothing left to flag here — this screen is fully real.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';

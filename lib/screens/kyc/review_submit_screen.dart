@@ -82,6 +82,7 @@ class _ReviewSubmitScreenState extends State<ReviewSubmitScreen> {
         nextOfKinName: form.nextOfKinName ?? '',
         nextOfKinRelationship: form.nextOfKinRelationship ?? '',
         nextOfKinPhone: form.nextOfKinPhone ?? '',
+        nextOfKinEmail: form.nextOfKinEmail,
       );
       if (!mounted) return;
       form.reset();

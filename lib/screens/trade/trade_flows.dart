@@ -1175,22 +1175,24 @@ class _OrderPlacedScreen extends StatelessWidget {
 // (placed). Dedicated implementation, not a reuse of the buy-only shared
 // sheets above — see this file's header comment for why.
 //
-// REAL BACKEND GAP, flagged rather than faked: `POST /orders`
-// (OrderPlacementRepository.placeOrder) has no destination/payout field —
-// checked against its own doc comment ("this call only needs to succeed or
-// throw... [no] response body" — there isn't even an order id/reference
-// coming back, see [SalePlacedScreen] below). A sell order has exactly one
-// real outcome server-side: proceeds credited to the investor's Kudimata
-// wallet once the trade settles (the same applyWalletSideEffect path every
-// sell already goes through). Spec 77's second destination option —
-// "straight to GTB ••••6789 by Direct Cash Settlement" — has no backend
-// support: there is no field on the Order resource for it, and
-// BankAccountsRepository's DCS-mandate account is a WITHDRAWAL destination
-// (WalletRepository.withdraw), not a sell-proceeds destination. Rather than
-// letting the investor pick that option and then silently ignoring their
-// choice, that row renders disabled with an honest inline note; "My
-// Kudimata wallet" — the one real outcome — is the only selectable option,
-// pre-selected, matching the spec's own default.
+// REAL BACKEND GAP, flagged rather than faked — CORRECTED 2026-08-24: the
+// backend DOES have a `destinationBankAccountId` field on the Order
+// resource now (`POST /orders`, validated server-side to be the investor's
+// real primary/DCS bank account — see OrdersService), so this comment
+// previously overstated the gap by claiming "no field for it." The field
+// exists and is stored; what's still deferred is the actual money
+// movement: `OrdersService.applyWalletSideEffect` credits the wallet for
+// EVERY sell regardless of destination right now (see that method's own
+// gap comment) — redirecting proceeds to the bank account instead requires
+// reusing TransactionsService's payout/Flutterwave-transfer logic, not yet
+// wired in. Selecting "straight to bank" today would silently not do what
+// it says, which is worse than the gap itself — so that row stays disabled
+// with an honest inline note; "My Kudimata wallet" — the one real outcome
+// — is the only selectable option, pre-selected, matching the spec's own
+// default. Also note: `OrderPlacementRepository.placeOrder` itself doesn't
+// even accept a `destinationBankAccountId` param yet — a second, smaller
+// wiring gap on top of the payout one, left as-is for the same reason
+// (nothing to safely wire it to on the backend side yet).
 // ─────────────────────────────────────────────────────────────────────────────
 
 Future<void> _runSellFlow(BuildContext context, Asset asset) async {

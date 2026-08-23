@@ -108,6 +108,7 @@ class BankAccountSummary {
     required this.bankName,
     required this.accountNumberMasked,
     required this.primary,
+    this.addedDate,
   });
 
   final String id;
@@ -115,10 +116,31 @@ class BankAccountSummary {
   final String accountNumberMasked;
   final bool primary;
 
+  /// Preformatted "14 Mar 2026" — real `createdAt` from the backend
+  /// (registry.json's BankAccount resource), null only if the server ever
+  /// omits it. Canvas screen 64's "added 14 Mar 2026" line.
+  final String? addedDate;
+
   factory BankAccountSummary.fromJson(Map<String, dynamic> json) => BankAccountSummary(
         id: json['id'] as String? ?? '',
         bankName: json['bankName'] as String? ?? '',
         accountNumberMasked: json['accountNumberMasked'] as String? ?? '',
         primary: json['primary'] as bool? ?? false,
+        addedDate: _formatDate(json['createdAt'] as String?),
       );
+}
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// Date-only variant of this codebase's usual `_formatDate` (e.g.
+/// wallet_repository.dart's own) — no time-of-day, matching canvas #s64's
+/// "added 14 Mar 2026" (no clock time).
+String? _formatDate(String? iso) {
+  if (iso == null) return null;
+  final dt = DateTime.tryParse(iso)?.toLocal();
+  if (dt == null) return null;
+  return '${dt.day} ${_months[dt.month - 1]} ${dt.year}';
 }

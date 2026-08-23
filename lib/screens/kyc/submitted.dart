@@ -72,6 +72,16 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
   /// which just leaves the pending view showing.
   String? _errorMessage;
 
+  /// The last successful status fetch — canvas screen 23 ("Checking your
+  /// details") shows a real per-check list (BVN matched / ID read / address
+  /// & bank under review / declaration review), not just one blob message.
+  /// This app's real signal set is bvn/nin/name/dob/liveness
+  /// (KycVerificationSignals) — a different shape than the canvas's
+  /// illustrative example labels, so the checklist below uses THESE real
+  /// signal names rather than forcing an exact but fictional label match
+  /// (2026-08-24 fix — was previously not rendered as a checklist at all).
+  KycSubmissionStatus? _lastResult;
+
   /// True only once a real check has actually CONFIRMED the submission is
   /// still pending/review — see build()'s doc comment for why this exists
   /// (2026-08-20 fix: "why is 'we're reviewing your kyc' the first thing
@@ -105,7 +115,10 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
       // pending | review — ONLY NOW is it real: a check actually ran and
       // confirmed it. Schedule another check, unless the poll cap is
       // reached.
-      setState(() => _confirmedPending = true);
+      setState(() {
+        _confirmedPending = true;
+        _lastResult = result;
+      });
       final startedAt = _pollingStartedAt;
       if (startedAt != null && DateTime.now().difference(startedAt) < _maxPollDuration) {
         _timer = Timer(_pollInterval, _checkStatus);
@@ -178,6 +191,14 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
                         title: "We're reviewing your details",
                         message:
                             "This usually takes a few minutes. We'll notify you when you're verified — you can close the app.",
+                        // Canvas screen 23's own checklist card, between the
+                        // message and the button — real per-check signals,
+                        // not the canvas's illustrative example labels (see
+                        // _lastResult's doc comment for why the label set
+                        // differs).
+                        extra: _lastResult?.verificationSignals != null
+                            ? _VerificationChecklist(signals: _lastResult!.verificationSignals!)
+                            : null,
                         // Canvas screen 23's own wording — browsing (not a
                         // plain "back to home") is the intent while waiting.
                         secondary: 'Look around while you wait',
@@ -185,6 +206,63 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
                   ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Canvas screen 23's checklist card — a row per real verification signal,
+/// check icon (true), spinner (still running / null), or a plain dash
+/// (false — a real fail; rare to see while still pending/review, but not
+/// impossible if one check failed while others are still in flight).
+class _VerificationChecklist extends StatelessWidget {
+  const _VerificationChecklist({required this.signals});
+  final KycVerificationSignals signals;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <(String, bool?)>[
+      ('BVN matched', signals.bvn),
+      ('NIN matched', signals.nin),
+      ('Name matched', signals.name),
+      ('Date of birth matched', signals.dob),
+      ('Face liveness matched', signals.liveness),
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: KColor.paper,
+        border: Border.all(color: KColor.hairline, width: 1),
+        borderRadius: KRadii.cardR,
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: i == 0 ? BorderSide.none : BorderSide(color: KColor.hairline, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: switch (rows[i].$2) {
+                      true => KIcon('check', size: 16, color: KColor.gain),
+                      false => KIcon('close', size: 16, color: KColor.ink3),
+                      null => KSpinner(size: 16),
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(rows[i].$1, style: KType.body(color: KColor.ink2))),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
