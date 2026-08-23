@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_client.dart';
 import 'package:kudimata_invest/router/app_router.dart';
 import 'package:kudimata_invest/theme/app_theme.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -84,7 +85,8 @@ void main() {
       ..biometricEnabled = true
       ..passcodeSet = true
       ..kycApproved = true
-      ..suitabilityComplete = true;
+      ..suitabilityComplete = true
+      ..apiClient = ApiClient();
     final router = buildRouter(state);
     final key = GlobalKey();
 
