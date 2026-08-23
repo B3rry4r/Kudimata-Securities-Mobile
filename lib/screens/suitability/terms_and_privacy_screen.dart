@@ -34,10 +34,11 @@ class TermsAndPrivacyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return LegalAcceptanceScreen(
       kinds: const ['terms_of_service', 'privacy_policy', 'risk_disclosure', 'client_agreement'],
-      screenTitle: 'Terms & Disclosures',
-      checkboxLabel:
-          'I have read and agree to the Terms of Service, Privacy Policy, Risk Disclosure, and Client Agreement',
-      buttonLabel: 'Agree and continue',
+      screenTitle: 'Terms & disclosures',
+      screenBody: 'Four documents, one agreement. Each one has a plain-English summary.',
+      checkboxLabel: 'I have read and agree to all four documents',
+      checkboxDescription: 'Terms of Service · Privacy Policy · Risk Disclosure · Client Agreement',
+      buttonLabel: 'Accept and continue',
       onAccepted: (context) async => context.go(Routes.createPasscode, extra: email),
     );
   }

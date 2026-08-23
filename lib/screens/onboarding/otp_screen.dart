@@ -159,8 +159,9 @@ class _OtpScreenState extends State<OtpScreen> {
 
   String get _resendLabel {
     if (_secondsLeft <= 0) return 'Resend code';
-    final s = _secondsLeft.toString().padLeft(2, '0');
-    return 'Resend in 0:$s';
+    final m = (_secondsLeft ~/ 60).toString().padLeft(2, '0');
+    final s = (_secondsLeft % 60).toString().padLeft(2, '0');
+    return 'Resend code in $m:$s';
   }
 
   @override
@@ -172,7 +173,10 @@ class _OtpScreenState extends State<OtpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KOnboardTopBar(onBack: () => context.go(Routes.signup)),
+            KOnboardTopBar(
+              stepLabel: 'Step 1 of 4',
+              onBack: () => context.go(Routes.signup),
+            ),
             Expanded(
               child: KOnboardBody(
                 paddingTop: 8,
@@ -180,8 +184,8 @@ class _OtpScreenState extends State<OtpScreen> {
                   const KIllustration('email-sent', role: KIlloRole.banner),
                   const SizedBox(height: 20),
                   KScreenHead(
-                    title: "Verify it's you",
-                    body: 'We sent a 6-digit code to ${email ?? 'your email'}',
+                    title: 'Check your email',
+                    body: 'We sent a 6-digit code to ${email ?? 'your email'}.',
                   ),
                   const SizedBox(height: 36),
                   Stack(
@@ -229,7 +233,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       ),
                       const SizedBox(height: 10),
                       KButton(
-                        label: 'Verify',
+                        label: 'Verify email',
                         loading: _verifying,
                         onPressed: (_complete && !_verifying && !_resending) ? _verify : null,
                       ),

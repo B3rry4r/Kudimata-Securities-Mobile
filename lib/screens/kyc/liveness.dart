@@ -139,13 +139,31 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
             KycTopBar(onBack: () => context.go(Routes.kycId)),
             const KycStepProgress(total: 5, current: 3),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Spacer(),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Scrollable-but-still-centered on tall screens: the
+                  // `Spacer()`s below only work if this Column is allowed to
+                  // be exactly as tall as the available space when content
+                  // is short, and to scroll (not overflow) when content is
+                  // taller than that — e.g. once the "we check the photo…"
+                  // footnote line is showing. Found live via
+                  // test/route_walk_test.dart: a fixed-height Column here
+                  // overflowed by 20px on a real device-sized viewport the
+                  // moment that footnote was added. Same pattern as
+                  // KOnboardBody (onboarding_scaffold.dart).
+                  final maxH = constraints.maxHeight;
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                        KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: maxH.isFinite ? maxH - KSpace.gutter : 0,
+                      ),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Spacer(),
                     // Selfie frame: captured/picked photo, else the live
                     // preview (mobile only), else a placeholder — with a
                     // dashed guidance ring.
@@ -177,7 +195,7 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                       ),
                     ),
                     const SizedBox(height: 28),
-                    Text(_error ?? _cameraError ?? (kIsWeb ? 'Upload a face liveness photo' : 'Center your face'),
+                    Text(_error ?? _cameraError ?? (kIsWeb ? 'Upload a face liveness photo' : 'Look straight ahead'),
                         textAlign: TextAlign.center,
                         style: KType.title(color: (_error ?? _cameraError) != null ? KColor.loss : null)),
                     const SizedBox(height: 10),
@@ -187,12 +205,20 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                             : _error != null
                                 ? 'Tap the button to try again'
                                 : (_busy
-                                    ? 'Uploading...'
+                                    ? 'Uploading…'
                                     : kIsWeb
                                         ? 'A clear, front-facing photo of yourself'
-                                        : 'and hold still'),
+                                        : 'Good light, no hat, no glasses. Fill the frame with your face and take one photo.'),
                         textAlign: TextAlign.center,
                         style: KType.body(color: KColor.ink2)),
+                    if ((_error ?? _cameraError) == null && !_busy) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        "We check the photo against your ID after you send it — that takes a few seconds, and you can retake it if it fails.",
+                        textAlign: TextAlign.center,
+                        style: KType.data(color: KColor.ink3),
+                      ),
+                    ],
                     const Spacer(),
                     // Round shutter — captures in place (no navigation to a
                     // separate camera screen) when a live preview is ready;
@@ -231,7 +257,11 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                       ),
                     ),
                   ],
-                ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

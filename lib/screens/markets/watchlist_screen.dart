@@ -154,6 +154,18 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             body: "We'll notify you if a name on this list moves more than 5% in a day. Nothing else — no daily noise.",
           ),
         ),
+        const SizedBox(height: 16),
+        // "Find more on the NGX" (spec 46) — was only present on the empty
+        // state's own "Browse markets" button; the populated list had no
+        // equivalent way to jump to Markets.
+        Padding(
+          padding: _gut,
+          child: KButton(
+            label: 'Find more on the NGX',
+            variant: KButtonVariant.ghost,
+            onPressed: () => context.go(Routes.markets),
+          ),
+        ),
       ],
     );
   }

@@ -25,7 +25,10 @@ class BiometricScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KOnboardTopBar(onBack: () => context.go(Routes.confirmPasscode)),
+            KOnboardTopBar(
+              stepLabel: 'Step 4 of 4',
+              onBack: () => context.go(Routes.confirmPasscode),
+            ),
             Expanded(
               child: KOnboardBody(
                 paddingTop: 8,

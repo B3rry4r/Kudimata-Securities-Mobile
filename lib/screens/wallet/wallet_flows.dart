@@ -47,8 +47,10 @@ import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart'
     show BankAccountSummary;
+import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -121,6 +123,7 @@ class _SelectRow extends StatelessWidget {
     required this.title,
     required this.sub,
     this.trailingChevron = false,
+    this.subVerified = false,
     required this.first,
     this.onTap,
   });
@@ -129,6 +132,11 @@ class _SelectRow extends StatelessWidget {
   final String title;
   final String sub;
   final bool trailingChevron;
+
+  /// A small gain-toned check icon beside [sub] — spec 42's "Adebayo
+  /// Okonkwo (check icon)" name-match confirmation on the withdraw
+  /// destination row.
+  final bool subVerified;
   final bool first;
   final VoidCallback? onTap;
 
@@ -165,10 +173,21 @@ class _SelectRow extends StatelessWidget {
                 children: [
                   Text(title, style: KType.cardTitle()),
                   const SizedBox(height: 2),
-                  Text(sub,
-                      style: KType.micro(color: KColor.ink3)
-                          .copyWith(letterSpacing: 0.04 * 10, height: 15 / 10)
-                          .tnum),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(sub,
+                            style: KType.micro(color: KColor.ink3)
+                                .copyWith(letterSpacing: 0.04 * 10, height: 15 / 10)
+                                .tnum),
+                      ),
+                      if (subVerified) ...[
+                        const SizedBox(width: 4),
+                        KIcon('check', size: 12, color: KColor.gain),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -271,7 +290,23 @@ class _AddMoneySheet extends StatefulWidget {
 
 class _AddMoneySheetState extends State<_AddMoneySheet> {
   late final _repo = WalletRepository(AppScope.read(context).apiClient);
-  late Future<VirtualAccountDetails> _future = _repo.virtualAccount();
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
+
+  /// Spec 41's plate shows "Providus Bank · Adebayo Okonkwo" — a real
+  /// account-holder name — but `VirtualAccountDetails` (GET
+  /// /transactions/virtual-account) only ever carries accountNumber/bankName,
+  /// no holder-name field (checked against the backend's actual wire type,
+  /// common/types/transaction.types.ts's VirtualAccount). Flutterwave opens
+  /// this account in the signed-in investor's own name, though, so joining
+  /// it with GET /users/me's real fullName is a true fact about this
+  /// specific account, not an invented one — same one extra call
+  /// account_screen.dart already makes for its own profile header.
+  late Future<({VirtualAccountDetails account, String holderName})> _future = _load();
+
+  Future<({VirtualAccountDetails account, String holderName})> _load() async {
+    final (account, profile) = await (_repo.virtualAccount(), _userRepo.me()).wait;
+    return (account: account, holderName: profile.fullName);
+  }
 
   Future<void> _copy(String accountNumber) async {
     await Clipboard.setData(ClipboardData(text: accountNumber));
@@ -283,7 +318,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<VirtualAccountDetails>(
+    return FutureBuilder<({VirtualAccountDetails account, String holderName})>(
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -296,11 +331,12 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: KErrorView(
-              onPrimary: () => setState(() => _future = _repo.virtualAccount()),
+              onPrimary: () => setState(() => _future = _load()),
             ),
           );
         }
-        final account = snapshot.data!;
+        final data = snapshot.data!;
+        final account = data.account;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -343,25 +379,60 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Spec (#41) also shows the account holder's name here
-                  // ("Providus Bank · Adebayo Okonkwo") — VirtualAccountDetails
-                  // only carries accountNumber/bankName, so that's omitted
-                  // rather than fabricated; add it if the backend/repository
-                  // ever exposes it.
-                  Text(account.bankName, style: KType.body(color: KColor.featureInk2)),
+                  // "Providus Bank · Adebayo Okonkwo" (spec #41) —
+                  // VirtualAccountDetails itself has no holder-name field
+                  // (checked against the backend's real wire type), but a
+                  // Flutterwave virtual account is always opened in the
+                  // signed-in investor's own name, so joining GET /users/me's
+                  // real fullName here is a true fact, not an invented one.
+                  Text('${account.bankName} · ${data.holderName}',
+                      style: KType.body(color: KColor.featureInk2)),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
+            // Info rows (spec 41) — all three are real, fixed facts about
+            // this funding path (a dedicated Flutterwave virtual account),
+            // not placeholders.
+            _SummaryRow(label: 'Transfer fee', value: 'Free'),
+            _SummaryRow(label: 'Arrives', value: 'Usually under 5 minutes'),
+            _SummaryRow(label: 'Send from', value: 'Any account in your name'),
+            const SizedBox(height: 18),
             Text(
-              'This account is permanently yours. Transfer any amount from your '
-              "bank app, any time — your wallet updates automatically once we "
-              'receive it.',
+              "Money sent from an account that isn't yours is returned — the "
+              'NGX requires the names to match.',
               style: KType.body(color: KColor.ink3),
             ),
             const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: KButton(
+                    label: 'Copy number',
+                    variant: KButtonVariant.secondary,
+                    onPressed: () => _copy(account.accountNumber),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: KButton(
+                    label: 'Share details',
+                    variant: KButtonVariant.secondary,
+                    onPressed: () => SharePlus.instance.share(
+                      ShareParams(
+                        text: 'Send money to my Kudimata Invest account: '
+                            '${account.accountNumber}, ${account.bankName} '
+                            '(${data.holderName}).',
+                        subject: 'My Kudimata Invest funding account',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             KButton(
-              label: 'Done',
+              label: "I've sent it",
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],
@@ -381,23 +452,27 @@ class _WithdrawSheet extends StatefulWidget {
   State<_WithdrawSheet> createState() => _WithdrawSheetState();
 }
 
-typedef _WithdrawInit = ({String balance, BankAccountSummary? account});
+typedef _WithdrawInit = ({String balance, BankAccountSummary? account, String holderName});
 
 class _WithdrawSheetState extends State<_WithdrawSheet> {
   late final TextEditingController _amount = TextEditingController(text: '20,000');
   late final _repo = WalletRepository(AppScope.read(context).apiClient);
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late Future<_WithdrawInit> _init = _load();
 
-  // GET /wallet-balance + GET /bank-accounts, fetched together so the sheet
-  // has a single loading/error state (README.md convention). The withdraw
-  // destination: no in-sheet picker exists for choosing among multiple saved
-  // accounts (see file header) — this always resolves to the investor's
-  // primary account, falling back to the first saved one.
+  // GET /wallet-balance + GET /bank-accounts + GET /users/me, fetched
+  // together so the sheet has a single loading/error state (README.md
+  // convention). The withdraw destination: no in-sheet picker exists for
+  // choosing among multiple saved accounts (see file header) — this always
+  // resolves to the investor's primary account, falling back to the first
+  // saved one. `holderName`: a DCS bank account is required to be in the
+  // investor's own name (BankAccountsService enforces this at add-time), so
+  // the signed-in investor's real fullName is a true fact about whichever
+  // account this resolves to, not an invented one — same join
+  // wallet_flows.dart's Add Money sheet already makes.
   Future<_WithdrawInit> _load() async {
-    final balanceFuture = _repo.balance();
-    final accountsFuture = _repo.bankAccounts();
-    final balance = await balanceFuture;
-    final accounts = await accountsFuture;
+    final (balance, accounts, profile) =
+        await (_repo.balance(), _repo.bankAccounts(), _userRepo.me()).wait;
     BankAccountSummary? account;
     for (final a in accounts) {
       if (a.primary) {
@@ -406,7 +481,7 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
       }
     }
     account ??= accounts.isEmpty ? null : accounts.first;
-    return (balance: balance, account: account);
+    return (balance: balance, account: account, holderName: profile.fullName);
   }
 
   @override
@@ -447,7 +522,13 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
               amount: true,
               prefix: '₦',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              helper: 'Balance ${data.balance}',
+              // Spec 42: "₦214,300.00 available · minimum ₦1,000 out" — the
+              // "minimum ₦1,000" half is dropped deliberately: the backend's
+              // real validation (WithdrawDto) only enforces amountKobo >= 1
+              // kobo, no ₦1,000 floor. Showing a specific minimum the
+              // backend doesn't actually enforce would be its own kind of
+              // inexact — a rule a user could disprove by trying ₦500.
+              helper: '${data.balance} available',
             ),
             const SizedBox(height: 24),
             const Padding(
@@ -458,8 +539,19 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SelectRow(
                 icon: 'wallet',
-                title: account?.bankName ?? 'No saved bank account',
-                sub: account?.accountNumberMasked ?? 'Tap to add one',
+                // "GTB ••••6789 · DCS account" (spec 42) — DCS accounts are
+                // always the investor's own name-matched settlement account,
+                // so the qualifier is accurate for every saved account here,
+                // not just one particular one.
+                title: account == null
+                    ? 'No saved bank account'
+                    : '${account.bankName} ${account.accountNumberMasked} · DCS account',
+                // "Adebayo Okonkwo" + check icon (spec 42) — a DCS account is
+                // required to be in the investor's own name (enforced at
+                // add-time), so the signed-in investor's real fullName is a
+                // true fact about whichever account this resolves to.
+                sub: account == null ? 'Tap to add one' : data.holderName,
+                subVerified: account != null,
                 trailingChevron: true,
                 first: true,
                 // No saved account: routes to the add-bank-account screen
@@ -479,14 +571,31 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
             Text('Withdrawals arrive within 1 business day.',
                 style: KType.body(color: KColor.ink3)),
             const SizedBox(height: 22),
-            KButton(
-              label: 'Withdraw',
-              onPressed: account == null
-                  ? null
-                  : () {
-                      Navigator.of(context).pop();
-                      _showWithdrawReview(context, amount: _amount.text, account: account);
-                    },
+            // "Cancel" / "Review" (spec 42) — was a single "Withdraw" button
+            // that skipped straight past the review step's own confirmation.
+            Row(
+              children: [
+                Expanded(
+                  child: KButton(
+                    label: 'Cancel',
+                    variant: KButtonVariant.secondary,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: KButton(
+                    label: 'Review',
+                    onPressed: account == null
+                        ? null
+                        : () {
+                            Navigator.of(context).pop();
+                            _showWithdrawReview(context,
+                                amount: _amount.text, account: account, holderName: data.holderName);
+                          },
+                  ),
+                ),
+              ],
             ),
           ],
         );
@@ -496,18 +605,19 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
 }
 
 void _showWithdrawReview(BuildContext context,
-    {required String amount, required BankAccountSummary account}) {
+    {required String amount, required BankAccountSummary account, required String holderName}) {
   showKSheet<void>(
     context,
     title: 'Review',
-    child: _WithdrawReview(amount: amount, account: account),
+    child: _WithdrawReview(amount: amount, account: account, holderName: holderName),
   );
 }
 
 class _WithdrawReview extends StatefulWidget {
-  const _WithdrawReview({required this.amount, required this.account});
+  const _WithdrawReview({required this.amount, required this.account, required this.holderName});
   final String amount;
   final BankAccountSummary account;
+  final String holderName;
   @override
   State<_WithdrawReview> createState() => _WithdrawReviewState();
 }
@@ -526,10 +636,23 @@ class _WithdrawReviewState extends State<_WithdrawReview> {
       children: [
         _SummaryRow(label: 'Amount', value: '₦${widget.amount}'),
         _SummaryRow(label: 'To', value: _destinationLabel),
+        // Fee/Arrives/You receive (spec 42) — Fee is genuinely ₦0.00 (no fee
+        // concept exists anywhere in the backend's Transaction model, so
+        // this isn't a placeholder, it's the real answer), "You receive" is
+        // therefore always the full requested amount.
         _SummaryRow(label: 'Fee', value: '₦0.00'),
+        _SummaryRow(label: 'Arrives', value: 'Within 1 business day'),
+        _SummaryRow(label: 'You receive', value: '₦${widget.amount}'),
         const SizedBox(height: 18),
-        Text('Withdrawals arrive within 1 business day.',
-            style: KType.body(color: KColor.ink3)),
+        // Spec 42's exact footnote also claims "Your passcode confirms this
+        // withdrawal" — dropped: there is no passcode-reentry step anywhere
+        // in this flow (see _confirm() below), so that clause describes a
+        // control this build doesn't actually have. Copying it verbatim
+        // would be a false security claim, not just an inexact one.
+        Text(
+          'Money from a sale is available after it settles on T+3.',
+          style: KType.body(color: KColor.ink3),
+        ),
         const SizedBox(height: 22),
         KButton(
           label: 'Withdraw',

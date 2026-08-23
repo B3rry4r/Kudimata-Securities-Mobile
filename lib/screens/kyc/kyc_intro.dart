@@ -32,13 +32,22 @@ class KycIntroScreen extends StatefulWidget {
 }
 
 class _KycIntroScreenState extends State<KycIntroScreen> {
+  // 2026-08-23 exactness pass: the design mockup's own checklist (screen 13)
+  // lists 8 items — CHN, bank/DCS, and two declarations among them — that
+  // don't exist as separate steps anywhere in this app's real backend flow
+  // (see KycRepository/kyc-submissions.service.ts: a draft only ever has 5
+  // steps). Copying the mockup's 8-item list verbatim would show the
+  // investor steps they'll never actually be asked to do — less "exact,"
+  // not more. This lists exactly this app's real 5 steps instead.
   static const _rows = [
-    _KycRow('IDENTITY', 'Your BVN — Bank Verification Number.', 'profile'),
+    _KycRow('IDENTITY', 'Your BVN and NIN — checked with NIBSS.', 'profile'),
     _KycRow('DOCUMENT', 'A government ID — NIN, international passport, licence or voter\'s card.', 'card'),
     // Face liveness check — fingerprint/profile motif (no camera icon in
     // the set). Eyebrow renamed from 'SELFIE' 2026-08-20 ("please don't
     // use selfie wording for face liveness check").
     _KycRow('FACE LIVENESS', 'A quick liveness check to match your face.', 'fingerprint'),
+    _KycRow('ADDRESS', 'A utility bill dated in the last three months.', 'card'),
+    _KycRow('NEXT OF KIN', 'Who to contact if we can\'t reach you.', 'profile'),
   ];
 
   bool _busy = false;
@@ -100,7 +109,13 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
                     children: [
                       const KIllustration('kyc-intro', role: KIlloRole.small),
                       const SizedBox(height: 20),
-                      const KScreenHead(title: "Let's verify you"),
+                      const KScreenHead(
+                        title: 'Verify to start investing',
+                        // "Five steps" not the mockup's "Eight" — see the
+                        // header comment on _rows above.
+                        body:
+                            'The NGX requires this before your CSCS account can open. Five steps, about six minutes.',
+                      ),
                       const SizedBox(height: 28),
                       KCard(
                         padding: EdgeInsets.zero,
@@ -149,7 +164,7 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Required by our regulator before you can invest.',
+                        'Then we provision your NGX account — that part is on us, and takes up to one business day.',
                         style: KType.body(color: KColor.ink3),
                       ),
                     ],
@@ -158,10 +173,16 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
               ),
               const SizedBox(height: 16),
               KButton(
-                label: 'Start',
+                label: 'Start verification',
                 iconRight: 'arrowUpRight',
                 loading: _busy,
                 onPressed: _busy ? null : _start,
+              ),
+              const SizedBox(height: 10),
+              KButton(
+                label: 'Look around first',
+                variant: KButtonVariant.ghost,
+                onPressed: _busy ? null : () => context.go(Routes.home),
               ),
             ],
           ),

@@ -8,6 +8,7 @@
 // faithful to the design even though the content behind it is a stub.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
@@ -77,6 +78,9 @@ class _ExplainScreenState extends State<ExplainScreen> {
                   KIconButton(icon: 'close', semanticLabel: 'Close', onPressed: () => context.pop()),
                   const SizedBox(width: 10),
                   Expanded(child: Text('Explain ${widget.topic}', style: KType.section())),
+                  // Spec: "CreditMeter (compact, in header; full below)" —
+                  // was missing entirely up here before this exactness pass.
+                  const KCreditMeter(compact: true, used: 3, total: 10, kind: 'trial'),
                 ],
               ),
             ),
@@ -135,9 +139,11 @@ class _ExplainScreenState extends State<ExplainScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  // Full (non-compact) card, per spec's "full below" — the
+                  // header above carries the compact one.
                   const Padding(
                     padding: _gut,
-                    child: KCreditMeter(compact: true, used: 3, total: 10, kind: 'trial'),
+                    child: KCreditMeter(used: 3, total: 10, kind: 'trial'),
                   ),
                 ],
               ),
@@ -159,6 +165,15 @@ class _ExplainScreenState extends State<ExplainScreen> {
                     child: KButton(
                       label: "I'm ready to buy",
                       onPressed: () => context.pop(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Was missing entirely — spec's second button.
+                  Expanded(
+                    child: KButton(
+                      label: 'See plans and credits',
+                      variant: KButtonVariant.secondary,
+                      onPressed: () => context.push(Routes.acctPlans),
                     ),
                   ),
                 ],

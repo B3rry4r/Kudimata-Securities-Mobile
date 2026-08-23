@@ -177,7 +177,7 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
                         illustrationName: 'kyc-checking',
                         title: "We're reviewing your details",
                         message:
-                            "This usually takes a few minutes. We'll notify you when you're verified.",
+                            "This usually takes a few minutes. We'll notify you when you're verified — you can close the app.",
                         secondary: 'Back to home',
                         onSecondary: () => context.go(Routes.home),
                   ),

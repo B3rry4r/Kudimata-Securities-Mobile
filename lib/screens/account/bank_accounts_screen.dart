@@ -13,9 +13,11 @@
 // no other row UI exists to wire beyond that.
 import 'package:flutter/material.dart';
 
+import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -50,6 +52,14 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
       child: _AccountActionsSheet(account: account),
     );
     if (action == null || !mounted) return;
+    // Withdraw-mandate (screen 65) is its own confirm screen, not an
+    // immediate repo call like the other two actions — see
+    // withdraw_mandate_screen.dart's header comment for why it doesn't
+    // call setPrimary()/remove() directly.
+    if (action == _RowAction.withdrawMandate) {
+      context.push(Routes.acctWithdrawMandate, extra: account);
+      return;
+    }
     try {
       if (action == _RowAction.setPrimary) {
         await _repo.setPrimary(account.id);
@@ -87,6 +97,19 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (accounts.isNotEmpty) ...[
+                // screen-specs.md spec 64 (2026-08-23 exactness pass). This
+                // backend has no separate "DCS mandate" concept from the
+                // existing `primary` flag — the primary account IS the one
+                // that receives sale/dividend proceeds — so "DCS active" /
+                // "No mandate" below map directly onto real `primary`
+                // rather than inventing a new field.
+                Text(
+                  'Your Direct Cash Settlement mandate sends sale proceeds and dividends from the CSCS to this account.',
+                  style: KType.body(color: KColor.ink2),
+                ),
+                const SizedBox(height: 16),
+              ],
               if (accounts.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
@@ -113,6 +136,19 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
               // SEAM: bank-linking flow (account verification / mandate provider)
               // plugs in here.
               KButton(label: 'Add bank account', iconLeft: 'plus', onPressed: _openAdd),
+              if (accounts.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Every account must be in your own name, matched to your BVN. One account carries the DCS mandate at a time.',
+                  style: KType.data(color: KColor.ink3),
+                ),
+                const SizedBox(height: 12),
+                KButton(
+                  label: 'What is a DCS mandate?',
+                  variant: KButtonVariant.ghost,
+                  onPressed: () => context.push(Routes.acctHelp),
+                ),
+              ],
             ],
           );
         },
@@ -121,7 +157,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
   }
 }
 
-enum _RowAction { setPrimary, remove }
+enum _RowAction { setPrimary, remove, withdrawMandate }
 
 class _BankRow extends StatelessWidget {
   const _BankRow({required this.account, required this.first, required this.onTap});
@@ -154,20 +190,18 @@ class _BankRow extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(account.bankName, style: KType.cardTitle(w: KWeight.medium)),
-                      if (account.primary) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(KRadii.pill),
-                            border: Border.all(color: KColor.hairline, width: 1),
-                          ),
-                          child: Text('Primary',
-                              style: KType.micro(color: KColor.ink3)
-                                  .copyWith(letterSpacing: 0.06 * 10)),
-                        ),
-                      ],
+                      Flexible(
+                        child: Text(account.bankName,
+                            style: KType.cardTitle(w: KWeight.medium)),
+                      ),
+                      const SizedBox(width: 8),
+                      // "DCS active"/"No mandate" per screen-specs.md spec
+                      // 64 — mapped onto the real `primary` flag, the only
+                      // account-precedence concept this backend actually
+                      // has (2026-08-23 exactness pass).
+                      account.primary
+                          ? const KStatusPill(status: KStatus.approved, label: 'DCS active', small: true)
+                          : const KStatusPill(status: KStatus.pending, label: 'No mandate', small: true),
                     ],
                   ),
                   const SizedBox(height: 3),
@@ -207,10 +241,19 @@ class _AccountActionsSheet extends StatelessWidget {
             first: true,
             onTap: () => Navigator.of(context).pop(_RowAction.setPrimary),
           ),
+        // "Withdraw mandate" (screen 65) only makes sense on the account
+        // that actually carries the mandate.
+        if (account.primary)
+          KAccountRow(
+            icon: 'close',
+            title: 'Withdraw mandate',
+            first: true,
+            onTap: () => Navigator.of(context).pop(_RowAction.withdrawMandate),
+          ),
         KAccountRow(
           icon: 'close',
           title: 'Remove account',
-          first: account.primary,
+          first: false,
           onTap: () => Navigator.of(context).pop(_RowAction.remove),
         ),
       ],

@@ -48,16 +48,14 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const KScreenHead(title: 'Upload a utility bill'),
-                    const SizedBox(height: 8),
-                    Text(
-                      'A recent electricity, water, or waste bill with your name and address — no older than 3 months.',
-                      style: KType.body(color: KColor.ink2),
+                    const KScreenHead(
+                      title: 'Upload a utility bill',
+                      body: 'Dated in the last three months and showing the address you gave us.',
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     KFileUpload(
-                      label: 'Upload your utility bill',
-                      hint: 'JPG or PDF, up to 10MB',
+                      label: 'Proof of address',
+                      hint: 'JPG or PDF · up to 10 MB',
                       prompt: _uploading ? 'Uploading…' : 'Tap to upload, or take a photo',
                       helper: _uploading ? 'Uploading your document…' : null,
                       error: _uploadError ??
@@ -73,6 +71,21 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
                                 _file = null;
                                 _uploadError = null;
                               }),
+                    ),
+                    const SizedBox(height: 20),
+                    KCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const KEyebrow('We accept'),
+                          const SizedBox(height: 8),
+                          Text(
+                            'PHCN or IBEDC bill · water bill · waste bill · bank statement with your address · tenancy agreement',
+                            style: KType.body(color: KColor.ink2),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
                     const KNudgeCard(

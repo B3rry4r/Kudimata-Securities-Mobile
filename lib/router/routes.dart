@@ -111,4 +111,21 @@ class Routes {
   static String explainThis(String topic) => '/explain/$topic';
   static const String explainThisPath = '/explain/:topic';
   static const String acctPlans = '/account/plans';
+  // Plain-English document summary (screen 06) — pushed with a
+  // DocumentSummaryArgs `extra`, not a path param, since it needs the
+  // already-fetched title/summary/points/original text, not just a kind
+  // string. Reachable from the terms screen's document rows and later from
+  // Account → Legal. Was built (2026-08-22) but never actually wired in —
+  // found unreachable during the exactness audit.
+  static const String documentSummary = '/document-summary';
+
+  // ── Flow G — market hours, mandate and receipts (2026-08-23) ─────────────
+  // Withdraw the DCS mandate (screen 65) — pushed with a BankAccountSummary
+  // `extra` (not a path param — needs the full bank/masked-number pair, not
+  // just an id). Reachable from Account -> Bank accounts.
+  static const String acctWithdrawMandate = '/account/banks/withdraw-mandate';
+  // Contract note document (screen 66) — pushed with a Statement `extra`,
+  // same reasoning as documentSummary above (needs the already-fetched
+  // title/date/size, not just an id). Reachable from Statements & documents.
+  static const String contractNote = '/account/statements/contract-note';
 }

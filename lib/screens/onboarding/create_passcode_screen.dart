@@ -69,6 +69,7 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KOnboardTopBar(
+              stepLabel: widget.reentry ? null : 'Step 3 of 4',
               onBack: () =>
                   widget.reentry ? context.pop() : context.go(Routes.otp),
             ),
@@ -85,7 +86,8 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
                   KPasscodeDots(filled: _code.length),
                   const SizedBox(height: 20),
                   Text(
-                    "You'll use this to sign in.",
+                    "Six digits. You'll use it to open the app and to approve withdrawals.",
+                    textAlign: TextAlign.center,
                     style: KType.body(color: KColor.ink3),
                   ),
                   const Spacer(),

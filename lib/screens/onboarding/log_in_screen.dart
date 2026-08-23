@@ -43,6 +43,7 @@
 // confirm_passcode_screen.dart once AppState.loginPasscodeSetup (set by
 // [_completeLogin]) tells it this was a fresh login rather than first-time
 // signup onboarding or Security's change-passcode reentry.
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -85,6 +86,14 @@ class _LogInScreenState extends State<LogInScreen> {
   bool _busy = false;
   String? _serverError;
   final _tokenStore = AuthTokenStore();
+
+  // Persistent, not created inline in build() — a fresh TapGestureRecognizer
+  // on every rebuild leaks the previous one (same pattern sign_up_screen.dart
+  // uses for its legal-doc links).
+  late final _createAccountTap = TapGestureRecognizer()
+    ..onTap = () {
+      if (!_busy) context.go(Routes.signup);
+    };
 
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
   bool get _emailValid => _emailPattern.hasMatch(_email.text.trim());
@@ -135,6 +144,7 @@ class _LogInScreenState extends State<LogInScreen> {
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _createAccountTap.dispose();
     _stepUpController.dispose();
     _stepUpFocus.dispose();
     super.dispose();
@@ -405,7 +415,7 @@ class _LogInScreenState extends State<LogInScreen> {
                 ),
                 const SizedBox(height: 8),
                 KButton(
-                  label: 'Forgot password',
+                  label: 'Forgot your password?',
                   variant: KButtonVariant.ghost,
                   size: KButtonSize.sm,
                   fullWidth: false,
@@ -462,18 +472,29 @@ class _LogInScreenState extends State<LogInScreen> {
                   loading: _busy,
                   onPressed: _busy ? null : _login,
                 ),
-                const SizedBox(height: 10),
-                KButton(
-                  label: 'Create an account',
-                  variant: KButtonVariant.ghost,
-                  onPressed: _busy ? null : () => context.go(Routes.signup),
-                ),
               ],
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: RichText(
+                text: TextSpan(
+                  style: KType.micro(color: KColor.ink3),
+                  children: [
+                    const TextSpan(text: 'New here? '),
+                    TextSpan(
+                      text: 'Create an account',
+                      style: KType.micro(color: KColor.ink2)
+                          .copyWith(decoration: TextDecoration.underline),
+                      recognizer: _createAccountTap,
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             Center(
               child: KButton(
-                label: 'Forgot password',
+                label: 'Forgot your password?',
                 variant: KButtonVariant.ghost,
                 size: KButtonSize.sm,
                 fullWidth: false,

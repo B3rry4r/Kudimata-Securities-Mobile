@@ -167,7 +167,7 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                   children: [
                     const KScreenHead(
                       title: 'A few more details',
-                      body: 'This helps us keep your account secure and compliant.',
+                      body: 'This keeps your account secure and compliant.',
                     ),
                     const SizedBox(height: 20),
                     KCard(

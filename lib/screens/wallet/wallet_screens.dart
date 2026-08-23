@@ -32,7 +32,12 @@ import 'wallet_flows.dart';
 // 1 · WALLET HOME (root tab — shell provides the bottom nav).
 // ─────────────────────────────────────────────────────────────────────────────
 
-typedef _WalletData = ({String balance, List<Txn> txns, bool devFundEnabled});
+typedef _WalletData = ({
+  String balance,
+  String? pending,
+  List<Txn> txns,
+  bool devFundEnabled,
+});
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -78,9 +83,14 @@ class _WalletScreenState extends State<WalletScreen> {
     // Record `.wait`, not fire-then-sequential-await — see home_screen.dart's
     // _load() for why (an early rejection would otherwise leave the other
     // future's eventual rejection unlistened-to: an "unhandled exception").
-    final (balance, page, devFundEnabled) =
-        await (_walletRepo.balance(), _txnRepo.list(), _walletRepo.devFundEnabled()).wait;
-    return (balance: balance, txns: page.data, devFundEnabled: devFundEnabled);
+    final (balanceDetail, page, devFundEnabled) =
+        await (_walletRepo.balanceDetail(), _txnRepo.list(), _walletRepo.devFundEnabled()).wait;
+    return (
+      balance: balanceDetail.available,
+      pending: balanceDetail.pending,
+      txns: page.data,
+      devFundEnabled: devFundEnabled,
+    );
   }
 
   Future<void> _silentRefresh() async {
@@ -157,6 +167,7 @@ class _WalletScreenState extends State<WalletScreen> {
               final data = effective!;
               return _WalletBody(
                 balance: data.balance,
+                pending: data.pending,
                 txns: data.txns,
                 showDevFund: data.devFundEnabled,
                 devFundBusy: _devFundBusy,
@@ -174,12 +185,17 @@ class _WalletScreenState extends State<WalletScreen> {
 class _WalletBody extends StatelessWidget {
   const _WalletBody({
     required this.balance,
+    required this.pending,
     required this.txns,
     required this.showDevFund,
     required this.devFundBusy,
     required this.onDevFund,
   });
   final String balance;
+
+  /// "₦X held for a pending order" (spec 40, loss-toned) — null when there's
+  /// nothing held, in which case KBalancePanel shows no change line at all.
+  final String? pending;
   final List<Txn> txns;
 
   /// True only when the backend reports Flutterwave is on a sandbox key
@@ -199,7 +215,12 @@ class _WalletBody extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Naira wallet — the one rich ink surface on this screen.
-        KBalancePanel(label: 'Available to invest', balance: balance),
+        KBalancePanel(
+          label: 'Available to invest',
+          balance: balance,
+          change: pending != null ? '$pending held for a pending order' : null,
+          changeTone: KTrend.loss,
+        ),
         const SizedBox(height: 12),
 
         // Action row — Add money / Withdraw (sheet flows).
@@ -238,13 +259,20 @@ class _WalletBody extends StatelessWidget {
         ],
         const SizedBox(height: 28),
 
-        // Recent header — eyebrow + Orders shortcut.
+        // "Recent activity" (spec 40) — was "Recent". The eyebrow's trailing
+        // link deliberately stays "Orders", not spec's literal "See all":
+        // TransactionRepository.list() already fetches every transaction
+        // this API returns for the card below (no further pages exist to
+        // reveal), so a "See all" pointing at the buy/sell-only Orders
+        // screen would show STRICTLY LESS than what's already on screen —
+        // an actively misleading link, not just an inexact label. "Orders"
+        // is honest about what that shortcut actually is.
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const KEyebrow('Recent'),
+              const KEyebrow('Recent activity'),
               GestureDetector(
                 onTap: () => context.push(Routes.orderStatus),
                 behavior: HitTestBehavior.opaque,
@@ -395,14 +423,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   // and the button's own busy state never fight each other.
   bool _receiptBusy = false;
 
-  // Human label for the ledger type (sentence case).
-  String _typeLabel(Txn t) => switch (t.type) {
-        TxnType.fund => 'Add money',
-        TxnType.withdraw => 'Withdrawal',
-        TxnType.buy => 'Buy',
-        TxnType.sell => 'Sell',
-        TxnType.convert => 'Conversion',
-      };
 
   // "On its way"/"Completed"/"Failed" per screen-specs.md #43 — mapped onto
   // the shared workflow-state vocabulary (KStatus), not a bespoke pill.
@@ -481,12 +501,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         final (statusEnum, statusLabel) = _status(txn.status);
         final amountColor = txn.incoming ? KColor.gain : KColor.ink;
 
+        // Spec 43's exact rows are Reference/Requested/Fee/Settlement — Type
+        // and Status are dropped here since the amount+StatusPill above
+        // already convey both without repeating them as rows. Fee is
+        // genuinely ₦0.00 (no fee concept exists anywhere in this backend's
+        // Transaction model). Settlement only shown for withdraw/sell — the
+        // two types whose proceeds actually route via Direct Cash
+        // Settlement (see screen-specs.md #19's DCS explainer); a `fund`
+        // transaction is money coming IN by bank transfer, not a DCS payout,
+        // so asserting DCS there would be wrong, not just imprecise.
         final rows = <(String, String)>[
-          ('Type',
-              '${_typeLabel(txn)} · ${txn.title.replaceFirst(RegExp(r'^(Buy|Sell)\s+'), '')}'),
           ('Reference', txn.id),
-          ('Date & time', txn.date),
-          ('Status', statusLabel),
+          ('Requested', txn.date),
+          ('Fee', '₦0.00'),
+          if (txn.type == TxnType.withdraw || txn.type == TxnType.sell)
+            ('Settlement', 'Direct Cash Settlement'),
         ];
 
         return Scaffold(
@@ -503,6 +532,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 // money-movement states.
                 const KIllustration('wallet-fund', role: KIlloRole.small, tone: KIlloTone.warm),
                 const SizedBox(height: 20),
+                // Spec 43's body sentence ("Withdrawal to GTB ••••6789.
+                // Money usually lands the same business day.") — using the
+                // backend's own preformatted subtitle rather than
+                // reconstructing a specific delivery-time claim per type
+                // that this screen has no real way to verify for every
+                // transaction kind.
+                if (txn.subtitle.isNotEmpty) ...[
+                  Text(txn.subtitle, style: KType.body(color: KColor.ink2)),
+                  const SizedBox(height: 16),
+                ],
                 KCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -535,11 +574,25 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 // generation is still a stub (placeholder presigned URL, no
                 // real PDF yet) — wired anyway so the plumbing is correct
                 // end-to-end; see transaction_repository.dart's receiptUrl().
+                // Labelled "Get receipt", not spec 43's literal "Download
+                // receipt" — nothing downloads yet (see _getReceipt's own
+                // comment on this), and that label would repeat the exact
+                // false promise already found and fixed once this session.
                 KButton(
                   label: 'Get receipt',
                   variant: KButtonVariant.ghost,
                   loading: _receiptBusy,
                   onPressed: _receiptBusy ? null : _getReceipt,
+                ),
+                const SizedBox(height: 10),
+                // Spec 43's second button — this route is always reached via
+                // a push from Wallet (see app_router.dart), so a plain pop
+                // genuinely does return to Wallet, not just "back" in the
+                // abstract.
+                KButton(
+                  label: 'Back to wallet',
+                  variant: KButtonVariant.secondary,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),

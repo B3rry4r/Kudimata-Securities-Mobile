@@ -70,6 +70,9 @@ const Map<String, String> _kIconPaths = {
   // suitability_result_screen.dart's "no foreign stocks yet" note).
   'alert': '<path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>'
       '<path d="M12 9v4"/><path d="M12 17h.01"/>',
+  // Lucide 'clock' — Home's "Orders" quick action (spec screen 29), and the
+  // market-hours-closed states (spec screens 60-63).
+  'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   // custom — drawn in the same Lucide idiom (shared.jsx Fingerprint)
   'fingerprint': '<path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>'
       '<path d="M5 19.5C5.5 18 6 16 6 14a6 6 0 0 1 .34-2"/>'

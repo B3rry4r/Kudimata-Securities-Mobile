@@ -107,7 +107,7 @@ class _PortfolioBody extends StatelessWidget {
         const SizedBox(height: 28),
         const KEyebrow('Allocation'),
         const SizedBox(height: 12),
-        _AllocationCard(allocation: summary.allocation),
+        _AllocationCard(allocation: summary.allocation, holdingCount: holdings.length),
 
         const SizedBox(height: 20),
         _ConcentrationDigest(allocation: summary.allocation),
@@ -123,8 +123,13 @@ class _PortfolioBody extends StatelessWidget {
 
 /// Donut + legend card — brand purple ramp; legend dots mirror the donut.
 class _AllocationCard extends StatelessWidget {
-  const _AllocationCard({required this.allocation});
+  const _AllocationCard({required this.allocation, required this.holdingCount});
   final List<PortfolioAllocationSlice> allocation;
+
+  /// The real number of distinct holdings — NOT `allocation.length` (that's
+  /// the number of allocation SLICES, e.g. sectors, a different count).
+  /// Spec 38's "4 holdings" center label refers to actual holdings.
+  final int holdingCount;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +146,10 @@ class _AllocationCard extends StatelessWidget {
                   color: KAllocationDonut.ramp[i % KAllocationDonut.ramp.length],
                 ),
             ],
+            // "4 holdings" (spec 38) — was missing the center label
+            // entirely even though KAllocationDonut has always supported it.
+            centerValue: '$holdingCount',
+            centerLabel: holdingCount == 1 ? 'holding' : 'holdings',
             size: 132,
             thickness: 18,
           ),

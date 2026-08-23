@@ -19,29 +19,41 @@ class KFingerprint extends StatelessWidget {
       KIcon('fingerprint', size: size, stroke: stroke, color: color ?? KColor.ink);
 }
 
-/// Slim top bar with a back affordance, for mid-flow screens. Height 44, no rule.
+/// Slim top bar with a back affordance, for mid-flow screens. Height 44, no
+/// rule. [stepLabel] (e.g. "Step 3 of 4") renders centered — screen-specs.md
+/// calls for this on every Flow A mid-flow screen (04, 05, 07, 08, 12); a
+/// prior pass reskinned colors/fonts here but never actually added the step
+/// label itself, so it was silently missing everywhere in onboarding even
+/// though the equivalent KYC chrome (_kyc_chrome.dart) already has one.
 class KOnboardTopBar extends StatelessWidget {
-  const KOnboardTopBar({super.key, this.onBack});
+  const KOnboardTopBar({super.key, this.onBack, this.stepLabel});
   final VoidCallback? onBack;
+  final String? stepLabel;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 44,
-      child: Align(
+      child: Stack(
         alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: GestureDetector(
-            onTap: onBack ?? () => Navigator.of(context).maybePop(),
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: GestureDetector(
+              onTap: onBack ?? () => Navigator.of(context).maybePop(),
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
+              ),
             ),
           ),
-        ),
+          if (stepLabel != null)
+            Center(
+              child: Text(stepLabel!.upper, style: KType.label(color: KColor.ink3)),
+            ),
+        ],
       ),
     );
   }

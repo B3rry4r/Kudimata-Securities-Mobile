@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
@@ -31,12 +32,17 @@ class HelpSupportScreen extends StatefulWidget {
 }
 
 class _HelpSupportScreenState extends State<HelpSupportScreen> {
-  // (icon, title, sub). Icons map to the fixed KIcon set.
+  // Exact FAQ headlines from screen-specs.md spec 56 (2026-08-23 exactness
+  // pass — the prior redesign kept this screen's older generic
+  // contact-channel rows instead of the spec's specific question list).
+  // No per-question answer screen exists yet (spec 57's Article & Glossary
+  // screen was never built — see docs/redesign/PLAN.md), so every row opens
+  // the general FAQ list (Routes.acctFaq) rather than a fake deep link.
   static const List<(String, String, String)> _rows = [
-    ('search', 'Browse FAQs', 'Funding, orders, withdrawals'),
-    ('send', 'Message support', 'Replies within a few hours'),
-    ('bell', 'Report a problem', 'Something not working?'),
-    ('profile', 'Call us', 'Mon–Fri, 8am–6pm'),
+    ('chevronRight', "Why is my order still filling?", ''),
+    ('chevronRight', 'When does money from a sale arrive?', ''),
+    ('chevronRight', 'My verification was not approved', ''),
+    ('chevronRight', 'Fees, in full', ''),
   ];
 
   final _controller = TextEditingController();
@@ -66,31 +72,27 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     }
   }
 
-  // Each row is matched by title, not list index, since `_filtered` can
-  // reorder/drop rows under search.
-  void _onRowTap(String title) {
-    switch (title) {
-      case 'Browse FAQs':
-        context.push(Routes.acctFaq);
-        break;
-      case 'Message support':
-        _launch(Uri(scheme: 'mailto', path: _kSupportEmail));
-        break;
-      case 'Report a problem':
-        // No dedicated bug-report channel exists (no ticketing API, no
-        // in-app chat) — same mailto hand-off as Message support, with a
-        // subject line so support can triage it as a report rather than a
-        // general question.
-        _launch(Uri(
-          scheme: 'mailto',
-          path: _kSupportEmail,
-          query: 'subject=${Uri.encodeComponent('Reporting a problem')}',
-        ));
-        break;
-      case 'Call us':
-        _launch(Uri(scheme: 'tel', path: _kSupportPhone));
-        break;
-    }
+  // No per-question answer screen exists (spec 57 was never built) — every
+  // FAQ row opens the general FAQ list instead of a fake per-question deep
+  // link.
+  void _onRowTap(String title) => context.push(Routes.acctFaq);
+
+  void _emailUs() => _launch(Uri(scheme: 'mailto', path: _kSupportEmail));
+
+  void _startChat() {
+    // No live-chat infrastructure exists in this app (header comment: "no
+    // in-app chat") — honest fallback rather than a fake chat window.
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Live chat isn't available yet — email us instead.")),
+    );
+  }
+
+  void _fileComplaint() {
+    _launch(Uri(
+      scheme: 'mailto',
+      path: _kSupportEmail,
+      query: 'subject=${Uri.encodeComponent('Complaint')}',
+    ));
   }
 
   @override
@@ -120,13 +122,56 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                   KAccountRow(
                     icon: rows[i].$1,
                     title: rows[i].$2,
-                    sub: rows[i].$3,
+                    sub: rows[i].$3.isEmpty ? null : rows[i].$3,
                     right: const KRowChevron(),
                     first: i == 0,
                     onTap: () => _onRowTap(rows[i].$2),
                   ),
               ],
             ),
+          const SizedBox(height: 24),
+          // "Talk to a person" card — screen-specs.md spec 56. Weekday hours
+          // and fraud-desk phone are this business's real contact details
+          // (see this file's header comment), NOT the mockup's placeholder
+          // "0700 583 4626" — a security/fraud line must stay accurate to
+          // reality, not copied verbatim from a design mockup.
+          KAccountCard(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Talk to a person', style: KType.cardTitle()),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Weekdays 08:00 – 18:00, Lagos time. Fraud desk answers 24 hours.',
+                      style: KType.body(color: KColor.ink2),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(children: [
+                      Expanded(
+                        child: KButton(
+                          label: 'Email us',
+                          variant: KButtonVariant.secondary,
+                          onPressed: _emailUs,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: KButton(
+                          label: 'Start a chat',
+                          variant: KButtonVariant.secondary,
+                          onPressed: _startChat,
+                        ),
+                      ),
+                    ]),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
           KNudgeCard(
             tone: KNudgeTone.warm,
@@ -137,6 +182,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               variant: KButtonVariant.destructive,
               onPressed: () => context.push(Routes.acctFreeze),
             ),
+          ),
+          const SizedBox(height: 24),
+          KButton(
+            label: 'File a complaint',
+            variant: KButtonVariant.secondary,
+            onPressed: _fileComplaint,
           ),
         ],
       ),

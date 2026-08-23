@@ -12,9 +12,11 @@ import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/orders_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+import 'package:go_router/go_router.dart';
 
 class OrderStatusScreen extends StatefulWidget {
   const OrderStatusScreen({super.key});
@@ -26,6 +28,12 @@ class OrderStatusScreen extends StatefulWidget {
 class _OrderStatusScreenState extends State<OrderStatusScreen> {
   late final _repo = OrdersRepository(AppScope.read(context).apiClient);
   late Future<List<Txn>> _future = _repo.orders();
+
+  // "Open"/"All" (spec 44's SegmentedControl, default "Open"). Txn.status
+  // here is already the 3-value collapsed view (completed/pending/failed —
+  // see OrdersRepository._statusFromJson), so "Open" == still-pending;
+  // there is no separate "queued" sub-state to filter on at this layer.
+  String _filter = 'open';
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +54,29 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
                 onPrimary: () => setState(() => _future = _repo.orders()),
               );
             }
-            final orders = snapshot.data!;
-            return orders.isEmpty ? const _EmptyOrders() : _OrderList(orders: orders);
+            final all = snapshot.data!;
+            final orders =
+                _filter == 'open' ? all.where((t) => t.status == TxnStatus.pending).toList() : all;
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(KSpace.gutter, 16, KSpace.gutter, 0),
+                  child: KSegmentedControl(
+                    value: _filter,
+                    onChanged: (v) => setState(() => _filter = v),
+                    options: const [
+                      KSegmentOption(value: 'open', label: 'Open'),
+                      KSegmentOption(value: 'all', label: 'All'),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: orders.isEmpty
+                      ? const _EmptyOrders()
+                      : _OrderList(orders: orders),
+                ),
+              ],
+            );
           },
         ),
       ),
@@ -95,6 +124,12 @@ class _OrderList extends StatelessWidget {
               'A market order fills in pieces when a company trades thinly. '
               "You'll get a notification the moment it completes.",
           tone: KNudgeTone.grape,
+        ),
+        const SizedBox(height: 16),
+        KButton(
+          label: 'Go to my portfolio',
+          variant: KButtonVariant.ghost,
+          onPressed: () => context.go(Routes.portfolio),
         ),
       ],
     );

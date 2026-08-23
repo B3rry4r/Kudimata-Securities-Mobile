@@ -35,13 +35,34 @@ import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'package:kudimata_invest/screens/onboarding/document_summary_screen.dart';
+import 'package:kudimata_invest/router/routes.dart';
+import 'package:go_router/go_router.dart';
+
+/// Static placeholder summaries (2026-08-22 "Soft Landing", screen 06) — no
+/// backend endpoint generates a real per-document plain-English summary yet
+/// (see docs/redesign/PLAN.md). The risk_disclosure copy is the design
+/// system's own example; the rest are reasonable placeholders in the same
+/// voice, clearly not real generated content until that backend exists.
+const Map<String, String> _kPlainEnglishSummary = {
+  'risk_disclosure':
+      'Trading shares can lose you money, and Kudimata cannot promise any return. You are the one deciding what to buy.',
+  'terms_of_service':
+      "This is the agreement between you and Kudimata Securities Ltd for using the app — what we do, what you're responsible for, and how either of us can end it.",
+  'privacy_policy':
+      'What information we collect about you, why we collect it, and who we share it with — mainly your regulators and the people who help us verify your identity.',
+  'client_agreement':
+      'The formal terms of your relationship with Kudimata as your broker — how your orders are handled, how your money and shares are held, and what happens if something goes wrong.',
+};
 
 class LegalAcceptanceScreen extends StatefulWidget {
   const LegalAcceptanceScreen({
     super.key,
     required this.kinds,
     required this.screenTitle,
+    this.screenBody,
     required this.checkboxLabel,
+    this.checkboxDescription,
     required this.buttonLabel,
     required this.onAccepted,
   }) : assert(kinds.length > 0, 'LegalAcceptanceScreen needs at least one document kind');
@@ -50,7 +71,9 @@ class LegalAcceptanceScreen extends StatefulWidget {
   /// | 'client_agreement', in the order they should be read/acknowledged.
   final List<String> kinds;
   final String screenTitle;
+  final String? screenBody;
   final String checkboxLabel;
+  final String? checkboxDescription;
   final String buttonLabel;
 
   /// Runs after EVERY kind's acknowledgement is successfully persisted, in
@@ -109,7 +132,7 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              KScreenHead(title: widget.screenTitle),
+              KScreenHead(title: widget.screenTitle, body: widget.screenBody),
               const SizedBox(height: 16),
               Expanded(
                 child: FutureBuilder<List<LegalDocument>>(
@@ -177,6 +200,7 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                                 checked: _agreed,
                                 onChanged: (v) => setState(() => _agreed = v),
                                 label: widget.checkboxLabel,
+                                description: widget.checkboxDescription,
                               ),
                               const SizedBox(height: 14),
                               KButton(
@@ -201,9 +225,34 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
 
   List<Widget> _buildDocument(LegalDocument doc) {
     return [
-      KEyebrow(doc.title),
-      const SizedBox(height: 4),
-      Text(doc.sub, style: KType.micro(color: KColor.ink3).tnum),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                KEyebrow(doc.title),
+                const SizedBox(height: 4),
+                Text(doc.sub, style: KType.micro(color: KColor.ink3).tnum),
+              ],
+            ),
+          ),
+          KExplainTrigger(
+            label: 'Plain English',
+            variant: KExplainTriggerVariant.inline,
+            onTap: () => context.push(
+              Routes.documentSummary,
+              extra: DocumentSummaryArgs(
+                docTitle: doc.title,
+                summary: _kPlainEnglishSummary[doc.kind] ??
+                    'A generated plain-English summary of this document.',
+                original: doc.sections.map((s) => '${s.heading}\n${s.body}').join('\n\n'),
+              ),
+            ),
+          ),
+        ],
+      ),
       const SizedBox(height: 14),
       for (var i = 0; i < doc.sections.length; i++) ...[
         if (i != 0) const SizedBox(height: 22),

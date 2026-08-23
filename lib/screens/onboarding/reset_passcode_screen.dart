@@ -58,10 +58,12 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
   final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   String _email = '';
   String _code = '';
   String _newPassword = '';
+  String _confirmPassword = '';
 
   // Step 2 only reachable once request-password-reset has actually
   // succeeded — no client-side skip to the code/new-password step.
@@ -73,11 +75,15 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
     _emailController.dispose();
     _codeController.dispose();
     _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   bool get _emailValid => _email.contains('@') && _email.contains('.');
-  bool get _resetValid => _code.trim().isNotEmpty && _newPassword.length >= 8;
+  bool get _confirmMismatch =>
+      _confirmPassword.isNotEmpty && _confirmPassword != _newPassword;
+  bool get _resetValid =>
+      _code.trim().isNotEmpty && _newPassword.length >= 8 && !_confirmMismatch && _confirmPassword.isNotEmpty;
 
   Future<void> _sendCode() async {
     if (!_emailValid || _busy) return;
@@ -150,7 +156,10 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KOnboardTopBar(onBack: _onBack),
+            KOnboardTopBar(
+              stepLabel: _codeSent ? 'Reset · step 2 of 2' : 'Reset · step 1 of 2',
+              onBack: _onBack,
+            ),
             Expanded(
               child: KOnboardBody(
                 paddingTop: 8,
@@ -198,7 +207,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
       const SizedBox(height: 28),
       KInput(
         key: const ValueKey('reset-code-input'),
-        label: 'Code',
+        label: 'Reset code',
         placeholder: '123456',
         numeric: true,
         controller: _codeController,
@@ -210,16 +219,34 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
         key: const ValueKey('reset-new-password-input'),
         label: 'New password',
         placeholder: 'At least 8 characters',
+        helper: 'At least 8 characters, one number',
         obscure: true,
         controller: _newPasswordController,
         value: _newPassword,
         onChanged: (v) => setState(() => _newPassword = v),
       ),
+      const SizedBox(height: 16),
+      KInput(
+        key: const ValueKey('reset-confirm-password-input'),
+        label: 'Confirm new password',
+        placeholder: 'Re-enter your new password',
+        obscure: true,
+        controller: _confirmPasswordController,
+        value: _confirmPassword,
+        error: _confirmMismatch ? "Passwords don't match yet" : null,
+        onChanged: (v) => setState(() => _confirmPassword = v),
+      ),
       const Spacer(),
       KButton(
-        label: 'Reset password',
+        label: 'Save and log in',
         loading: _busy,
         onPressed: _resetValid && !_busy ? _resetPassword : null,
+      ),
+      const SizedBox(height: 10),
+      KButton(
+        label: 'Resend the code',
+        variant: KButtonVariant.ghost,
+        onPressed: _busy ? null : _sendCode,
       ),
     ];
   }

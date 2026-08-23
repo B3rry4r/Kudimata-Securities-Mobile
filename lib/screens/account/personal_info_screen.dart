@@ -26,6 +26,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
+import 'package:kudimata_invest/data/repositories/suitability_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -73,14 +74,17 @@ class PersonalInfoScreen extends StatefulWidget {
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late final _kycRepo = KycRepository(AppScope.read(context).apiClient);
-  late Future<(PersonalInfo, String)> _future = _load();
+  late final _suitabilityRepo = SuitabilityRepository(AppScope.read(context).apiClient);
+  late Future<(PersonalInfo, String, String?)> _future = _load();
 
-  Future<(PersonalInfo, String)> _load() async {
+  Future<(PersonalInfo, String, String?)> _load() async {
     final infoFuture = _userRepo.personalInfo();
     final bvnFuture = _fetchBvn();
+    final profileFuture = _fetchSuitabilityProfile();
     final info = await infoFuture;
     final bvn = await bvnFuture;
-    return (info, bvn);
+    final profile = await profileFuture;
+    return (info, bvn, profile);
   }
 
   /// A 404 here just means this investor hasn't submitted KYC yet — a
@@ -95,6 +99,19 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       return kyc.bvn ?? '—';
     } on ApiException catch (e) {
       if (e.statusCode == 404) return '—';
+      rethrow;
+    }
+  }
+
+  /// Null means "hasn't taken the questionnaire yet" (also a normal state —
+  /// suitability is optional, see app_state.dart's tradingEligibilityGap),
+  /// same 404-is-not-an-error pattern as [_fetchBvn].
+  Future<String?> _fetchSuitabilityProfile() async {
+    try {
+      final result = await _suitabilityRepo.me();
+      return result.profile.isEmpty ? null : result.profile;
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) return null;
       rethrow;
     }
   }
@@ -114,7 +131,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Personal info',
-      child: FutureBuilder<(PersonalInfo, String)>(
+      child: FutureBuilder<(PersonalInfo, String, String?)>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -125,8 +142,13 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               onPrimary: _reload,
             );
           }
-          final (info, bvn) = snapshot.data!;
-          return _PersonalInfoBody(info: info, bvn: bvn, onEdit: () => _openEdit(info));
+          final (info, bvn, profile) = snapshot.data!;
+          return _PersonalInfoBody(
+            info: info,
+            bvn: bvn,
+            profile: profile,
+            onEdit: () => _openEdit(info),
+          );
         },
       ),
     );
@@ -134,26 +156,37 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 }
 
 class _PersonalInfoBody extends StatelessWidget {
-  const _PersonalInfoBody({required this.info, required this.bvn, required this.onEdit});
+  const _PersonalInfoBody({
+    required this.info,
+    required this.bvn,
+    required this.profile,
+    required this.onEdit,
+  });
 
   final PersonalInfo info;
   final String bvn;
+  final String? profile;
   final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
+    // Re-verified against screen-specs.md spec 49 (2026-08-23 exactness
+    // pass — the prior redesign left this screen on the token cascade
+    // without checking its actual field list against spec). Spec's
+    // read-only rows are Full name / Date of birth / BVN · NIN / CHN /
+    // Account status — a coarser, more privacy-conscious set than the raw
+    // field-by-field dump this screen used to show (separate first/middle/
+    // last/city/state rows, and the literal BVN value rather than a
+    // verified/not-verified status).
+    final verified = bvn != '—';
     final rows = <(String, String)>[
-      ('First name', info.firstName),
-      if (info.middleName != null && info.middleName!.trim().isNotEmpty)
-        ('Middle name', info.middleName!),
-      ('Last name', info.lastName),
+      ('Full name', info.fullName),
       ('Date of birth', info.dob),
-      ('Email', info.email),
-      ('Phone', info.phone),
-      ('Residential address', info.residentialAddress),
-      ('City', info.city),
-      ('State', info.state),
-      ('BVN', bvn),
+      ('BVN · NIN', verified ? 'Verified' : 'Not verified'),
+      ('CHN', info.cscsNumber),
+      ('Account status', info.accountStatus.isEmpty
+          ? '—'
+          : info.accountStatus[0].toUpperCase() + info.accountStatus.substring(1)),
     ];
 
     // BVN and date of birth are blank for exactly one reason: this investor
@@ -217,6 +250,44 @@ class _PersonalInfoBody extends StatelessWidget {
               style: KType.body(color: KColor.ink3),
             ),
           ),
+        const SizedBox(height: 16),
+        // "Investor profile · {profile}" card with a "Retake" link (spec 49
+        // — nav note: "Retake -> 27", the suitability questionnaire).
+        KAccountCard(
+          children: [
+            KAccountRow(
+              icon: 'portfolio',
+              title: 'Investor profile',
+              sub: profile ?? 'Not taken yet',
+              right: GestureDetector(
+                onTap: () => context.push(Routes.questionnaire),
+                child: Text('Retake', style: KType.body(color: KColor.indicator)),
+              ),
+              first: true,
+              onTap: () => context.push(Routes.questionnaire),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Editable fields per spec 49: Phone number, Residential address,
+        // Employment status. Phone/address are real and editable below via
+        // the sheet; "Employment status" is skipped rather than faked — no
+        // such field exists anywhere in the backend's User model (checked
+        // UpdateMeDto and the User type interface), so there is nothing
+        // real to collect or display for it yet.
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
+          ),
+          child: Text(
+            info.residentialAddress == '—'
+                ? 'Residential address · —'
+                : 'Residential address · ${info.residentialAddress}',
+            style: KType.body(color: KColor.ink2),
+          ),
+        ),
         const SizedBox(height: 16),
         // Opens a showKSheet form (full name / phone / residential address)
         // pre-filled with the values above, backed by PATCH /users/me — see

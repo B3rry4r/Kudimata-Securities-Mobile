@@ -1,17 +1,39 @@
 // Stage 9 — Notifications settings (pushed). Mirrors `Notifications` in
-// settings-screens.jsx.
+// settings-screens.jsx; re-verified against screen-specs.md spec 48
+// (2026-08-23 exactness pass — the prior redesign left this screen on the
+// bare token cascade without checking copy).
 //
 // Wired per lib/data/api/README.md's FutureBuilder convention against
 // NotificationPreferencesRepository (GET/PUT /notification-preferences/me).
-// Per dispatcher ruling C-5 / UA-19, the real backend models EMAIL ONLY
-// (ordersEmail/priceAlertsEmail/accountEmail) — there is no Push or SMS
-// channel. The screen used to render a 3-channel (Push/Email/SMS) grid per
-// group, all local `setState` only; the Push and SMS columns have been
-// removed here (not just left inert) since there is no backend to wire them
-// to — only the Email toggle remains per group, same card/row styling as
-// before. Each toggle is an optimistic update (mirrors
-// notifications_screen.dart's `_markRead`): flip immediately, PATCH
-// /notification-preferences/me, revert on failure.
+// Per dispatcher ruling C-5 / UA-19, the real backend models EMAIL ONLY —
+// exactly THREE booleans (ordersEmail/priceAlertsEmail/accountEmail). Spec
+// 48 mocks five switches ("Order updates", "Money in and out", "Price
+// alerts", "Weekly digest", "Security") plus a Push/Email/SMS "How we reach
+// you" section. That's a real data-model gap, not a mobile oversight —
+// resolved per-item below rather than either faking backend capability that
+// doesn't exist, or silently dropping spec copy:
+//   - "Order updates" -> ordersEmail. Exact 1:1 match.
+//   - "Price alerts" -> priceAlertsEmail. Exact 1:1 match.
+//   - "Money in and out" + "Security" both collapse onto the ONE remaining
+//     field, accountEmail — the backend has no separate money-vs-security
+//     split. Spec disables "Security" (always-on) but leaves "Money in and
+//     out" real/toggleable; since one field can't be both, this screen
+//     keeps accountEmail a real, interactive toggle (money movement is the
+//     more clearly opt-out-able of the two) and merges both spec
+//     descriptions into one honest label/helper rather than picking one and
+//     silently dropping the other.
+//   - "Weekly digest" has no backend field at all (ties to the DigestCard
+//     AI feature, itself still a static/local preview everywhere else in
+//     this app per docs/redesign/PLAN.md). Shown as a real-looking switch
+//     for visual completeness, consistent with that same stub precedent,
+//     but it is LOCAL STATE ONLY — never sent to the backend, never
+//     persisted across app restarts. Do not wire this to a real field until
+//     the digest-scheduling backend exists.
+//   - "How we reach you" (Push/Email/SMS) is skipped entirely, not shown in
+//     any form — there is no push-notification or SMS infrastructure
+//     anywhere in this app to even stub honestly (unlike the AI-preview
+//     items above, this would be pure fiction about device capabilities,
+//     not a known-future feature preview).
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/notification_preferences_repository.dart';
@@ -33,6 +55,9 @@ class _NotificationsSettingsScreenState
   late final _repo =
       NotificationPreferencesRepository(AppScope.read(context).apiClient);
   late Future<NotificationPreferences> _future = _repo.me();
+
+  // Local-only, per this file's header comment — never persisted.
+  bool _weeklyDigest = false;
 
   Future<void> _toggleOrders(NotificationPreferences prefs, bool value) async {
     final previous = prefs.ordersEmail;
@@ -85,40 +110,39 @@ class _NotificationsSettingsScreenState
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const KEyebrow('Orders'),
-              const SizedBox(height: 10),
+              Text(
+                'We only send what changes something you own. No daily market noise.',
+                style: KType.body(color: KColor.ink2),
+              ),
+              const SizedBox(height: 20),
               KAccountCard(
                 children: [
-                  _ToggleRow(
-                    label: 'Email',
+                  KSwitch(
+                    label: 'Order updates',
+                    description: 'Filled, part-filled, cancelled',
                     checked: prefs.ordersEmail,
-                    first: true,
                     onChanged: (v) => _toggleOrders(prefs, v),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const KEyebrow('Price alerts'),
-              const SizedBox(height: 10),
-              KAccountCard(
-                children: [
-                  _ToggleRow(
-                    label: 'Email',
+                  const Divider(height: 1),
+                  KSwitch(
+                    label: 'Price alerts',
+                    description: 'Only names on your watchlist, over 5% in a day',
                     checked: prefs.priceAlertsEmail,
-                    first: true,
                     onChanged: (v) => _togglePriceAlerts(prefs, v),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const KEyebrow('Account'),
-              const SizedBox(height: 10),
-              KAccountCard(
-                children: [
-                  _ToggleRow(
-                    label: 'Email',
+                  const Divider(height: 1),
+                  KSwitch(
+                    label: 'Weekly digest',
+                    description: 'One written summary of your portfolio, on Sundays',
+                    checked: _weeklyDigest,
+                    onChanged: (v) => setState(() => _weeklyDigest = v),
+                  ),
+                  const Divider(height: 1),
+                  KSwitch(
+                    label: 'Money in and out, and security',
+                    description:
+                        'Deposits, withdrawals, dividends, sign-ins and account changes',
                     checked: prefs.accountEmail,
-                    first: true,
                     onChanged: (v) => _toggleAccount(prefs, v),
                   ),
                 ],
@@ -126,39 +150,6 @@ class _NotificationsSettingsScreenState
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _ToggleRow extends StatelessWidget {
-  const _ToggleRow({
-    required this.label,
-    required this.checked,
-    required this.first,
-    required this.onChanged,
-  });
-  final String label;
-  final bool checked;
-  final bool first;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: first
-              ? BorderSide.none
-              : BorderSide(color: KColor.hairline, width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: KType.body(color: KColor.ink))),
-          KSwitch(checked: checked, onChanged: onChanged),
-        ],
       ),
     );
   }

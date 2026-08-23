@@ -54,7 +54,7 @@ class PlansScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Top up any time: ₦300 for 30 answers. Prices, fees, risk labels, the glossary and Pidgin re-reads stay free on every plan.',
+            'Top up any time: ₦300 for 30 answers. Prices, fees, risk labels, the glossary and Pidgin re-reads stay free on every plan — what happens when I run out.',
             style: KType.data(color: KColor.ink3),
           ),
         ],

@@ -196,6 +196,7 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KOnboardTopBar(
+              stepLabel: widget.reentry ? null : 'Step 3 of 4',
               onBack: () => widget.reentry
                   ? context.pop()
                   : context.go(Routes.createPasscode),
@@ -207,14 +208,15 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
                 children: [
                   const Align(
                     alignment: Alignment.centerLeft,
-                    child: KScreenHead(title: 'Confirm your passcode'),
+                    child: KScreenHead(title: 'Enter it again'),
                   ),
                   const SizedBox(height: 40),
                   KPasscodeDots(filled: _code.length, error: _error),
                   const SizedBox(height: 18),
                   if (_error)
                     Text(
-                      "Passcodes don't match",
+                      "That didn't match. Try the six digits again.",
+                      textAlign: TextAlign.center,
                       style: KType.body(color: KColor.loss, w: KWeight.medium),
                     ),
                   const Spacer(),

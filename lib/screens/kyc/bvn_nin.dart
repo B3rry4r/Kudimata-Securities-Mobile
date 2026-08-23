@@ -98,14 +98,16 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const KScreenHead(title: 'Verify your identity'),
+                    const KScreenHead(
+                      title: 'Verify your identity',
+                      body: 'We check these with NIBSS. Nothing is shared with anyone else.',
+                    ),
                     const SizedBox(height: 24),
                     KInput(
                       label: 'BVN',
                       numeric: true,
                       placeholder: '0000000000',
-                      helper:
-                          'We use this only to verify your identity — we never see your bank.',
+                      helper: 'Dial *565*0# on your registered line to see yours.',
                       error: _showErrors && !_digitsPattern.hasMatch(_bvn.text.trim())
                           ? 'Enter a valid 11-digit BVN'
                           : null,
@@ -146,7 +148,7 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
               padding: const EdgeInsets.fromLTRB(
                   KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
               child: KButton(
-                label: 'Verify',
+                label: 'Continue',
                 loading: _busy,
                 onPressed: _busy ? null : _continue,
               ),

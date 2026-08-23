@@ -17,6 +17,7 @@ import 'routes.dart';
 // Onboarding / security.
 import '../screens/onboarding/splash_screen.dart';
 import '../screens/onboarding/welcome_slider_screen.dart';
+import '../screens/onboarding/document_summary_screen.dart';
 import '../screens/onboarding/sign_up_screen.dart';
 import '../screens/onboarding/otp_screen.dart';
 import '../screens/onboarding/create_passcode_screen.dart';
@@ -78,6 +79,10 @@ import '../screens/account/statements_screen.dart';
 import '../screens/account/freeze_account_screen.dart';
 import '../screens/account/security_alert_screen.dart';
 import '../screens/account/plans_screen.dart';
+import '../screens/account/withdraw_mandate_screen.dart';
+import '../screens/account/contract_note_screen.dart';
+import '../data/repositories/bank_accounts_repository.dart' show BankAccountSummary;
+import '../data/repositories/statements_repository.dart' show Statement;
 
 // Shared states (used for missing-data placeholders).
 import '../screens/shared/state_views.dart';
@@ -141,6 +146,24 @@ GoRouter buildRouter(AppState state) {
           return themed(() => ConfirmPasscodeScreen(
                 created: args is ConfirmPasscodeArgs ? args.code : null,
                 reentry: args is ConfirmPasscodeArgs ? args.reentry : false,
+              ));
+        },
+      ),
+      GoRoute(
+        path: Routes.documentSummary,
+        // Pushed from legal_acceptance_screen.dart's document rows with a
+        // DocumentSummaryArgs `extra` (screen 06 — was built but never
+        // wired in, found unreachable during the exactness audit).
+        builder: (_, st) {
+          final args = st.extra;
+          final a = args is DocumentSummaryArgs
+              ? args
+              : const DocumentSummaryArgs(docTitle: 'Document', summary: '');
+          return themed(() => DocumentSummaryScreen(
+                docTitle: a.docTitle,
+                summary: a.summary,
+                points: a.points,
+                original: a.original,
               ));
         },
       ),
@@ -229,6 +252,30 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.acctFreeze, builder: (_, _) => themed(() => FreezeAccountScreen())),
       GoRoute(path: Routes.securityAlert, builder: (_, _) => themed(() => SecurityAlertScreen())),
       GoRoute(path: Routes.acctPlans, builder: (_, _) => themed(() => PlansScreen())),
+      GoRoute(
+        // Screen 65 — pushed from bank_accounts_screen.dart's row actions
+        // with a BankAccountSummary `extra`.
+        path: Routes.acctWithdrawMandate,
+        builder: (_, st) {
+          final account = st.extra;
+          if (account is! BankAccountSummary) {
+            return themed(() => const KErrorView());
+          }
+          return themed(() => WithdrawMandateScreen(account: account));
+        },
+      ),
+      GoRoute(
+        // Screen 66 — pushed from statements_screen.dart's contract-note
+        // rows with a Statement `extra`.
+        path: Routes.contractNote,
+        builder: (_, st) {
+          final statement = st.extra;
+          if (statement is! Statement) {
+            return themed(() => const KErrorView());
+          }
+          return themed(() => ContractNoteScreen(statement: statement));
+        },
+      ),
 
       // ── Tab shell (StatefulShellRoute / indexedStack) ──────────────────--
       StatefulShellRoute.indexedStack(

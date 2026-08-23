@@ -6,7 +6,19 @@
 // (user directive 2026-08-07) — there's nothing meaningful left to filter by
 // as a top-level category now that the catalog is NGX (+ETF) only, and the
 // filter icon just duplicated tapping the search pill itself (both opened
-// the same Search screen).
+// the same Search screen). This is a deliberate, previously-approved
+// divergence from the "Soft Landing" mockup's spec screen 32 (which shows a
+// SegmentedControl + category PillChips) — not reinstated during the
+// 2026-08-22 exactness pass, since re-adding filter controls with nothing
+// real behind them would be a fake affordance, not a fix.
+//
+// GENUINE GAP (2026-08-22 exactness pass): spec screen 32 also shows an
+// "NGX All-Share" index row (value, % change, "Open · closes 14:30") above
+// Trending. No index-level data source exists anywhere in this app or its
+// repositories (AssetRepository only has per-instrument quotes) — this is
+// NOT built here, since faking a market index figure would mean showing an
+// investor a fictional number. Needs a real backend field before it can
+// ship; see docs/redesign/PLAN.md.
 //
 // Wired to GET /assets/trending and GET /assets via
 // AssetRepository.trending()/.byAssetClass(null) (see lib/data/api/README.md
@@ -16,6 +28,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
+import 'market_hours.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -40,6 +53,12 @@ class _MarketsScreenState extends State<MarketsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Flow G, spec screen 60 — "Markets · closed". A client-side heuristic
+    // (see market_hours.dart's header comment); computed once per build,
+    // not polled, since a stale-by-a-few-minutes open/closed banner is
+    // harmless and this screen already rebuilds on every navigation to it.
+    final marketOpen = isNgxOpenNow();
+
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
@@ -56,7 +75,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                   Text('Markets', style: KType.title()),
                   const SizedBox(height: 16),
                   KSearchPill(
-                    placeholder: 'Search stocks',
+                    placeholder: 'Search NGX companies',
                     readOnly: true,
                     onTap: () => context.push(Routes.search),
                   ),
@@ -64,6 +83,41 @@ class _MarketsScreenState extends State<MarketsScreen> {
                 ],
               ),
             ),
+            if (!marketOpen) ...[
+              Padding(
+                padding: _gut,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(color: KColor.track, borderRadius: KRadii.cardR),
+                  child: Row(
+                    children: [
+                      KIcon('clock', size: 18, color: KColor.ink2),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('The NGX is closed', style: KType.cardTitle()),
+                            const SizedBox(height: 2),
+                            Text('Opens tomorrow at 10:00 · prices below are from the last close',
+                                style: KType.micro(color: KColor.ink3)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: _gut,
+                child: KNudgeCard(
+                  tone: KNudgeTone.grape,
+                  title: 'You can still place an order',
+                  body: 'It queues for 10:00 tomorrow and fills at the opening price, which may differ from what you see now.',
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
 
             // trending

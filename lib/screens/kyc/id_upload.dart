@@ -100,7 +100,10 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const KScreenHead(title: 'Upload your ID'),
+                    const KScreenHead(
+                      title: 'Upload your ID',
+                      body: 'All four corners visible, no glare.',
+                    ),
                     const SizedBox(height: 20),
                     const KEyebrow('ID type'),
                     const SizedBox(height: 10),
@@ -132,7 +135,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
                     const SizedBox(height: 24),
                     KFileUpload(
                       label: 'Upload your ID',
-                      hint: 'JPG or PDF, up to 10MB',
+                      hint: 'JPG or PDF · up to 10 MB',
                       prompt: _uploading ? 'Uploading…' : 'Tap to upload, or take a photo',
                       helper: _uploading ? 'Uploading your document…' : null,
                       error: _uploadError ??

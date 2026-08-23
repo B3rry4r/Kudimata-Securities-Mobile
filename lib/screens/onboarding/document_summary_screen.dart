@@ -12,6 +12,23 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
+/// Payload passed via GoRouter `extra` when pushing Routes.documentSummary —
+/// mirrors ConfirmPasscodeArgs's pattern (a screen whose content is richer
+/// than a single path param).
+class DocumentSummaryArgs {
+  const DocumentSummaryArgs({
+    required this.docTitle,
+    required this.summary,
+    this.points = const [],
+    this.original,
+  });
+
+  final String docTitle;
+  final String summary;
+  final List<String> points;
+  final String? original;
+}
+
 class DocumentSummaryScreen extends StatefulWidget {
   const DocumentSummaryScreen({
     super.key,

@@ -43,6 +43,17 @@ const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 
 KTrend _kTrend(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
 
+/// "Good morning" / "Good afternoon" / "Good evening" per spec screen 29 —
+/// was a bare "Hi, {name}" before this exactness pass. Boundaries: before
+/// noon, before 17:00, else evening — device-local time (no timezone/NGX
+/// business-hours concept needed for a greeting).
+String _timeGreeting() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 /// Picks the holding with the largest |% change| and writes one plain
 /// sentence about it — the digest's actual number always traces to real
 /// data, even though the wording template itself is static.
@@ -300,7 +311,14 @@ class _HomeBody extends StatelessWidget {
                   children: [
                     _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
                     const SizedBox(width: 12),
-                    Text('Hi, $first', style: KType.section()),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_timeGreeting(), style: KType.micro(color: KColor.ink3)),
+                        Text(first, style: KType.section()),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -348,7 +366,10 @@ class _HomeBody extends StatelessWidget {
         // KYC/suitability flow itself updates these flags.
         _KycPrompt(app: AppScope.of(context)),
 
-        // quick actions
+        // quick actions — exact spec 29 labels/icons: "Add money" / "Buy
+        // shares" / "Orders" (plus/markets/clock), not the earlier
+        // Add-money/Invest/Withdraw set. Withdraw stays reachable from the
+        // Wallet tab; it just isn't one of these three per spec.
         Padding(
           padding: _gut,
           child: Row(
@@ -356,24 +377,24 @@ class _HomeBody extends StatelessWidget {
               Expanded(
                 child: _QuickAction(
                   label: 'Add money',
-                  icon: 'arrowDownLeft',
+                  icon: 'plus',
                   onTap: () => showAddMoneyFlow(context),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _QuickAction(
-                  label: 'Invest',
-                  icon: 'arrowUpRight',
+                  label: 'Buy shares',
+                  icon: 'markets',
                   onTap: () => context.go(Routes.markets),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _QuickAction(
-                  label: 'Withdraw',
-                  icon: 'arrowUp',
-                  onTap: () => showWithdrawFlow(context),
+                  label: 'Orders',
+                  icon: 'clock',
+                  onTap: () => context.push(Routes.orderStatus),
                 ),
               ),
             ],
@@ -441,7 +462,7 @@ class _HomeBody extends StatelessWidget {
           padding: _gut,
           child: Row(
             children: [
-              const KEyebrow('Holdings'),
+              const KEyebrow('Your holdings'),
               const Spacer(),
               _SeeAll(onTap: () => context.go(Routes.portfolio)),
             ],
@@ -725,7 +746,23 @@ class _KycPrompt extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(gap.title, style: KType.cardTitle(color: KColor.indicatorPress)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(gap.title, style: KType.cardTitle(color: KColor.indicatorPress)),
+                        ),
+                        const SizedBox(width: 8),
+                        // "StatusPill (pending, 'In progress')" — spec
+                        // screen 30's onboarding-progress card badge. Kept
+                        // on every gap state, not just a literal 3-step
+                        // checklist — this app's real eligibility gate is a
+                        // richer state machine (see tradingEligibilityGap's
+                        // doc comment) than the mockup's simplified example,
+                        // and forcing a fake step count would be its own
+                        // kind of inexact.
+                        const KStatusPill(status: KStatus.pending, label: 'In progress', small: true),
+                      ],
+                    ),
                     const SizedBox(height: 2),
                     Text(gap.message, style: KType.micro(color: KColor.ink3)),
                   ],

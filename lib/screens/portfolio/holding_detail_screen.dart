@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
+import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/screens/trade/trade_flows.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -31,20 +32,34 @@ class HoldingDetailScreen extends StatefulWidget {
   State<HoldingDetailScreen> createState() => _HoldingDetailScreenState();
 }
 
+typedef _HoldingDetailData = ({Holding holding, String cscsNumber});
+
 class _HoldingDetailScreenState extends State<HoldingDetailScreen> {
   late final _repo = HoldingsRepository(AppScope.read(context).apiClient);
-  late Future<Holding> _future = _repo.byTicker(widget.ticker);
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
+  late Future<_HoldingDetailData> _future = _load();
+
+  // "Held in CSCS · CHN 1234567890" (spec 39) — cscsNumber is a real User
+  // field (GET /users/me) already surfaced by UserRepository.personalInfo()
+  // for the personal-info screen; joined here rather than added to the
+  // shared UserProfile model, matching this repository's own established
+  // convention (a second, self-contained GET /users/me call per screen that
+  // needs different fields — see personalInfo()'s own doc comment).
+  Future<_HoldingDetailData> _load() async {
+    final (holding, info) = await (_repo.byTicker(widget.ticker), _userRepo.personalInfo()).wait;
+    return (holding: holding, cscsNumber: info.cscsNumber);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Holding>(
+    return FutureBuilder<_HoldingDetailData>(
       future: _future,
       builder: (context, snapshot) {
         // KDetailHeader's title can't wait on the fetch (it's outside the
         // scrollable body), so it shows the ticker — always known up front,
         // same fallback asset_detail_screen.dart uses — until the real
         // asset.name (the fragment's intended title) resolves.
-        final title = snapshot.data?.asset.name ?? widget.ticker;
+        final title = snapshot.data?.holding.asset.name ?? widget.ticker;
 
         return Scaffold(
           backgroundColor: KColor.bg,
@@ -57,11 +72,11 @@ class _HoldingDetailScreenState extends State<HoldingDetailScreen> {
               }
               if (snapshot.hasError) {
                 return KErrorView.failedLoad(
-                  onPrimary: () =>
-                      setState(() => _future = _repo.byTicker(widget.ticker)),
+                  onPrimary: () => setState(() => _future = _load()),
                 );
               }
-              return _HoldingDetailBody(holding: snapshot.data!);
+              final data = snapshot.data!;
+              return _HoldingDetailBody(holding: data.holding, cscsNumber: data.cscsNumber);
             }),
           ),
         );
@@ -74,8 +89,9 @@ class _HoldingDetailScreenState extends State<HoldingDetailScreen> {
 /// `build()`, just parameterized on the fetched `Holding` instead of
 /// `MockData.holdingByTicker`.
 class _HoldingDetailBody extends StatelessWidget {
-  const _HoldingDetailBody({required this.holding});
+  const _HoldingDetailBody({required this.holding, required this.cscsNumber});
   final Holding holding;
+  final String cscsNumber;
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +143,30 @@ class _HoldingDetailBody extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              // "Held in CSCS · CHN 1234567890" (spec 39) — a real fact,
+              // GET /users/me's cscsNumber. Spec 39 also lists "Dividends
+              // received" and "Executing broker · Blue Marina · BM-4471" on
+              // this screen — deliberately NOT added:
+              //  - Dividends received: no such field exists anywhere on the
+              //    Holding/Transaction wire types (checked the backend's
+              //    actual types directly); there's no per-holding dividend
+              //    total to report yet.
+              //  - Executing broker: Order/Holding have no brokerId/
+              //    brokerCode at all (confirmed against prisma/schema.prisma)
+              //    — this app is single-broker today, and "Blue Marina" is
+              //    the mockup's own placeholder co-branding, not a real
+              //    partner this build integrates with. Showing it would be
+              //    fabricating a business relationship, not just missing a
+              //    field.
+              // A "Your orders in {ticker}" list (also spec 39) is likewise
+              // omitted: no investor-facing endpoint returns order history
+              // filtered by ticker — GET /orders (list) is staff-only, and
+              // Transaction (the one investor-scoped resource this app can
+              // read) carries no ticker field at all.
+              KCard(
+                child: _DetailKV(label: 'Held in', value: 'CSCS · CHN $cscsNumber'),
+              ),
             ],
           ),
         ),
@@ -136,6 +176,24 @@ class _HoldingDetailBody extends StatelessWidget {
         // that flow's own contract belongs to the asset-detail screen agent;
         // this screen is only a second launch point into it.
         _ActionFooter(asset: asset),
+      ],
+    );
+  }
+}
+
+/// One label/value row on its own card — "Held in · CSCS · CHN ..." (spec 39).
+class _DetailKV extends StatelessWidget {
+  const _DetailKV({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: KType.body(color: KColor.ink2)),
+        Text(value, style: KType.data(color: KColor.ink).tnum),
       ],
     );
   }

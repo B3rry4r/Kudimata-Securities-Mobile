@@ -83,7 +83,11 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const KScreenHead(title: 'Next of kin'),
+                    const KScreenHead(
+                      title: 'Next of kin',
+                      body:
+                          "Who should we contact about your account if we can't reach you? The CSCS requires this.",
+                    ),
                     const SizedBox(height: 20),
                     KCard(
                       child: Column(
@@ -115,7 +119,11 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
               padding: const EdgeInsets.fromLTRB(
                   KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
               child: KButton(
-                label: 'Continue',
+                // This app's flow has no separate review screen (spec 22) —
+                // this button IS the final submit (calls finalizeDraft
+                // directly), so it gets that screen's real button label
+                // rather than a generic "Continue" on the last step.
+                label: 'Submit for verification',
                 loading: _busy,
                 onPressed: _busy ? null : _submit,
               ),

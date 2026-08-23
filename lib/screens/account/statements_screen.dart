@@ -24,9 +24,11 @@
 // aren't ready yet, instead of silently launching a link that just shows
 // a raw S3 error in their browser.
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/statements_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -72,7 +74,11 @@ class _StatementsScreenState extends State<StatementsScreen> {
   @override
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
-      title: 'Statements & documents',
+      // screen-specs.md spec 52's header is exactly "Statements" (the
+      // Account-hub menu ROW is separately labelled "Statements &
+      // documents" — that's the entry point's own string, not this
+      // screen's header; 2026-08-23 exactness pass).
+      title: 'Statements',
       child: FutureBuilder<(List<Statement>, List<Statement>)>(
         future: _future,
         builder: (context, snapshot) {
@@ -96,6 +102,7 @@ class _StatementsScreenState extends State<StatementsScreen> {
             statements: statements,
             notes: notes,
             onDownload: _download,
+            onOpenNote: (statement) => context.push(Routes.contractNote, extra: statement),
           );
         },
       ),
@@ -108,11 +115,13 @@ class _StatementsBody extends StatelessWidget {
     required this.statements,
     required this.notes,
     required this.onDownload,
+    required this.onOpenNote,
   });
 
   final List<Statement> statements;
   final List<Statement> notes;
   final void Function(Statement statement) onDownload;
+  final void Function(Statement statement) onOpenNote;
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +134,16 @@ class _StatementsBody extends StatelessWidget {
         const SizedBox(height: 24),
         const KEyebrow('Contract notes'),
         const SizedBox(height: 10),
-        _Section(items: notes, emptyLabel: 'No contract notes yet.', onDownload: onDownload),
+        // Rows here open the contract-note document view (screen 66) on tap
+        // — screen-specs.md spec 52's nav note ("rows -> 66") — the download
+        // icon-button stays a separate, smaller tap target for the direct
+        // download action.
+        _Section(
+          items: notes,
+          emptyLabel: 'No contract notes yet.',
+          onDownload: onDownload,
+          onOpen: onOpenNote,
+        ),
         const SizedBox(height: 24),
         const KNudgeCard(
           tone: KNudgeTone.grape,
@@ -139,11 +157,17 @@ class _StatementsBody extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.items, required this.emptyLabel, required this.onDownload});
+  const _Section({
+    required this.items,
+    required this.emptyLabel,
+    required this.onDownload,
+    this.onOpen,
+  });
 
   final List<Statement> items;
   final String emptyLabel;
   final void Function(Statement statement) onDownload;
+  final void Function(Statement statement)? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +181,7 @@ class _Section extends StatelessWidget {
             icon: 'card',
             title: items[i].title,
             sub: items[i].sub,
+            onTap: onOpen == null ? null : () => onOpen!(items[i]),
             right: KIconButton(
               icon: 'arrowDown',
               semanticLabel: 'Download',

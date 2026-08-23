@@ -72,10 +72,30 @@ class WalletRepository {
   /// preformatted "₦310,400.00" display-string shape the panel already
   /// renders.
   Future<String> balance() async {
-    final response = await _client.get('/wallet-balance');
-    final json = response.data as Map<String, dynamic>;
+    final json = await _rawBalance();
     final kobo = (json['availableBalanceKobo'] as num?)?.toInt() ?? 0;
     return _formatNaira(kobo);
+  }
+
+  /// Both balance figures — WalletBalance{availableBalanceKobo,
+  /// pendingBalanceKobo,...}. `pending` is null when there's nothing held
+  /// (the design's "₦X held for a pending order" line only ever shows when
+  /// there genuinely is one — see screen-specs.md spec 40). Added alongside
+  /// [balance] rather than replacing it: [balance] is kept for any other
+  /// caller that only ever wanted the available figure.
+  Future<({String available, String? pending})> balanceDetail() async {
+    final json = await _rawBalance();
+    final availableKobo = (json['availableBalanceKobo'] as num?)?.toInt() ?? 0;
+    final pendingKobo = (json['pendingBalanceKobo'] as num?)?.toInt() ?? 0;
+    return (
+      available: _formatNaira(availableKobo),
+      pending: pendingKobo > 0 ? _formatNaira(pendingKobo) : null,
+    );
+  }
+
+  Future<Map<String, dynamic>> _rawBalance() async {
+    final response = await _client.get('/wallet-balance');
+    return response.data as Map<String, dynamic>;
   }
 
   /// GET /transactions/dev-fund/enabled (2026-08-20, "I need an easy way to

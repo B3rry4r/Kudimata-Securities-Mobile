@@ -51,6 +51,8 @@ class UserRepository {
       residentialAddress: json['residentialAddress'] as String? ?? '—',
       city: json['city'] as String? ?? '—',
       state: json['state'] as String? ?? '—',
+      cscsNumber: json['cscsNumber'] as String? ?? '—',
+      accountStatus: json['accountStatus'] as String? ?? 'active',
     );
   }
 
@@ -126,6 +128,8 @@ class PersonalInfo {
     required this.residentialAddress,
     required this.city,
     required this.state,
+    required this.cscsNumber,
+    required this.accountStatus,
   });
 
   final String firstName;
@@ -137,6 +141,13 @@ class PersonalInfo {
   final String residentialAddress; // or "—" if none on file
   final String city; // or "—" if none on file
   final String state; // or "—" if none on file
+  // CHN (the mockup's term for the CSCS clearing house number) — added
+  // 2026-08-23 exactness pass (screen-specs.md spec 49 shows a real "CHN"
+  // row). `User.cscsNumber` already exists on the backend (per the
+  // 2026-08-22 product audit) and GET /users/me already returns it; this
+  // repository just wasn't reading the field before.
+  final String cscsNumber; // or "—" if not yet assigned
+  final String accountStatus; // raw backend value, e.g. "active"/"suspended"
 
   /// Composed display string — see UserProfile.fullName's same getter for
   /// why this stays a getter rather than a stored field.

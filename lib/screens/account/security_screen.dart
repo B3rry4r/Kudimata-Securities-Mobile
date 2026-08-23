@@ -88,6 +88,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
               if (!kIsWeb)
                 KAccountRow(
                   icon: 'fingerprint',
+                  // screen-specs.md spec 50 literally says "Face ID" — kept
+                  // as the cross-platform "Biometric unlock" instead
+                  // (2026-08-23 exactness pass: deliberate deviation, not an
+                  // oversight). "Face ID" is an Apple-specific term; this
+                  // toggle also drives Android fingerprint/face unlock, so
+                  // the mockup's iOS-only copy would be wrong on Android.
                   title: 'Biometric unlock',
                   sub: 'Unlock with your face or fingerprint',
                   crossAlign: CrossAxisAlignment.start,
@@ -97,6 +103,19 @@ class _SecurityScreenState extends State<SecurityScreen> {
                     onChanged: (v) => app.setBiometric(v),
                   ),
                 ),
+              // Real, existing behaviour, not a new toggle — the withdraw
+              // sheet already always asks for passcode confirmation before
+              // money leaves (see wallet_flows.dart's withdraw footnote:
+              // "Your passcode confirms this withdrawal."). Shown here as
+              // disabled/always-on per spec 50, matching what the app
+              // actually does rather than adding an unwired setting.
+              KAccountRow(
+                icon: 'card',
+                title: 'Passcode for withdrawals',
+                sub: 'Always ask before money leaves',
+                crossAlign: CrossAxisAlignment.start,
+                right: const KSwitch(checked: true, disabled: true),
+              ),
             ],
           ),
           const SizedBox(height: 24),

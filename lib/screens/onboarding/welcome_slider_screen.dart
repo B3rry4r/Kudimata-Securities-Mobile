@@ -2,10 +2,9 @@
 // investor sees before Sign up / Log in. NEW SCREEN (2026-08-22 "Soft
 // Landing" redesign, docs/redesign/screen-specs.md screen 02) — no prior
 // equivalent existed in this app (Splash routed straight to Sign up/Log in).
-// NOT YET WIRED into lib/router/routes.dart / app_router.dart — that needs
-// a route constant + GoRoute entry (and deciding whether Splash routes here
-// first-launch-only, e.g. via a "seen onboarding" local flag) before this
-// screen is reachable. Built ready for that wiring.
+// Wired at Routes.welcome (app_router.dart); splash_screen.dart routes here
+// for any first-time investor (passcodeSet == false) instead of straight to
+// sign-up/log-in.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/router/routes.dart';

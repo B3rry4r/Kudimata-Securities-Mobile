@@ -123,7 +123,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: KSearchPill(
-                      placeholder: 'Search stocks',
+                      placeholder: 'Search NGX companies',
                       controller: _controller,
                       onChanged: (v) => setState(() => _query = v),
                     ),
@@ -196,6 +196,20 @@ class _SearchScreenState extends State<SearchScreen> {
                 tone: KNudgeTone.grape,
                 title: 'Not sure what to search for?',
                 body: "Try a sector — banking, telecoms, cement — and we'll show the NGX-listed companies in it.",
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Missing entirely before this exactness pass — spec screen 31's
+            // ghost "Browse all of the market" button.
+            Padding(
+              padding: _gut,
+              child: KButton(
+                label: 'Browse all of the market',
+                variant: KButtonVariant.ghost,
+                onPressed: () {
+                  context.pop();
+                  context.go(Routes.markets);
+                },
               ),
             ),
           ],

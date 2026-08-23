@@ -87,6 +87,20 @@ class _ReferEarnBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // screen-specs.md spec 55's title/body, adapted for real cash
+        // rewards (2026-08-23 exactness pass) — a prior pass correctly
+        // declined to copy the spec's "credits, never cash" framing since
+        // this backend's ReferralAccount.earningsTotal is genuine naira,
+        // but left the screen without any heading at all. This restores
+        // the missing structure without reintroducing the cash/credits
+        // mismatch.
+        Text('Bring a friend in', style: KType.title()),
+        const SizedBox(height: 6),
+        Text(
+          "You both earn ₦1,000 when they finish verification and place their first order.",
+          style: KType.body(color: KColor.ink2),
+        ),
+        const SizedBox(height: 20),
         KBalancePanel(
           label: "You've earned",
           balance: account.earningsTotal,
@@ -161,6 +175,15 @@ class _ReferEarnBody extends StatelessWidget {
             ],
           ),
         ],
+        const SizedBox(height: 20),
+        // Only the mechanic half of spec 55's footnote — "rewards are
+        // credits, never cash" is the opposite of what this backend
+        // actually pays out, so it's deliberately dropped rather than
+        // copied verbatim.
+        Text(
+          'We never pay for orders placed — only for a friend who gets verified.',
+          style: KType.data(color: KColor.ink3),
+        ),
         const SizedBox(height: 24),
         // Opens the real OS share sheet (share_plus) with the referral code/
         // message; the referral-attribution ping fires alongside it,
