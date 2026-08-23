@@ -27,35 +27,42 @@ Map<String, dynamic> _asset({
   String assetClass = 'ngx',
   String logoColor = '#6524A8',
   String? about,
+  int changeAbsKobo = 0,
+  String? sector,
 }) {
   return {
     'ticker': ticker,
     'name': name,
     'priceKobo': priceKobo,
     'changePct': changePct,
+    'changeAbsKobo': changeAbsKobo,
     'assetClass': assetClass,
     'logoColor': logoColor,
     'about': ?about,
+    'sector': sector,
   };
 }
 
 // Screen-specs.md #29 (Home · verified) + #32/#33's own MTNN/GTCO figures —
 // reused everywhere an asset list/detail is needed so every screen agrees
-// with the same worked example.
+// with the same worked example. `sector`/`changeAbsKobo` mirror the real
+// backend's Asset.sector + Quote.changeAbsKobo fields (2026-08-24).
 final _assets = [
   _asset(
     ticker: 'MTNN',
     name: 'MTN Nigeria',
     priceKobo: 26840,
     changePct: 1.94,
+    changeAbsKobo: 510,
     logoColor: '#F5C542',
+    sector: 'Telecoms',
     about: 'MTN Nigeria Communications Plc provides mobile telecommunications '
         'services across Nigeria, including voice, data, and digital financial '
         'services, and is listed on the Nigerian Exchange.',
   ),
-  _asset(ticker: 'GTCO', name: 'Guaranty Trust Holding', priceKobo: 4815, changePct: 4.10, logoColor: '#2AA36B'),
-  _asset(ticker: 'ZENITHBANK', name: 'Zenith Bank', priceKobo: 3620, changePct: -0.82, logoColor: '#6524A8'),
-  _asset(ticker: 'DANGCEM', name: 'Dangote Cement', priceKobo: 41500, changePct: 0.35, logoColor: '#F07A45'),
+  _asset(ticker: 'GTCO', name: 'Guaranty Trust Holding', priceKobo: 4815, changePct: 4.10, changeAbsKobo: 190, logoColor: '#2AA36B', sector: 'Banking'),
+  _asset(ticker: 'ZENITHBANK', name: 'Zenith Bank', priceKobo: 3620, changePct: -0.82, changeAbsKobo: -30, logoColor: '#6524A8', sector: 'Banking'),
+  _asset(ticker: 'DANGCEM', name: 'Dangote Cement', priceKobo: 41500, changePct: 0.35, changeAbsKobo: 145, logoColor: '#F07A45', sector: 'Industrial Goods'),
 ];
 // No 'us'-class fixture asset: markets_screen.dart's own header comment
 // documents the real backend as NGX(+ETF)-only (2026-08-07 directive) — a
@@ -438,7 +445,7 @@ class MockApiAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     final path = options.path;
-    final body = _resolve(path);
+    final body = _resolve(path, options.queryParameters);
     return ResponseBody.fromString(
       jsonEncode(body),
       200,
@@ -448,12 +455,16 @@ class MockApiAdapter implements HttpClientAdapter {
     );
   }
 
-  dynamic _resolve(String path) {
+  dynamic _resolve(String path, Map<String, dynamic> query) {
     if (path == '/wallet-balance') return _walletBalance();
     if (path == '/portfolio-summary') return _portfolioSummary();
     if (path == '/users/me') return _user();
     if (path == '/assets/trending') return _assets;
-    if (path == '/assets') return _assets;
+    if (path == '/assets') {
+      final assetClass = query['assetClass'] as String?;
+      if (assetClass == null) return _assets;
+      return _assets.where((a) => a['assetClass'] == assetClass).toList();
+    }
     if (path == '/watchlist-items') return _assets.take(3).toList();
     if (path == '/price-alerts') return _priceAlerts;
     if (path == '/bank-accounts') {

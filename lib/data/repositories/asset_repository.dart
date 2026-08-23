@@ -113,6 +113,7 @@ class AssetRepository {
     final assetClass = _classFromJson(json['assetClass'] as String?);
     final symbol = assetClass == AssetClass.ngx ? '₦' : '\$';
     final priceKobo = (json['priceKobo'] as num?)?.toInt() ?? 0;
+    final changeAbsKobo = (json['changeAbsKobo'] as num?)?.toInt();
     final changePct = (json['changePct'] as num?)?.toDouble() ?? 0.0;
     final trend = changePct < 0 ? Trend.loss : Trend.gain;
     final logoColorHex = json['logoColor'] as String?;
@@ -121,9 +122,13 @@ class AssetRepository {
       ticker: json['ticker'] as String? ?? '',
       price: '$symbol${_formatKobo(priceKobo)}',
       change: '${_formatPct(changePct)}%',
+      changeAbs: changeAbsKobo == null
+          ? null
+          : '${changeAbsKobo < 0 ? '−' : '+'}$symbol${_formatKobo(changeAbsKobo.abs())}',
       trend: trend,
       assetClass: assetClass,
       logoColor: _colorFromHex(logoColorHex),
+      sector: json['sector'] as String?,
     );
   }
 

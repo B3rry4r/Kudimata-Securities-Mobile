@@ -29,12 +29,24 @@
 // SnackBar on ApiException. Mirrors the dedicated watchlist screen's
 // remove-control pattern (lib/screens/markets/watchlist_screen.dart).
 //
-// _StatGrid's Open/High/Low/Prev-close/Mkt-cap/P-E figures stay mocked: per
-// the backend brief, registry.json's Asset/Quote resources have NO
-// corresponding fields for any of them — there is nothing real to wire them
-// to yet, so inventing plausible-looking numbers would be worse than the
-// existing labeled-mock placeholders. This is a genuine backend/product gap,
-// not a wiring omission.
+// 2026-08-24 rebuild: canvas s33 has NO Open/High/Low/Prev-close/Mkt-cap/P-E
+// stat grid at all — that six-cell block was never in the design; removed.
+// It also has NO "OPEN"/"HIGH" cells and does NOT leave ProductCard's
+// risk/fee/liquidity/minimum blank: `risk="high" fee="1.35% all-in"
+// liquidity="Daily · T+3" minimum="₦5,000"` — real, product-wide constants
+// already used identically elsewhere in this app (trade_flows.dart's sell
+// fee row, wallet_flows.dart/onboarding's ₦5,000 minimum, faq_screen.dart's
+// T+3 glossary term). Passing "—" for these was a wiring bug, not an honest
+// backend gap — fixed by reusing the SAME constants. `risk: high` applies
+// uniformly to every NGX ordinary share here (this app carries no fixed
+// income — see AssetClass's own doc comment — so "equities, not bonds" is
+// the real, product-wide disclosure, not a per-instrument judgement).
+//
+// GENUINE GAP (kept, not silently dropped): canvas's "Dividend yield 6.20%"
+// cell needs a real per-asset yield figure (trailing dividends ÷ price) that
+// no backend endpoint computes yet, even though Dividend records now exist
+// (see DividendsModule) — still renders "—". Flagged in
+// docs/redesign/BACKEND_GAPS.md.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -148,8 +160,13 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(asset?.name ?? widget.ticker, style: KType.cardTitle()),
-                            Text('${widget.ticker} · NGX'.upper,
-                                style: KType.micro(color: KColor.ink3)),
+                            Text(
+                              (asset?.sector == null
+                                      ? '${widget.ticker} · NGX'
+                                      : '${widget.ticker} · NGX · ${asset!.sector}')
+                                  .upper,
+                              style: KType.micro(color: KColor.ink3),
+                            ),
                           ],
                         );
                       },
@@ -235,11 +252,15 @@ class _AssetDetailBody extends StatelessWidget {
                   children: [
                     Text(asset.price, style: KType.hero().tnum),
                     const SizedBox(height: 4),
-                    Text('${asset.change} today',
-                        style: KType.data(
-                          color: _k(asset.trend) == KTrend.loss ? KColor.loss : KColor.gain,
-                          w: KWeight.semibold,
-                        ).tnum),
+                    Text(
+                      asset.changeAbs == null
+                          ? '${asset.change} today'
+                          : '${asset.changeAbs} · ${asset.change} today',
+                      style: KType.data(
+                        color: _k(asset.trend) == KTrend.loss ? KColor.loss : KColor.gain,
+                        w: KWeight.semibold,
+                      ).tnum,
+                    ),
                     const SizedBox(height: 12),
                     KLineChart(
                       data: series,
@@ -254,32 +275,31 @@ class _AssetDetailBody extends StatelessWidget {
 
               // The redesigned product card (2026-08-22 "Soft Landing" —
               // components/finance/ProductCard.jsx). price/change are real
-              // (same Asset fields as the hero above). Deliberately leaves
-              // fee/liquidity/minimum blank (renders "—") rather than
-              // inventing numbers: registry.json's Asset/Quote resources
-              // have no such fields yet — same documented product gap as
-              // _StatGrid below, and the audit itself lists these as
-              // "Missing," not something to fabricate. `risk` uses a
-              // generic default for the same reason.
+              // (same Asset fields as the hero above). risk/fee/liquidity/
+              // minimum are real, product-wide constants — see file header.
               Padding(
                 padding: _gut,
                 child: KProductCard(
                   name: asset.name,
-                  market: '${asset.ticker} · NGX',
+                  market: 'Ordinary shares · NGX Main Board',
                   price: asset.price,
                   change: asset.change,
+                  risk: KRiskTier.high,
+                  fee: '1.35% all-in',
+                  liquidity: 'Daily · T+3',
+                  minimum: '₦5,000',
                   onExplain: () => context.push(Routes.explainThis(asset.ticker)),
                 ),
               ),
               const SizedBox(height: 16),
 
               // Dividend yield / You own — screen 33's two-cell row.
-              // Dividend yield has no backend field yet (same documented gap
-              // as ProductCard's fee/liquidity/minimum above) so it renders
-              // "—" rather than a fabricated number; "You own" is the real
-              // holding unit count, "0 shares" when this investor doesn't
-              // hold the asset (the row is unconditional in the design,
-              // unlike the old P/L position card this replaces).
+              // Dividend yield has no backend field yet — see file header
+              // gap note — so it renders "—" rather than a fabricated
+              // number; "You own" is the real holding unit count, "0
+              // shares" when this investor doesn't hold the asset (the row
+              // is unconditional in the design, unlike the old P/L
+              // position card this replaces).
               Padding(
                 padding: _gut,
                 child: Row(
@@ -294,13 +314,6 @@ class _AssetDetailBody extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // stat grid — still mocked; see file header / product-gap note.
-              Padding(
-                padding: _gut,
-                child: _StatGrid(asset: asset),
               ),
               const SizedBox(height: 28),
 
@@ -392,50 +405,3 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-/// Stat grid — 2-column KStatCard tiles. Values are mock reference figures:
-/// registry.json's Asset/Quote resources carry no open/high/low/prev-close/
-/// market-cap/P-E fields, so there is no real endpoint to wire this to yet
-/// (product gap — flagged, not silently invented).
-class _StatGrid extends StatelessWidget {
-  const _StatGrid({required this.asset});
-  final Asset asset;
-
-  @override
-  Widget build(BuildContext context) {
-    final cur = asset.price.isNotEmpty ? asset.price[0] : '₦';
-    final stats = <(String, String, String)>[
-      ('Open', '${cur}263.30', 'markets'),
-      ('High', '${cur}270.00', 'arrowUp'),
-      ('Low', '${cur}262.10', 'arrowDown'),
-      ('Prev close', '${cur}263.30', 'transfer'),
-      ('Mkt cap', '${cur}5.46T', 'portfolio'),
-      ('P/E', '12.4', 'filter'),
-    ];
-    return Column(
-      children: [
-        for (var i = 0; i < stats.length; i += 2)
-          Padding(
-            padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _stat(stats[i])),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: i + 1 < stats.length
-                      ? _stat(stats[i + 1])
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _stat((String, String, String) s) => KStatCard(
-        icon: KIcon(s.$3, size: 18, color: KColor.ink2),
-        label: s.$1,
-        value: s.$2,
-      );
-}

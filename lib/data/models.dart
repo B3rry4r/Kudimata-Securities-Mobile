@@ -21,6 +21,8 @@ class Asset {
     required this.trend,
     this.assetClass = AssetClass.ngx,
     this.logoColor,
+    this.changeAbs,
+    this.sector,
   });
 
   final String name;
@@ -30,6 +32,15 @@ class Asset {
   final Trend trend;
   final AssetClass assetClass;
   final Color? logoColor; // brand tint for the row logo circle (null → ink)
+
+  /// Absolute price change, preformatted — e.g. "+₦5.10" / "−$1.20". Null
+  /// when unknown (never fabricated). Backed by the real `changeAbsKobo`
+  /// Quote field (registry.json) — see AssetRepository._fromJson.
+  final String? changeAbs;
+
+  /// NGX sector classification (e.g. "Banking", "Telecoms") — real data
+  /// from the backend's Asset.sector field, null for ETFs / unclassified.
+  final String? sector;
 
   /// Deterministic inline sparkline series (rises on gain, falls on loss).
   List<double> get sparkline => spark(trend == Trend.gain);

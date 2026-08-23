@@ -1,28 +1,34 @@
-// Markets tab root — title, read-only SearchPill (pushes Search), trending +
-// the asset list. Ported from app-screens.jsx `Markets`. Root tab: Scaffold
-// body WITHOUT bottom nav (the shell owns it).
+// Markets tab root — title + search icon-button, SegmentedControl
+// (Shares/ETFs), sector PillChip row, one unified asset list. Ported from
+// canvas screen 32 ("Markets · NGX", open) / 60 ("Markets · closed"). Root
+// tab: Scaffold body WITHOUT a bottom nav — the shell owns it.
 //
-// The search bar's filter icon and the All/NGX category pills were removed
-// (user directive 2026-08-07) — there's nothing meaningful left to filter by
-// as a top-level category now that the catalog is NGX (+ETF) only, and the
-// filter icon just duplicated tapping the search pill itself (both opened
-// the same Search screen). This is a deliberate, previously-approved
-// divergence from the "Soft Landing" mockup's spec screen 32 (which shows a
-// SegmentedControl + category PillChips) — not reinstated during the
-// 2026-08-22 exactness pass, since re-adding filter controls with nothing
-// real behind them would be a fake affordance, not a fix.
+// 2026-08-24 rebuild: the prior version (a search PILL, no segmented
+// control, no sector chips, a fabricated Trending/"All assets" split) was a
+// real, confirmed deviation from the canvas — not a defensible adaptation.
+// It's rebuilt here to match screens 32/60 structurally:
+//   header: "Markets" title (text-title) + search IconButton (not a pill)
+//   SegmentedControl: "Shares" (NGX ordinary shares) / "ETFs" — no "Bonds"
+//     segment, since this product carries no fixed income instruments at
+//     all (AssetClass is ngx/us/etf only; "us" isn't offered in this tab,
+//     see AssetRepository/asset seed — NGX-only per product direction).
+//   PillChip row: "All" + each distinct real `Asset.sector` value present
+//     in the loaded Shares list (Banking/Telecoms/Consumer Goods/etc. — a
+//     real backend column added 2026-08-24, not fabricated categories with
+//     nothing behind them). Sectors don't apply to ETFs, so the row only
+//     shows on the Shares segment.
+//   one unified AssetRow list, filtered by segment + selected sector.
 //
-// GENUINE GAP (2026-08-22 exactness pass): spec screen 32 also shows an
-// "NGX All-Share" index row (value, % change, "Open · closes 14:30") above
-// Trending. No index-level data source exists anywhere in this app or its
-// repositories (AssetRepository only has per-instrument quotes) — this is
-// NOT built here, since faking a market index figure would mean showing an
-// investor a fictional number. Needs a real backend field before it can
-// ship; see docs/redesign/PLAN.md.
+// GENUINE GAP (kept, not silently dropped): canvas's "NGX All-Share
+// 104,562.18 · +0.84% today · Open · closes 14:30" index row is NOT built.
+// The NGX All-Share Index is a specific real, published NGX figure this app
+// has no live feed for — AssetRepository only has per-instrument quotes.
+// Rendering a fabricated index number would show the investor a fictional
+// figure, which is worse than the gap. Flagged in docs/redesign/
+// BACKEND_GAPS.md — needs a real NGX index data source before it can ship.
 //
-// Wired to GET /assets/trending and GET /assets via
-// AssetRepository.trending()/.byAssetClass(null) (see lib/data/api/README.md
-// for the FutureBuilder convention this follows).
+// Wired to GET /assets via AssetRepository.byAssetClass (see
+// lib/data/api/README.md for the FutureBuilder convention this follows).
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -36,6 +42,11 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 
 const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 
+/// NGX's own daily trading close — a real, fixed market-hours constant
+/// (already used identically by this screen's own "Open · closes 14:30" /
+/// "Opens tomorrow at 10:00" banners), not per-instrument data.
+const _ngxCloseTime = '14:30';
+
 class MarketsScreen extends StatefulWidget {
   const MarketsScreen({super.key});
 
@@ -46,8 +57,11 @@ class MarketsScreen extends StatefulWidget {
 class _MarketsScreenState extends State<MarketsScreen> {
   late final _repo = AssetRepository(AppScope.read(context).apiClient);
 
-  late Future<List<Asset>> _trendingFuture = _repo.trending();
-  late Future<List<Asset>> _listFuture = _repo.byAssetClass(null);
+  late Future<List<Asset>> _sharesFuture = _repo.byClass(AssetClass.ngx);
+  late Future<List<Asset>> _etfsFuture = _repo.byClass(AssetClass.etf);
+
+  String _segment = 'Shares';
+  String _sector = 'All';
 
   KTrend _k(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
 
@@ -69,20 +83,19 @@ class _MarketsScreenState extends State<MarketsScreen> {
           children: [
             Padding(
               padding: _gut,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text('Markets', style: KType.title()),
-                  const SizedBox(height: 16),
-                  KSearchPill(
-                    placeholder: 'Search NGX companies',
-                    readOnly: true,
-                    onTap: () => context.push(Routes.search),
+                  Expanded(child: Text('Markets', style: KType.title())),
+                  KIconButton(
+                    icon: 'search',
+                    semanticLabel: 'search',
+                    onPressed: () => context.push(Routes.search),
                   ),
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+
             if (!marketOpen) ...[
               Padding(
                 padding: _gut,
@@ -92,15 +105,17 @@ class _MarketsScreenState extends State<MarketsScreen> {
                   child: Row(
                     children: [
                       KIcon('clock', size: 18, color: KColor.ink2),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('The NGX is closed', style: KType.cardTitle()),
                             const SizedBox(height: 2),
-                            Text('Opens tomorrow at 10:00 · prices below are from the last close',
-                                style: KType.micro(color: KColor.ink3)),
+                            Text(
+                              "Opens tomorrow at 10:00 · prices below are Friday's close",
+                              style: KType.data(color: KColor.ink2),
+                            ),
                           ],
                         ),
                       ),
@@ -108,79 +123,108 @@ class _MarketsScreenState extends State<MarketsScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+            ],
+
+            Padding(
+              padding: _gut,
+              child: KSegmentedControl(
+                options: const [
+                  KSegmentOption(value: 'Shares', label: 'Shares'),
+                  KSegmentOption(value: 'ETFs', label: 'ETFs'),
+                ],
+                value: _segment,
+                onChanged: (v) => setState(() {
+                  _segment = v;
+                  _sector = 'All';
+                }),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            if (_segment == 'Shares')
+              FutureBuilder<List<Asset>>(
+                future: _sharesFuture,
+                builder: (context, snapshot) {
+                  final sectors = (snapshot.data ?? const <Asset>[])
+                      .map((a) => a.sector)
+                      .whereType<String>()
+                      .toSet()
+                      .toList()
+                    ..sort();
+                  if (sectors.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: _gut,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            KPillChip(
+                              label: 'All',
+                              selected: _sector == 'All',
+                              onTap: () => setState(() => _sector = 'All'),
+                            ),
+                            for (final s in sectors)
+                              KPillChip(
+                                label: s,
+                                selected: _sector == s,
+                                onTap: () => setState(() => _sector = s),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                },
+              ),
+
+            Padding(
+              padding: _gut,
+              child: _segment == 'Shares'
+                  ? _asyncCard(
+                      _sharesFuture,
+                      onRetry: () =>
+                          setState(() => _sharesFuture = _repo.byClass(AssetClass.ngx)),
+                      marketOpen: marketOpen,
+                      sectorFilter: _sector == 'All' ? null : _sector,
+                    )
+                  : _asyncCard(
+                      _etfsFuture,
+                      onRetry: () => setState(() => _etfsFuture = _repo.byClass(AssetClass.etf)),
+                      marketOpen: marketOpen,
+                      sectorFilter: null,
+                    ),
+            ),
+
+            if (!marketOpen) ...[
               const SizedBox(height: 16),
               Padding(
                 padding: _gut,
                 child: KNudgeCard(
                   tone: KNudgeTone.grape,
                   title: 'You can still place an order',
-                  body: 'It queues for 10:00 tomorrow and fills at the opening price, which may differ from what you see now.',
+                  body:
+                      'It queues for 10:00 tomorrow and fills at the opening price, which may differ from what you see now.',
                 ),
               ),
             ],
-            const SizedBox(height: 12),
-
-            // trending
-            Padding(
-              padding: _gut,
-              child: Row(
-                children: [
-                  const KEyebrow('Trending'),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => context.push(Routes.assetList),
-                    behavior: HitTestBehavior.opaque,
-                    child: Text(
-                      'See all'.upper,
-                      style: KType.micro(
-                        color: KColor.ink2,
-                        w: KWeight.semibold,
-                      ).copyWith(letterSpacing: 0.06 * 10),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: _gut,
-              child: _asyncCard(
-                _trendingFuture,
-                spark: false,
-                onRetry: () =>
-                    setState(() => _trendingFuture = _repo.trending()),
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // the full list
-            const Padding(
-              padding: _gut,
-              child: KEyebrow('All assets'),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: _gut,
-              child: _asyncCard(
-                _listFuture,
-                spark: true,
-                onRetry: () =>
-                    setState(() => _listFuture = _repo.byAssetClass(null)),
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  /// FutureBuilder wrapper shared by the Trending block and the filtered
-  /// list — same loading/error/empty states either way, per
+  /// FutureBuilder wrapper — same loading/error/empty states per
   /// lib/data/api/README.md's canonical pattern.
   Widget _asyncCard(
     Future<List<Asset>> future, {
-    required bool spark,
     required VoidCallback onRetry,
+    required bool marketOpen,
+    required String? sectorFilter,
   }) {
     return FutureBuilder<List<Asset>>(
       future: future,
@@ -191,7 +235,9 @@ class _MarketsScreenState extends State<MarketsScreen> {
         if (snapshot.hasError) {
           return KErrorView(onPrimary: onRetry);
         }
-        final data = snapshot.data!;
+        final data = sectorFilter == null
+            ? snapshot.data!
+            : snapshot.data!.where((a) => a.sector == sectorFilter).toList();
         if (data.isEmpty) {
           return const KEmptyView(
             icon: 'markets',
@@ -199,12 +245,12 @@ class _MarketsScreenState extends State<MarketsScreen> {
             message: 'There are no assets to show in this category right now.',
           );
         }
-        return _card(data, spark: spark);
+        return _card(data, marketOpen: marketOpen);
       },
     );
   }
 
-  Widget _card(List<Asset> assets, {required bool spark}) {
+  Widget _card(List<Asset> assets, {required bool marketOpen}) {
     return KCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Column(
@@ -220,12 +266,13 @@ class _MarketsScreenState extends State<MarketsScreen> {
               ),
               child: KAssetRow(
                 name: assets[i].name,
-                ticker: assets[i].ticker,
+                ticker: marketOpen ? assets[i].ticker : '${assets[i].ticker} · closed at $_ngxCloseTime',
+                initialsSource: marketOpen ? null : assets[i].ticker,
                 price: assets[i].price,
                 change: assets[i].change,
                 trend: _k(assets[i].trend),
                 logoColor: assets[i].logoColor ?? KColor.ink,
-                sparkline: spark ? assets[i].sparkline : null,
+                sparkline: marketOpen ? assets[i].sparkline : null,
                 onTap: () => context.push(Routes.assetDetail(assets[i].ticker)),
               ),
             ),

@@ -1,27 +1,32 @@
-// Home tab root — greeting, the one BalancePanel (portfolio value + KLineChart),
-// quick-actions row, watchlist strip, holdings preview, trending, Orders link.
-// Ported from app-screens.jsx `Home`. Root tab: builds a Scaffold body WITHOUT a
+// Home tab root — two structurally DIFFERENT bodies per canvas screens 29
+// (verified) and 30 (not verified yet), not one layout with a banner bolted
+// on. Ported from canvas s29/s30. Root tab: builds a Scaffold body WITHOUT a
 // bottom nav — the shell owns that. Numbers tabular; movement colour on numbers.
 //
+// 2026-08-24 rebuild: the prior verified-state body additionally rendered a
+// Watchlist strip, a Trending section and an Orders/Activity link card —
+// none of those exist in canvas s29 at all (s29 is: header → BalancePanel →
+// 3 quick actions → DigestCard → "Your holdings" list). Confirmed via fresh
+// screenshot vs. canvas markup, not assumed. Removed. The not-verified body
+// was previously the SAME layout with a `_KycPrompt` banner inserted — s30
+// is a genuinely different screen (onboarding checklist panel + "Biggest
+// mover today" single-asset row, no BalancePanel/quick-actions/digest/
+// holdings at all) and is now built as its own distinct body.
+//
 // Wired to the backend per lib/data/api/README.md's FutureBuilder convention.
-// Four repositories back this screen's five reads, combined into one
-// `Future.wait`-style load (kicked off concurrently, awaited in sequence) fed
-// through a single screen-level FutureBuilder — one spinner/retry for the
-// whole tab rather than five nested ones:
+// Repositories back this screen's reads, combined into one `Future.wait`-style
+// load (kicked off concurrently) fed through a single screen-level
+// FutureBuilder — one spinner/retry for the whole tab rather than several:
 //   UserRepository.me()             GET /users/me                — greeting name
 //   HoldingsRepository.summary()    GET /portfolio-summary        — BalancePanel
 //     (totalValue/change/chartSeries; replaces the old hardcoded literals —
 //     STUB-home-1 in .pipeline/fragments/home.json — with the SAME aggregate
 //     the portfolio screen uses, per that stub's own reconciliation note)
-//   WatchlistRepository.items()     GET /watchlist-items          — watchlist strip
-//     (already scoped server-side to the caller's saved tickers, so this
-//     screen no longer intersects it with AppState.watchlistTickers itself —
-//     that set/toggleWatch stays for the add/remove-watchlist UI elsewhere)
-//   HoldingsRepository.holdings()   GET /holdings                 — holdings preview
+//   HoldingsRepository.holdings()   GET /holdings                 — holdings list
 //     (Holding itself has no display fields; .asset is the joined Asset&Quote
-//     HoldingsRepository already resolves — see that file's header. pageSize: 5
-//     keeps this a "preview" card, matching its "See all → portfolio" link)
-//   AssetRepository.trending()      GET /assets/trending           — trending list
+//     HoldingsRepository already resolves — see that file's header.)
+//   AssetRepository.trending()      GET /assets/trending          — not-verified
+//     state's "Biggest mover today" row (the single highest-|change| asset)
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -30,7 +35,6 @@ import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
-import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/screens/onboarding/log_in_screen.dart' show refreshKycGatingState;
@@ -54,13 +58,19 @@ String _timeGreeting() {
   return 'Good evening';
 }
 
-/// Picks the holding with the largest |% change| and writes one plain
-/// sentence about it — the digest's actual number always traces to real
-/// data, even though the wording template itself is static.
+/// Picks the holding/asset with the largest |% change| — shared by the
+/// verified body's digest sentence and the not-verified body's "Biggest
+/// mover today" row. The actual number always traces to real data.
+Asset _biggestMover(List<Asset> assets) {
+  double pct(Asset a) => double.tryParse(a.change.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+  return assets.reduce((a, b) => pct(a) >= pct(b) ? a : b);
+}
+
+/// A generated portfolio narrative — one plain sentence about the holding
+/// that moved most this week. No real AI backend exists yet for this (see
+/// docs/redesign/BACKEND_GAPS.md); the number is real, the template isn't.
 String _weeklyDigest(List<Asset> holdings) {
-  double pct(Asset a) =>
-      double.tryParse(a.change.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
-  final top = holdings.reduce((a, b) => pct(a) >= pct(b) ? a : b);
+  final top = _biggestMover(holdings);
   final verb = top.trend == Trend.gain ? 'carried' : 'weighed on';
   return '${top.name} $verb your portfolio this week, ${top.change} since your last check-in. '
       'Nothing here needs a decision from you today.';
@@ -71,7 +81,6 @@ class _HomeData {
   const _HomeData({
     required this.user,
     required this.summary,
-    required this.watchlist,
     required this.holdings,
     required this.trending,
     required this.walletBalance,
@@ -79,7 +88,6 @@ class _HomeData {
 
   final UserProfile user;
   final PortfolioSummary summary;
-  final List<Asset> watchlist;
   final List<Asset> holdings;
   final List<Asset> trending;
 
@@ -87,7 +95,7 @@ class _HomeData {
   /// directive: "can we see amount in funded wallet too on the home
   /// screen somewhere please... or in the portfolio card". Added onto the
   /// SAME concurrent load/poll cycle the rest of this screen already
-  /// runs, rather than a separate fetch.
+  /// runs, rather than a separate fetch. Verified-state only.
   final String walletBalance;
 }
 
@@ -101,7 +109,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late final _holdingsRepo = HoldingsRepository(AppScope.read(context).apiClient);
-  late final _watchlistRepo = WatchlistRepository(AppScope.read(context).apiClient);
   late final _assetRepo = AssetRepository(AppScope.read(context).apiClient);
   late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
   late Future<_HomeData> _future = _load();
@@ -116,18 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// "when I said poll, I didn't say poll and keep refreshing and
   /// flashing my screen... when there is data change the UI should be
   /// updated like it's real time"). Reset to null on an intentional
-  /// reload (watchlist change, manual retry) so THOSE still show the
-  /// loading state, same as before — only the silent background poll
-  /// skips it.
+  /// reload (manual retry) so THAT still shows the loading state, same as
+  /// before — only the silent background poll skips it.
   _HomeData? _data;
-
-  // Tracks AppState.watchlistVersion as of the last _load() so a toggle made
-  // elsewhere (asset_detail_screen.dart, watchlist_screen.dart) is reflected
-  // in the watchlist strip immediately, instead of only on the next
-  // unrelated rebuild of this tab. Seeded from the current version in
-  // initState (a non-listening read) so the very first build doesn't
-  // trigger a redundant second _load().
-  late int _loadedWatchlistVersion;
 
   // POLLING (2026-08-20, "poll the KYC endpoint... so we can see changes
   // instantly without refreshing since no realtime yet"). A staff decision
@@ -155,21 +153,20 @@ class _HomeScreenState extends State<HomeScreen> {
   // home screen immediately... poll, we would do real time web sockets
   // later"). A buy/sell fill changes portfolio value and the holdings
   // preview, but this screen otherwise only reloads on a manual
-  // pull-to-refresh or an unrelated rebuild (e.g. a watchlist toggle
-  // elsewhere) — so a fresh trade made from Markets/asset-detail didn't
-  // show up here until the investor did something else first. Silently
-  // re-fetches in the background (no spinner, no error state of its own —
-  // a flaky tick just leaves the last-good numbers showing, same
-  // treatment wallet_screens.dart's own silent refresh uses) rather than
-  // reassigning `_future` naively, which would otherwise flash the whole
-  // screen back to KLoadingView on every tick.
+  // pull-to-refresh or an unrelated rebuild — so a fresh trade made from
+  // Markets/asset-detail didn't show up here until the investor did
+  // something else first. Silently re-fetches in the background (no
+  // spinner, no error state of its own — a flaky tick just leaves the
+  // last-good numbers showing, same treatment wallet_screens.dart's own
+  // silent refresh uses) rather than reassigning `_future` naively, which
+  // would otherwise flash the whole screen back to KLoadingView on every
+  // tick.
   Timer? _portfolioPollTimer;
   static const _portfolioPollInterval = Duration(seconds: 8);
 
   @override
   void initState() {
     super.initState();
-    _loadedWatchlistVersion = AppScope.read(context).watchlistVersion;
     final app = AppScope.read(context);
     if (!app.kycApproved) {
       _kycPollTimer = Timer.periodic(_kycPollInterval, (_) => _pollKycStatus());
@@ -209,8 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<_HomeData> _load() async {
-    // Run all five requests concurrently via the record `.wait` extension —
-    // NOT firing them all then awaiting sequentially (`await a; await b; ...`)
+    // Run all requests concurrently via the record `.wait` extension — NOT
+    // firing them all then awaiting sequentially (`await a; await b; ...`)
     // like this used to: if an EARLIER-awaited future rejects, that pattern
     // throws immediately and abandons the still-in-flight later futures,
     // which then reject with nothing listening — an "unhandled exception"
@@ -220,10 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // that test started giving AppState a real (network-dead) apiClient).
     // `.wait` attaches a listener to every future up front, so none of them
     // can ever go unhandled, regardless of which one fails first.
-    final (user, summary, watchlist, holdingsPage, trending, walletBalance) = await (
+    final (user, summary, holdingsPage, trending, walletBalance) = await (
       _userRepo.me(),
       _holdingsRepo.summary(),
-      _watchlistRepo.items(),
       _holdingsRepo.holdings(pageSize: 5),
       _assetRepo.trending(),
       _walletRepo.balance(),
@@ -232,7 +228,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return _HomeData(
       user: user,
       summary: summary,
-      watchlist: watchlist,
       holdings: holdingsPage.data.map((h) => h.asset).toList(),
       trending: trending,
       walletBalance: walletBalance,
@@ -241,17 +236,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final watchlistVersion = AppScope.of(context).watchlistVersion;
-    if (watchlistVersion != _loadedWatchlistVersion) {
-      _loadedWatchlistVersion = watchlistVersion;
-      _future = _load();
-      // An intentional reload SHOULD show the loading state — only a
-      // silent background poll skips it. Dropping the last poll's data
-      // here means this reload's own FutureBuilder snapshot drives the
-      // screen until it resolves, same as before polling existed.
-      _data = null;
-    }
-
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
@@ -260,9 +244,8 @@ class _HomeScreenState extends State<HomeScreen> {
           future: _future,
           builder: (context, snapshot) {
             // Prefer the freshest silently-polled data over the
-            // FutureBuilder's own (possibly stale, or momentarily
-            // "waiting" if `_future` was just reassigned above) snapshot —
-            // see `_data`'s doc comment.
+            // FutureBuilder's own (possibly stale) snapshot — see `_data`'s
+            // doc comment.
             final effective = _data ?? snapshot.data;
             if (effective == null) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -285,8 +268,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// The loaded-state widget tree — identical to the original mock-fed
-/// `build()`, just parameterized on fetched data instead of `MockData.x`.
+/// The loaded-state widget tree — routes to the structurally distinct
+/// verified/not-verified bodies per canvas s29/s30 (see file header).
 class _HomeBody extends StatelessWidget {
   const _HomeBody({required this.data});
   final _HomeData data;
@@ -294,17 +277,15 @@ class _HomeBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final first = data.user.firstName;
-    // Canvas (#s29 vs #s30): the "not verified yet" header swaps the
-    // time-of-day greeting for "Browse only" and drops the bell entirely
-    // (no notifications affordance while browse-only) — both headers DO
-    // carry a search button, which this screen was missing altogether.
     final notVerified = tradingEligibilityGap(AppScope.of(context)) != null;
 
     return ListView(
       // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
       padding: const EdgeInsets.only(top: 12, bottom: 100),
       children: [
-        // greeting row
+        // greeting row — shared shape, canvas s29 vs s30: "Good {time}" vs
+        // "Browse only", and s30 drops the bell entirely (no notifications
+        // affordance while browse-only). Both carry the search button.
         Padding(
           padding: _gut,
           child: Row(
@@ -320,9 +301,6 @@ class _HomeBody extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Canvas: both labels sit in the tracked, uppercase
-                        // micro role (text-transform:uppercase) — the
-                        // greeting was rendering in plain mixed case before.
                         Text((notVerified ? 'Browse only' : _timeGreeting()).upper,
                             style: KType.micro(color: KColor.ink3)),
                         Text(first, style: KType.section()),
@@ -347,7 +325,19 @@ class _HomeBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
+        if (notVerified) ..._NotVerifiedContent(data: data).build(context) else ..._VerifiedContent(data: data).build(context),
+      ],
+    );
+  }
+}
 
+/// Canvas s29 — "Home · verified": BalancePanel → 3 quick actions →
+/// DigestCard → "Your holdings" list. No Watchlist/Trending/Orders sections.
+class _VerifiedContent {
+  const _VerifiedContent({required this.data});
+  final _HomeData data;
+
+  List<Widget> build(BuildContext context) => [
         // feature panel — the one ink surface
         Padding(
           padding: _gut,
@@ -365,28 +355,14 @@ class _HomeBody extends StatelessWidget {
             // too on the home screen somewhere please... or in the
             // portfolio card" — a compact row inside the SAME ink panel,
             // rather than a whole second surface. Polled alongside
-            // everything else this screen already fetches (see
-            // _HomeData.walletBalance).
+            // everything else this screen already fetches.
             action: _WalletBalanceRow(balance: data.walletBalance),
           ),
         ),
         const SizedBox(height: 16),
 
-        // Browsing is open to everyone; only trading/funding require KYC +
-        // suitability (see wallet_flows.dart's showAddMoneyFlow/
-        // showWithdrawFlow and markets/asset_detail_screen.dart's Buy/Sell,
-        // which all gate on these same AppState flags — backed server-side
-        // too, OrdersService/TransactionsService). This prompts the investor
-        // toward whichever step of that they haven't finished yet; shows
-        // nothing once both are done. AppScope.of (not .read) so it reacts
-        // live once hydrateGatingStateAndRoute (log_in_screen.dart) or the
-        // KYC/suitability flow itself updates these flags.
-        _KycPrompt(app: AppScope.of(context)),
-
         // quick actions — exact spec 29 labels/icons: "Add money" / "Buy
-        // shares" / "Orders" (plus/markets/clock), not the earlier
-        // Add-money/Invest/Withdraw set. Withdraw stays reachable from the
-        // Wallet tab; it just isn't one of these three per spec.
+        // shares" / "Orders" (plus/markets/clock).
         Padding(
           padding: _gut,
           child: Row(
@@ -417,81 +393,28 @@ class _HomeBody extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 20),
 
-        // watchlist strip — GET /watchlist-items is already scoped server-side
-        // to the caller's saved tickers, so no local AppState.watchlistTickers
-        // filter here (unlike the old MockData.watchlist.where(...) version).
-        Padding(
-          padding: _gut,
-          child: Row(
-            children: [
-              const KEyebrow('Watchlist'),
-              const Spacer(),
-              _SeeAll(onTap: () => context.push(Routes.watchlist)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        data.watchlist.isEmpty
-            ? Padding(
-                padding: _gut,
-                child: _WatchlistEmptyCard(
-                  onTap: () => context.push(Routes.watchlist),
-                ),
-              )
-            : SizedBox(
-                height: 152,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, 4),
-                  children: [
-                    for (final a in data.watchlist)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: _WatchCard(
-                          asset: a,
-                          onTap: () => context.push(Routes.assetDetail(a.ticker)),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-        const SizedBox(height: 28),
-
-        // "Your week on the NGX" — a generated portfolio narrative
-        // (2026-08-22 "Soft Landing" redesign's comprehension layer, spec
-        // screen 29). No real AI backend exists yet for this (see
-        // docs/redesign/PLAN.md) — the sentence below is computed from the
-        // investor's own real holdings data (biggest mover), not canned
-        // per-account text, but it isn't LLM-generated either.
+        // "Your week on the NGX" — a generated portfolio narrative (canvas
+        // s29's DigestCard). Only real holdings drive the number.
         if (data.holdings.isNotEmpty) ...[
-          Padding(padding: _gut, child: KDigestCard(
-            title: 'Your week on the NGX',
-            body: _weeklyDigest(data.holdings),
-          )),
-          const SizedBox(height: 28),
+          Padding(
+            padding: _gut,
+            child: KDigestCard(
+              title: 'Your week on the NGX',
+              body: _weeklyDigest(data.holdings),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
 
-        // holdings preview → portfolio (header format matches Watchlist:
-        // eyebrow left, See all right)
-        Padding(
-          padding: _gut,
-          child: Row(
-            children: [
-              const KEyebrow('Your holdings'),
-              const Spacer(),
-              _SeeAll(onTap: () => context.go(Routes.portfolio)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
+        // "Your holdings" — no "See all" affordance in canvas s29.
+        Padding(padding: _gut, child: const KEyebrow('Your holdings')),
+        const SizedBox(height: 8),
         data.holdings.isEmpty
             ? Padding(
                 padding: _gut,
-                child: _HoldingsEmptyCard(
-                  onTap: () => context.go(Routes.markets),
-                ),
+                child: _HoldingsEmptyCard(onTap: () => context.go(Routes.markets)),
               )
             : Padding(
                 padding: _gut,
@@ -523,82 +446,107 @@ class _HomeBody extends StatelessWidget {
                   ),
                 ),
               ),
-        const SizedBox(height: 28),
+      ];
+}
 
-        // trending
-        const Padding(
-          padding: _gut,
-          child: KEyebrow('Trending'),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: _gut,
-          child: KCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Column(
-              children: [
-                for (var i = 0; i < data.trending.length; i++)
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: i == 0
-                            ? BorderSide.none
-                            : BorderSide(color: KColor.hairline, width: 1),
-                      ),
-                    ),
-                    child: KAssetRow(
-                      name: data.trending[i].name,
-                      ticker: data.trending[i].ticker,
-                      price: data.trending[i].price,
-                      change: data.trending[i].change,
-                      trend: _kTrend(data.trending[i].trend),
-                      logoColor: data.trending[i].logoColor ?? KColor.ink,
-                      onTap: () =>
-                          context.push(Routes.assetDetail(data.trending[i].ticker)),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 28),
+/// Canvas s30 — "Home · not verified yet": a "Get set up · 1 of 3 done"
+/// checklist panel (real onboarding phases, not the literal 8 KYC
+/// sub-steps) + a single "Biggest mover today" asset row. No BalancePanel/
+/// quick-actions/digest/holdings — this is a genuinely different screen
+/// from the verified body, not that body with a banner inserted.
+class _NotVerifiedContent {
+  const _NotVerifiedContent({required this.data});
+  final _HomeData data;
 
-        // Orders link
-        const Padding(
-          padding: _gut,
-          child: KEyebrow('Activity'),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: _gut,
-          child: KCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            onTap: () => context.push(Routes.orderStatus),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-              child: Row(
+  List<Widget> build(BuildContext context) {
+    final app = AppScope.of(context);
+    final gap = tradingEligibilityGap(app);
+    final mover = data.trending.isNotEmpty ? _biggestMover(data.trending) : null;
+
+    return [
+      // "Get set up" checklist panel — the one indicator-tint feature
+      // surface on this screen (same treatment as the DCS explainer).
+      Padding(
+        padding: _gut,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.featureR),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  const _Bubble(icon: 'transfer'),
-                  const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Orders', style: KType.cardTitle()),
-                        const SizedBox(height: 2),
-                        Text('Track your buy & sell orders',
-                            style: KType.micro(color: KColor.ink3)),
-                      ],
-                    ),
+                    child: Text('Get set up · 1 of 3 done'.upper, style: KType.micro(color: KColor.ink3)),
                   ),
-                  KIcon('chevronRight', size: 20, color: KColor.ink3),
+                  const SizedBox(width: 10),
+                  const KStatusPill(status: KStatus.pending, label: 'In progress', small: true),
                 ],
               ),
+              const SizedBox(height: 14),
+              Text(
+                'Three things and you can buy your first share',
+                style: KType.section(color: KColor.indicatorPress),
+              ),
+              const SizedBox(height: 14),
+              Column(
+                children: [
+                  const _ChecklistStep.done(title: 'Account created', subtitle: 'Email verified'),
+                  const SizedBox(height: 8),
+                  _ChecklistStep.active(
+                    number: 2,
+                    title: gap?.title ?? 'Verify your identity',
+                    subtitle: gap?.message ?? 'Continue your verification',
+                    onTap: gap == null ? null : () => context.push(gap.route),
+                  ),
+                  const SizedBox(height: 8),
+                  const _ChecklistStep.inactive(
+                    number: 3,
+                    title: 'Fund your wallet',
+                    subtitle: '₦5,000 minimum to buy a share',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              KButton(
+                label: 'Continue where you left off',
+                onPressed: gap == null ? null : () => context.push(gap.route),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 20),
+
+      if (mover != null) ...[
+        Padding(padding: _gut, child: const KEyebrow('Biggest mover today · NGX')),
+        const SizedBox(height: 8),
+        Padding(
+          padding: _gut,
+          child: KCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: KAssetRow(
+              name: mover.name,
+              ticker: mover.ticker,
+              price: mover.price,
+              change: mover.change,
+              trend: _kTrend(mover.trend),
+              logoColor: mover.logoColor ?? KColor.ink,
+              onTap: () => context.push(Routes.assetDetail(mover.ticker)),
             ),
           ),
         ),
+        const SizedBox(height: 12),
       ],
-    );
+
+      Padding(
+        padding: _gut,
+        child: Text(
+          'You can follow prices and read explanations while you verify — orders open when the NGX confirms your account.',
+          style: KType.data(color: KColor.ink3),
+        ),
+      ),
+    ];
   }
 }
 
@@ -685,22 +633,6 @@ class _BellButton extends StatelessWidget {
   }
 }
 
-class _SeeAll extends StatelessWidget {
-  const _SeeAll({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Text('See all'.upper,
-          style: KType.micro(color: KColor.ink2, w: KWeight.semibold)
-              .copyWith(letterSpacing: 0.06 * 10)),
-    );
-  }
-}
-
 class _QuickAction extends StatelessWidget {
   const _QuickAction({required this.label, required this.icon, required this.onTap});
   final String label;
@@ -729,74 +661,8 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-/// Prompts an investor who can't yet trade/fund toward whichever step
-/// they're missing (see the call site's comment). Renders nothing once
-/// [AppState.kycApproved] and [AppState.suitabilityComplete] are both true.
-/// Reuses the same `_Bubble`/KCard row treatment as `_WatchlistEmptyCard`
-/// and the Orders card below, rather than a new visual language.
-class _KycPrompt extends StatelessWidget {
-  const _KycPrompt({required this.app});
-  final AppState app;
-
-  @override
-  Widget build(BuildContext context) {
-    final gap = tradingEligibilityGap(app);
-    if (gap == null) return const SizedBox.shrink();
-
-    // "This is the one important thing" grape-feature plate (2026-08-22
-    // redesign, spec screen 30's colour note) — the same indicator-tint /
-    // r-feature treatment used for the DCS explainer (KYC screen 19) and
-    // this screen's own onboarding-progress card.
-    return Padding(
-      padding: EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, 16),
-      child: GestureDetector(
-        onTap: () => context.push(gap.route),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.featureR),
-          child: Row(
-            children: [
-              const _Bubble(icon: 'profile'),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(gap.title, style: KType.cardTitle(color: KColor.indicatorPress)),
-                        ),
-                        const SizedBox(width: 8),
-                        // "StatusPill (pending, 'In progress')" — spec
-                        // screen 30's onboarding-progress card badge. Kept
-                        // on every gap state, not just a literal 3-step
-                        // checklist — this app's real eligibility gate is a
-                        // richer state machine (see tradingEligibilityGap's
-                        // doc comment) than the mockup's simplified example,
-                        // and forcing a fake step count would be its own
-                        // kind of inexact.
-                        const KStatusPill(status: KStatus.pending, label: 'In progress', small: true),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(gap.message, style: KType.micro(color: KColor.ink3)),
-                  ],
-                ),
-              ),
-              KIcon('chevronRight', size: 20, color: KColor.indicator),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Inline prompt shown in place of the holdings list when the investor
-/// holds nothing yet — was previously just an empty KCard (zero children,
-/// rendering as a bare sliver of padding/border), not an actual empty
-/// state. Mirrors `_WatchlistEmptyCard` below. Taps through to Markets.
+/// holds nothing yet. Mirrors the same KCard row treatment used elsewhere.
 class _HoldingsEmptyCard extends StatelessWidget {
   const _HoldingsEmptyCard({required this.onTap});
   final VoidCallback onTap;
@@ -828,109 +694,6 @@ class _HoldingsEmptyCard extends StatelessWidget {
   }
 }
 
-/// Inline prompt shown in place of the horizontal watchlist strip when the
-/// investor has zero watched tickers — matches this screen's existing
-/// `KCard` treatment (see the Orders card below) rather than leaving the
-/// section blank. Taps through to the dedicated Watchlist screen.
-class _WatchlistEmptyCard extends StatelessWidget {
-  const _WatchlistEmptyCard({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return KCard(
-      onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          const _Bubble(icon: 'plus'),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Your watchlist is empty', style: KType.cardTitle()),
-                const SizedBox(height: 2),
-                Text('Add stocks to your watchlist to see them here',
-                    style: KType.micro(color: KColor.ink3)),
-              ],
-            ),
-          ),
-          KIcon('chevronRight', size: 20, color: KColor.ink3),
-        ],
-      ),
-    );
-  }
-}
-
-class _WatchCard extends StatelessWidget {
-  const _WatchCard({required this.asset, required this.onTap});
-  final Asset asset;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final loss = asset.trend == Trend.loss;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 148,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: KColor.paper,
-          borderRadius: BorderRadius.circular(KRadii.card),
-          border: Border.all(color: KColor.hairline, width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: asset.logoColor ?? KColor.ink,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(asset.ticker.substring(0, 2),
-                      style: KType.label(color: KColor.featureInk, w: KWeight.semibold)
-                          .copyWith(fontSize: 10, letterSpacing: 0, height: 1.0)),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(asset.ticker,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: KType.micro(color: KColor.ink2)
-                          .copyWith(letterSpacing: 0.06 * 10)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(asset.price, style: KType.cardTitle(w: KWeight.semibold).tnum),
-            const SizedBox(height: 2),
-            Text(asset.change,
-                style: KType.label(color: loss ? KColor.loss : KColor.gain)
-                    .copyWith(letterSpacing: 0)
-                    .tnum),
-            const SizedBox(height: 10),
-            KSparkline(
-              data: asset.sparkline,
-              trend: loss ? KTrend.loss : KTrend.gain,
-              width: 118,
-              height: 30,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Small bubble icon used by list rows.
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.icon});
@@ -951,3 +714,98 @@ class _Bubble extends StatelessWidget {
     );
   }
 }
+
+/// One row of the not-verified body's "Get set up" checklist — canvas
+/// s30's three variants: done (green check bubble), active (numbered,
+/// indicator-outlined, tappable), inactive (numbered, muted, untappable).
+class _ChecklistStep extends StatelessWidget {
+  const _ChecklistStep.done({required this.title, required this.subtitle})
+      : _variant = _StepVariant.done,
+        number = 0,
+        onTap = null;
+
+  const _ChecklistStep.active({
+    required this.number,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  }) : _variant = _StepVariant.active;
+
+  const _ChecklistStep.inactive({required this.number, required this.title, required this.subtitle})
+      : _variant = _StepVariant.inactive,
+        onTap = null;
+
+  final _StepVariant _variant;
+  final int number;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget bubble;
+    final BoxBorder? border;
+    switch (_variant) {
+      case _StepVariant.done:
+        bubble = Container(
+          width: 26,
+          height: 26,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: KColor.gain, shape: BoxShape.circle),
+          child: KIcon('check', size: 15, color: KColor.featureInk),
+        );
+        border = null;
+      case _StepVariant.active:
+        bubble = Container(
+          width: 26,
+          height: 26,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: KColor.indicator, shape: BoxShape.circle),
+          child: Text('$number', style: KType.micro(color: KColor.featureInk)),
+        );
+        border = Border.all(color: KColor.indicator, width: 1.5);
+      case _StepVariant.inactive:
+        bubble = Container(
+          width: 26,
+          height: 26,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: KColor.track, shape: BoxShape.circle),
+          child: Text('$number', style: KType.micro(color: KColor.ink2)),
+        );
+        border = null;
+    }
+
+    final content = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: KColor.paper,
+        borderRadius: KRadii.cardR,
+        border: border,
+      ),
+      child: Row(
+        children: [
+          bubble,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: KType.data(color: KColor.ink)),
+                Text(subtitle.upper, style: KType.micro(color: KColor.ink3)),
+              ],
+            ),
+          ),
+          if (_variant != _StepVariant.done)
+            KIcon('chevronRight', size: 16,
+                color: _variant == _StepVariant.active ? KColor.indicator : KColor.ink3),
+        ],
+      ),
+    );
+
+    if (onTap == null) return content;
+    return GestureDetector(onTap: onTap, behavior: HitTestBehavior.opaque, child: content);
+  }
+}
+
+enum _StepVariant { done, active, inactive }
