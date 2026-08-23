@@ -70,10 +70,18 @@ class KSecurityAlert extends StatelessWidget {
           if (location != null) _row('Location', location!),
           if (when != null) _row('When', when!),
           const SizedBox(height: 18),
-          Wrap(spacing: 10, runSpacing: 10, children: [
-            primary,
-            ?secondary,
-          ]),
+          // Full-width stacked, not side-by-side: `primary`'s label here is
+          // a long destructive sentence ("Freeze my account and sign that
+          // device out"), which a side-by-side Wrap/Row can't accommodate at
+          // any width — found live via test/shots.dart as a real render
+          // overflow. Matches this design system's own convention for a
+          // long-label button pair (e.g. the onboarding slide's 2-button
+          // stack, both full-width).
+          primary,
+          if (secondary != null) ...[
+            const SizedBox(height: 10),
+            secondary!,
+          ],
           if (fraudDesk != null) ...[
             const SizedBox(height: 14),
             Container(

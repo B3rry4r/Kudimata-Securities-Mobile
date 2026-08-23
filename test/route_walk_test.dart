@@ -60,6 +60,11 @@ void main() {
       '/kyc/next-of-kin', '/kyc/submitted', '/kyc/approved',
       // suitability
       '/suitability', '/suitability/result', '/suitability/terms',
+      // 2026-08-22 "Soft Landing" redesign additions — added after this
+      // exact test's original list missed a real overflow bug on
+      // /security-alert (found only via test/shots.dart's visual check).
+      '/welcome', '/account/security/freeze', '/security-alert',
+      '/account/plans', '/explain/MTNN',
     ];
 
     // Let a page transition fully settle so we test one route at a time (the

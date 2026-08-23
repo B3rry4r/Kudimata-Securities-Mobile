@@ -70,6 +70,10 @@ class _SecurityAlertScreenState extends State<SecurityAlertScreen> {
                 location: 'Ibadan, Oyo',
                 when: 'Today · 09:48',
                 fraudDesk: 'Fraud desk · 0700 583 4626, 24 hours',
+                // Full-width (the KButton default) — KSecurityAlert stacks
+                // primary/secondary vertically, not side-by-side, precisely
+                // because `primary`'s label below is too long to share a row
+                // at any width (see security.dart's header comment on this).
                 primary: KButton(
                   label: 'Freeze my account and sign that device out',
                   variant: KButtonVariant.destructive,

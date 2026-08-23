@@ -125,7 +125,15 @@ class _ApprovedScreenState extends State<ApprovedScreen> {
         eyebrow: 'Verification complete',
         title: "You're verified",
         message: 'Your money is ready to invest.',
-        primary: KButton(label: 'Start investing', onPressed: () => context.go(Routes.home)),
+        // fullWidth: false — KMilestoneSheet lays this out in a Wrap, which
+        // gives children unbounded width; a fullWidth (the KButton default)
+        // button asks for infinite width there and renders as a visible
+        // overflow glitch (found live via test/shots.dart).
+        primary: KButton(
+          label: 'Start investing',
+          fullWidth: false,
+          onPressed: () => context.go(Routes.home),
+        ),
       );
     }
     if (status == 'pending' || status == 'review') {

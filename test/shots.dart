@@ -36,6 +36,11 @@ const _routes = <String, String>{
   'txn': '/wallet/txn/TX1042',
   'account': '/account',
   'security': '/account/security',
+  'freeze': '/account/security/freeze',
+  'security_alert': '/security-alert',
+  'plans': '/account/plans',
+  'explain': '/explain/MTNN',
+  'welcome': '/welcome',
 };
 
 Future<void> _loadFonts() async {

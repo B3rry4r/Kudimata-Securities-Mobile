@@ -103,12 +103,25 @@ class _KButtonState extends State<KButton> {
           KIcon(widget.iconLeft!, size: iconSize, color: fg),
           const SizedBox(width: 8),
         ],
-        Text(
-          widget.label,
-          style: KType.cardTitle(color: fg, w: KWeight.semibold).copyWith(
-            fontSize: _fontSize,
-            letterSpacing: -0.01 * _fontSize,
-            height: 1.0,
+        // Flexible, not a bare child — a Row measures a plain child's Text
+        // at its full unwrapped natural width regardless of the button's
+        // own width (found live via test/shots.dart: a long destructive
+        // label rendered as a real RenderFlex overflow even once the button
+        // itself was full-width, because the overflow was happening one
+        // level in, inside this content Row, not at the button's own
+        // boundary). Flexible lets a label longer than the button can hold
+        // wrap onto a second line instead.
+        Flexible(
+          child: Text(
+            widget.label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: KType.cardTitle(color: fg, w: KWeight.semibold).copyWith(
+              fontSize: _fontSize,
+              letterSpacing: -0.01 * _fontSize,
+              height: 1.15,
+            ),
           ),
         ),
         if (widget.iconRight != null) ...[
@@ -131,8 +144,8 @@ class _KButtonState extends State<KButton> {
           duration: KMotion.fast,
           curve: KMotion.easeSoft,
           width: widget.fullWidth ? double.infinity : null,
-          height: _height,
-          padding: EdgeInsets.symmetric(horizontal: _pad),
+          constraints: BoxConstraints(minHeight: _height),
+          padding: EdgeInsets.symmetric(horizontal: _pad, vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: bg,

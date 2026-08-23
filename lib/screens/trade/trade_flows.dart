@@ -626,8 +626,14 @@ Future<void> _showSuccessSheet(
       message: side.isSell
           ? 'You sold $amountStr of ${asset.ticker}. Proceeds settle T+3.'
           : 'You bought $amountStr of ${asset.ticker}. Shares settle T+3.',
+      // fullWidth: false — KMilestoneSheet lays these out in a Wrap (natural
+      // width, can wrap to a new line), and a fullWidth (the KButton
+      // default) button asks Wrap for infinite width, which renders as a
+      // visible overflow glitch (found live via test/shots.dart on the
+      // structurally-identical security-alert screen).
       primary: KButton(
         label: 'View portfolio',
+        fullWidth: false,
         onPressed: () {
           Navigator.of(context).pop();
           context.go(Routes.portfolio);
@@ -636,6 +642,7 @@ Future<void> _showSuccessSheet(
       secondary: KButton(
         label: 'Done',
         variant: KButtonVariant.ghost,
+        fullWidth: false,
         onPressed: () => Navigator.of(context).pop(),
       ),
     ),
