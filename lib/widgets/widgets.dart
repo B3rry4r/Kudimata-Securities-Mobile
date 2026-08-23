@@ -1,5 +1,6 @@
 // Kudimata Securities — shared widget library (Stage 1). One import for screens.
 export 'k_icon.dart';
+export 'illustration.dart';
 export 'brand.dart';
 export 'buttons.dart';
 export 'spinner.dart';

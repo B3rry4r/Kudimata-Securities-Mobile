@@ -1,8 +1,9 @@
-// Kudimata Securities — ThemeData built from a KPalette. One face (Space Grotesk);
-// light = white surfaces / ink text, dark = near-black surfaces / off-white ink;
-// purple is the interactive seed in both. Custom widgets read colours from KColor
-// (the active palette); this theme covers the Material defaults and keeps them in
-// sync via the same palette.
+// Kudimata Securities — ThemeData built from KPalette.light (2026-08-22
+// "Soft Landing" redesign — light-only, see main.dart's header comment).
+// Two faces (Nunito for display, Nunito Sans for body/core); warm paper
+// surfaces, plum ink text, grape purple the interactive seed. Custom widgets
+// read colours from KColor (the active palette); this theme covers the
+// Material defaults and keeps them in sync via the same palette.
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'tokens.dart';
@@ -11,14 +12,17 @@ class KTheme {
   KTheme._();
 
   static ThemeData light() => _build(KPalette.light);
-  static ThemeData dark() => _build(KPalette.dark);
 
   static ThemeData _build(KPalette p) {
     final base = ThemeData(useMaterial3: true, brightness: p.brightness);
 
-    // Bundled Space Grotesk (assets/fonts) — no runtime font fetch.
+    // Bundled Nunito Sans (assets/fonts) as the Material default — matches
+    // "information" role text (body/data/labels), the vast majority of
+    // Material-default text. Display-role text (hero/title/section/card
+    // title) explicitly requests KType.fontDisplay per call, same pattern
+    // as before.
     final textTheme = base.textTheme.apply(
-      fontFamily: KType.fontFamily,
+      fontFamily: KType.fontCore,
       bodyColor: p.ink,
       displayColor: p.ink,
     );
