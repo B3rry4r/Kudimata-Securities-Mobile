@@ -43,6 +43,7 @@ class KAccountRow extends StatelessWidget {
     this.onTap,
     this.crossAlign = CrossAxisAlignment.center,
     this.titleColor,
+    this.subUppercase = false,
   });
 
   final String? icon;
@@ -57,6 +58,14 @@ class KAccountRow extends StatelessWidget {
   /// destructive row (screen 91's "Close my account and delete what you
   /// can"). Null keeps the existing default (ink).
   final Color? titleColor;
+
+  /// Renders [sub] tracked-caps, matching the canvas's `text-micro` +
+  /// `text-transform:uppercase` device-status caption (screen 50's "This
+  /// device · now"). Default false keeps every other call site's sentence-
+  /// style sub (Switch descriptions, "Verify your BVN...", etc.) unchanged —
+  /// added rather than uppercasing [sub] unconditionally, since most callers
+  /// need the opposite.
+  final bool subUppercase;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +93,7 @@ class KAccountRow extends StatelessWidget {
                 Text(title, style: KType.cardTitle(color: titleColor, w: KWeight.medium)),
                 if (sub != null) ...[
                   const SizedBox(height: 2),
-                  Text(sub!,
+                  Text(subUppercase ? sub!.upper : sub!,
                       style: KType.micro(color: KColor.ink3)
                           .copyWith(letterSpacing: 0.04 * 10)),
                 ],
@@ -100,12 +109,14 @@ class KAccountRow extends StatelessWidget {
   }
 }
 
-/// The right-hand chevron used on navigational rows.
+/// The right-hand chevron used on navigational rows. 16px per every `Icon
+/// name="chevronRight"` x-import in the canvas (s45/s48/s49/s50/s51 all
+/// agree) — corrected from a 20px guess during the 2026-08-23 exactness pass.
 class KRowChevron extends StatelessWidget {
   const KRowChevron({super.key});
   @override
   Widget build(BuildContext context) =>
-      KIcon('chevronRight', size: 20, color: KColor.ink3);
+      KIcon('chevronRight', size: 16, color: KColor.ink3);
 }
 
 /// A padded grouping card (design uses `Card padding={0}` with `4px 16px`).

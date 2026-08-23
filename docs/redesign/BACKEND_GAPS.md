@@ -260,21 +260,94 @@ it's still outstanding, not because anything changed about it this pass.
 
 ---
 
+## 13. KYC is a 5-step flow, not the canvas's real 8-step/10-screen flow — the biggest structural gap in this document
+
+Screens: BVN & NIN (#14), CHN (#15), Bank & DCS (#19), Declarations · PEP
+(#20), Review & submit (#22), NGX account under review (#24).
+
+This is deliberate — a documented 2026-08-20 "phased KYC" product/backend
+directive (`kyc_form_state.dart`, `kyc_repository.dart` headers) — not
+sloppiness, and the backend's `KycSubmission` draft schema genuinely only
+has 5 steps today. But it means four real pieces of investor identity/
+compliance data described by the canvas are **never collected anywhere**:
+
+- **CHN** (#15) — never collected.
+- **Bank & Direct Cash Settlement** (#19) — never collected. The canvas
+  describes DCS as "Required by the NGX"; there is no field or screen for
+  it in this app at all, and DCS is later *referenced* as if it exists
+  (the bank-accounts screen's "DCS active" pill maps onto the unrelated
+  `primary` flag as a workaround — see the original redesign's own
+  decision log).
+- **Declarations · PEP** (#20) — the SEC-required politically-exposed-
+  person declaration is simply absent from onboarding.
+- **Review & submit** (#22) — doesn't exist; the last real KYC step
+  submits directly with no review interstitial.
+- **NGX account under review** (#24) — no distinct interstitial exists
+  between "submitted" and the final approved/rejected outcome; the app
+  jumps straight from a generic pending state to the full outcome.
+
+Closing this needs real backend schema work (extending `KycSubmission`
+with these fields/steps) and new screens/routes wired to them — a
+genuinely larger piece of work than any other single item in this
+document, and worth scoping as its own project rather than folding into
+smaller fixes.
+
+## 14. Smaller data gaps found during the full re-audit (screens 1-59)
+
+- **Dividend yield** on Asset detail (#33) — no backend field; renders `—`.
+  Same root cause as gap §1's dividend-ledger absence.
+- **Glossary route** — the canvas's `T+3` and similar inline
+  `KGlossaryTerm`s are meant to link to an Article & Glossary destination
+  per-term; only one article (Settlement/T+3) was built this pass (the
+  only one the canvas gives full content for). Other glossary terms
+  (elsewhere in the app) remain no-ops. Needs either more canvas-sourced
+  article content or a real glossary content resource.
+- **FAQ article content** — Article & Glossary (#57) was built for real,
+  but only for the one question ("When does money from a sale arrive?")
+  the canvas provides full article content for. The other 3 FAQ questions
+  ("Why is my order still filling?", "My verification was not approved",
+  "Fees, in full") still fall back to the general FAQ list — needs real
+  article copy written for each, then wired the same way.
+- **Suitability `computedAt`** — Personal info's "Investor profile" card
+  should show "Answered {date}" per the canvas; `SuitabilityResult` has no
+  timestamp field reaching the client. Small addition to
+  `suitability_repository.dart`'s response shape.
+- **Referral stats mismatch** — the canvas's Refer & earn stats show
+  "Friends joined / Still verifying / Explanations earned"; this backend's
+  `ReferralAccount` only has `referredCount` and `earningsTotalKobo` (it
+  pays cash, not AI-credits, and has no verifying-vs-joined split). The
+  screen shows the two real fields rather than inventing the other two —
+  a real product-model mismatch between the canvas's assumptions and how
+  referrals actually work here, worth reconciling upstream.
+- **Order cancellation** (re-confirmed) — no `POST /orders/:id/cancel` (or
+  similar) exists; blocks the Orders screen's cancel action for an unfilled
+  order, independently re-confirmed during this pass (see also gap §6).
+- **Test-fixture gap, not a product gap**: `test/fixtures/mock_api_adapter.dart`
+  has no `/statements` mock, so the Statements screen's own screenshot
+  shows its (correctly-styled) error state rather than real-looking data.
+  Harmless for production, worth fixing so future screenshot audits of
+  this screen are actually useful.
+
 ## Priority read, if useful for scoping
 
 Roughly highest-leverage-first, independent of screen numbering:
 
-1. **Dividend ledger** (§1) — unblocks real data on #76, #84, and
+1. **Phased-KYC completion** (§13) — CHN, Bank & DCS, PEP declarations,
+   and a review step are entirely uncollected today. This is compliance-
+   adjacent (PEP, DCS) and by far the largest single scope item in this
+   document — worth scoping as its own project, separately from the
+   smaller items below.
+2. **Dividend ledger** (§1) — unblocks real data on #33, #76, #84, and
    indirectly #85; it's also just a real, already-happening business event
    the data model can't currently represent at all.
-2. **Router fix for the `Routes.reset` / `preAuthOnly` bug** (§8) — not
+4. **Router fix for the `Routes.reset` / `preAuthOnly` bug** (§8) — not
    backend work, a one-line router fix, but blocks a real safety-critical
    flow (locked-out investors resetting access) today, independent of
    whether #92 itself ever ships.
-3. **Sell order destination + reference number** (§6) — small additions
+5. **Sell order destination + reference number** (§6) — small additions
    to an endpoint that already exists.
-4. **Legal content for #95/#97** (§11) — a content/legal-review task, not
+6. **Legal content for #95/#97** (§11) — a content/legal-review task, not
    an engineering one; cheap once written.
-5. Corporate actions, complaints, price alerts, dormancy/lockout,
-   closure, tax documents — each a real, standalone feature; sequence
-   by product priority.
+7. Corporate actions, complaints, price alerts, dormancy/lockout,
+   closure, tax documents, and the smaller §14 data gaps — each a real,
+   standalone feature; sequence by product priority.

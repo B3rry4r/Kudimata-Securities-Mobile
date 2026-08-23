@@ -1,7 +1,9 @@
 // Stage 7 · Holding detail (pushed). Ported from portfolio-screens.jsx
-// `HoldingDetail`, made data-driven by ticker. Position BalancePanel, a KLineChart,
-// position stats via KStatCard, and the Sell / Buy more footer wired to the
-// trade flow launchers. KDetailHeader (back chevron, no tab bar).
+// `HoldingDetail`, made data-driven by ticker. mockup-raw/s39.html: a custom
+// two-line header (name + "Your holding · TICKER"), a bare hero price (NOT a
+// KBalancePanel — s39 has no purple panel at all), a divided key/value card,
+// and the Sell / Buy more footer. No price chart on this screen — s39's own
+// footer note says "price chart lives on 33, one tap from the name".
 //
 // Wired to GET /holdings/:ticker via HoldingsRepository.byTicker (see
 // lib/data/api/README.md's FutureBuilder convention). That endpoint's own
@@ -55,32 +57,74 @@ class _HoldingDetailScreenState extends State<HoldingDetailScreen> {
     return FutureBuilder<_HoldingDetailData>(
       future: _future,
       builder: (context, snapshot) {
-        // KDetailHeader's title can't wait on the fetch (it's outside the
-        // scrollable body), so it shows the ticker — always known up front,
-        // same fallback asset_detail_screen.dart uses — until the real
-        // asset.name (the fragment's intended title) resolves.
-        final title = snapshot.data?.holding.asset.name ?? widget.ticker;
+        // The header can't wait on the fetch (it's outside the scrollable
+        // body), so it shows the ticker — always known up front, same
+        // fallback asset_detail_screen.dart uses — until the real
+        // asset.name resolves.
+        final name = snapshot.data?.holding.asset.name ?? widget.ticker;
 
         return Scaffold(
           backgroundColor: KColor.bg,
-          appBar: KDetailHeader(title: title),
           body: SafeArea(
-            top: false,
-            child: Builder(builder: (context) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const KLoadingView();
-              }
-              if (snapshot.hasError) {
-                return KErrorView.failedLoad(
-                  onPrimary: () => setState(() => _future = _load()),
-                );
-              }
-              final data = snapshot.data!;
-              return _HoldingDetailBody(holding: data.holding, cscsNumber: data.cscsNumber);
-            }),
+            bottom: false,
+            child: Column(
+              children: [
+                _Header(name: name, ticker: widget.ticker),
+                Expanded(
+                  child: Builder(builder: (context) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const KLoadingView();
+                    }
+                    if (snapshot.hasError) {
+                      return KErrorView.failedLoad(
+                        onPrimary: () => setState(() => _future = _load()),
+                      );
+                    }
+                    final data = snapshot.data!;
+                    return _HoldingDetailBody(holding: data.holding, cscsNumber: data.cscsNumber);
+                  }),
+                ),
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+/// mockup-raw/s39.html: `[IconButton back][name / "Your holding · TICKER"]`
+/// — a bespoke two-line header, not KDetailHeader (which has no subtitle
+/// slot). Same pattern asset_detail_screen.dart's own custom top bar uses.
+class _Header extends StatelessWidget {
+  const _Header({required this.name, required this.ticker});
+  final String name;
+  final String ticker;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 4),
+      child: Row(
+        children: [
+          KIconButton(
+            icon: 'back',
+            semanticLabel: 'Back',
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(name, style: KType.cardTitle()),
+                Text('Your holding · $ticker'.upper, style: KType.micro(color: KColor.ink3)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -96,58 +140,33 @@ class _HoldingDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final asset = holding.asset;
-    final trend = holding.returnTrend == Trend.loss ? KTrend.loss : KTrend.gain;
-    final subTone =
-        holding.returnTrend == Trend.loss ? KSubTone.loss : KSubTone.gain;
+    final trendColor = holding.returnTrend == Trend.loss ? KColor.loss : KColor.gain;
 
     return Column(
       children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-                KSpace.gutter, 16, KSpace.gutter, 24),
+            padding: const EdgeInsets.fromLTRB(KSpace.gutter, 10, KSpace.gutter, 24),
             children: [
-              // Position panel — your value + total return.
-              KBalancePanel(
-                label: '${asset.name} · your position',
-                balance: holding.marketValue,
-                change: '${holding.totalReturn} · ${holding.returnPct}',
-                changeTone: trend,
+              // Bare hero price + gain/loss line — mockup-raw/s39.html lines
+              // 9-11: NOT a KBalancePanel (no purple panel on this screen at
+              // all). Was wrapping this in a KBalancePanel ("{name} · your
+              // position") that doesn't exist in the design.
+              Text(holding.marketValue, style: KType.hero(color: KColor.ink).tnum),
+              Text(
+                '${holding.totalReturn} · ${holding.returnPct} since you bought',
+                style: KType.data(color: trendColor, w: KWeight.semibold).tnum,
               ),
               const SizedBox(height: 16),
 
-              // Position stats — 2×2 grid of KStatCard.
-              _StatGrid(
-                children: [
-                  KStatCard(
-                    icon: KIcon('transfer', size: 18, color: KColor.ink2),
-                    label: 'Avg cost',
-                    value: holding.avgPrice,
-                  ),
-                  KStatCard(
-                    icon: KIcon('portfolio', size: 18, color: KColor.ink2),
-                    label: 'Quantity',
-                    value: holding.units,
-                  ),
-                  KStatCard(
-                    icon: KIcon('markets', size: 18, color: KColor.ink2),
-                    label: 'Current',
-                    value: asset.price,
-                  ),
-                  KStatCard(
-                    icon: KIcon('arrowUpRight', size: 18, color: KColor.ink2),
-                    label: 'P/L',
-                    value: holding.returnPct,
-                    sub: holding.totalReturn,
-                    subTone: subTone,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // "Held in CSCS · CHN 1234567890" (spec 39) — a real fact,
-              // GET /users/me's cscsNumber. Spec 39 also lists "Dividends
-              // received" and "Executing broker · Blue Marina · BM-4471" on
-              // this screen — deliberately NOT added:
+              // Divided key/value card — mockup-raw/s39.html lines 14-21:
+              // Shares / Average cost / Market price / Dividends received /
+              // Held in / Executing broker, each a hairline-divided row, NOT
+              // the 2x2 KStatCard grid this screen used to render (that grid
+              // isn't in the design at all).
+              //
+              // "Dividends received" and "Executing broker" are deliberately
+              // NOT added:
               //  - Dividends received: no such field exists anywhere on the
               //    Holding/Transaction wire types (checked the backend's
               //    actual types directly); there's no per-holding dividend
@@ -165,7 +184,16 @@ class _HoldingDetailBody extends StatelessWidget {
               // Transaction (the one investor-scoped resource this app can
               // read) carries no ticker field at all.
               KCard(
-                child: _DetailKV(label: 'Held in', value: 'CSCS · CHN $cscsNumber'),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _KVRow(label: 'Shares', value: holding.units),
+                    _KVRow(label: 'Average cost', value: holding.avgPrice),
+                    _KVRow(label: 'Market price', value: asset.price),
+                    _KVRow(label: 'Held in', value: 'CSCS · CHN $cscsNumber', last: true),
+                  ],
+                ),
               ),
             ],
           ),
@@ -181,46 +209,28 @@ class _HoldingDetailBody extends StatelessWidget {
   }
 }
 
-/// One label/value row on its own card — "Held in · CSCS · CHN ..." (spec 39).
-class _DetailKV extends StatelessWidget {
-  const _DetailKV({required this.label, required this.value});
+/// One hairline-divided key/value row — mockup-raw/s39.html's details card
+/// rows (`[label flex:1][value]`, 12px vertical padding, divider except the
+/// last row).
+class _KVRow extends StatelessWidget {
+  const _KVRow({required this.label, required this.value, this.last = false});
   final String label;
   final String value;
+  final bool last;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: KType.body(color: KColor.ink2)),
-        Text(value, style: KType.data(color: KColor.ink).tnum),
-      ],
-    );
-  }
-}
-
-/// 2-column grid of equal-height stat cards.
-class _StatGrid extends StatelessWidget {
-  const _StatGrid({required this.children});
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      // 1.55 (the original ratio) only fit KStatCard's icon+label+value —
-      // the P/L card is the one cell with a 4th `sub` line (see below),
-      // which overflowed every cell's identical fixed height by 15px since
-      // GridView.count forces all children to the same size regardless of
-      // their own content. 1.3 gives every cell enough room for that 4th
-      // line even though only P/L uses it.
-      childAspectRatio: 1.3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      children: children,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        border: last ? null : Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: KType.data(color: KColor.ink2))),
+          Text(value, style: KType.data(color: KColor.ink).tnum),
+        ],
+      ),
     );
   }
 }
@@ -236,7 +246,7 @@ class _ActionFooter extends StatelessWidget {
         color: KColor.paper,
         border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
       ),
-      padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 14),
+      padding: const EdgeInsets.fromLTRB(KSpace.gutter, 18, KSpace.gutter, 24),
       child: Row(
         children: [
           Expanded(

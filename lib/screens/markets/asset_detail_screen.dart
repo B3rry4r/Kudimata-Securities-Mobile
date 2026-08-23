@@ -122,41 +122,44 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
         bottom: false,
         child: Column(
           children: [
-            // top bar: back · ticker · save — independent of the fetch below.
+            // top bar: back · name/ticker · save — independent of the fetch below.
+            // Screen 33: name over an uppercase "TICKER · EXCHANGE" line,
+            // left-aligned next to the back button, not a centred bare
+            // ticker — and the trailing action is a plus/check toggle (adds
+            // to the watchlist), not an eye.
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   KIconButton(
                     icon: 'back',
                     semanticLabel: 'Back',
                     onPressed: () => context.pop(),
                   ),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Center(
-                      child: Text(widget.ticker,
-                          style: KType.section().copyWith(letterSpacing: 0.04 * 17)),
+                    child: FutureBuilder<(Asset asset, String? about, Holding? holding)>(
+                      future: _future,
+                      builder: (context, snapshot) {
+                        final asset = snapshot.data?.$1;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(asset?.name ?? widget.ticker, style: KType.cardTitle()),
+                            Text('${widget.ticker} · NGX'.upper,
+                                style: KType.micro(color: KColor.ink3)),
+                          ],
+                        );
+                      },
                     ),
                   ),
-                  // save toggle — purple when watched (interactive layer)
-                  GestureDetector(
-                    onTap: () => _toggleWatch(),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: watched ? KColor.indicator : KColor.paper,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: watched ? KColor.indicator : KColor.hairline,
-                          width: 1,
-                        ),
-                      ),
-                      child: KIcon('eye',
-                          size: 20, color: watched ? KColor.featureInk : KColor.ink),
-                    ),
+                  KIconButton(
+                    icon: watched ? 'check' : 'plus',
+                    semanticLabel: watched ? 'Remove from watchlist' : 'Add to watchlist',
+                    selected: watched,
+                    onPressed: () => _toggleWatch(),
                   ),
                 ],
               ),
@@ -221,26 +224,37 @@ class _AssetDetailBody extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(top: 8, bottom: 24),
             children: [
-              // price feature panel
+              // price header — screen 33 is a hero price + change line
+              // directly on the page background (no purple/ink feature
+              // panel here; that treatment is reserved for wallet/portfolio
+              // balances), then a plain (not onDark) chart defaulted to 1M.
               Padding(
                 padding: _gut,
-                child: KBalancePanel(
-                  label: asset.name,
-                  balance: asset.price,
-                  change: '${asset.change} today',
-                  changeTone: _k(asset.trend),
-                  chart: KLineChart(
-                    data: series,
-                    trend: _k(asset.trend),
-                    onDark: true,
-                    height: 150,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(asset.price, style: KType.hero().tnum),
+                    const SizedBox(height: 4),
+                    Text('${asset.change} today',
+                        style: KType.data(
+                          color: _k(asset.trend) == KTrend.loss ? KColor.loss : KColor.gain,
+                          w: KWeight.semibold,
+                        ).tnum),
+                    const SizedBox(height: 12),
+                    KLineChart(
+                      data: series,
+                      trend: _k(asset.trend),
+                      range: '1M',
+                      height: 130,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
 
               // The redesigned product card (2026-08-22 "Soft Landing" —
-              // components/finance/ProductCard.jsx). Deliberately leaves
+              // components/finance/ProductCard.jsx). price/change are real
+              // (same Asset fields as the hero above). Deliberately leaves
               // fee/liquidity/minimum blank (renders "—") rather than
               // inventing numbers: registry.json's Asset/Quote resources
               // have no such fields yet — same documented product gap as
@@ -252,53 +266,36 @@ class _AssetDetailBody extends StatelessWidget {
                 child: KProductCard(
                   name: asset.name,
                   market: '${asset.ticker} · NGX',
+                  price: asset.price,
+                  change: asset.change,
                   onExplain: () => context.push(Routes.explainThis(asset.ticker)),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // your position (only when held)
-              if (holding != null) ...[
-                Padding(
-                  padding: _gut,
-                  child: KCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const KEyebrow('Your position'),
-                            const Spacer(),
-                            KBadge(
-                              label: 'P/L ${holding.returnPct}',
-                              tone: holding.returnTrend == Trend.gain
-                                  ? KBadgeTone.gain
-                                  : KBadgeTone.loss,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                                child: _PosCell(
-                                    label: 'Quantity', value: holding.units)),
-                            Expanded(
-                                child: _PosCell(
-                                    label: 'Average cost', value: holding.avgPrice)),
-                            Expanded(
-                                child: _PosCell(
-                                    label: 'Market value',
-                                    value: holding.marketValue)),
-                          ],
-                        ),
-                      ],
+              // Dividend yield / You own — screen 33's two-cell row.
+              // Dividend yield has no backend field yet (same documented gap
+              // as ProductCard's fee/liquidity/minimum above) so it renders
+              // "—" rather than a fabricated number; "You own" is the real
+              // holding unit count, "0 shares" when this investor doesn't
+              // hold the asset (the row is unconditional in the design,
+              // unlike the old P/L position card this replaces).
+              Padding(
+                padding: _gut,
+                child: Row(
+                  children: [
+                    Expanded(child: _StatCell(label: 'Dividend yield', value: '—')),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _StatCell(
+                        label: 'You own',
+                        value: holding != null ? '${holding.units} shares' : '0 shares',
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-              ],
+              ),
+              const SizedBox(height: 16),
 
               // stat grid — still mocked; see file header / product-gap note.
               Padding(
@@ -365,21 +362,32 @@ class _AssetDetailBody extends StatelessWidget {
   }
 }
 
-class _PosCell extends StatelessWidget {
-  const _PosCell({required this.label, required this.value});
+/// The screen-33 "Dividend yield" / "You own" cell — a bordered paper tile,
+/// distinct from [KStatCard] (which also carries an optional icon this cell
+/// never does).
+class _StatCell extends StatelessWidget {
+  const _StatCell({required this.label, required this.value});
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label.upper, style: KType.micro(color: KColor.ink3)),
-        const SizedBox(height: 5),
-        Text(value, style: KType.cardTitle(w: KWeight.semibold).tnum),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: KColor.paper,
+        border: Border.all(color: KColor.hairline, width: 1),
+        borderRadius: KRadii.cardR,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label.upper, style: KType.micro(color: KColor.ink3)),
+          const SizedBox(height: 4),
+          Text(value, style: KType.cardTitle(w: KWeight.semibold).tnum),
+        ],
+      ),
     );
   }
 }

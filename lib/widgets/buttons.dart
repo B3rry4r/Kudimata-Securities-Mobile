@@ -183,6 +183,7 @@ class KIconButton extends StatefulWidget {
     this.size = 40,
     this.variant = KIconButtonVariant.solid,
     this.semanticLabel,
+    this.selected = false,
   });
 
   final String icon;
@@ -190,6 +191,13 @@ class KIconButton extends StatefulWidget {
   final double size;
   final KIconButtonVariant variant;
   final String? semanticLabel;
+
+  /// Toggled/"on" look — solid indicator fill + white glyph instead of the
+  /// default white-with-hairline circle. Added (rather than forking a new
+  /// widget) for the asset-detail save/watch toggle, which needs to show its
+  /// current state on the same circular icon button every other pushed
+  /// screen uses.
+  final bool selected;
 
   @override
   State<KIconButton> createState() => _KIconButtonState();
@@ -217,12 +225,15 @@ class _KIconButtonState extends State<KIconButton> {
             height: widget.size,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: KColor.paper,
+              color: widget.selected ? KColor.indicator : KColor.paper,
               shape: BoxShape.circle,
-              border: Border.all(color: KColor.hairline, width: 1),
+              border: Border.all(
+                color: widget.selected ? KColor.indicator : KColor.hairline,
+                width: 1,
+              ),
               boxShadow: widget.variant == KIconButtonVariant.float ? KShadow.float : null,
             ),
-            child: KIcon(widget.icon, size: 20, color: KColor.ink),
+            child: KIcon(widget.icon, size: 20, color: widget.selected ? KColor.featureInk : KColor.ink),
           ),
         ),
       ),

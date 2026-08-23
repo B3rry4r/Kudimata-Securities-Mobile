@@ -115,6 +115,12 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
                     child: Row(
                       children: [
                         Expanded(
+                          // Screen 46 shows "TICKER · added 12 Mar" — the
+                          // watchlist API has no "date added" field on its
+                          // Asset resource, so that half of the ticker line
+                          // is a genuine backend gap (like the asset-detail
+                          // and product-card gaps elsewhere in this app),
+                          // not fabricated here.
                           child: KAssetRow(
                             name: items[i].name,
                             ticker: items[i].ticker,
@@ -145,7 +151,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         Padding(
           padding: _gut,
           child: KNudgeCard(
@@ -165,12 +171,12 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
         const SizedBox(height: 16),
         // "Find more on the NGX" (spec 46) — was only present on the empty
         // state's own "Browse markets" button; the populated list had no
-        // equivalent way to jump to Markets.
+        // equivalent way to jump to Markets. Primary, per the mock (no
+        // `variant` attribute on that Button import — it was wrongly ghost).
         Padding(
           padding: _gut,
           child: KButton(
             label: 'Find more on the NGX',
-            variant: KButtonVariant.ghost,
             onPressed: () => context.go(Routes.markets),
           ),
         ),

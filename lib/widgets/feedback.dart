@@ -166,6 +166,7 @@ class KStatusView extends StatelessWidget {
     this.onPrimary,
     this.secondary,
     this.onSecondary,
+    this.secondaryVariant = KButtonVariant.secondary,
     this.extra,
   });
 
@@ -177,6 +178,14 @@ class KStatusView extends StatelessWidget {
   final VoidCallback? onPrimary;
   final String? secondary;
   final VoidCallback? onSecondary;
+
+  /// Variant for the [secondary] button. Most two-button StatusView patterns
+  /// in the design canvas (e.g. screens 58, 59, 09, 26, 79, 89, 92) use
+  /// `ghost` for the second action, not the boxed `secondary` look this
+  /// defaulted to everywhere — kept as the default so every existing call
+  /// site is unaffected, with `ghost` available to call sites that need to
+  /// match those canvas screens exactly.
+  final KButtonVariant secondaryVariant;
 
   /// Optional content rendered between [message] and the button(s) — e.g. a
   /// small data-summary card (screens 89 "Dormant account" / 92 "Locked
@@ -224,7 +233,7 @@ class KStatusView extends StatelessWidget {
           if (primary != null) KButton(label: primary!, onPressed: onPrimary),
           if (primary != null && secondary != null) const SizedBox(height: 10),
           if (secondary != null)
-            KButton(label: secondary!, onPressed: onSecondary, variant: KButtonVariant.secondary),
+            KButton(label: secondary!, onPressed: onSecondary, variant: secondaryVariant),
         ],
       ],
     );

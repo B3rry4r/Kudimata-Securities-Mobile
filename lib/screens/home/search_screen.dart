@@ -1,10 +1,10 @@
-// Search (pushed) — back chevron + KSearchPill, recent chips, and live results /
-// trending list. Ported from extra-screens.jsx `Search`.
+// Search (pushed) — back chevron + KSearchPill, recent chips, live results and
+// a NudgeCard. Ported from extra-screens.jsx `Search`. Per the canvas (#s31),
+// there is no "Trending" section on this screen at all — that existed in an
+// earlier port and has been removed; Markets owns trending.
 //
 // Wired to GET /assets (AssetRepository.byAssetClass(null), fetched once —
-// not a server-side search endpoint) for the local string-filter list, and
-// GET /assets/trending (AssetRepository.trending()) for the default/empty-
-// query suggestion list. Per
+// not a server-side search endpoint) for the local string-filter list. Per
 // Kudimata-Securities-Backend/.pipeline/fragments/search.json, this screen
 // is local-filter-only: no debounce, no query param ever leaves the widget,
 // filtering is a synchronous getter over the already-fetched list.
@@ -49,7 +49,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   late final _repo = AssetRepository(AppScope.read(context).apiClient);
   late Future<List<Asset>> _assetsFuture = _repo.byAssetClass(null);
-  late Future<List<Asset>> _trendingFuture = _repo.trending();
 
   @override
   void initState() {
@@ -110,9 +109,11 @@ class _SearchScreenState extends State<SearchScreen> {
         bottom: false,
         child: Column(
           children: [
-            // header row: back + search pill
+            // header row: back + search pill. Canvas (#s31): padding
+            // "14px 20px 6px", gap:12 between the back button and the pill —
+            // was an asymmetric 8/8/20/8 padding with a 10px gap.
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, KSpace.gutter, 8),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
               child: Row(
                 children: [
                   KIconButton(
@@ -120,7 +121,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     semanticLabel: 'Back',
                     onPressed: () => context.pop(),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: KSearchPill(
                       placeholder: 'Search NGX companies',
@@ -131,81 +132,17 @@ class _SearchScreenState extends State<SearchScreen> {
                 ],
               ),
             ),
-            Expanded(
-              child: hasQuery ? _resultsSection() : _idleSection(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _idleSection() {
-    return FutureBuilder<List<Asset>>(
-      future: _trendingFuture,
-      builder: (context, snapshot) {
-        Widget trendingBlock;
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          trendingBlock = const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: KLoadingView(),
-          );
-        } else if (snapshot.hasError) {
-          trendingBlock = KErrorView(
-            onPrimary: () => setState(() => _trendingFuture = _repo.trending()),
-          );
-        } else if (snapshot.data!.isEmpty) {
-          trendingBlock = const SizedBox.shrink();
-        } else {
-          trendingBlock = Padding(padding: _gut, child: _card(snapshot.data!));
-        }
-        return ListView(
-          padding: const EdgeInsets.only(top: 14, bottom: 24),
-          children: [
-            // Fresh install / no searches yet → omit the section entirely
-            // rather than show stale hardcoded tickers.
-            if (_recents.isNotEmpty) ...[
-              const Padding(padding: _gut, child: KEyebrow('Recent')),
-              const SizedBox(height: 10),
-              Padding(
-                padding: _gut,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final r in _recents)
-                      KPillChip(
-                        label: r,
-                        onTap: () {
-                          _controller.text = r;
-                          setState(() => _query = r);
-                        },
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-            const Padding(padding: _gut, child: KEyebrow('Trending')),
-            const SizedBox(height: 8),
-            trendingBlock,
-            const SizedBox(height: 24),
+            Expanded(child: _content(hasQuery)),
+            // Canvas footer: ghost "Browse all of the market", pinned below
+            // the scrolling content (margin-top:auto), NOT swapped out once
+            // there's a query — the canvas's own query-state frame (#s31,
+            // pre-filled "dang") still shows this button.
             Padding(
-              padding: _gut,
-              child: KNudgeCard(
-                tone: KNudgeTone.grape,
-                title: 'Not sure what to search for?',
-                body: "Try a sector — banking, telecoms, cement — and we'll show the NGX-listed companies in it.",
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Missing entirely before this exactness pass — spec screen 31's
-            // ghost "Browse all of the market" button.
-            Padding(
-              padding: _gut,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
               child: KButton(
                 label: 'Browse all of the market',
                 variant: KButtonVariant.ghost,
+                fullWidth: true,
                 onPressed: () {
                   context.pop();
                   context.go(Routes.markets);
@@ -213,8 +150,59 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ],
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  /// Canvas (#s31) stacks, top to bottom: a "Results" section (only present
+  /// once there's a query — the annotation is explicit: "empty search →
+  /// this screen with the nudge only"), then "Recent" chips, then the
+  /// NudgeCard — all in ONE scrolling column, not two mutually-exclusive
+  /// screens. There is no "Trending" section anywhere on this screen (that
+  /// was invented by an earlier port) — Results replaces it once the
+  /// investor types something.
+  Widget _content(bool hasQuery) {
+    return ListView(
+      padding: const EdgeInsets.only(top: 14, bottom: 24),
+      children: [
+        if (hasQuery) ...[
+          _resultsSection(),
+          const SizedBox(height: 24),
+        ],
+        // Fresh install / no searches yet → omit the section entirely
+        // rather than show stale hardcoded tickers.
+        if (_recents.isNotEmpty) ...[
+          const Padding(padding: _gut, child: KEyebrow('Recent')),
+          const SizedBox(height: 10),
+          Padding(
+            padding: _gut,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final r in _recents)
+                  KPillChip(
+                    label: r,
+                    onTap: () {
+                      _controller.text = r;
+                      setState(() => _query = r);
+                    },
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+        Padding(
+          padding: _gut,
+          child: KNudgeCard(
+            tone: KNudgeTone.grape,
+            title: 'Not sure what to search for?',
+            body: "Try a sector — banking, telecoms, cement — and we'll show the NGX-listed companies in it.",
+          ),
+        ),
+      ],
     );
   }
 
@@ -223,7 +211,10 @@ class _SearchScreenState extends State<SearchScreen> {
       future: _assetsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const KLoadingView();
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: KLoadingView(),
+          );
         }
         if (snapshot.hasError) {
           return KErrorView(
@@ -233,7 +224,7 @@ class _SearchScreenState extends State<SearchScreen> {
         final results = _filter(snapshot.data!);
         if (results.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 60),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
             child: Column(
               children: [
                 Text('No matches', style: KType.cardTitle(w: KWeight.semibold)),
@@ -245,9 +236,10 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           );
         }
-        return ListView(
-          padding: const EdgeInsets.only(top: 8, bottom: 24),
+        return Column(
           children: [
+            const Padding(padding: _gut, child: KEyebrow('Results')),
+            const SizedBox(height: 8),
             Padding(padding: _gut, child: _card(results)),
           ],
         );

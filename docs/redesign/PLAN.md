@@ -46,15 +46,51 @@ fork" rule):
 - `KKeyValueRow` — new shared label/value row (`lib/screens/shared/state_views.dart`)
 - A plain `'shield'` icon alongside the existing `'shieldCheck'` (`lib/widgets/k_icon.dart`)
 
-### 3. Screens 1-66 — reskinned, exactness-audited, believed current
-Flows A-F (onboarding through account/security/support) were reskinned in
-the original pass and have had multiple follow-up exactness passes (see git
-log for `screen-specs.md` era commits + the 2026-08-23 bank-accounts/
-withdraw-mandate fixes in commit `d68d3ab`). **Not re-verified screen-by-screen
-in this pass** — the audit docx has previously found real gaps in a
-"done" pass before, so treat this as believed-current, not guaranteed.
-Next real audit pass should re-walk 1-66 against the committed canvas file
-the same way this pass built 76-97, screen by screen with a screenshot.
+### 3. Screens 1-59 — re-audited line-by-line against the canvas — DONE
+Full re-audit pass (2026-08-23, second session), triggered by the "almost
+all is not proper" review: prior "believed current" status did NOT hold up.
+Every one of the 59 screens had real deviations, several structural, found
+by 7 parallel file-disjoint agents each reading the canvas HTML and the
+Dart code line-by-line rather than trusting prior in-file claims (multiple
+"this matches the canvas" comments from earlier passes turned out to be
+wrong when actually re-checked against `s*.html`, not just against other
+screens' footer notes).
+
+Highlights (not exhaustive — see git log for the full per-cluster commit
+detail):
+- **Two real functional bugs**, not just cosmetic drift: `KSegmentedControl`
+  had inverted `Expanded`/`Padding` nesting that crashed the Orders screen
+  outright ("Incorrect use of ParentDataWidget"); `KGeneratingText`'s
+  "thinking" shimmer bars were the same color as their container,
+  mathematically invisible regardless of animation state.
+- **Account hub (#45) menu was wrong**: Plans & credits, Corporate actions,
+  and Tax documents rows had been dropped by a prior pass reasoning from
+  *other screens'* footer notes instead of #45's own markup, which lists
+  all three. Restored — this also resolves where Corporate Actions'
+  missing entry point should live (see below).
+- **Log out was on the wrong screen** (Account hub instead of Security) —
+  moved to match the canvas.
+- **Portfolio/Holding detail were showing the wrong data shape**: asset
+  daily price data instead of position data (units/avg cost/market value/
+  return%); Holding detail had a whole purple balance panel not in the
+  canvas at all.
+- **KYC is structurally a 5-step flow vs. the canvas's real 8-step/
+  10-screen flow** — CHN, Bank & DCS collection, PEP declarations, and a
+  Review & submit step are entirely uncollected anywhere, a deliberate
+  backend "phased KYC" limitation, not sloppiness. Flagged as the single
+  biggest structural deviation; needs backend + router work, out of a
+  screen-level audit's scope. See `BACKEND_GAPS.md`.
+- Personal info had editable legal-name fields the canvas doesn't allow
+  (should be support-only); Security's toggles weren't using the shared
+  `Switch`-row component; Home was missing its search button entirely;
+  Search had a fabricated "Trending" section; Article & Glossary (#57)
+  didn't exist at all (was a generic FAQ list) — built for real.
+
+Every fix verified: `flutter analyze` clean project-wide, full `flutter
+test` clean, all screenshot harnesses (`shots.dart`, `shots_onboarding.dart`,
+`shots_kyc.dart`, `shots_flowd.dart`, `shots_flowf.dart`,
+`shots_welcome_slides.dart`, `shots_expansion.dart`) run with zero layout
+errors after all 7 clusters' changes composed together.
 
 ### 4. Screens 60-66 (Flow G — market hours, mandate, receipts) — DONE
 - #60 Markets closed: inline banner state on the Markets tab, not a route
@@ -99,14 +135,11 @@ honestly in-code (see `BACKEND_GAPS.md`) rather than faked.
 | 97 | Account closure terms | `lib/screens/account/legal_reference_screens.dart` | Account → Legal, Close account |
 
 ### Open design decisions (not code gaps — need a product/design call)
-- **#81 Corporate actions entry point**: the canvas's own footer note says
-  "Entry from 38, 39 or a notification," but neither #38 (Portfolio) nor #39
-  (Holding detail) actually draws an entry affordance in their own markup —
-  and #38 has its own comment insisting on no extra elements beyond exactly
-  what the canvas draws, from a prior exactness audit. Didn't invent a
-  banner rather than risk a second mismatch. Needs a real design call on
-  where/how this surfaces (permanent row? conditional banner only when a
-  decision is pending? notification-only?).
+- ~~**#81 Corporate actions entry point**~~ — **RESOLVED** in the re-audit
+  pass: it's a direct row on the Account hub (#45), confirmed against
+  #45's own markup rather than other screens' footer notes. #38/#39
+  genuinely have no entry affordance of their own, as originally found —
+  the entry point was just on a different screen than assumed.
 - **#80 Order fill progress**: fully built (`order_fill_progress_screen.dart`)
   but takes required real params (fills list, remaining units, callbacks) —
   nothing constructs it yet because there's no partial-fill data anywhere

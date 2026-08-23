@@ -38,6 +38,8 @@ class KEmptyView extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.illustrationName,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
   });
 
   /// Convenience builders mirroring the design's EmptyHoldings / EmptyTransactions
@@ -47,21 +49,27 @@ class KEmptyView extends StatelessWidget {
         title = 'No holdings yet',
         message = 'Your investments will show here. Buy from ₦1,000.',
         actionLabel = 'Browse markets',
-        illustrationName = 'empty-portfolio';
+        illustrationName = 'empty-portfolio',
+        secondaryActionLabel = null,
+        onSecondaryAction = null;
 
   const KEmptyView.transactions({super.key, this.onAction})
       : icon = 'transfer',
         title = 'No transactions yet',
         message = 'Money you add, invest or withdraw will appear here.',
         actionLabel = 'Add money',
-        illustrationName = 'empty-wallet';
+        illustrationName = 'empty-wallet',
+        secondaryActionLabel = null,
+        onSecondaryAction = null;
 
   const KEmptyView.watchlist({super.key, this.onAction})
       : icon = 'eye', // design used a bookmark glyph (not in the fixed KIcon set)
         title = 'Nothing saved yet',
         message = 'Save a stock to follow its price here.',
         actionLabel = 'Browse markets',
-        illustrationName = 'empty-watchlist';
+        illustrationName = 'empty-watchlist',
+        secondaryActionLabel = null,
+        onSecondaryAction = null;
 
   final String icon;
   final String title;
@@ -69,6 +77,14 @@ class KEmptyView extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final String? illustrationName;
+
+  /// Second, ghost-variant action below the primary one — e.g. screen 58's
+  /// Portfolio empty state ("Browse the NGX" primary + "Add money first"
+  /// ghost). Nullable/additive so every existing single-action call site is
+  /// unaffected; only rendered when [actionLabel] is also present, matching
+  /// the canvas's own primary-then-secondary button order.
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +121,17 @@ class KEmptyView extends StatelessWidget {
               width: double.infinity,
               child: KButton(label: actionLabel!, onPressed: onAction),
             ),
+            if (secondaryActionLabel != null) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: KButton(
+                  label: secondaryActionLabel!,
+                  variant: KButtonVariant.ghost,
+                  onPressed: onSecondaryAction,
+                ),
+              ),
+            ],
           ],
         ],
       ),
@@ -124,6 +151,7 @@ class KErrorView extends StatelessWidget {
     this.onPrimary,
     this.secondary,
     this.onSecondary,
+    this.secondaryVariant = KButtonVariant.secondary,
   });
 
   /// Generic portfolio/data load failure (design: ErrFailedLoad).
@@ -132,7 +160,8 @@ class KErrorView extends StatelessWidget {
         message = 'Something went wrong on our end. Your money is safe.',
         primary = 'Retry',
         secondary = null,
-        onSecondary = null;
+        onSecondary = null,
+        secondaryVariant = KButtonVariant.secondary;
 
   /// Order failure (design: ErrOrderFailed). [message] lets a caller surface
   /// the REAL backend reason (e.g. "Your wallet balance is not sufficient
@@ -145,7 +174,8 @@ class KErrorView extends StatelessWidget {
       : title = 'Order failed',
         message = message ?? "Your order didn't go through. No money has left your wallet.",
         primary = 'Try again',
-        secondary = 'Back';
+        secondary = 'Back',
+        secondaryVariant = KButtonVariant.secondary;
 
   final String title;
   final String message;
@@ -153,6 +183,12 @@ class KErrorView extends StatelessWidget {
   final VoidCallback? onPrimary;
   final String? secondary;
   final VoidCallback? onSecondary;
+
+  /// See [KStatusView.secondaryVariant] — defaults to the boxed `secondary`
+  /// look every existing call site already expects; pass `ghost` to match
+  /// a canvas screen (e.g. 59 "Offline & error") whose second button is
+  /// ghost-variant.
+  final KButtonVariant secondaryVariant;
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +201,7 @@ class KErrorView extends StatelessWidget {
         onPrimary: onPrimary,
         secondary: secondary,
         onSecondary: onSecondary,
+        secondaryVariant: secondaryVariant,
       ),
     );
   }

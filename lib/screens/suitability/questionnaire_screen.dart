@@ -26,7 +26,14 @@ class QuestionnaireScreen extends StatefulWidget {
 }
 
 class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
-  // 5 questions → "QUESTION n OF 5" in the design's StepProgress.
+  // 7 questions → the canvas mockup's #s27 block is explicitly labelled
+  // "Question 3 of 7" with a 7-segment progress bar (3 filled, 4 track) —
+  // this screen previously hardcoded only 5, so "of 5" never matched the
+  // design at all. Question index 2 (the 3rd question) is the ONE the
+  // canvas gives verbatim — exact prompt, exact 3 options (not 4), exact
+  // default selection (see _answers below) — every other question's copy
+  // has no canvas ground truth (the canvas only shows this one frame of
+  // the flow), so it's kept close to this screen's pre-existing content.
   static const List<_Question> _questions = [
     _Question('What are you investing for?', [
       'Growth over many years',
@@ -34,17 +41,18 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       'Income now',
       "I'm just exploring",
     ]),
-    _Question('How would you react to a 20% drop?', [
-      'Buy more while it’s cheaper',
-      'Hold and wait it out',
-      'Sell some to limit losses',
-      'Sell everything',
-    ]),
     _Question('How long until you need this money?', [
       'More than 10 years',
       '5 to 10 years',
       '2 to 5 years',
       'Within 2 years',
+    ]),
+    // Verbatim from the canvas (#s27) — prompt, option copy and count (3,
+    // not 4) are all exact.
+    _Question('Your shares drop 20% in a month. What do you do?', [
+      "Sell everything — I can't watch that",
+      'Hold and wait it out',
+      'Buy more at the lower price',
     ]),
     _Question('How much investing experience do you have?', [
       'I invest regularly',
@@ -58,11 +66,25 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       'Protecting what I have',
       'Steady income',
     ]),
+    _Question('How would you describe your income?', [
+      'Steady and predictable',
+      'Variable, but manageable',
+      'Irregular right now',
+      'No income right now',
+    ]),
+    _Question('How comfortable are you with financial risk in general?', [
+      'Very comfortable',
+      'Somewhat comfortable',
+      'Not very comfortable',
+      'Not at all comfortable',
+    ]),
   ];
 
   int _index = 0;
-  // Selected option index per question (defaults to first, as in the design).
-  final List<int> _answers = List<int>.filled(_questions.length, 0);
+  // Selected option index per question — defaults to the first option,
+  // EXCEPT question index 2 (the 20%-drop question), which the canvas shows
+  // with its second option ("Hold and wait it out") pre-checked.
+  final List<int> _answers = [0, 0, 1, 0, 0, 0, 0];
 
   late final _repo = SuitabilityRepository(AppScope.read(context).apiClient);
   bool _submitting = false;
@@ -83,12 +105,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     }
   }
 
-  // POST /suitability-result with all 5 collected answers, then navigate to
+  // POST /suitability-result with all 7 collected answers, then navigate to
   // the result screen (which re-fetches the real computed profile via
   // GET /suitability-result/me — see suitability_repository.dart). Question
   // ids: this screen's questions are a hardcoded local list with no
   // backend-defined id, so the list index is used, stringified as
-  // "q0".."q4" — the backend's scoring only requires a non-empty string id
+  // "q0".."q6" — the backend's scoring only requires a non-empty string id
   // (see submit-suitability-answers.dto.ts), it does not interpret it.
   Future<void> _submit() async {
     setState(() => _submitting = true);
@@ -167,11 +189,20 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             // Body: question card + nav buttons.
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                // Canvas: title/options/ExplainTrigger column padding
+                // "24px 20px 0" (top 24 already applied above via the
+                // SizedBox(height: 24)); footer row padding "20px 20px
+                // 30px" — so this Padding's bottom is 30, matching the
+                // footer's own bottom inset, not the content column's
+                // (which has none).
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
                 child: Column(
                   children: [
                     Text(q.prompt, style: KType.title()),
-                    const SizedBox(height: 16),
+                    // Canvas: the title/options-list/ExplainTrigger column
+                    // uses a uniform gap:18px between all three children —
+                    // was 16 then 14, matching neither.
+                    const SizedBox(height: 18),
                     for (int i = 0; i < q.options.length; i++) ...[
                       if (i != 0) const SizedBox(height: 10),
                       _OptionRow(
@@ -180,7 +211,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                         onTap: () => setState(() => _answers[_index] = i),
                       ),
                     ],
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 18),
                     KExplainTrigger(
                       label: 'What is this question for?',
                       variant: KExplainTriggerVariant.inline,
@@ -223,7 +254,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                             onPressed: _submitting ? null : _back,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        // Canvas footer row: gap:12px between the two buttons.
+                        const SizedBox(width: 12),
                         Expanded(
                           child: KButton(
                             label: 'Next question',
@@ -248,6 +280,14 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 /// screen 27): the selected option is a full indicator-tinted card with an
 /// indicator border, not just tinted text — the same "selected choice card"
 /// treatment used throughout KYC's radio groups (screens 15, 20).
+///
+/// Per the canvas (#s27): a leading `Radio` component (22×22, gap 12) draws
+/// the checked/unchecked state — NOT a trailing checkmark icon appended
+/// after the label, which is what this used to render (with no radio glyph
+/// at all). The label's colour/weight also never changes on selection in
+/// the canvas — it's always plain `--ink` body text; only the card's own
+/// background/border communicate selection. Mirrors trade_flows.dart's
+/// `_RadioOptionCard`, which draws the same shape for a different flow.
 class _OptionRow extends StatelessWidget {
   const _OptionRow({required this.label, required this.selected, required this.onTap});
   final String label;
@@ -271,20 +311,13 @@ class _OptionRow extends StatelessWidget {
           ),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            KRadio(checked: selected, onChanged: (_) => onTap()),
+            const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                label,
-                style: KType.body(
-                  color: selected ? KColor.indicatorPress : KColor.ink,
-                  w: selected ? KWeight.medium : KWeight.regular,
-                ),
-              ),
+              child: Text(label, style: KType.body(color: KColor.ink)),
             ),
-            if (selected) ...[
-              const SizedBox(width: 12),
-              KIcon('check', size: 20, color: KColor.indicator),
-            ],
           ],
         ),
       ),

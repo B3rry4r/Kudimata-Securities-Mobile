@@ -24,18 +24,52 @@ class NextOfKinScreen extends StatefulWidget {
   State<NextOfKinScreen> createState() => _NextOfKinScreenState();
 }
 
+// Canvas screen 21's "Relationship" field is a Select (design system has no
+// Flutter Select widget — see id_upload.dart's own _pickType comment); this
+// mirrors that same screen's already-established compact-field + KSheet
+// picker convention rather than leaving it a free-text KInput.
+const List<String> _relationships = [
+  'Spouse',
+  'Parent',
+  'Sibling',
+  'Child',
+  'Guardian',
+  'Other relative',
+  'Other',
+];
+
 class _NextOfKinScreenState extends State<NextOfKinScreen> {
   final _name = TextEditingController();
-  final _rel = TextEditingController();
   final _phone = TextEditingController();
   bool _busy = false;
+  String? _relationship;
 
   @override
   void dispose() {
     _name.dispose();
-    _rel.dispose();
     _phone.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickRelationship() async {
+    final picked = await showKSheet<String>(
+      context,
+      title: 'Relationship',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < _relationships.length; i++)
+            _RelationRow(
+              label: _relationships[i],
+              selected: _relationship == _relationships[i],
+              first: i == 0,
+              onTap: () => Navigator.of(context).pop(_relationships[i]),
+            ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    setState(() => _relationship = picked);
   }
 
   Future<void> _submit() async {
@@ -45,7 +79,7 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
     try {
       await repo.finalizeDraft(
         nextOfKinName: _name.text,
-        nextOfKinRelationship: _rel.text,
+        nextOfKinRelationship: _relationship ?? '',
         nextOfKinPhone: _phone.text,
       );
       if (!mounted) return;
@@ -97,18 +131,18 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
                         children: [
                           KInput(
                               label: 'Full name',
-                              placeholder: 'Amara Okafor',
+                              placeholder: 'Ngozi Okonkwo',
                               controller: _name),
                           const SizedBox(height: 16),
-                          KInput(
-                              label: 'Relationship',
-                              placeholder: 'Sister',
-                              controller: _rel),
+                          _RelationshipField(
+                            value: _relationship,
+                            onTap: _pickRelationship,
+                          ),
                           const SizedBox(height: 16),
                           KInput(
                               label: 'Phone number',
                               prefix: '+234',
-                              placeholder: '801 234 5678',
+                              placeholder: '802 987 6543',
                               keyboardType: TextInputType.phone,
                               controller: _phone),
                         ],
@@ -157,4 +191,90 @@ void _showErrorSheet(BuildContext context, {required String message}) {
       ),
     ),
   );
+}
+
+/// "Relationship" field's closed/collapsed state — same visual chrome as
+/// [KInput] (tracked uppercase label, 50px hairline box) so it sits
+/// consistently among the KInput fields around it in the same KCard, but
+/// opens [_RelationRow]'s picker sheet instead of a keyboard.
+class _RelationshipField extends StatelessWidget {
+  const _RelationshipField({required this.value, required this.onTap});
+  final String? value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('RELATIONSHIP', style: KType.label(color: KColor.ink2)),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: KColor.paper,
+              borderRadius: BorderRadius.circular(KRadii.input),
+              border: Border.all(color: KColor.hairline, width: 1),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value ?? 'Select',
+                    style: KType.body(
+                        color: value == null ? KColor.ink3 : KColor.ink,
+                        w: KWeight.medium),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                KIcon('chevronRight', size: 20, color: KColor.ink3),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One row in the relationship picker sheet — same shape as
+/// id_upload.dart's own `_IdTypeRow` (that screen's precedent for this
+/// compact-field + KSheet picker pattern), duplicated rather than shared
+/// per this codebase's per-screen small-widget convention.
+class _RelationRow extends StatelessWidget {
+  const _RelationRow({
+    required this.label,
+    required this.selected,
+    required this.first,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final bool first;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+        decoration: BoxDecoration(
+          border: first ? null : Border(top: BorderSide(color: KColor.hairline, width: 1)),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(label, style: KType.cardTitle())),
+            if (selected) const KIcon('check', size: 18),
+          ],
+        ),
+      ),
+    );
+  }
 }

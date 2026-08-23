@@ -24,18 +24,27 @@ class PlansScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Canvas s53: this line is var(--ink-2), not ink-3 (2026-08-23
+          // exactness pass — was ink3, one shade too light).
           Text(
             'Every plan states how many written answers you get. There is no unlimited tier.',
-            style: KType.body(color: KColor.ink3),
+            style: KType.body(color: KColor.ink2),
           ),
           // Mockup: gap:12px uniformly between every child in this column
           // (was 20/16/20 — inconsistent with the source; 2026-08-23 pass).
           const SizedBox(height: 12),
+          // Feature bullets: canvas s53 passes these as template variables
+          // (`{{ plusFeatures }}` / `{{ proFeatures }}`), resolved in the
+          // design source's own data block (kudimata-invest-app.dc.html) —
+          // matched verbatim here rather than the previous placeholder
+          // copy ("60 explanations a month" etc., which duplicated the
+          // `credits` figure already shown elsewhere on the card;
+          // 2026-08-23 exactness pass).
           KPlanCard(
             name: 'Plus',
             price: '₦500',
             credits: '60',
-            features: const ['60 explanations a month', 'Prices, fees and the glossary stay free'],
+            features: const ['Weekly portfolio digest', 'Pidgin and English'],
             action: KButton(
               label: 'Choose Plus',
               onPressed: () => _previewOnly(context, 'Plus'),
@@ -47,7 +56,7 @@ class PlansScreen extends StatelessWidget {
             price: '₦2,000',
             credits: '250',
             featured: true,
-            features: const ['250 explanations a month', 'Priority document summaries'],
+            features: const ['Summaries for every NGX filing', 'Priority support'],
             action: KButton(
               label: 'Choose Pro',
               variant: KButtonVariant.warm,

@@ -289,7 +289,19 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path.startsWith('/holdings/')) return _holding(path.split('/').last);
     if (path.startsWith('/assets/')) return _assetByTicker(path.split('/').last);
     if (path == '/suitability-result/me') {
-      return {'riskProfile': 'Balanced', 'completedAt': '2025-11-02T00:00:00.000Z'};
+      // Field names match registry.json's Suitability-result resource
+      // (id, userId, profile, rationale, answers, computedAt) — see
+      // suitability_repository.dart's fromJson. Was 'riskProfile', a key
+      // the repository never reads, so SuitabilityResult.profile silently
+      // parsed to '' and the result screen rendered with no profile title
+      // at all (found while shot-testing this audit's suitability_result
+      // screen).
+      return {
+        'profile': 'Balanced',
+        'rationale': "You'll take some ups and downs for better long-term "
+            "returns, but not wild swings.",
+        'completedAt': '2025-11-02T00:00:00.000Z',
+      };
     }
     if (path == '/kyc-submissions/me') {
       return {'status': 'approved', 'submittedAt': '2025-11-01T00:00:00.000Z'};

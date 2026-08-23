@@ -25,6 +25,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/api/passcode_store.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/onboarding/onboarding_scaffold.dart';
@@ -63,6 +64,27 @@ class _SecurityScreenState extends State<SecurityScreen> {
     context.push(Routes.createPasscode, extra: true);
   }
 
+  /// Sign-out (moved here from account_screen.dart, 2026-08-23 exactness
+  /// pass — the canvas's #s45 Account hub has no sign-out affordance at
+  /// all; it's #s50 Security that carries the "Log out" ghost button, right
+  /// below "Freeze my account").
+  Future<void> _signOut(BuildContext context) async {
+    final app = AppScope.read(context);
+    try {
+      await app.apiClient.post('/auth/logout');
+    } on ApiException {
+      // A network hiccup shouldn't trap the user signed in locally — fall
+      // through to local teardown regardless of whether the API call
+      // succeeded.
+    }
+    // signOut(), not forceSignOut() — a plain voluntary sign-out preserves
+    // this device's passcode (BUG-03) instead of wiping it; see
+    // AppState.signOut()'s doc comment.
+    await app.signOut();
+    if (!context.mounted) return;
+    context.go(Routes.login);
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
@@ -71,10 +93,15 @@ class _SecurityScreenState extends State<SecurityScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Plain text+chevron / bare-Switch rows — the canvas's #s50 rows
+          // have no leading icon bubble, and Face ID / Passcode-for-
+          // withdrawals are each a single `Switch` x-import (label+
+          // description+toggle in one component), not a Row wrapping a
+          // Switch (2026-08-23 exactness pass; mirrors
+          // notifications_settings_screen.dart's already-correct pattern).
           KAccountCard(
             children: [
               KAccountRow(
-                icon: 'card',
                 title: 'Change passcode',
                 // PasscodeStore (lib/data/api/passcode_store.dart) doesn't
                 // track a last-set timestamp, so this stays a plain, honest
@@ -85,52 +112,55 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 first: true,
                 onTap: _changePasscode,
               ),
-              if (!kIsWeb)
-                KAccountRow(
-                  icon: 'fingerprint',
-                  // screen-specs.md spec 50 literally says "Face ID" — kept
-                  // as the cross-platform "Biometric unlock" instead
-                  // (2026-08-23 exactness pass: deliberate deviation, not an
-                  // oversight). "Face ID" is an Apple-specific term; this
-                  // toggle also drives Android fingerprint/face unlock, so
-                  // the mockup's iOS-only copy would be wrong on Android.
-                  title: 'Biometric unlock',
-                  sub: 'Unlock with your face or fingerprint',
-                  crossAlign: CrossAxisAlignment.start,
-                  right: KSwitch(
-                    checked: app.biometricEnabled,
-                    // SEAM: real biometric enrolment plugs in here.
-                    onChanged: (v) => app.setBiometric(v),
-                  ),
+              if (!kIsWeb) ...[
+                const Divider(height: 1),
+                // screen-specs.md spec 50 literally says "Face ID" — kept
+                // as the cross-platform "Biometric unlock" instead
+                // (2026-08-23 exactness pass: deliberate deviation, not an
+                // oversight). "Face ID" is an Apple-specific term; this
+                // toggle also drives Android fingerprint/face unlock, so
+                // the mockup's iOS-only copy would be wrong on Android.
+                KSwitch(
+                  label: 'Biometric unlock',
+                  description: 'Unlock with your face or fingerprint',
+                  checked: app.biometricEnabled,
+                  // SEAM: real biometric enrolment plugs in here.
+                  onChanged: (v) => app.setBiometric(v),
                 ),
+              ],
+              const Divider(height: 1),
               // Real, existing behaviour, not a new toggle — the withdraw
               // sheet already always asks for passcode confirmation before
               // money leaves (see wallet_flows.dart's withdraw footnote:
               // "Your passcode confirms this withdrawal."). Shown here as
               // disabled/always-on per spec 50, matching what the app
               // actually does rather than adding an unwired setting.
-              KAccountRow(
-                icon: 'card',
-                title: 'Passcode for withdrawals',
-                sub: 'Always ask before money leaves',
-                crossAlign: CrossAxisAlignment.start,
-                right: const KSwitch(checked: true, disabled: true),
+              const KSwitch(
+                label: 'Passcode for withdrawals',
+                description: 'Always ask before money leaves',
+                checked: true,
+                disabled: true,
               ),
             ],
           ),
           const SizedBox(height: 24),
-          Text('DEVICES SIGNED IN', style: KType.label()),
+          Text('Devices signed in'.upper, style: KType.label()),
           const SizedBox(height: 12),
           // No real device/session feed exists on the backend yet (2026-08-22
           // — see docs/redesign/PLAN.md) — this device's row is genuine
-          // (we're looking at it right now); everything else here is a
-          // placeholder shape for when that feed lands.
+          // (we're looking at it right now). The canvas's example second
+          // device ("Infinix Hot 30 · Ibadan", with a "Remove" action) isn't
+          // shown: fabricating a second signed-in device this app has no way
+          // to actually see or revoke would be actively misleading on a
+          // security screen, unlike a harmless static example elsewhere
+          // (e.g. the credits meter) — left as a placeholder shape for when
+          // a real multi-device feed lands, not copied verbatim.
           KAccountCard(
             children: [
               KAccountRow(
-                icon: 'card',
                 title: 'This device',
                 sub: 'Active now',
+                subUppercase: true,
                 first: true,
                 right: const KStatusPill(status: KStatus.approved, label: 'Trusted', small: true),
               ),
@@ -143,10 +173,22 @@ class _SecurityScreenState extends State<SecurityScreen> {
             body: 'Not by call, not by WhatsApp, not by email. If someone does, it isn\'t us.',
           ),
           const SizedBox(height: 24),
-          KButton(
-            label: 'Freeze my account',
-            variant: KButtonVariant.destructive,
-            onPressed: () => context.push(Routes.acctFreeze),
+          Column(
+            children: [
+              KButton(
+                label: 'Freeze my account',
+                variant: KButtonVariant.destructive,
+                fullWidth: true,
+                onPressed: () => context.push(Routes.acctFreeze),
+              ),
+              const SizedBox(height: 10),
+              KButton(
+                label: 'Log out',
+                variant: KButtonVariant.ghost,
+                fullWidth: true,
+                onPressed: () => _signOut(context),
+              ),
+            ],
           ),
         ],
       ),

@@ -34,14 +34,18 @@ class IdUploadScreen extends StatefulWidget {
 }
 
 class _IdUploadScreenState extends State<IdUploadScreen> {
+  // Order and labels match the canvas mockup's ID-type chips exactly
+  // (screen 16: Driver's licence, Passport, Voter's card, NIN slip) — only
+  // the on-screen affordance changed (a picker sheet, not a chip row; see
+  // _pickType's doc comment), not the set/order/wording of choices.
   static const _types = [
-    _IdType('nin', 'NIN'),
-    _IdType('passport', 'International passport'),
     _IdType('licence', "Driver's licence"),
+    _IdType('passport', 'Passport'),
     _IdType('voters_card', "Voter's card"),
+    _IdType('nin', 'NIN slip'),
   ];
 
-  String _type = 'nin';
+  String _type = 'licence';
 
   /// Opens the ID-type list in its own sheet instead of a row of pill chips
   /// (2026-08-20 fix — reported: "the UI doesn't properly show users that
@@ -249,8 +253,8 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
   }
 
   String _documentName(String kind) => switch (kind) {
-        'nin' => 'NIN',
-        'passport' => 'International passport',
+        'nin' => 'NIN slip',
+        'passport' => 'Passport',
         'drivers_licence' => "Driver's licence",
         'voters_card' => "Voter's card",
         _ => kind,

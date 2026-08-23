@@ -1,9 +1,11 @@
-// Stage 9 — Statements & documents (pushed). Monthly statements + contract
-// notes, each a file row with a download control. Mirrors `Statements` in
-// settings-screens.jsx.
+// Stage 9 — Statements & documents (pushed). A three-way tab (Statements /
+// Contract notes / Tax) over a single flat document list, each row a plain
+// title+caption with a decorative download glyph — the whole row opens the
+// document. Mirrors `Statements` in settings-screens.jsx / design canvas
+// screen 52.
 //
 // Wired per lib/data/api/README.md's FutureBuilder convention: the two
-// sections are independent Statement.kind slices of the same resource
+// list sections are independent Statement.kind slices of the same resource
 // (GET /statements?kind=monthly and GET /statements?kind=contract_note),
 // fetched together with Future.wait behind ONE `_future` field/FutureBuilder
 // — a single loading/error state for the whole pushed screen, same as every
@@ -11,34 +13,42 @@
 // dependency that would justify two independent FutureBuilders.
 //
 // DOWNLOAD (2026-08-20 — "what are the statements and documents section
-// for??"): each row's download button used to fetch a presigned URL (GET
-// /statements/:id/download-url) and launch it externally. The backend's
-// own statements.service.ts header comment documents that no real PDF is
-// ever generated in this phase — every row's fileObjectKey points at an
-// S3 object that was never uploaded, so that URL always 404s (S3
-// NoSuchKey) the moment it's opened, the same gap Account -> Legal hit
-// before it stopped using S3 links entirely. Statements are real binary
-// PDFs, not text content this app already has server-side (unlike a legal
-// document's sections), so there's no in-app-viewer workaround available
-// here — the button now tells the investor honestly that downloads
-// aren't ready yet, instead of silently launching a link that just shows
-// a raw S3 error in their browser.
+// for??"): each row used to carry its own tappable download button that
+// fetched a presigned URL (GET /statements/:id/download-url) and launched it
+// externally. The backend's own statements.service.ts header comment
+// documents that no real PDF is ever generated in this phase — every row's
+// fileObjectKey points at an S3 object that was never uploaded, so that URL
+// always 404s (S3 NoSuchKey) the moment it's opened. The canvas's own footer
+// note is explicit either way: "any row opens the document (76 statement,
+// 66 contract note)" — the whole row is ONE tap target to the document view,
+// with the download glyph purely decorative inside it, not a second,
+// separate download action. Removed the standalone per-row download control
+// to match (2026-08-23 exactness pass); the honest "not ready yet" download
+// affordance belongs inside the per-document detail screens (76, 66), not
+// duplicated here.
+//
 // PER-BROKER STATEMENT DETAIL (2026-08-23, design-canvas growth pass, screen
 // 76): monthly-statement rows push StatementDetailScreen via the named
 // Routes.acctStatementDetail route (wired centrally once all screen-cluster
 // agents finished their file-disjoint passes), the same way a contract-note
 // row already pushes ContractNoteScreen via Routes.contractNote.
 //
-// TAX DOCUMENTS ENTRY POINT (same pass, screen 85): the design canvas's
-// screen 52 footer describes reaching Tax documents from a "tax" tab on
-// this screen (alongside statements/contract notes) or from the Dividends
-// screen (84, owned by another agent's cluster this pass). Rebuilding this
-// screen's two stacked sections into a three-way tab/segmented-control
-// layout is a bigger structural change than this pass's two-screen scope
-// (76, 85) covers, so instead this adds one more small section — same
-// eyebrow + card-row shape as the sections above — as an honest, working
-// entry point today; it can be folded into a real tab control later without
-// changing TaxDocumentsScreen itself.
+// TAX DOCUMENTS ENTRY POINT (screen 85) / SEGMENTED TABS (2026-08-23,
+// screens 52-59 re-audit): the canvas's screen 52 top has a real
+// SegmentedControl with three tabs (Statements / Contract notes / Tax) over
+// ONE flat card, not two stacked eyebrow'd sections plus a separate "Tax
+// documents" row — a prior pass deferred the tab rebuild as "a bigger
+// structural change" and shipped the stacked-sections/extra-row version
+// instead. Rebuilt here as a real KSegmentedControl: Statements and Contract
+// notes swap the single list in place (both already fetched); Tax has no
+// data of its own on this screen; selecting it just navigates straight to
+// TaxDocumentsScreen (screen 85), same destination the old row pointed at.
+// No broker filter chip ("All brokers" / "Blue Marina" PillChips in the
+// canvas): this backend has no broker dimension anywhere (confirmed by
+// statement_detail_screen.dart and holding_detail_screen.dart, both already
+// audited this pass) — this app is single-broker today, so a broker filter
+// with nothing to filter would be decorative-only; omitted per the same
+// convention those two sibling screens already established.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,30 +71,19 @@ class _StatementsScreenState extends State<StatementsScreen> {
   late final _repo = StatementsRepository(AppScope.read(context).apiClient);
   late Future<(List<Statement> statements, List<Statement> notes)> _future = _load();
 
+  // Canvas SegmentedControl value — 'statements' selected by default
+  // (matches `value="Statements"` on screen 52). 'tax' is a pass-through:
+  // selecting it just navigates to TaxDocumentsScreen and the control keeps
+  // showing whichever real tab was selected before, since Tax has no list
+  // of its own to display inline here.
+  String _tab = 'statements';
+
   Future<(List<Statement>, List<Statement>)> _load() async {
     final results = await Future.wait([
       _repo.list(StatementKind.monthly),
       _repo.list(StatementKind.contractNote),
     ]);
     return (results[0], results[1]);
-  }
-
-  Future<void> _download(Statement statement) async {
-    // Backend note (statements.service.ts's own header comment): no real
-    // PDF is ever rendered in this phase — every statement/contract-note
-    // row's fileObjectKey points at an S3 object that was never actually
-    // uploaded, so the presigned URL this fetches 404s (S3 NoSuchKey) the
-    // moment it's opened, same underlying gap the Account -> Legal screen
-    // hit before it stopped using S3 links entirely. Statements are real
-    // binary PDFs (not text content this app already has, like a legal
-    // document's sections), so there's no equivalent in-app-viewer
-    // workaround available here — this now tells the investor honestly
-    // that it isn't ready, instead of silently launching a link that was
-    // just going to show a raw S3 XML error in their browser.
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Downloads are not available yet — check back soon.')),
-    );
   }
 
   @override
@@ -118,7 +117,8 @@ class _StatementsScreenState extends State<StatementsScreen> {
           return _StatementsBody(
             statements: statements,
             notes: notes,
-            onDownload: _download,
+            tab: _tab,
+            onTabChanged: (v) => setState(() => _tab = v),
             onOpenStatement: (statement) =>
                 context.push(Routes.acctStatementDetail, extra: statement),
             onOpenNote: (statement) => context.push(Routes.contractNote, extra: statement),
@@ -134,7 +134,8 @@ class _StatementsBody extends StatelessWidget {
   const _StatementsBody({
     required this.statements,
     required this.notes,
-    required this.onDownload,
+    required this.tab,
+    required this.onTabChanged,
     required this.onOpenStatement,
     required this.onOpenNote,
     required this.onOpenTax,
@@ -142,55 +143,44 @@ class _StatementsBody extends StatelessWidget {
 
   final List<Statement> statements;
   final List<Statement> notes;
-  final void Function(Statement statement) onDownload;
+  final String tab;
+  final ValueChanged<String> onTabChanged;
   final void Function(Statement statement) onOpenStatement;
   final void Function(Statement statement) onOpenNote;
   final VoidCallback onOpenTax;
 
   @override
   Widget build(BuildContext context) {
+    final showingNotes = tab == 'notes';
+    final items = showingNotes ? notes : statements;
+    final onOpen = showingNotes ? onOpenNote : onOpenStatement;
+    final emptyLabel = showingNotes ? 'No contract notes yet.' : 'No statements yet.';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const KEyebrow('Monthly statements'),
-        const SizedBox(height: 10),
-        // Rows here open the per-broker statement detail (screen 76) on tap
-        // — mirrors the contract-notes row -> screen 66 wiring just below.
-        _Section(
-          items: statements,
-          emptyLabel: 'No statements yet.',
-          onDownload: onDownload,
-          onOpen: onOpenStatement,
-        ),
-        const SizedBox(height: 24),
-        const KEyebrow('Contract notes'),
-        const SizedBox(height: 10),
-        // Rows here open the contract-note document view (screen 66) on tap
-        // — screen-specs.md spec 52's nav note ("rows -> 66") — the download
-        // icon-button stays a separate, smaller tap target for the direct
-        // download action.
-        _Section(
-          items: notes,
-          emptyLabel: 'No contract notes yet.',
-          onDownload: onDownload,
-          onOpen: onOpenNote,
-        ),
-        const SizedBox(height: 24),
-        const KEyebrow('Tax'),
-        const SizedBox(height: 10),
-        KAccountCard(
-          children: [
-            KAccountRow(
-              icon: 'card',
-              title: 'Tax documents',
-              sub: 'Dividends & withholding tax',
-              right: const KRowChevron(),
-              first: true,
-              onTap: onOpenTax,
-            ),
+        // Canvas: one SegmentedControl over the whole document list —
+        // Statements / Contract notes / Tax (footer: "tabs: statements,
+        // contract notes, tax"). Tax has nothing to show inline on this
+        // screen, so picking it just navigates straight to Tax documents
+        // (screen 85) instead of swapping the list.
+        KSegmentedControl(
+          value: tab,
+          onChanged: (v) {
+            if (v == 'tax') {
+              onOpenTax();
+              return;
+            }
+            onTabChanged(v);
+          },
+          options: const [
+            KSegmentOption(value: 'statements', label: 'Statements'),
+            KSegmentOption(value: 'notes', label: 'Contract notes'),
+            KSegmentOption(value: 'tax', label: 'Tax'),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+        _Section(items: items, emptyLabel: emptyLabel, onOpen: onOpen),
+        const SizedBox(height: 16),
         const KNudgeCard(
           tone: KNudgeTone.grape,
           title: 'What is a contract note?',
@@ -199,7 +189,7 @@ class _StatementsBody extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         // Mockup's "Email me a statement" action — same honest-gap pattern
-        // as the per-row download button above: no email-dispatch endpoint
+        // as the old per-row download button: no email-dispatch endpoint
         // exists yet, so this tells the investor rather than silently
         // failing (2026-08-23 exactness pass).
         KButton(
@@ -218,16 +208,10 @@ class _StatementsBody extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({
-    required this.items,
-    required this.emptyLabel,
-    required this.onDownload,
-    this.onOpen,
-  });
+  const _Section({required this.items, required this.emptyLabel, this.onOpen});
 
   final List<Statement> items;
   final String emptyLabel;
-  final void Function(Statement statement) onDownload;
   final void Function(Statement statement)? onOpen;
 
   @override
@@ -235,19 +219,18 @@ class _Section extends StatelessWidget {
     if (items.isEmpty) {
       return Text(emptyLabel, style: KType.body(color: KColor.ink3));
     }
+    // Canvas: a plain title+caption row per document, ending in a
+    // decorative download glyph — the whole row (glyph included) is ONE
+    // link to the document (footer: "any row opens the document"), not a
+    // separate download tap target. No leading icon on these rows.
     return KAccountCard(
       children: [
         for (var i = 0; i < items.length; i++)
           KAccountRow(
-            icon: 'card',
             title: items[i].title,
             sub: items[i].sub,
             onTap: onOpen == null ? null : () => onOpen!(items[i]),
-            right: KIconButton(
-              icon: 'arrowDown',
-              semanticLabel: 'Download',
-              onPressed: () => onDownload(items[i]),
-            ),
+            right: const KIcon('arrowDown', size: 18),
             first: i == 0,
           ),
       ],

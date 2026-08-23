@@ -182,7 +182,8 @@ class _WalletBody extends StatelessWidget {
           change: pending != null ? '$pending held for a pending order' : null,
           changeTone: KTrend.loss,
         ),
-        const SizedBox(height: 12),
+        // mockup-raw/s40.html line 9: padding-top 14, not 12.
+        const SizedBox(height: 14),
 
         // mockup-raw/s40.html: Add money / Withdraw render as actual full-
         // width Buttons (primary + secondary, icon-left) — was rendering as
@@ -238,7 +239,8 @@ class _WalletBody extends StatelessWidget {
           KEmptyView.transactions(onAction: () => showAddMoneyFlow(context))
         else
           KCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            // mockup-raw/s40.html line 18: card padding is "4px 18px".
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             child: Column(
               children: [
                 for (var i = 0; i < txns.length; i++)
@@ -268,9 +270,10 @@ class _TxnRow extends StatelessWidget {
   final Txn txn;
   final bool first;
 
-  // Map ledger type to a glyph from the fixed KIcon set.
+  // Map ledger type to a glyph from the fixed KIcon set. mockup-raw/s40.html
+  // line 19: the fund-in row uses icon "arrowDown", not "arrowDownLeft".
   String get _icon => switch (txn.type) {
-        TxnType.fund => 'arrowDownLeft',
+        TxnType.fund => 'arrowDown',
         TxnType.withdraw => 'arrowUp',
         TxnType.buy => 'markets',
         TxnType.sell => 'markets',
@@ -293,7 +296,9 @@ class _TxnRow extends StatelessWidget {
       onTap: () => context.push(Routes.transactionDetail(txn.id)),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        // mockup-raw/s40.html row: "13px 0" — 0 horizontal (the card above
+        // already carries the 18px horizontal inset).
+        padding: const EdgeInsets.symmetric(vertical: 13),
         decoration: BoxDecoration(
           border: first
               ? null
@@ -306,7 +311,8 @@ class _TxnRow extends StatelessWidget {
               height: 34,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-              child: KIcon(_icon, size: 18, color: fg),
+              // mockup-raw/s40.html: icon size 16, not 18.
+              child: KIcon(_icon, size: 16, color: fg),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -432,7 +438,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (txn == null) return _notFoundScaffold;
 
         final (statusEnum, statusLabel) = _status(txn.status);
-        final amountColor = txn.incoming ? KColor.gain : KColor.ink;
+        // mockup-raw/s43.html line 11: the hero amount is hardcoded
+        // `color:var(--ink)` — always plain ink, not gain-toned for an
+        // incoming transaction. The trend cue here is the StatusPill/sign,
+        // not the figure's colour.
+        final amountColor = KColor.ink;
 
         // Spec 43's exact rows are Reference/Requested/Fee/Settlement — Type
         // and Status are dropped here since the amount+StatusPill above
@@ -459,50 +469,50 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(KSpace.gutter, 20, KSpace.gutter, 24),
               children: [
-                // Money-in-transit illustration, warm-plated per
-                // screen-specs.md #43's colour note — distinct from the
-                // grape/sun plates used elsewhere, for neutral/in-progress
-                // money-movement states.
-                const KIllustration('wallet-fund', role: KIlloRole.small, tone: KIlloTone.warm),
-                const SizedBox(height: 20),
-                // Spec 43's body sentence ("Withdrawal to GTB ••••6789.
-                // Money usually lands the same business day.") — using the
-                // backend's own preformatted subtitle rather than
-                // reconstructing a specific delivery-time claim per type
-                // that this screen has no real way to verify for every
-                // transaction kind.
-                if (txn.subtitle.isNotEmpty) ...[
-                  Text(txn.subtitle, style: KType.body(color: KColor.ink2)),
-                  const SizedBox(height: 16),
-                ],
+                // mockup-raw/s43.html lines 9-14: illustration → hero amount
+                // → StatusPill → body sentence, all centred, OUTSIDE any
+                // card — was reordering to pill-then-amount and wrapping
+                // both inside the same card as the detail rows below.
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Money-in-transit illustration, warm-plated per
+                    // screen-specs.md #43's colour note — distinct from the
+                    // grape/sun plates used elsewhere, for neutral/
+                    // in-progress money-movement states.
+                    const KIllustration('wallet-fund', role: KIlloRole.small, tone: KIlloTone.warm),
+                    const SizedBox(height: 10),
+                    Text(txn.amount, style: KType.hero(color: amountColor).tnum),
+                    const SizedBox(height: 10),
+                    KStatusPill(status: statusEnum, label: statusLabel),
+                    if (txn.subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      // Spec 43's body sentence ("Withdrawal to GTB
+                      // ••••6789. Money usually lands the same business
+                      // day.") — using the backend's own preformatted
+                      // subtitle rather than reconstructing a specific
+                      // delivery-time claim per type that this screen has
+                      // no real way to verify for every transaction kind.
+                      Text(txn.subtitle,
+                          style: KType.body(color: KColor.ink2), textAlign: TextAlign.center),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 18),
+                // Detail-rows card — separate from the amount/pill section
+                // above per mockup-raw/s43.html lines 15-22.
                 KCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Status pill + hero amount, centred over a hairline.
-                      Container(
-                        padding: const EdgeInsets.only(bottom: 18),
-                        decoration: BoxDecoration(
-                          border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
-                        ),
-                        child: Column(
-                          children: [
-                            KStatusPill(status: statusEnum, label: statusLabel),
-                            const SizedBox(height: 16),
-                            Text(txn.amount,
-                                style: KType.hero(color: amountColor).tnum),
-                          ],
-                        ),
-                      ),
-                      // Detail rows.
                       for (var i = 0; i < rows.length; i++)
                         _DetailRow(
                             label: rows[i].$1, value: rows[i].$2, last: i == rows.length - 1),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 // GET /transactions/:id/receipt. Backend note: receipt
                 // generation is still a stub (placeholder presigned URL, no
                 // real PDF yet) — wired anyway so the plumbing is correct
@@ -511,9 +521,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 // receipt" — nothing downloads yet (see _getReceipt's own
                 // comment on this), and that label would repeat the exact
                 // false promise already found and fixed once this session.
+                // Variant/icon kept as spec's secondary + download glyph
+                // (was inverted with the button below — ghost/secondary
+                // were swapped).
                 KButton(
                   label: 'Get receipt',
-                  variant: KButtonVariant.ghost,
+                  variant: KButtonVariant.secondary,
+                  iconLeft: 'download',
                   loading: _receiptBusy,
                   onPressed: _receiptBusy ? null : _getReceipt,
                 ),
@@ -524,7 +538,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 // abstract.
                 KButton(
                   label: 'Back to wallet',
-                  variant: KButtonVariant.secondary,
+                  variant: KButtonVariant.ghost,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -545,8 +559,11 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // mockup-raw/s43.html detail rows: "12px 0" padding, text-data (14px)
+    // for both label and value, value at regular weight — was 14px padding
+    // and text-body (15px)/medium weight.
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         border: last
             ? null
@@ -555,13 +572,8 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: KType.body(color: KColor.ink2)),
-          const Spacer(),
-          Flexible(
-            child: Text(value,
-                textAlign: TextAlign.right,
-                style: KType.body(color: KColor.ink, w: KWeight.medium).tnum),
-          ),
+          Expanded(child: Text(label, style: KType.data(color: KColor.ink2))),
+          Text(value, style: KType.data(color: KColor.ink).tnum),
         ],
       ),
     );

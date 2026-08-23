@@ -73,6 +73,15 @@ class PasscodeStore {
     return storedHash != null && storedHash.isNotEmpty;
   }
 
+  /// The account email that created the currently-stored passcode (if any),
+  /// null if none is stored. Additive read-only accessor (2026-08-23
+  /// exactness audit) — lets log_in_screen.dart's local-unlock "Forgot your
+  /// password?" thread the already-known email into
+  /// reset_passcode_screen.dart, matching canvas #s12 (which is reached
+  /// with the email already known, no separate email-entry step). Does not
+  /// change any existing call site.
+  Future<String?> get owner => _storage.read(key: _ownerKey);
+
   /// Whether the currently-stored passcode (if any) was created by [owner]
   /// (an account email, compared case/whitespace-insensitively). False when
   /// no passcode is stored at all — same "nothing to check against" default

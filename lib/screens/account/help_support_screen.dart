@@ -16,6 +16,7 @@ import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
+import 'faq_screen.dart' show kSettlementArticleQuestion;
 
 // Real contact details — no backend resource exists for this screen's
 // content (see header note) so these stay static/hand-set, but they're the
@@ -35,14 +36,19 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   // Exact FAQ headlines from screen-specs.md spec 56 (2026-08-23 exactness
   // pass — the prior redesign kept this screen's older generic
   // contact-channel rows instead of the spec's specific question list).
-  // No per-question answer screen exists yet (spec 57's Article & Glossary
-  // screen was never built — see docs/redesign/PLAN.md), so every row opens
-  // the general FAQ list (Routes.acctFaq) rather than a fake deep link.
-  static const List<(String, String, String)> _rows = [
-    ('chevronRight', "Why is my order still filling?", ''),
-    ('chevronRight', 'When does money from a sale arrive?', ''),
-    ('chevronRight', 'My verification was not approved', ''),
-    ('chevronRight', 'Fees, in full', ''),
+  // See faq_screen.dart's header for how these rows reach the real screen
+  // 57 Article & Glossary content vs. the general FAQ list fallback.
+  // Canvas s56's FAQ rows carry no leading icon at all — just title text and
+  // a trailing chevron. The first tuple field used to be fed straight into
+  // KAccountRow's LEADING icon slot as the literal string 'chevronRight',
+  // which rendered a stray chevron glyph on the left of every row in
+  // addition to the real trailing KRowChevron on the right — a visual bug,
+  // not a design choice (2026-08-23 exactness pass; field dropped).
+  static const List<(String, String)> _rows = [
+    ("Why is my order still filling?", ''),
+    (kSettlementArticleQuestion, ''),
+    ('My verification was not approved', ''),
+    ('Fees, in full', ''),
   ];
 
   final _controller = TextEditingController();
@@ -54,12 +60,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     super.dispose();
   }
 
-  List<(String, String, String)> get _filtered {
+  List<(String, String)> get _filtered {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) return _rows;
     return _rows
-        .where((r) =>
-            r.$2.toLowerCase().contains(q) || r.$3.toLowerCase().contains(q))
+        .where((r) => r.$1.toLowerCase().contains(q) || r.$2.toLowerCase().contains(q))
         .toList();
   }
 
@@ -72,10 +77,14 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     }
   }
 
-  // No per-question answer screen exists (spec 57 was never built) — every
-  // FAQ row opens the general FAQ list instead of a fake per-question deep
-  // link.
-  void _onRowTap(String title) => context.push(Routes.acctFaq);
+  // Every row pushes the one FAQ route (Routes.acctFaq), passing the tapped
+  // question as `extra`. FaqScreen renders the real, canvas-specified
+  // Article & Glossary content (screen 57) when it recognises the question
+  // ("When does money from a sale arrive?"); every other question falls
+  // back to the general FAQ list there, since there's no per-question route
+  // to deep-link into and no canvas-given article content for the rest
+  // (2026-08-23 exactness pass).
+  void _onRowTap(String question) => context.push(Routes.acctFaq, extra: question);
 
   void _emailUs() => _launch(Uri(scheme: 'mailto', path: _kSupportEmail));
 
@@ -119,12 +128,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               children: [
                 for (var i = 0; i < rows.length; i++)
                   KAccountRow(
-                    icon: rows[i].$1,
-                    title: rows[i].$2,
-                    sub: rows[i].$3.isEmpty ? null : rows[i].$3,
+                    title: rows[i].$1,
+                    sub: rows[i].$2.isEmpty ? null : rows[i].$2,
                     right: const KRowChevron(),
                     first: i == 0,
-                    onTap: () => _onRowTap(rows[i].$2),
+                    onTap: () => _onRowTap(rows[i].$1),
                   ),
               ],
             ),
@@ -177,15 +185,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             ],
           ),
           const SizedBox(height: 24),
+          // Canvas s56's "Report fraud" NudgeCard has no action button — the
+          // footer note is explicit that "freeze lives on 50" (the Security
+          // screen), a separate entry point this card doesn't duplicate. A
+          // 'Freeze my account' button was previously added here with no
+          // grounding in the canvas (removed 2026-08-23 exactness pass).
           KNudgeCard(
             tone: KNudgeTone.warm,
             title: 'Report fraud',
             body: 'If you think someone else is in your account, freeze it first — then call $_kSupportPhone.',
-            action: KButton(
-              label: 'Freeze my account',
-              variant: KButtonVariant.destructive,
-              onPressed: () => context.push(Routes.acctFreeze),
-            ),
           ),
           const SizedBox(height: 24),
           KButton(

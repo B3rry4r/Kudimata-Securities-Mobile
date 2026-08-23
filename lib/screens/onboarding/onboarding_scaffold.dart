@@ -26,9 +26,16 @@ class KFingerprint extends StatelessWidget {
 /// label itself, so it was silently missing everywhere in onboarding even
 /// though the equivalent KYC chrome (_kyc_chrome.dart) already has one.
 class KOnboardTopBar extends StatelessWidget {
-  const KOnboardTopBar({super.key, this.onBack, this.stepLabel});
+  const KOnboardTopBar({super.key, this.onBack, this.stepLabel, this.showBackIcon = true});
   final VoidCallback? onBack;
   final String? stepLabel;
+
+  /// False renders just the (left-aligned) step label with no back arrow —
+  /// canvas #s09 ("Unlock faster") shows only a plain "Step 4 of 4" label,
+  /// no IconButton, unlike every other mid-flow screen (04/05/07/08/12)
+  /// which all pair a back arrow with their step label. Defaults true so
+  /// every existing call site (which all want the arrow) is unaffected.
+  final bool showBackIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -37,21 +44,29 @@ class KOnboardTopBar extends StatelessWidget {
       child: Stack(
         alignment: Alignment.centerLeft,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: GestureDetector(
-              onTap: onBack ?? () => Navigator.of(context).maybePop(),
-              behavior: HitTestBehavior.opaque,
-              child: SizedBox(
-                width: 40,
-                height: 40,
-                child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
+          if (showBackIcon)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: GestureDetector(
+                onTap: onBack ?? () => Navigator.of(context).maybePop(),
+                behavior: HitTestBehavior.opaque,
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
+                ),
               ),
             ),
-          ),
           if (stepLabel != null)
-            Center(
-              child: Text(stepLabel!.upper, style: KType.label(color: KColor.ink3)),
+            Padding(
+              // Canvas #s09's bare label sits at the row's own left inset
+              // (padding:14px 20px 0, not centered like the arrow+label
+              // screens) — only apply that inset when there's no back icon
+              // to already provide left padding.
+              padding: EdgeInsets.only(left: showBackIcon ? 0 : 20),
+              child: showBackIcon
+                  ? Center(child: Text(stepLabel!.upper, style: KType.label(color: KColor.ink3)))
+                  : Text(stepLabel!.upper, style: KType.label(color: KColor.ink3)),
             ),
         ],
       ),

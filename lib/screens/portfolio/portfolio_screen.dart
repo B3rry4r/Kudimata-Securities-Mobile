@@ -95,17 +95,16 @@ class _PortfolioBody extends StatelessWidget {
         const SizedBox(height: 14),
 
         // The single ink BalancePanel — total value + all-time return.
+        // mockup-raw/s38.html line 7: label/balance/change only, hint-size
+        // 100%,170px — the exact height a chart-less panel renders at. No
+        // KLineChart here: a price chart is spec 33's own element (see s39's
+        // footer note, "price chart lives on 33, one tap from the name");
+        // this panel was wrongly growing to ~330px with an inline chart.
         KBalancePanel(
           label: 'Total value',
           balance: summary.totalValue,
           change: summary.change,
           changeTone: summary.changeTrend == Trend.loss ? KTrend.loss : KTrend.gain,
-          chart: KLineChart(
-            data: summary.chartSeries,
-            onDark: true,
-            height: 140,
-            ranges: const ['1W', '1M', '3M', '1Y', 'ALL'],
-          ),
         ),
 
         const SizedBox(height: 14),
@@ -252,11 +251,19 @@ class _HoldingsCard extends StatelessWidget {
               ),
               child: KAssetRow(
                 name: holdings[i].asset.name,
-                ticker: holdings[i].asset.ticker,
+                // mockup-raw/s38.html line 25-26: the AssetRow's subtitle
+                // here is "{units} shares · avg {avgPrice}" and its trailing
+                // figures are the POSITION's market value + total return
+                // (holding.marketValue / holding.returnPct) — was showing
+                // the bare ticker as the subtitle and the asset's daily
+                // per-share price/change instead, which is Markets-screen
+                // data, not this holding's own position numbers.
+                ticker: '${holdings[i].units} shares · avg ${holdings[i].avgPrice}',
+                initialsSource: holdings[i].asset.ticker,
                 logoColor: holdings[i].asset.logoColor ?? KColor.ink,
-                price: holdings[i].asset.price,
-                change: holdings[i].asset.change,
-                trend: holdings[i].asset.trend == Trend.loss ? KTrend.loss : KTrend.gain,
+                price: holdings[i].marketValue,
+                change: holdings[i].returnPct,
+                trend: holdings[i].returnTrend == Trend.loss ? KTrend.loss : KTrend.gain,
                 onTap: () =>
                     context.push(Routes.holdingDetail(holdings[i].asset.ticker)),
               ),

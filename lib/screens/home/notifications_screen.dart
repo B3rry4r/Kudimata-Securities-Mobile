@@ -3,14 +3,19 @@
 // with KDetailHeader (back chevron, no tab bar).
 //
 // Wired per lib/data/api/README.md's FutureBuilder convention. Tap a row to
-// mark it read (optimistic update, PATCH /notifications/:id/read); reverts
-// on failure. There is no mark-all-read affordance in this screen's design
-// (KDetailHeader has no trailing action slot), so NotificationsRepository's
-// markAllRead() exists but is intentionally left unwired — see its doc
-// comment.
+// mark it read (optimistic update, PATCH /notifications/:id/read) AND
+// navigate to whatever the row is about — the canvas (#s47) is explicit:
+// "every row opens the thing it is about · security items go straight to
+// 51". KDetailHeader DOES carry a trailing-action slot (added generically
+// for spec screen 80's status pill, see its own doc comment) — the header's
+// settings gear (nav to Account → Notifications) and the bottom "Choose
+// what we notify you about" ghost button both use it, wired to the same
+// Routes.acctNotifications destination the canvas points at (#s48).
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/notifications_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -41,11 +46,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  /// Canvas mapping (#s47): shield → security alert (51), markets (order
+  /// filled) → Orders, wallet/arrowDown (money in / dividend) → the tab it
+  /// landed in, check (account live) → Home. AppNotification carries no
+  /// ticker/order id to deep-link to the exact record, so this routes to
+  /// the screen the row is ABOUT, same as every other icon-typed row here.
+  void _open(String icon) {
+    switch (icon) {
+      case 'shield':
+        context.push(Routes.securityAlert);
+      case 'markets':
+        context.push(Routes.orderStatus);
+      case 'wallet':
+        context.go(Routes.wallet);
+      case 'arrowDown':
+        context.go(Routes.portfolio);
+      case 'check':
+        context.go(Routes.home);
+    }
+  }
+
+  void _onTapItem(int index, List<NotificationItem> items) {
+    _open(items[index].notification.icon);
+    _markRead(index, items);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KColor.bg,
-      appBar: const KDetailHeader(title: 'Notifications'),
+      appBar: KDetailHeader(
+        title: 'Notifications',
+        trailing: KIconButton(
+          icon: 'settings',
+          semanticLabel: 'settings',
+          onPressed: () => context.push(Routes.acctNotifications),
+        ),
+      ),
       body: FutureBuilder<List<NotificationItem>>(
         future: _future,
         builder: (context, snapshot) {
@@ -65,7 +102,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               message: 'Updates on your orders, wallet and price alerts will show here.',
             );
           }
-          return _NotificationsList(items: items, onTapItem: (i) => _markRead(i, items));
+          return _NotificationsList(
+            items: items,
+            onTapItem: (i) => _onTapItem(i, items),
+          );
         },
       ),
     );
@@ -80,23 +120,84 @@ class _NotificationsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Canvas (#s47): two date-grouped sections, "Today" and "Earlier",
+    // each its own eyebrow + hairline card — not one undivided list.
+    final now = DateTime.now();
+    bool isToday(NotificationItem item) {
+      final c = item.createdAt?.toLocal();
+      return c != null && c.year == now.year && c.month == now.month && c.day == now.day;
+    }
+
+    final todayIndices = <int>[];
+    final earlierIndices = <int>[];
+    for (var i = 0; i < items.length; i++) {
+      (isToday(items[i]) ? todayIndices : earlierIndices).add(i);
+    }
+
     return ListView(
-      padding: const EdgeInsets.only(top: 16, bottom: 24),
+      padding: const EdgeInsets.only(top: 14, bottom: 28),
       children: [
+        if (todayIndices.isNotEmpty) ...[
+          const Padding(padding: _gut, child: KEyebrow('Today')),
+          const SizedBox(height: 10),
+          Padding(
+            padding: _gut,
+            child: _NotificationGroup(items: items, indices: todayIndices, onTapItem: onTapItem),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (earlierIndices.isNotEmpty) ...[
+          const Padding(padding: _gut, child: KEyebrow('Earlier')),
+          const SizedBox(height: 10),
+          Padding(
+            padding: _gut,
+            child: _NotificationGroup(items: items, indices: earlierIndices, onTapItem: onTapItem),
+          ),
+        ],
+        const SizedBox(height: 18),
+        // Canvas footer: ghost "Choose what we notify you about" → the same
+        // notification-preferences destination (Routes.acctNotifications)
+        // as the header's settings gear.
         Padding(
           padding: _gut,
-          child: KCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Column(
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => onTapItem(i),
-                    child: Container(
+          child: KButton(
+            label: 'Choose what we notify you about',
+            variant: KButtonVariant.ghost,
+            fullWidth: true,
+            onPressed: () => context.push(Routes.acctNotifications),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One date-grouped hairline card ("Today" or "Earlier") of notification
+/// rows — [indices] selects which of [items] belong in this group, so row
+/// taps still resolve back to the right index in the original list.
+class _NotificationGroup extends StatelessWidget {
+  const _NotificationGroup({required this.items, required this.indices, required this.onTapItem});
+
+  final List<NotificationItem> items;
+  final List<int> indices;
+  final ValueChanged<int> onTapItem;
+
+  @override
+  Widget build(BuildContext context) {
+    return KCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        children: [
+          for (var g = 0; g < indices.length; g++)
+            Builder(builder: (context) {
+              final i = indices[g];
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onTapItem(i),
+                child: Container(
                       decoration: BoxDecoration(
                         border: Border(
-                          top: i == 0
+                          top: g == 0
                               ? BorderSide.none
                               : BorderSide(color: KColor.hairline, width: 1),
                         ),
@@ -145,12 +246,10 @@ class _NotificationsList extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
+                  );
+                }),
+        ],
+      ),
     );
   }
 }

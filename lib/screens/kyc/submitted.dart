@@ -178,7 +178,9 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
                         title: "We're reviewing your details",
                         message:
                             "This usually takes a few minutes. We'll notify you when you're verified — you can close the app.",
-                        secondary: 'Back to home',
+                        // Canvas screen 23's own wording — browsing (not a
+                        // plain "back to home") is the intent while waiting.
+                        secondary: 'Look around while you wait',
                         onSecondary: () => context.go(Routes.home),
                   ),
           ),

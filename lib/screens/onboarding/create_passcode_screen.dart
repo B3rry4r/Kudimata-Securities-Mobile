@@ -69,8 +69,13 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
           children: [
             KOnboardTopBar(
               stepLabel: widget.reentry ? null : 'Step 3 of 4',
-              onBack: () =>
-                  widget.reentry ? context.pop() : context.go(Routes.otp),
+              // Canvas #s07's back arrow targets nav.s05 (Terms &
+              // disclosures), not the OTP screen — this used to route to
+              // Routes.otp, silently skipping back over the terms screen
+              // (found during the 2026-08-23 exactness audit).
+              onBack: () => widget.reentry
+                  ? context.pop()
+                  : context.go(Routes.termsOfService),
             ),
             Expanded(
               child: KOnboardBody(

@@ -1,5 +1,9 @@
-// Stage 9 — Personal info (pushed). Read-only KInput-style rows: tracked
-// UPPERCASE label + tabular value. Mirrors `PersonalInfo` in extra-screens.jsx.
+// Stage 9 — Personal info (pushed). Read-only label:value rows (Full name /
+// Date of birth / BVN · NIN / CHN / Account status), then real editable
+// Phone number / Residential address fields inline on the page (matching
+// the canvas's #s49 body exactly — 2026-08-23 exactness pass), then the
+// Investor profile card, then a "Save changes" button. Mirrors `PersonalInfo`
+// in extra-screens.jsx.
 //
 // Wired to GET /users/me (UserRepository.personalInfo — firstName/middleName/lastName/email/
 // phone/dob/residentialAddress) and GET /kyc-submissions/me
@@ -10,15 +14,22 @@
 // STUB-account-personal-1 for why dob/residentialAddress/bvn used to be
 // hardcoded literals interleaved with the two real MockData.user fields.
 //
-// "Edit details" opens a showKSheet form (full name / phone / residential
-// address / city / state — see UserRepository.updateProfile) pre-filled
-// with the values already shown above. Saving re-fetches so the screen
-// reflects the new values. City/state editing added 2026-08-07
-// (supersedes.json S-9): they're normally collected once by the post-signup
-// onboarding step (onboarding/personal_details_screen.dart), but that step
-// can fail or be skipped (e.g. a phone-number conflict, or the investor
-// just closing the app mid-flow) with no way back to it — this screen is
-// the only other place in the app that can complete them. dob stays
+// Full name is deliberately NOT editable anywhere on this screen — the
+// canvas's read-only card has no edit affordance on that row, and its own
+// footer note says "a legal-name change opens support at 56" (Help &
+// support). A prior version of this screen let a name change ride along
+// inside a generic "Edit details" sheet; that's now gone (2026-08-23
+// exactness pass) — legal-name changes belong to support, not self-serve.
+//
+// City/state editing (added 2026-08-07, supersedes.json S-9) stays as a
+// secondary "Add city & state" link, shown only while either is missing:
+// they're normally collected once by the post-signup onboarding step
+// (onboarding/personal_details_screen.dart), but that step can fail or be
+// skipped (e.g. a phone-number conflict, or the investor just closing the
+// app mid-flow) with no way back to it — this screen is the only other
+// place in the app that can complete them. Kept out of the canvas's own two
+// inline fields (Phone number / Residential address) so this screen still
+// reads as the design intends when both are already set. dob stays
 // deliberately non-editable here ("contact support") — an existing,
 // unrelated product decision this change doesn't touch.
 import 'package:flutter/material.dart';
@@ -62,6 +73,17 @@ String? _normalizePhoneToE164(String raw) {
     e164 = '+234$digits';
   }
   return _e164Pattern.hasMatch(e164) ? e164 : null;
+}
+
+/// Strips a leading country code so the field shows just the local number
+/// next to the KInput `prefix: '+234'` — matching the canvas's
+/// `prefix="+234" value="801 234 5678"` split (2026-08-23 exactness pass;
+/// the prior version showed the full E.164 string in one plain field).
+String _localPhone(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.startsWith('+234')) return trimmed.substring(4).trim();
+  if (trimmed.startsWith('234')) return trimmed.substring(3).trim();
+  return trimmed;
 }
 
 class PersonalInfoScreen extends StatefulWidget {
@@ -118,15 +140,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
   void _reload() => setState(() => _future = _load());
 
-  Future<void> _openEdit(PersonalInfo info) async {
-    final saved = await showKSheet<bool>(
-      context,
-      title: 'Edit details',
-      child: _EditPersonalInfoSheet(repo: _userRepo, info: info),
-    );
-    if (saved == true) _reload();
-  }
-
   @override
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
@@ -144,10 +157,12 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           }
           final (info, bvn, profile) = snapshot.data!;
           return _PersonalInfoBody(
+            key: ValueKey(info.phone + info.residentialAddress + info.city + (info.state)),
             info: info,
             bvn: bvn,
             profile: profile,
-            onEdit: () => _openEdit(info),
+            repo: _userRepo,
+            onSaved: _reload,
           );
         },
       ),
@@ -155,38 +170,102 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   }
 }
 
-class _PersonalInfoBody extends StatelessWidget {
+class _PersonalInfoBody extends StatefulWidget {
   const _PersonalInfoBody({
+    super.key,
     required this.info,
     required this.bvn,
     required this.profile,
-    required this.onEdit,
+    required this.repo,
+    required this.onSaved,
   });
 
   final PersonalInfo info;
   final String bvn;
   final String? profile;
-  final VoidCallback onEdit;
+  final UserRepository repo;
+  final VoidCallback onSaved;
+
+  @override
+  State<_PersonalInfoBody> createState() => _PersonalInfoBodyState();
+}
+
+class _PersonalInfoBodyState extends State<_PersonalInfoBody> {
+  late final _phone = TextEditingController(text: _localPhone(widget.info.phone));
+  late final _addr = TextEditingController(
+    text: widget.info.residentialAddress == '—' ? '' : widget.info.residentialAddress,
+  );
+
+  bool _showErrors = false;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    _addr.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final normalizedPhone = _normalizePhoneToE164(_phone.text);
+    if (normalizedPhone == null) {
+      setState(() => _showErrors = true);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.repo.updateProfile(
+        phone: normalizedPhone,
+        residentialAddress: _addr.text.trim().isEmpty ? null : _addr.text.trim(),
+      );
+      widget.onSaved();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  Future<void> _addCityState() async {
+    final saved = await showKSheet<bool>(
+      context,
+      title: 'City & state',
+      child: _CityStateSheet(repo: widget.repo, info: widget.info),
+    );
+    if (saved == true) widget.onSaved();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Re-verified against screen-specs.md spec 49 (2026-08-23 exactness
-    // pass — the prior redesign left this screen on the token cascade
-    // without checking its actual field list against spec). Spec's
-    // read-only rows are Full name / Date of birth / BVN · NIN / CHN /
-    // Account status — a coarser, more privacy-conscious set than the raw
-    // field-by-field dump this screen used to show (separate first/middle/
-    // last/city/state rows, and the literal BVN value rather than a
-    // verified/not-verified status).
+    final info = widget.info;
+    final bvn = widget.bvn;
+    final profile = widget.profile;
+
+    // Re-verified against the canvas's real s49.html (2026-08-23 exactness
+    // pass): the read-only card's rows are Full name / Date of birth /
+    // BVN · NIN / CHN / Account status — a coarser, more privacy-conscious
+    // set than the raw field-by-field dump this screen used to show
+    // (separate first/middle/last/city/state rows, and the literal BVN
+    // value rather than a verified/not-verified status).
     final verified = bvn != '—';
-    final rows = <(String, String)>[
-      ('Full name', info.fullName),
-      ('Date of birth', info.dob),
-      ('BVN · NIN', verified ? 'Verified' : 'Not verified'),
-      ('CHN', info.cscsNumber),
-      ('Account status', info.accountStatus.isEmpty
-          ? '—'
-          : info.accountStatus[0].toUpperCase() + info.accountStatus.substring(1)),
+    final rows = <(String, String, bool tabular)>[
+      ('Full name', info.fullName, false),
+      ('Date of birth', info.dob, false),
+      ('BVN · NIN', verified ? 'Verified' : 'Not verified', true),
+      ('CHN', info.cscsNumber, true),
+      (
+        'Account status',
+        info.accountStatus.isEmpty
+            ? '—'
+            : info.accountStatus[0].toUpperCase() + info.accountStatus.substring(1),
+        false,
+      ),
     ];
 
     // BVN and date of birth are blank for exactly one reason: this investor
@@ -198,10 +277,16 @@ class _PersonalInfoBody extends StatelessWidget {
     // makes sense for an investor who HAS already verified and wants to
     // correct one of these otherwise-locked fields.
     final missingKyc = bvn == '—' || info.dob == '—';
+    final missingCityState = info.city == '—' || info.state == '—';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Read-only rows — a plain label:value line per row (`text-data`
+        // both sides, ink-2 label / ink value), not the label-above-value
+        // stacked/uppercase-caption layout this screen used to render
+        // (2026-08-23 exactness pass — that stacked treatment belongs to a
+        // different part of the design system, not this card).
         KAccountCard(
           children: [
             for (var i = 0; i < rows.length; i++)
@@ -214,26 +299,26 @@ class _PersonalInfoBody extends StatelessWidget {
                         : BorderSide(color: KColor.hairline, width: 1),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+                child: Row(
                   children: [
-                    Text(rows[i].$1.upper, style: KType.label()),
-                    const SizedBox(height: 5),
-                    Text(rows[i].$2,
-                        style: KType.cardTitle(w: KWeight.medium).tnum),
+                    Expanded(
+                      child: Text(rows[i].$1, style: KType.data(color: KColor.ink2)),
+                    ),
+                    Text(
+                      rows[i].$2,
+                      style: rows[i].$3 ? KType.data().tnum : KType.data(),
+                    ),
                   ],
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         if (missingKyc)
           KAccountCard(
             children: [
               KAccountRow(
-                icon: 'profile',
                 title: 'Complete your KYC',
                 sub: 'Verify your BVN and identity to fill in these details',
                 right: const KRowChevron(),
@@ -250,98 +335,103 @@ class _PersonalInfoBody extends StatelessWidget {
               style: KType.body(color: KColor.ink3),
             ),
           ),
-        const SizedBox(height: 16),
-        // "Investor profile · {profile}" card with a "Retake" link (spec 49
-        // — nav note: "Retake -> 27", the suitability questionnaire).
-        KAccountCard(
-          children: [
-            KAccountRow(
-              icon: 'portfolio',
-              title: 'Investor profile',
-              sub: profile ?? 'Not taken yet',
-              right: GestureDetector(
-                onTap: () => context.push(Routes.questionnaire),
-                child: Text('Retake', style: KType.body(color: KColor.indicator)),
+        const SizedBox(height: 14),
+        Text('You can change these'.upper, style: KType.label()),
+        const SizedBox(height: 14),
+        // Editable fields per the canvas: Phone number, Residential
+        // address. "Employment status" (canvas's third field, a Select) is
+        // skipped — no such field exists anywhere in the backend's User
+        // model (checked UpdateMeDto and the User type interface), so there
+        // is nothing real to collect or display for it yet.
+        KInput(
+          label: 'Phone number',
+          prefix: '+234',
+          numeric: true,
+          controller: _phone,
+          onChanged: _showErrors ? (_) => setState(() {}) : null,
+          error: _showErrors && _normalizePhoneToE164(_phone.text) == null
+              ? 'Enter a valid phone number'
+              : null,
+        ),
+        const SizedBox(height: 14),
+        KInput(
+          label: 'Residential address',
+          controller: _addr,
+        ),
+        if (missingCityState) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _addCityState,
+            behavior: HitTestBehavior.opaque,
+            child: Text('Add city & state', style: KType.data(color: KColor.indicator)),
+          ),
+        ],
+        const SizedBox(height: 14),
+        // "Investor profile · {profile}" flat card with a "Retake" link
+        // (canvas nav note: "Retake -> 27", the suitability questionnaire).
+        // The canvas's "Answered 14 Mar 2026" subtitle isn't shown: the real
+        // SuitabilityResult model (suitability_repository.dart) doesn't
+        // carry a computedAt/answered-date field to this client yet, and
+        // that repository is out of this screen's file scope this pass —
+        // fabricating a date would be worse than omitting it.
+        KCard(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  profile == null ? 'Investor profile' : 'Investor profile · $profile',
+                  style: KType.cardTitle(),
+                ),
               ),
-              first: true,
-              onTap: () => context.push(Routes.questionnaire),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Editable fields per spec 49: Phone number, Residential address,
-        // Employment status. Phone/address are real and editable below via
-        // the sheet; "Employment status" is skipped rather than faked — no
-        // such field exists anywhere in the backend's User model (checked
-        // UpdateMeDto and the User type interface), so there is nothing
-        // real to collect or display for it yet.
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
-          ),
-          child: Text(
-            info.residentialAddress == '—'
-                ? 'Residential address · —'
-                : 'Residential address · ${info.residentialAddress}',
-            style: KType.body(color: KColor.ink2),
+              GestureDetector(
+                onTap: () => context.push(Routes.questionnaire),
+                behavior: HitTestBehavior.opaque,
+                child: Text('Retake', style: KType.data(color: KColor.indicator)),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
-        // Opens a showKSheet form (full name / phone / residential address)
-        // pre-filled with the values above, backed by PATCH /users/me — see
-        // _EditPersonalInfoSheet below.
-        KButton(label: 'Edit details', onPressed: onEdit),
+        if (_error != null) ...[
+          Text(_error!, style: KType.micro(color: KColor.loss)),
+          const SizedBox(height: 10),
+        ],
+        KButton(
+          label: 'Save changes',
+          loading: _busy,
+          onPressed: _busy ? null : _save,
+        ),
       ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Edit-details sheet — full name / phone / residential address, pre-filled
-// with the current values. Backed by PATCH /users/me
-// (UserRepository.updateProfile). Mirrors bank_accounts_screen.dart's
-// _AddBankAccountSheet: FutureBuilder-free simple form, busy/error state,
-// pop(true) on success so the caller knows to re-fetch.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _EditPersonalInfoSheet extends StatefulWidget {
-  const _EditPersonalInfoSheet({required this.repo, required this.info});
+/// Secondary sheet for the city/state completion gap (see this file's
+/// header comment) — kept out of the main inline form so the screen still
+/// matches the canvas exactly once both are already set.
+class _CityStateSheet extends StatefulWidget {
+  const _CityStateSheet({required this.repo, required this.info});
 
   final UserRepository repo;
   final PersonalInfo info;
 
   @override
-  State<_EditPersonalInfoSheet> createState() => _EditPersonalInfoSheetState();
+  State<_CityStateSheet> createState() => _CityStateSheetState();
 }
 
-class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
-  late final _firstName = TextEditingController(text: widget.info.firstName);
-  late final _middleName = TextEditingController(text: widget.info.middleName ?? '');
-  late final _lastName = TextEditingController(text: widget.info.lastName);
-  late final _phone = TextEditingController(text: widget.info.phone);
-  // The repository renders a missing value as '—' for display; don't
-  // prefill that placeholder into an editable field.
-  late final _addr = TextEditingController(
-    text: widget.info.residentialAddress == '—' ? '' : widget.info.residentialAddress,
-  );
+class _CityStateSheetState extends State<_CityStateSheet> {
   late final _city = TextEditingController(
     text: widget.info.city == '—' ? '' : widget.info.city,
   );
   late String? _state = widget.info.state == '—' ? null : widget.info.state;
 
-  bool _showErrors = false;
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
-    _firstName.dispose();
-    _middleName.dispose();
-    _lastName.dispose();
-    _phone.dispose();
-    _addr.dispose();
     _city.dispose();
     super.dispose();
   }
@@ -352,25 +442,12 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
   }
 
   Future<void> _save() async {
-    final normalizedPhone = _normalizePhoneToE164(_phone.text);
-    final valid = _firstName.text.trim().isNotEmpty &&
-        _lastName.text.trim().isNotEmpty &&
-        normalizedPhone != null;
-    if (!valid) {
-      setState(() => _showErrors = true);
-      return;
-    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       await widget.repo.updateProfile(
-        firstName: _firstName.text.trim(),
-        middleName: _middleName.text.trim().isEmpty ? null : _middleName.text.trim(),
-        lastName: _lastName.text.trim(),
-        phone: normalizedPhone,
-        residentialAddress: _addr.text.trim().isEmpty ? null : _addr.text.trim(),
         city: _city.text.trim().isEmpty ? null : _city.text.trim(),
         state: _state,
       );
@@ -392,49 +469,6 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
       mainAxisSize: MainAxisSize.min,
       children: [
         KInput(
-          label: 'First name',
-          placeholder: 'Chidi',
-          controller: _firstName,
-          onChanged: _showErrors ? (_) => setState(() {}) : null,
-          error: _showErrors && _firstName.text.trim().isEmpty
-              ? 'Enter your first name'
-              : null,
-        ),
-        const SizedBox(height: 16),
-        KInput(
-          label: 'Middle name (optional)',
-          placeholder: 'Emeka',
-          controller: _middleName,
-        ),
-        const SizedBox(height: 16),
-        KInput(
-          label: 'Last name',
-          placeholder: 'Okafor',
-          controller: _lastName,
-          onChanged: _showErrors ? (_) => setState(() {}) : null,
-          error: _showErrors && _lastName.text.trim().isEmpty
-              ? 'Enter your last name'
-              : null,
-        ),
-        const SizedBox(height: 16),
-        KInput(
-          label: 'Phone number',
-          placeholder: '+234 801 234 5678',
-          keyboardType: TextInputType.phone,
-          controller: _phone,
-          onChanged: _showErrors ? (_) => setState(() {}) : null,
-          error: _showErrors && _normalizePhoneToE164(_phone.text) == null
-              ? 'Enter a valid phone number'
-              : null,
-        ),
-        const SizedBox(height: 16),
-        KInput(
-          label: 'Residential address',
-          placeholder: '12 Bourdillon Road',
-          controller: _addr,
-        ),
-        const SizedBox(height: 16),
-        KInput(
           label: 'City',
           placeholder: 'Ikeja',
           controller: _city,
@@ -452,7 +486,7 @@ class _EditPersonalInfoSheetState extends State<_EditPersonalInfoSheet> {
         ],
         const SizedBox(height: 22),
         KButton(
-          label: 'Save changes',
+          label: 'Save',
           loading: _busy,
           onPressed: _busy ? null : _save,
         ),

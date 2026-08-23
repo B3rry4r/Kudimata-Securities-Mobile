@@ -58,7 +58,7 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
                     const SizedBox(height: 20),
                     KFileUpload(
                       label: 'Proof of address',
-                      hint: 'JPG or PDF · up to 10 MB',
+                      hint: 'PDF, PNG or JPG · up to 10 MB',
                       prompt: _uploading ? 'Uploading…' : 'Tap to upload, or take a photo',
                       helper: _uploading ? 'Uploading your document…' : null,
                       error: _uploadError ??

@@ -8,7 +8,11 @@
 // faithful to the design even though the content behind it is a stub.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/trade/trade_flows.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
@@ -44,6 +48,7 @@ class _ExplainScreenState extends State<ExplainScreen> {
 
   late String _answer = _canned(widget.topic);
   KGeneratingState _state = KGeneratingState.thinking;
+  bool _launchingBuy = false;
 
   @override
   void initState() {
@@ -63,6 +68,25 @@ class _ExplainScreenState extends State<ExplainScreen> {
     });
   }
 
+  /// Screen 34's primary CTA opens the Buy sheet directly (`nav.s35`), not a
+  /// bare pop — this screen only receives a `topic` string, so it fetches
+  /// the real Asset by ticker (today's only caller, asset_detail_screen.dart,
+  /// always passes a ticker) before handing it to the shared buy flow.
+  Future<void> _readyToBuy() async {
+    setState(() => _launchingBuy = true);
+    try {
+      final repo = AssetRepository(AppScope.read(context).apiClient);
+      final asset = await repo.byTicker(widget.topic);
+      if (!mounted) return;
+      await showBuyFlow(context, asset);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _launchingBuy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,56 +102,47 @@ class _ExplainScreenState extends State<ExplainScreen> {
                   KIconButton(icon: 'close', semanticLabel: 'Close', onPressed: () => context.pop()),
                   const SizedBox(width: 10),
                   Expanded(child: Text('Explain ${widget.topic}', style: KType.section())),
-                  // Spec: "CreditMeter (compact, in header; full below)" —
-                  // was missing entirely up here before this exactness pass.
-                  const KCreditMeter(compact: true, used: 3, total: 10, kind: 'trial'),
+                  // Spec: "CreditMeter (compact, in header; full below)",
+                  // both reading "7 of 10 left".
+                  const KCreditMeter(compact: true, used: 7, total: 10, kind: 'trial'),
                 ],
               ),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.only(top: 10, bottom: 24),
                 children: [
+                  Padding(
+                    padding: _gut,
+                    child: KExplainPanel(
+                      title: 'What am I buying?',
+                      bodyWidget: KGeneratingText(key: ValueKey(_answer), text: _answer, state: _state),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Screen 34: a standing "what thinking looks like" example
+                  // — a 2-line shimmer, labelled so it reads as a preview of
+                  // the state before any answer text exists, not as a second
+                  // live answer.
                   Padding(
                     padding: _gut,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.featureR),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.cardR),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(children: [
-                            const KAvatar.guide(size: KIllo.avatarSm),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('Kudimata Invest',
-                                    style: KType.cardTitle(color: KColor.indicatorPress).copyWith(fontSize: 13, height: 1.2)),
-                                Text('EXPLAINING', style: KType.micro()),
-                              ],
-                            ),
-                          ]),
-                          const SizedBox(height: 16),
-                          Text('What am I actually buying?',
-                              style: TextStyle(
-                                fontFamily: KType.fontDisplay,
-                                fontWeight: KWeight.bold,
-                                fontSize: 20,
-                                height: 26 / 20,
-                                letterSpacing: -0.02 * 20,
-                                color: KColor.indicatorPress,
-                              )),
+                          Text('While it thinks · before any text exists'.upper,
+                              style: KType.micro(color: KColor.ink3)),
                           const SizedBox(height: 8),
-                          KGeneratingText(key: ValueKey(_answer), text: _answer, state: _state),
+                          const KGeneratingText(text: '', state: KGeneratingState.thinking, lines: 2),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   Padding(
                     padding: _gut,
                     child: Wrap(
@@ -138,12 +153,12 @@ class _ExplainScreenState extends State<ExplainScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   // Full (non-compact) card, per spec's "full below" — the
                   // header above carries the compact one.
                   const Padding(
                     padding: _gut,
-                    child: KCreditMeter(used: 3, total: 10, kind: 'trial'),
+                    child: KCreditMeter(used: 7, total: 10, kind: 'trial'),
                   ),
                 ],
               ),
@@ -159,22 +174,21 @@ class _ExplainScreenState extends State<ExplainScreen> {
                 KSpace.gutter,
                 14 + MediaQuery.of(context).padding.bottom,
               ),
-              child: Row(
+              // Screen 34: the two CTAs stack full-width, not a side-by-side
+              // row, and the second is ghost, not secondary.
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: KButton(
-                      label: "I'm ready to buy",
-                      onPressed: () => context.pop(),
-                    ),
+                  KButton(
+                    label: "I'm ready to buy",
+                    loading: _launchingBuy,
+                    onPressed: _launchingBuy ? null : _readyToBuy,
                   ),
-                  const SizedBox(width: 10),
-                  // Was missing entirely — spec's second button.
-                  Expanded(
-                    child: KButton(
-                      label: 'See plans and credits',
-                      variant: KButtonVariant.secondary,
-                      onPressed: () => context.push(Routes.acctPlans),
-                    ),
+                  const SizedBox(height: 10),
+                  KButton(
+                    label: 'See plans and credits',
+                    variant: KButtonVariant.ghost,
+                    onPressed: () => context.push(Routes.acctPlans),
                   ),
                 ],
               ),

@@ -1,15 +1,22 @@
-// Stage 9 — Account hub (root tab). Profile header (UserProfile) + a grouped
-// menu of the 8 sub-screens + sign out. Root tab: builds a Scaffold body WITHOUT
-// a bottom nav (the shell owns KBottomNav). Mirrors `Profile` in settings-screens.jsx.
+// Stage 9 — Account hub (root tab). Profile header (Avatar + StatusPill) +
+// a compact credits row + a grouped menu of the account sub-screens +
+// LanguageSwitch. Root tab: builds a Scaffold body WITHOUT a bottom nav (the
+// shell owns KBottomNav). Mirrors `Profile` in settings-screens.jsx.
 //
-// Wired to GET /users/me via UserRepository (see lib/data/api/README.md for
-// the FutureBuilder convention) and to POST /auth/logout for real session
-// teardown on sign-out.
+// Wired to GET /users/me (personalInfo — cscsNumber/accountStatus/fullName),
+// GET /bank-accounts (primary bank's masked number for the "Bank accounts &
+// DCS" row) and GET /legal-documents (row count for "Legal") per
+// lib/data/api/README.md's FutureBuilder convention. "Verified" comes from
+// AppState.kycApproved — already refreshed at login (see
+// refreshKycGatingState), so no extra fetch is needed for it. "Log out" was
+// removed from this screen (2026-08-23 exactness pass): the canvas's #s45
+// body has no sign-out affordance at all — that lives on Security (#s50,
+// see security_screen.dart) instead, alongside "Freeze my account".
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
-import 'package:kudimata_invest/data/api/api_exception.dart';
-import 'package:kudimata_invest/data/models.dart';
+import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart';
+import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -17,35 +24,46 @@ import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
-// Menu order mirrors the design. `icon` maps to the fixed KIcon set; route is
-// the pushed sub-screen target.
-// Order and membership match the canvas mockup's #s45 block exactly
-// (2026-08-23 exactness pass) — Personal info, Security, Bank accounts,
-// Statements, Refer & earn, Help & support, Legal. "Notifications" was
-// dropped: it's not a row on this screen in the mockup (reachable from
-// Home's bell icon instead, screen 29) — an extra row this port had added.
-// Corporate actions (screen 81) links from Portfolio/holding detail per the
-// canvas's own footer note (#s81: "Entry from 38, 39 or a notification"),
-// not from this screen — kept off this list on purpose. Tax documents
-// (screen 85) is reachable via Statements & documents (statements_screen.dart),
-// matching the canvas's own nesting. Data & privacy (screen 91) IS a direct
-// row here — its footer note says "From 45 Account" explicitly (2026-08-23,
-// once the canvas grew from 66 to 97 screens and these existed to link to).
-const List<(String icon, String title, String route)> _items = [
-  ('profile', 'Personal info', Routes.acctPersonal),
-  ('fingerprint', 'Security', Routes.acctSecurity),
-  ('wallet', 'Bank accounts', Routes.acctBanks),
-  ('card', 'Statements & documents', Routes.acctStatements),
-  ('send', 'Refer & earn', Routes.acctRefer),
-  ('search', 'Help & support', Routes.acctHelp),
-  ('card', 'Legal', Routes.acctLegal),
-  ('shieldCheck', 'Data & privacy', Routes.acctDataPrivacy),
-];
+/// Menu row (title, route, optional trailing meta text). Order and
+/// membership match the canvas mockup's #s45 block exactly (re-verified
+/// 2026-08-23 against the real s45.html body, not against other screens'
+/// footer notes — a prior pass had wrongly dropped "Plans & credits",
+/// "Corporate actions" and "Tax documents" from this list, reasoning from
+/// #s81/#s85's OWN footer notes ("entry from 38, 39..."/"from 52 tab...")
+/// instead of #s45's actual markup, which unambiguously lists all three as
+/// rows here — s45.html is the ground truth for what's ON s45, footer notes
+/// on other screens are non-exhaustive entry-point hints, not an override).
+/// "Notifications" stays correctly dropped — not a row on this screen in
+/// the mockup (reachable from Home's bell icon instead, screen 29).
+List<(String title, String route, String? trailing)> _menuRows({
+  required BankAccountSummary? primaryBank,
+  required int? legalDocCount,
+}) {
+  final bankTrailing =
+      primaryBank == null ? null : '${primaryBank.bankName} ${primaryBank.accountNumberMasked}';
+  final legalTrailing = (legalDocCount == null || legalDocCount == 0)
+      ? null
+      : '$legalDocCount document${legalDocCount == 1 ? '' : 's'}';
+  return [
+    ('Personal info', Routes.acctPersonal, null),
+    ('Bank accounts & DCS', Routes.acctBanks, bankTrailing),
+    ('Plans & credits', Routes.acctPlans, null),
+    ('Statements & documents', Routes.acctStatements, null),
+    ('Security', Routes.acctSecurity, null),
+    ('Refer & earn', Routes.acctRefer, null),
+    ('Corporate actions', Routes.corpActions, null),
+    ('Tax documents', Routes.acctTax, null),
+    ('Data & privacy', Routes.acctDataPrivacy, null),
+    ('Help & support', Routes.acctHelp, null),
+    ('Legal', Routes.acctLegal, legalTrailing),
+  ];
+}
 
 // Plans & credits sits as its own row above the menu group, alongside a
-// compact credit meter — screen 45. Static example numbers: no real
-// AI-credit metering backend exists yet (docs/redesign/PLAN.md).
-const int _exampleCreditsUsed = 3;
+// compact credit meter — screen 45. used=7/total=10 mirrors the canvas's own
+// example values exactly; no real AI-credit metering backend exists yet
+// (docs/redesign/PLAN.md), so these stay static.
+const int _exampleCreditsUsed = 7;
 const int _exampleCreditsTotal = 10;
 
 class AccountScreen extends StatefulWidget {
@@ -56,33 +74,66 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  late final _repo = UserRepository(AppScope.read(context).apiClient);
-  late Future<UserProfile> _future = _repo.me();
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
+  late final _banksRepo = BankAccountsRepository(AppScope.read(context).apiClient);
+  late final _legalRepo = LegalDocumentsRepository(AppScope.read(context).apiClient);
+  late Future<(PersonalInfo, BankAccountSummary?, int?)> _future = _load();
 
-  Future<void> _signOut(BuildContext context) async {
-    final app = AppScope.read(context);
+  // Local-only — no app-wide language/locale persistence exists anywhere in
+  // this app yet, same as onboarding/welcome_slider_screen.dart's and
+  // document_summary_screen.dart's own KLanguageSwitch usage.
+  String _lang = 'en';
+
+  Future<(PersonalInfo, BankAccountSummary?, int?)> _load() async {
+    final infoFuture = _userRepo.personalInfo();
+    final bankFuture = _fetchPrimaryBank();
+    final legalFuture = _fetchLegalCount();
+    final info = await infoFuture;
+    final bank = await bankFuture;
+    final legalCount = await legalFuture;
+    return (info, bank, legalCount);
+  }
+
+  /// A 404/empty list just means no bank account is linked yet — a normal
+  /// state (see bank_accounts_screen.dart's own empty state), not a reason
+  /// to fail this whole screen. Same "optional secondary fetch" pattern as
+  /// personal_info_screen.dart's `_fetchBvn`. Catches broadly (not just
+  /// [ApiException]): the trailing meta text on this row is purely
+  /// cosmetic, so any failure to fetch it — including a malformed response
+  /// — should degrade to "no trailing text", never take down the whole
+  /// Account hub.
+  Future<BankAccountSummary?> _fetchPrimaryBank() async {
     try {
-      await app.apiClient.post('/auth/logout');
-    } on ApiException {
-      // A network hiccup shouldn't trap the user signed in locally — fall
-      // through to local teardown regardless of whether the API call
-      // succeeded.
+      final accounts = await _banksRepo.list();
+      if (accounts.isEmpty) return null;
+      for (final a in accounts) {
+        if (a.primary) return a;
+      }
+      return accounts.first;
+    } catch (_) {
+      return null;
     }
-    // signOut(), not forceSignOut() — a plain voluntary sign-out preserves
-    // this device's passcode (BUG-03) instead of wiping it; see
-    // AppState.signOut()'s doc comment.
-    await app.signOut();
-    if (!context.mounted) return;
-    context.go(Routes.login);
+  }
+
+  /// Same "cosmetic trailing text, never worth failing the screen over"
+  /// reasoning as [_fetchPrimaryBank].
+  Future<int?> _fetchLegalCount() async {
+    try {
+      final docs = await _legalRepo.list();
+      return docs.length;
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final kycApproved = AppScope.of(context).kycApproved;
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
         bottom: false,
-        child: FutureBuilder<UserProfile>(
+        child: FutureBuilder<(PersonalInfo, BankAccountSummary?, int?)>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -90,12 +141,17 @@ class _AccountScreenState extends State<AccountScreen> {
             }
             if (snapshot.hasError) {
               return KErrorView(
-                onPrimary: () => setState(() => _future = _repo.me()),
+                onPrimary: () => setState(() => _future = _load()),
               );
             }
+            final (info, primaryBank, legalCount) = snapshot.data!;
             return _AccountBody(
-              user: snapshot.data!,
-              onSignOut: () => _signOut(context),
+              info: info,
+              primaryBank: primaryBank,
+              legalCount: legalCount,
+              verified: kycApproved,
+              lang: _lang,
+              onLangChanged: (v) => setState(() => _lang = v),
             );
           },
         ),
@@ -105,55 +161,78 @@ class _AccountScreenState extends State<AccountScreen> {
 }
 
 class _AccountBody extends StatelessWidget {
-  const _AccountBody({required this.user, required this.onSignOut});
+  const _AccountBody({
+    required this.info,
+    required this.primaryBank,
+    required this.legalCount,
+    required this.verified,
+    required this.lang,
+    required this.onLangChanged,
+  });
 
-  final UserProfile user;
-  final VoidCallback onSignOut;
+  final PersonalInfo info;
+  final BankAccountSummary? primaryBank;
+  final int? legalCount;
+  final bool verified;
+  final String lang;
+  final ValueChanged<String> onLangChanged;
 
   @override
   Widget build(BuildContext context) {
+    // Subtitle mirrors the canvas's "CHN 1234567890 · NGX account live"
+    // shape with real data: cscsNumber is '—' until KYC assigns one, and
+    // accountStatus reflects the real lifecycle state (active/frozen/
+    // dormant/...) rather than assuming every account is live.
+    final hasChn = info.cscsNumber != '—' && info.cscsNumber.isNotEmpty;
+    final statusLower = info.accountStatus.trim().toLowerCase();
+    final statusText = statusLower.isEmpty || statusLower == 'active'
+        ? 'NGX account live'
+        : '${info.accountStatus[0].toUpperCase()}${info.accountStatus.substring(1)} account';
+    final subtitle = hasChn ? 'CHN ${info.cscsNumber} · $statusText' : statusText;
+
+    final rows = _menuRows(primaryBank: primaryBank, legalDocCount: legalCount);
+
     return SingleChildScrollView(
       // Root tab: clear the floating KBottomNav (~70px + margin + safe area)
-      // so the "Log out" button isn't hidden behind it.
+      // so the menu's bottom row isn't hidden behind it.
       padding: const EdgeInsets.only(top: 20, bottom: 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Profile header — canvas mockup #s45 uses the illustrated Avatar
           // (seeded per-user, per readme.md's "Characters are generated, not
-          // drawn"), not a bare initials-in-circle (2026-08-23 exactness
-          // pass — the prior port used the wrong identity treatment here).
+          // drawn"), a "CHN ... · NGX account live" subtitle, and a
+          // "Verified" StatusPill next to it.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: Row(
               children: [
-                KAvatar(seed: user.email, size: 56),
+                KAvatar(seed: info.email, size: 56),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(user.fullName, style: KType.section()),
+                      Text(info.fullName, style: KType.section()),
                       const SizedBox(height: 2),
-                      Text(user.email, style: KType.body(color: KColor.ink3)),
+                      Text(subtitle, style: KType.data(color: KColor.ink3)),
                     ],
                   ),
+                ),
+                const SizedBox(width: 14),
+                KStatusPill(
+                  status: verified ? KStatus.approved : KStatus.pending,
+                  label: verified ? 'Verified' : 'Unverified',
+                  small: true,
                 ),
               ],
             ),
           ),
-          // The mockup's "Verified" StatusPill + "CHN ••• · NGX account
-          // live" subtitle need cscsNumber/verification-status fields that
-          // UserRepository.me() (UserProfile) doesn't carry — only
-          // UserRepository.personalInfo()/KycRepository.me() do (see
-          // personal_info_screen.dart's _fetchBvn for the exact pattern).
-          // Flagged, not added here: needs a second fetch wired in
-          // alongside _future above, not a one-line change.
           const SizedBox(height: 16),
           // Plans & credits sits as its own compact row above the menu
-          // group in the mockup (CreditMeter + a link), not as the menu's
-          // first item (2026-08-23 exactness pass).
+          // group in the mockup (CreditMeter + a link) — link colour is the
+          // design's default bare-`<a>` accent (var(--indicator)), not ink.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: GestureDetector(
@@ -167,37 +246,42 @@ class _AccountBody extends StatelessWidget {
                     compact: true,
                   ),
                   const SizedBox(width: 10),
-                  Text('Plans & credits', style: KType.data(color: KColor.ink)),
+                  Text('Plans & credits', style: KType.data(color: KColor.indicator)),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          // Menu group.
+          const SizedBox(height: 12),
+          // Menu group — plain text + chevron rows, no leading icon bubble
+          // (the canvas's #s45 rows are bare `<a>`s with just a title span
+          // and a chevron `Icon`; icon bubbles never appear here).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: KAccountCard(
               children: [
-                for (var i = 0; i < _items.length; i++)
+                for (var i = 0; i < rows.length; i++)
                   KAccountRow(
-                    icon: _items[i].$1,
-                    title: _items[i].$2,
-                    right: const KRowChevron(),
+                    title: rows[i].$1,
                     first: i == 0,
-                    onTap: () => context.push(_items[i].$3),
+                    onTap: () => context.push(rows[i].$2),
+                    right: rows[i].$3 == null
+                        ? const KRowChevron()
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(rows[i].$3!, style: KType.data(color: KColor.ink3)),
+                              const SizedBox(width: 8),
+                              const KRowChevron(),
+                            ],
+                          ),
                   ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
-            child: KButton(
-              label: 'Log out',
-              variant: KButtonVariant.ghost,
-              iconLeft: 'back',
-              onPressed: onSignOut,
-            ),
+            child: KLanguageSwitch(value: lang, onChanged: onLangChanged),
           ),
         ],
       ),

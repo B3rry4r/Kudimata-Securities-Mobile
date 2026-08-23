@@ -12,6 +12,7 @@
 // from any descendant regardless of that.
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -48,6 +49,17 @@ class _OtpScreenState extends State<OtpScreen> {
   bool _verifying = false;
   bool _resending = false;
   String? _error;
+
+  // Canvas #s04 renders "Resend code in 00:42 · Change email" as one small
+  // inline text line under the OTP cells, not as buttons — tap targets for
+  // that line. "Change email" has no dedicated screen of its own in the
+  // canvas; it returns to sign-up where the email was entered.
+  late final _resendTap = TapGestureRecognizer()
+    ..onTap = () {
+      if (_secondsLeft <= 0 && !_resending && !_verifying) _resend();
+    };
+  late final _changeEmailTap = TapGestureRecognizer()
+    ..onTap = () => context.go(Routes.signup);
 
   int get _focusIndex => _digits.indexWhere((d) => d.isEmpty);
   bool get _complete => _focusIndex == -1;
@@ -89,6 +101,8 @@ class _OtpScreenState extends State<OtpScreen> {
     _timer?.cancel();
     _codeController.dispose();
     _codeFocus.dispose();
+    _resendTap.dispose();
+    _changeEmailTap.dispose();
     super.dispose();
   }
 
@@ -218,6 +232,32 @@ class _OtpScreenState extends State<OtpScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  // Canvas #s04: "Resend code in 00:42 · Change email" — one
+                  // small inline text line right under the cells, not a
+                  // full-width ghost button (that was this screen's old
+                  // shape; it also silently dropped "Change email"
+                  // entirely). Found + fixed in the 2026-08-23 exactness
+                  // audit.
+                  RichText(
+                    text: TextSpan(
+                      style: KType.data(color: KColor.ink3),
+                      children: [
+                        TextSpan(
+                          text: _resendLabel,
+                          recognizer: (_secondsLeft > 0 || _resending || _verifying)
+                              ? null
+                              : _resendTap,
+                        ),
+                        const TextSpan(text: ' · '),
+                        TextSpan(
+                          text: 'Change email',
+                          style: const TextStyle(decoration: TextDecoration.underline),
+                          recognizer: _changeEmailTap,
+                        ),
+                      ],
+                    ),
+                  ),
                   if (_error != null) ...[
                     const SizedBox(height: 16),
                     Text(_error!, style: KType.body(color: KColor.loss, w: KWeight.medium)),
@@ -226,16 +266,21 @@ class _OtpScreenState extends State<OtpScreen> {
                   Column(
                     children: [
                       KButton(
-                        label: _resendLabel,
-                        variant: KButtonVariant.ghost,
-                        loading: _resending,
-                        onPressed: (_secondsLeft > 0 || _resending || _verifying) ? null : _resend,
-                      ),
-                      const SizedBox(height: 10),
-                      KButton(
                         label: 'Verify email',
                         loading: _verifying,
                         onPressed: (_complete && !_verifying && !_resending) ? _verify : null,
+                      ),
+                      const SizedBox(height: 10),
+                      // Canvas #s04's second button — links to nav.s12
+                      // (Reset your password), not a resend action; this
+                      // was entirely missing before (the resend button sat
+                      // in its place).
+                      KButton(
+                        label: "I can't access this email",
+                        variant: KButtonVariant.ghost,
+                        onPressed: _verifying
+                            ? null
+                            : () => context.go(Routes.reset, extra: email),
                       ),
                     ],
                   ),

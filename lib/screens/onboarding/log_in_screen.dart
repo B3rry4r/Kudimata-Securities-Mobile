@@ -419,7 +419,15 @@ class _LogInScreenState extends State<LogInScreen> {
                   variant: KButtonVariant.ghost,
                   size: KButtonSize.sm,
                   fullWidth: false,
-                  onPressed: () => context.go(Routes.reset),
+                  // Thread the known device owner (PasscodeStore.owner) so
+                  // reset_passcode_screen.dart can skip straight to "step 2
+                  // of 2", matching canvas #s12 — see that getter's doc
+                  // comment.
+                  onPressed: () async {
+                    final email = await _passcodeStore.owner;
+                    if (!context.mounted) return;
+                    context.go(Routes.reset, extra: email);
+                  },
                 ),
               ],
             ),
@@ -443,7 +451,7 @@ class _LogInScreenState extends State<LogInScreen> {
             const SizedBox(height: 28),
             KInput(
               label: 'Email',
-              icon: 'profile',
+              icon: 'mail',
               placeholder: 'you@email.com',
               keyboardType: TextInputType.emailAddress,
               controller: _email,
@@ -453,6 +461,7 @@ class _LogInScreenState extends State<LogInScreen> {
             const SizedBox(height: 16),
             KInput(
               label: 'Password',
+              icon: 'lock',
               placeholder: 'Your password',
               obscure: true,
               controller: _password,
@@ -468,7 +477,6 @@ class _LogInScreenState extends State<LogInScreen> {
               children: [
                 KButton(
                   label: 'Log in',
-                  iconRight: 'arrowUpRight',
                   loading: _busy,
                   onPressed: _busy ? null : _login,
                 ),
@@ -498,7 +506,16 @@ class _LogInScreenState extends State<LogInScreen> {
                 variant: KButtonVariant.ghost,
                 size: KButtonSize.sm,
                 fullWidth: false,
-                onPressed: _busy ? null : () => context.go(Routes.reset),
+                // Whatever's typed here is the known email — thread it
+                // through so reset_passcode_screen.dart can skip straight
+                // to "step 2 of 2" (canvas #s12; see PasscodeStore.owner's
+                // doc comment for the local-unlock equivalent above).
+                onPressed: _busy
+                    ? null
+                    : () => context.go(
+                          Routes.reset,
+                          extra: _email.text.trim().isEmpty ? null : _email.text.trim(),
+                        ),
               ),
             ),
           ],

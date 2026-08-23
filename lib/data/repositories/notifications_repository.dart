@@ -36,15 +36,24 @@ import '../models.dart';
 /// Pairs a fetched [AppNotification] with the backend id needed to mark it
 /// read — AppNotification itself has no id (see file header, judgment call 1).
 class NotificationItem {
-  const NotificationItem({required this.id, required this.notification});
+  const NotificationItem({required this.id, required this.notification, this.createdAt});
 
   final String id;
   final AppNotification notification;
+
+  /// Raw timestamp, kept alongside [notification.time]'s pre-formatted
+  /// relative string (see file header, judgment call 2) — the screen needs
+  /// this to sort rows into the canvas's "Today" / "Earlier" groups (spec
+  /// screen 47), which a "2h ago"-style string can't reliably answer (e.g.
+  /// "23h ago" could be earlier today or yesterday depending on wall-clock
+  /// time). Nullable: null just means the row falls back to "Earlier".
+  final DateTime? createdAt;
 
   /// A copy with [notification.unread] cleared — used for the optimistic
   /// tap-to-read update in the screen.
   NotificationItem copyAsRead() => NotificationItem(
         id: id,
+        createdAt: createdAt,
         notification: AppNotification(
           title: notification.title,
           body: notification.body,
@@ -81,9 +90,9 @@ class NotificationsRepository {
 
   /// PATCH /notifications/mark-all-read. Exposed for completeness (it's part
   /// of the Notification resource in registry.json), but nothing calls it:
-  /// the notifications screen's header (KDetailHeader — back chevron + title
-  /// only, no trailing action slot) has no mark-all-read affordance to wire
-  /// it to, and per this task's scope, an absent affordance isn't invented.
+  /// the canvas's notifications header (#s47) only carries a settings gear
+  /// (→ notification preferences), not a mark-all-read affordance, so one
+  /// isn't invented here.
   Future<void> markAllRead() async {
     await _client.patch('/notifications/mark-all-read');
   }
@@ -91,6 +100,7 @@ class NotificationsRepository {
   NotificationItem _fromJson(Map<String, dynamic> json) {
     return NotificationItem(
       id: json['id'] as String? ?? '',
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
       notification: AppNotification(
         title: json['title'] as String? ?? '',
         body: json['body'] as String? ?? '',

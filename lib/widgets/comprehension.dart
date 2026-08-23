@@ -112,14 +112,23 @@ class KExplainPanel extends StatelessWidget {
   const KExplainPanel({
     super.key,
     this.title,
-    required this.body,
+    this.body,
+    this.bodyWidget,
     this.register = 'Explaining',
     this.illustration,
     this.actions,
-  });
+  }) : assert(body != null || bodyWidget != null, 'KExplainPanel needs body or bodyWidget');
 
   final String? title;
-  final String body;
+
+  /// Static explanation copy. Ignored when [bodyWidget] is given.
+  final String? body;
+
+  /// A live answer in progress — e.g. screen 34's streaming
+  /// `KGeneratingText`, which needs its own widget identity (a caret, a
+  /// shimmer) that a plain string can't carry. Added as a prop rather than
+  /// forking a second panel component; takes over from [body] when set.
+  final Widget? bodyWidget;
   final String register;
   final Widget? illustration;
   final List<Widget>? actions;
@@ -163,7 +172,7 @@ class KExplainPanel extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
-          Text(body, style: KType.body()),
+          bodyWidget ?? Text(body!, style: KType.body()),
           if (actions != null && actions!.isNotEmpty) ...[
             const SizedBox(height: 16),
             Wrap(spacing: 10, runSpacing: 10, children: actions!),
@@ -339,7 +348,7 @@ class _KGeneratingTextState extends State<KGeneratingText> with SingleTickerProv
               child: AnimatedBuilder(
                 animation: _shimmerCtrl,
                 builder: (context, _) {
-                  final opacity = 0.35 + 0.5 * (0.5 + 0.5 * math.sin(_shimmerCtrl.value * 2 * math.pi));
+                  final opacity = 0.18 + 0.24 * (0.5 + 0.5 * math.sin(_shimmerCtrl.value * 2 * math.pi));
                   return Opacity(
                     opacity: opacity,
                     child: FractionallySizedBox(
@@ -347,7 +356,15 @@ class _KGeneratingTextState extends State<KGeneratingText> with SingleTickerProv
                       alignment: Alignment.centerLeft,
                       child: Container(
                         height: 12,
-                        decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: BorderRadius.circular(6)),
+                        // indicatorSoft, not indicatorTint: every real call
+                        // site (KExplainPanel's own body, screen 34's
+                        // "while it thinks" preview box) sits ON an
+                        // indicatorTint surface — a same-colour bar over a
+                        // same-colour opaque backdrop composites to that
+                        // backdrop regardless of Opacity, i.e. an invisible
+                        // shimmer (caught live via test/shots.dart's
+                        // explain.png). indicatorSoft actually contrasts.
+                        decoration: BoxDecoration(color: KColor.indicatorSoft, borderRadius: BorderRadius.circular(6)),
                       ),
                     ),
                   );

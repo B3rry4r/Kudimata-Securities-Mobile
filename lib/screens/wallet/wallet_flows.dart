@@ -138,7 +138,7 @@ class _SelectRow extends StatelessWidget {
     required this.title,
     required this.sub,
     this.trailingChevron = false,
-    this.subVerified = false,
+    this.trailingCheck = false,
     required this.first,
     this.onTap,
   });
@@ -148,10 +148,10 @@ class _SelectRow extends StatelessWidget {
   final String sub;
   final bool trailingChevron;
 
-  /// A small gain-toned check icon beside [sub] — spec 42's "Adebayo
-  /// Okonkwo (check icon)" name-match confirmation on the withdraw
-  /// destination row.
-  final bool subVerified;
+  /// mockup-raw/s42.html's withdraw-destination row: a standalone 18px
+  /// gain-toned check icon as the row's OWN trailing element (not beside
+  /// [sub], and not a chevron) — the name-match confirmation.
+  final bool trailingCheck;
   final bool first;
   final VoidCallback? onTap;
 
@@ -197,15 +197,12 @@ class _SelectRow extends StatelessWidget {
                                 .copyWith(letterSpacing: 0.04 * 10, height: 15 / 10)
                                 .tnum),
                       ),
-                      if (subVerified) ...[
-                        const SizedBox(width: 4),
-                        KIcon('check', size: 12, color: KColor.gain),
-                      ],
                     ],
                   ),
                 ],
               ),
             ),
+            if (trailingCheck) KIcon('check', size: 18, color: KColor.gain),
             if (trailingChevron) KIcon('chevronRight', size: 20, color: KColor.ink3),
           ],
         ),
@@ -216,22 +213,41 @@ class _SelectRow extends StatelessWidget {
 
 // Summary row for review sheets — label left, tabular value right.
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.label, required this.value});
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.divider = true,
+    this.small = false,
+  });
   final String label;
   final String value;
 
+  /// Whether this row draws its own bottom hairline — the mockup's last row
+  /// in a bordered card has none. Defaults `true` (existing behaviour
+  /// unchanged for every already-shipped call site).
+  final bool divider;
+
+  /// mockup-raw/s41.html's info rows use `text-data`/regular weight, not
+  /// this row's original `text-body`/medium — added as an opt-in instead of
+  /// changed in place so already-shipped call sites render unchanged.
+  final bool small;
+
   @override
   Widget build(BuildContext context) {
+    final labelStyle = small ? KType.data(color: KColor.ink2) : KType.body(color: KColor.ink2);
+    final valueStyle = small
+        ? KType.data(color: KColor.ink)
+        : KType.body(color: KColor.ink, w: KWeight.medium);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
+        border: divider ? Border(bottom: BorderSide(color: KColor.hairline, width: 1)) : null,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: KType.body(color: KColor.ink2)),
-          Text(value, style: KType.body(color: KColor.ink, w: KWeight.medium).tnum),
+          Text(label, style: labelStyle),
+          Text(value, style: valueStyle.tnum),
         ],
       ),
     );
@@ -554,33 +570,17 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                   Text('Your account number'.upper,
                       style: KType.label(color: KColor.sun)),
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        // mockup-raw/s41.html: 30px/800/-0.02em — bigger and
-                        // heavier than KType.title's 26px/700/-0.02em role.
-                        child: Text(
-                          account.accountNumber,
-                          style: KType.title(color: KColor.featureInk)
-                              .copyWith(fontSize: 30, fontWeight: KWeight.black, letterSpacing: -0.6)
-                              .tnum,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => _copy(account.accountNumber),
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0x29FFFFFF),
-                            borderRadius: KRadii.pillR,
-                          ),
-                          child: Text('Copy',
-                              style: KType.label(color: KColor.featureInk)),
-                        ),
-                      ),
-                    ],
+                  // mockup-raw/s41.html line 9: just the number, no inline
+                  // "Copy" pill inside the plate — that action lives in the
+                  // "Copy number" button below (was a duplicate control not
+                  // in the design).
+                  Text(
+                    account.accountNumber,
+                    // 30px/800/-0.02em — bigger and heavier than
+                    // KType.title's 26px/700/-0.02em role.
+                    style: KType.title(color: KColor.featureInk)
+                        .copyWith(fontSize: 30, fontWeight: KWeight.black, letterSpacing: -0.6)
+                        .tnum,
                   ),
                   const SizedBox(height: 4),
                   // "Providus Bank · Adebayo Okonkwo" (spec #41) —
@@ -594,26 +594,18 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
-            // Info rows (spec 41) — all three are real, fixed facts about
-            // this funding path (a dedicated Flutterwave virtual account),
-            // not placeholders.
-            _SummaryRow(label: 'Transfer fee', value: 'Free'),
-            _SummaryRow(label: 'Arrives', value: 'Usually under 5 minutes'),
-            _SummaryRow(label: 'Send from', value: 'Any account in your name'),
-            const SizedBox(height: 18),
-            Text(
-              "Money sent from an account that isn't yours is returned — the "
-              'NGX requires the names to match.',
-              style: KType.body(color: KColor.ink3),
-            ),
-            const SizedBox(height: 22),
+            // mockup-raw/s41.html line 12: "Copy number" / "Share details"
+            // sit directly under the plate, BEFORE the info rows — was
+            // ordered after the footnote, past the info card.
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: KButton(
                     label: 'Copy number',
                     variant: KButtonVariant.secondary,
+                    size: KButtonSize.md,
+                    iconLeft: 'card',
                     onPressed: () => _copy(account.accountNumber),
                   ),
                 ),
@@ -622,6 +614,8 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                   child: KButton(
                     label: 'Share details',
                     variant: KButtonVariant.secondary,
+                    size: KButtonSize.md,
+                    iconLeft: 'send',
                     onPressed: () => SharePlus.instance.share(
                       ShareParams(
                         text: 'Send money to my Kudimata Invest account: '
@@ -634,7 +628,37 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
+            // Info rows (spec 41) — all three are real, fixed facts about
+            // this funding path (a dedicated Flutterwave virtual account),
+            // not placeholders. mockup-raw/s41.html line 16: wrapped in its
+            // own bordered card — was floating loose with no card at all.
+            Container(
+              decoration: BoxDecoration(
+                color: KColor.bg,
+                border: Border.all(color: KColor.hairline, width: 1),
+                borderRadius: KRadii.cardR,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _SummaryRow(label: 'Transfer fee', value: 'Free', small: true),
+                  _SummaryRow(label: 'Arrives', value: 'Usually under 5 minutes', small: true),
+                  _SummaryRow(
+                      label: 'Send from',
+                      value: 'Any account in your name',
+                      small: true,
+                      divider: false),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Money sent from an account that isn't yours is returned — the "
+              'NGX requires the names to match.',
+              style: KType.body(color: KColor.ink3),
+            ),
+            const SizedBox(height: 16),
             KButton(
               label: "I've sent it",
               onPressed: () => Navigator.of(context).pop(),
@@ -720,12 +744,14 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             KInput(
-              label: 'Amount',
+              // mockup-raw/s42.html line 7: no label prop on this Input.
               controller: _amount,
               numeric: true,
               amount: true,
               prefix: '₦',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              // Rebuilds "You receive" below as the investor types.
+              onChanged: (_) => setState(() {}),
               // Spec 42: "₦214,300.00 available · minimum ₦1,000 out" — the
               // "minimum ₦1,000" half is dropped deliberately: the backend's
               // real validation (WithdrawDto) only enforces amountKobo >= 1
@@ -734,11 +760,14 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
               // inexact — a rule a user could disprove by trying ₦500.
               helper: '${data.balance} available',
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 14),
             // No "To" eyebrow label here (mockup-raw/s42.html) — the
-            // destination row sits directly under the amount input.
+            // destination row sits directly under the amount input. bg
+            // (not paper) background, 14px/16px padding, per line 8 — was
+            // paper (KCard's default) with 16px horizontal only.
             KCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              color: KColor.bg,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: _SelectRow(
                 icon: 'wallet',
                 // "GTB ••••6789 · DCS account" (spec 42) — DCS accounts are
@@ -748,13 +777,17 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                 title: account == null
                     ? 'No saved bank account'
                     : '${account.bankName} ${account.accountNumberMasked} · DCS account',
-                // "Adebayo Okonkwo" + check icon (spec 42) — a DCS account is
-                // required to be in the investor's own name (enforced at
-                // add-time), so the signed-in investor's real fullName is a
-                // true fact about whichever account this resolves to.
+                // "Adebayo Okonkwo" (spec 42) — a DCS account is required to
+                // be in the investor's own name (enforced at add-time), so
+                // the signed-in investor's real fullName is a true fact
+                // about whichever account this resolves to. The standalone
+                // 18px gain check (spec 42's trailing element, not a
+                // chevron) only makes sense once a real, verified account is
+                // resolved; the "no saved account" case keeps the chevron
+                // affordance routing to add one instead.
                 sub: account == null ? 'Tap to add one' : data.holderName,
-                subVerified: account != null,
-                trailingChevron: true,
+                trailingCheck: account != null,
+                trailingChevron: account == null,
                 first: true,
                 // No saved account: routes to the add-bank-account screen
                 // instead of sitting inert. With a saved account, this row
@@ -769,29 +802,63 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                     : () {},
               ),
             ),
+            const SizedBox(height: 14),
+            // mockup-raw/s42.html lines 13-16: Fee/Arrives/You-receive
+            // breakdown card — was dropped entirely on a claim that it
+            // needed data this backend can't compute, but Fee is already
+            // established elsewhere in this very file (_WithdrawReview
+            // below) as a real, known fact: ₦0.00, no fee concept exists
+            // anywhere in the Transaction model. "You receive" is therefore
+            // just the entered amount — not fabricated, a direct
+            // consequence of that same known fact.
+            Container(
+              decoration: BoxDecoration(
+                color: KColor.bg,
+                border: Border.all(color: KColor.hairline, width: 1),
+                borderRadius: KRadii.cardR,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _SummaryRow(label: 'Fee', value: '₦0.00', small: true),
+                  _SummaryRow(
+                      label: 'Arrives', value: 'Within 1 business day', small: true, divider: false),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('You receive', style: KType.cardTitle()),
+                        Text('₦${_amount.text}', style: KType.cardTitle().tnum),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 12),
-            // mockup-raw/s42.html's footnote — deliberately NOT paired with
-            // the mockup's Fee/Arrives/You-receive breakdown card above it:
-            // that card computes a fee against the entered amount, and
-            // there's no fee/settlement field anywhere in WalletRepository
-            // or the API docs to compute it from — showing one would be
-            // fabricated financial data, same reasoning as the dropped
-            // "minimum ₦1,000" text on the Input's helper above.
+            // "Your passcode confirms this withdrawal" (spec 42's footnote)
+            // — dropped: there is no passcode-reentry step anywhere in this
+            // flow (see _WithdrawReview._confirm below), so that clause is a
+            // false security claim, not just an inexact one. Was kept here
+            // verbatim even though the identical claim was already found and
+            // dropped from _WithdrawReview's own footnote.
             Text(
-              'Money from a sale is available after it settles on T+3. Your passcode confirms this withdrawal.',
+              'Money from a sale is available after it settles on T+3.',
               style: KType.body(color: KColor.ink3),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
             // "Cancel" / "Review" (spec 42) — was a single "Withdraw" button
             // that skipped straight past the review step's own confirmation.
+            // Cancel is a fixed-width ghost button (hint-size "100px,50px"),
+            // not full-width like Review — was stretching both equally.
             Row(
               children: [
-                Expanded(
-                  child: KButton(
-                    label: 'Cancel',
-                    variant: KButtonVariant.ghost,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                KButton(
+                  label: 'Cancel',
+                  variant: KButtonVariant.ghost,
+                  fullWidth: false,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
                 const SizedBox(width: 10),
                 Expanded(

@@ -28,7 +28,6 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import '_pickers.dart';
-import 'onboarding_scaffold.dart';
 
 /// Loose E.164 check mirroring the backend's UpdateMeDto validator, same
 /// pattern as kyc/personal_details.dart's identical constant (duplicated
@@ -157,7 +156,10 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KOnboardTopBar(onBack: () => context.go(Routes.biometric)),
+            // Canvas #s10 has no top bar at all — no back arrow, no step
+            // label; content starts directly under the status bar (found in
+            // the 2026-08-23 exactness audit; KOnboardTopBar was an
+            // unrequested addition).
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -170,59 +172,58 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                       body: 'This keeps your account secure and compliant.',
                     ),
                     const SizedBox(height: 20),
-                    KCard(
-                      child: Column(
-                        children: [
-                          _TappableField(
-                              label: 'Date of birth',
-                              value: _dob != null ? _formatDobDisplay(_dob!) : null,
-                              placeholder: 'Select your date of birth',
-                              onTap: _pickDob,
-                              error: _showErrors && _dob == null
-                                  ? 'Enter your date of birth'
-                                  : null),
-                          const SizedBox(height: 16),
-                          KInput(
-                              label: 'Residential address',
-                              placeholder: '12 Bourdillon Road',
-                              controller: _addr,
-                              onChanged: _showErrors ? (_) => setState(() {}) : null,
-                              error: _showErrors && _addr.text.trim().isEmpty
-                                  ? 'Enter your residential address'
-                                  : null),
-                          const SizedBox(height: 16),
-                          KInput(
-                              label: 'City',
-                              placeholder: 'Ikeja',
-                              controller: _city,
-                              onChanged: _showErrors ? (_) => setState(() {}) : null,
-                              error: _showErrors && _city.text.trim().isEmpty
-                                  ? 'Enter your city'
-                                  : null),
-                          const SizedBox(height: 16),
-                          _TappableField(
-                              label: 'State',
-                              value: _residenceState,
-                              placeholder: 'Select your state',
-                              onTap: _pickState,
-                              error: _showErrors && _residenceState == null
-                                  ? 'Select your state'
-                                  : null),
-                          const SizedBox(height: 16),
-                          _PhoneField(
-                              controller: _phone,
-                              country: _phoneCountry,
-                              onCountryTap: _pickCountryCode,
-                              onChanged: _showErrors ? (_) => setState(() {}) : null,
-                              error: _showErrors &&
-                                      _normalizePhoneToE164(
-                                              _phone.text, _phoneCountry.dial) ==
-                                          null
-                                  ? 'Enter a valid phone number'
-                                  : null),
-                        ],
-                      ),
-                    ),
+                    // Canvas #s10: fields sit directly on --bg with a plain
+                    // gap:16px flex column — no card background/border/
+                    // padding around the group. The KCard wrapper here was
+                    // an unrequested addition (found in the 2026-08-23
+                    // exactness audit); removed to match.
+                    _TappableField(
+                        label: 'Date of birth',
+                        value: _dob != null ? _formatDobDisplay(_dob!) : null,
+                        placeholder: 'Select your date of birth',
+                        onTap: _pickDob,
+                        error: _showErrors && _dob == null
+                            ? 'Enter your date of birth'
+                            : null),
+                    const SizedBox(height: 16),
+                    KInput(
+                        label: 'Residential address',
+                        placeholder: '12 Bourdillon Road',
+                        controller: _addr,
+                        onChanged: _showErrors ? (_) => setState(() {}) : null,
+                        error: _showErrors && _addr.text.trim().isEmpty
+                            ? 'Enter your residential address'
+                            : null),
+                    const SizedBox(height: 16),
+                    KInput(
+                        label: 'City',
+                        placeholder: 'Ikeja',
+                        controller: _city,
+                        onChanged: _showErrors ? (_) => setState(() {}) : null,
+                        error: _showErrors && _city.text.trim().isEmpty
+                            ? 'Enter your city'
+                            : null),
+                    const SizedBox(height: 16),
+                    _TappableField(
+                        label: 'State',
+                        value: _residenceState,
+                        placeholder: 'Select your state',
+                        onTap: _pickState,
+                        error: _showErrors && _residenceState == null
+                            ? 'Select your state'
+                            : null),
+                    const SizedBox(height: 16),
+                    _PhoneField(
+                        controller: _phone,
+                        country: _phoneCountry,
+                        onCountryTap: _pickCountryCode,
+                        onChanged: _showErrors ? (_) => setState(() {}) : null,
+                        error: _showErrors &&
+                                _normalizePhoneToE164(
+                                        _phone.text, _phoneCountry.dial) ==
+                                    null
+                            ? 'Enter a valid phone number'
+                            : null),
                   ],
                 ),
               ),

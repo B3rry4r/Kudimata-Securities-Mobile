@@ -259,6 +259,22 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                                 color: KColor.featureInk),
                       ),
                     ),
+                    // Canvas escape hatch (screen 17's ghost "My camera
+                    // won't work" -> manual review) — mobile-only, since a
+                    // camera failure only exists on the live-preview path;
+                    // web already falls back to a file picker (see file
+                    // header). Without this, a permanently denied/broken
+                    // camera left the investor with nothing but a retry
+                    // loop and no way forward.
+                    if (!kIsWeb && _cameraError != null && !_busy) ...[
+                      const SizedBox(height: 16),
+                      KButton(
+                        label: "My camera won't work",
+                        variant: KButtonVariant.ghost,
+                        fullWidth: false,
+                        onPressed: () => context.go(Routes.kycOutcome),
+                      ),
+                    ],
                   ],
                         ),
                       ),

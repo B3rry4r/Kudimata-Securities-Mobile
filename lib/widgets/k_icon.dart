@@ -60,6 +60,12 @@ const Map<String, String> _kIconPaths = {
   // upload, no live camera preview on web) uses this in place of 'camera'.
   'upload': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>'
       '<polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+  // Lucide 'download' — 'upload' mirrored (mockup-raw/s43.html's "Download
+  // receipt" icon-left="download"). Was missing from this set entirely, so
+  // the receipt button on transaction-detail (screen 43) silently rendered
+  // a blank icon slot — same failure mode as the 'settings' gap noted above.
+  'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>'
+      '<polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
   // Lucide 'shield-check' — security alert notifications (new sign-in,
   // password changed, bank account added; 2026-08-20, "notifications for
   // almost every important thing... this is a darn fintech app!").
@@ -77,6 +83,25 @@ const Map<String, String> _kIconPaths = {
   // Lucide 'clock' — Home's "Orders" quick action (spec screen 29), and the
   // market-hours-closed states (spec screens 60-63).
   'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  // Lucide 'mail' — email-labeled KInput fields across onboarding (sign-up,
+  // log-in, reset-password), per the canvas's icon="mail" on every one of
+  // them. Added during the screens 1-12 exactness audit: this icon was
+  // referenced by the canvas but had never actually been added to this map,
+  // so every "Email" field silently fell back to the 'profile' glyph.
+  'mail': '<rect width="20" height="16" x="2" y="4" rx="2"/>'
+      '<path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+  // Lucide 'lock' — password-labeled KInput fields (log-in, reset-password),
+  // per the canvas's icon="lock" on every one of them. Same gap as 'mail'
+  // above.
+  'lock': '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>'
+      '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  // Lucide 'settings' (gear) — dashboard-only glyph per
+  // docs/design/design-system/readme.md's ICONOGRAPHY section ("added in
+  // the same idiom... flagged substitution"). Was entirely missing before
+  // this audit, so the notifications screen's header settings button (spec
+  // screen 47, icon="settings") silently rendered nothing usable.
+  'settings': '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>'
+      '<circle cx="12" cy="12" r="3"/>',
   // custom — drawn in the same Lucide idiom (shared.jsx Fingerprint)
   'fingerprint': '<path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>'
       '<path d="M5 19.5C5.5 18 6 16 6 14a6 6 0 0 1 .34-2"/>'

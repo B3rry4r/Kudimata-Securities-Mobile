@@ -290,11 +290,20 @@ class KSegmentedControl extends StatelessWidget {
     required this.options,
     required this.value,
     required this.onChanged,
+    this.compact = false,
   });
 
   final List<KSegmentOption> options;
   final String value;
   final ValueChanged<String> onChanged;
+
+  /// Small, content-hugging track (e.g. screen 35's Buy/Sell sheet title
+  /// row: a "Naira / Shares" toggle sitting beside the title, not stretched
+  /// across the sheet). Segments size to their label instead of sharing
+  /// equal `Expanded` widths, and the track sits at 40px instead of the
+  /// default 46px. Added as a prop rather than a second widget so every
+  /// call site keeps the same selected-segment look and behaviour.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -306,50 +315,71 @@ class KSegmentedControl extends StatelessWidget {
         border: Border.all(color: KColor.hairline, width: 1),
       ),
       child: Row(
+        mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
         children: [
           for (final opt in options)
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(left: opt == options.first ? 0 : 4),
-                child: GestureDetector(
-                  onTap: () => onChanged(opt.value),
-                  behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: KMotion.fast,
-                    curve: KMotion.easeSoft,
-                    height: 38,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: opt.value == value ? KColor.paper : const Color(0x00000000),
-                      borderRadius: BorderRadius.circular(7),
-                      border: Border.all(
-                        color: opt.value == value ? KColor.hairline : const Color(0x00000000),
-                        width: 1,
-                      ),
-                      boxShadow: opt.value == value ? KShadow.float : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (opt.icon != null) ...[
-                          KIcon(opt.icon!, size: 16, color: opt.value == value ? KColor.ink : KColor.ink3),
-                          const SizedBox(width: 6),
-                        ],
-                        Text(
-                          opt.label,
-                          style: KType.body(
-                            color: opt.value == value ? KColor.ink : KColor.ink3,
-                            w: opt.value == value ? KWeight.semibold : KWeight.medium,
-                          ),
-                        ),
-                      ],
+            // Expanded must be a DIRECT child of this Row — nesting it
+            // inside the Padding (as this used to) throws "Incorrect use of
+            // ParentDataWidget" (Expanded's ParentData applied to Padding's
+            // RenderObject instead of a Flex slot). Padding now wraps the
+            // segment and Expanded wraps the Padding, not the reverse.
+            compact
+                ? Padding(
+                    padding: EdgeInsets.only(left: opt == options.first ? 0 : 4),
+                    child: _segment(opt),
+                  )
+                : Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: opt == options.first ? 0 : 4),
+                      child: _segment(opt),
                     ),
                   ),
-                ),
-              ),
-            ),
         ],
       ),
+    );
+  }
+
+  Widget _segment(KSegmentOption opt) {
+    final tile = GestureDetector(
+      onTap: () => onChanged(opt.value),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: KMotion.fast,
+        curve: KMotion.easeSoft,
+        height: 38,
+        padding: compact ? const EdgeInsets.symmetric(horizontal: 14) : null,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: opt.value == value ? KColor.paper : const Color(0x00000000),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(
+            color: opt.value == value ? KColor.hairline : const Color(0x00000000),
+            width: 1,
+          ),
+          boxShadow: opt.value == value ? KShadow.float : null,
+        ),
+        child: _segmentContent(opt),
+      ),
+    );
+    return tile;
+  }
+
+  Widget _segmentContent(KSegmentOption opt) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (opt.icon != null) ...[
+          KIcon(opt.icon!, size: 16, color: opt.value == value ? KColor.ink : KColor.ink3),
+          const SizedBox(width: 6),
+        ],
+        Text(
+          opt.label,
+          style: KType.body(
+            color: opt.value == value ? KColor.ink : KColor.ink3,
+            w: opt.value == value ? KWeight.semibold : KWeight.medium,
+          ),
+        ),
+      ],
     );
   }
 }

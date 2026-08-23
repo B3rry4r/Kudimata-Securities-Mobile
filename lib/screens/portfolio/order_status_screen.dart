@@ -60,7 +60,8 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
             return Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(KSpace.gutter, 16, KSpace.gutter, 0),
+                  // mockup-raw/s44.html line 9: padding-top 12, not 16.
+                  padding: const EdgeInsets.fromLTRB(KSpace.gutter, 12, KSpace.gutter, 0),
                   child: KSegmentedControl(
                     value: _filter,
                     onChanged: (v) => setState(() => _filter = v),
@@ -97,8 +98,9 @@ class _OrderList extends StatelessWidget {
       children: [
         // mockup-raw/s44.html: SegmentedControl (in the parent Scaffold)
         // goes straight into the card — no "Recent orders" eyebrow between.
+        // Card padding is 18px horizontal (line 13), not 16.
         KCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -116,8 +118,7 @@ class _OrderList extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         // Static explainer nudge (2026-08-22 "Soft Landing" —
-        // screen-specs.md #44). No "Cancel order" action added here: there
-        // is no OrdersRepository cancel endpoint to wire it to yet.
+        // screen-specs.md #44).
         const KNudgeCard(
           title: 'Why is my order still filling?',
           body:
@@ -125,7 +126,14 @@ class _OrderList extends StatelessWidget {
               "You'll get a notification the moment it completes.",
           tone: KNudgeTone.grape,
         ),
-        const SizedBox(height: 16),
+        // mockup-raw/s44.html line 22: footer padding-top is 18, not 16.
+        const SizedBox(height: 18),
+        // mockup-raw/s44.html line 23: a destructive "Cancel the MTNN
+        // order" button precedes "Go to my portfolio" — deliberately NOT
+        // added: there is no cancel endpoint anywhere in this backend
+        // (checked orders_repository.dart and the wider api — POST/PATCH
+        // /transactions/:id/cancel doesn't exist), so a working cancel
+        // action can't be wired without fabricating one.
         KButton(
           label: 'Go to my portfolio',
           variant: KButtonVariant.ghost,
@@ -148,7 +156,9 @@ class _OrderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+      // mockup-raw/s44.html row: "14px 0" — 0 horizontal (the card above
+      // already carries the 18px horizontal inset).
+      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -202,7 +212,10 @@ class _EmptyOrders extends StatelessWidget {
           title: 'No orders yet',
           message: 'Your buy and sell orders will appear here once you place a trade.',
           primary: 'Browse markets',
-          onPrimary: () => Navigator.of(context).maybePop(),
+          // mockup-raw/s44.html footer note: "empty state points at 32
+          // Markets" — was just popping the screen instead of actually
+          // routing there.
+          onPrimary: () => context.go(Routes.markets),
         ),
       ),
     );

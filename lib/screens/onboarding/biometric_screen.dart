@@ -25,9 +25,12 @@ class BiometricScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KOnboardTopBar(
+            // Canvas #s09 renders the "Step 4 of 4" label bare, with no back
+            // arrow — unlike every other mid-flow screen (04/05/07/08/12).
+            // Found in the 2026-08-23 exactness audit.
+            const KOnboardTopBar(
               stepLabel: 'Step 4 of 4',
-              onBack: () => context.go(Routes.confirmPasscode),
+              showBackIcon: false,
             ),
             Expanded(
               child: KOnboardBody(

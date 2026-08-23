@@ -294,6 +294,11 @@ class _HomeBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final first = data.user.firstName;
+    // Canvas (#s29 vs #s30): the "not verified yet" header swaps the
+    // time-of-day greeting for "Browse only" and drops the bell entirely
+    // (no notifications affordance while browse-only) — both headers DO
+    // carry a search button, which this screen was missing altogether.
+    final notVerified = tradingEligibilityGap(AppScope.of(context)) != null;
 
     return ListView(
       // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
@@ -315,7 +320,11 @@ class _HomeBody extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_timeGreeting(), style: KType.micro(color: KColor.ink3)),
+                        // Canvas: both labels sit in the tracked, uppercase
+                        // micro role (text-transform:uppercase) — the
+                        // greeting was rendering in plain mixed case before.
+                        Text((notVerified ? 'Browse only' : _timeGreeting()).upper,
+                            style: KType.micro(color: KColor.ink3)),
                         Text(first, style: KType.section()),
                       ],
                     ),
@@ -323,9 +332,17 @@ class _HomeBody extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              _BellButton(
-                onPressed: () => context.push(Routes.notifications),
+              KIconButton(
+                icon: 'search',
+                semanticLabel: 'search',
+                onPressed: () => context.push(Routes.search),
               ),
+              if (!notVerified) ...[
+                const SizedBox(width: 8),
+                _BellButton(
+                  onPressed: () => context.push(Routes.notifications),
+                ),
+              ],
             ],
           ),
         ),

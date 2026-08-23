@@ -124,6 +124,19 @@ class _NotificationsSettingsScreenState
                     onChanged: (v) => _toggleOrders(prefs, v),
                   ),
                   const Divider(height: 1),
+                  // Canvas order (screen 48): Order updates, Money in and
+                  // out, Price alerts, Weekly digest, Security — this row
+                  // sits second, matching the "Money in and out" slot it's
+                  // merged onto (see this file's header comment for why it
+                  // also carries "Security").
+                  KSwitch(
+                    label: 'Money in and out, and security',
+                    description:
+                        'Deposits, withdrawals, dividends, sign-ins and account changes',
+                    checked: prefs.accountEmail,
+                    onChanged: (v) => _toggleAccount(prefs, v),
+                  ),
+                  const Divider(height: 1),
                   KSwitch(
                     label: 'Price alerts',
                     description: 'Only names on your watchlist, over 5% in a day',
@@ -136,14 +149,6 @@ class _NotificationsSettingsScreenState
                     description: 'One written summary of your portfolio, on Sundays',
                     checked: _weeklyDigest,
                     onChanged: (v) => setState(() => _weeklyDigest = v),
-                  ),
-                  const Divider(height: 1),
-                  KSwitch(
-                    label: 'Money in and out, and security',
-                    description:
-                        'Deposits, withdrawals, dividends, sign-ins and account changes',
-                    checked: prefs.accountEmail,
-                    onChanged: (v) => _toggleAccount(prefs, v),
                   ),
                 ],
               ),

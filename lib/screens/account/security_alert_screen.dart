@@ -57,7 +57,10 @@ class _SecurityAlertScreenState extends State<SecurityAlertScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KColor.bg,
-      appBar: KDetailHeader(title: 'Security alert'),
+      // Canvas #s51's own header title is literally "Security" (the "51 ·
+      // Security alert" caption above the phone frame is the gallery
+      // label, not on-screen copy) — 2026-08-23 exactness pass.
+      appBar: KDetailHeader(title: 'Security'),
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -74,6 +77,16 @@ class _SecurityAlertScreenState extends State<SecurityAlertScreen> {
                 // primary/secondary vertically, not side-by-side, precisely
                 // because `primary`'s label below is too long to share a row
                 // at any width (see security.dart's header comment on this).
+                // Canvas footer says this button also "returns to 50", but
+                // the only real freeze capability this app has
+                // (UserRepository.freeze() / POST /users/me/freeze) revokes
+                // EVERY session immediately, not just the flagged device's —
+                // there's no narrower "sign out just that one device" API.
+                // Landing back on an authenticated Security screen after
+                // that call would be actively wrong, so this keeps its
+                // existing, necessary real behaviour instead: freeze, force
+                // sign this session out too, and go to login. Documented,
+                // reviewed deviation, same reasoning as freeze_account_screen.dart.
                 primary: KButton(
                   label: 'Freeze my account and sign that device out',
                   variant: KButtonVariant.destructive,
@@ -83,7 +96,14 @@ class _SecurityAlertScreenState extends State<SecurityAlertScreen> {
                 secondary: KButton(
                   label: 'That was me',
                   variant: KButtonVariant.secondary,
-                  onPressed: _freezing ? null : () => Navigator.of(context).pop(),
+                  // Canvas footer: "either action returns to 50" (Security)
+                  // — go(), not pop(), since this screen's other real entry
+                  // point is a push notification tap, which may not have
+                  // Security anywhere on the stack to pop back to
+                  // (2026-08-23 exactness pass). Routes.acctSecurity is a
+                  // top-level GoRoute (not nested in a tab shell), so go()
+                  // here is safe from any entry point.
+                  onPressed: _freezing ? null : () => context.go(Routes.acctSecurity),
                 ),
               ),
               const SizedBox(height: 16),

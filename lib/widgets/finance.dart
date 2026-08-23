@@ -19,6 +19,7 @@ class KAssetRow extends StatelessWidget {
     this.trend,
     this.sparkline,
     this.onTap,
+    this.initialsSource,
   });
 
   final String name;
@@ -31,8 +32,16 @@ class KAssetRow extends StatelessWidget {
   final List<double>? sparkline;
   final VoidCallback? onTap;
 
+  /// Overrides what the fallback-initials badge reads letters from, when
+  /// [ticker] itself isn't the instrument symbol (e.g. the Portfolio screen,
+  /// mockup-raw/s38.html, passes a composed "120 shares · avg ₦241.10"
+  /// string as `ticker` for display — that string has no symbol letters to
+  /// extract). Null keeps the original ticker-then-name fallback.
+  final String? initialsSource;
+
   String get _initials {
-    final letters = (ticker.isNotEmpty ? ticker : name).replaceAll(RegExp(r'[^A-Za-z]'), '');
+    final source = initialsSource ?? (ticker.isNotEmpty ? ticker : name);
+    final letters = source.replaceAll(RegExp(r'[^A-Za-z]'), '');
     return letters.substring(0, letters.length < 2 ? letters.length : 2).toUpperCase();
   }
 

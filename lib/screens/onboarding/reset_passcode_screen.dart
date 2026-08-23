@@ -70,6 +70,37 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
   bool _codeSent = false;
   bool _busy = false;
 
+  // Canvas #s12 is reached ALREADY on "Reset · step 2 of 2" — there is no
+  // separate email-entry screen in the canvas at all, because both of its
+  // entry points (screen 11's "Forgot your password?" and screen 04's "I
+  // can't access this email") already know the investor's email from
+  // context. otp_screen.dart and log_in_screen.dart now thread that known
+  // email through via GoRouter `extra`; when present, skip the email step
+  // entirely and fire the reset email automatically, same as the canvas
+  // implies. Falls back to the manual email-entry step (this screen's
+  // pre-existing behaviour) when reached with no known email (e.g. a bare
+  // deep link) — same pattern otp_screen.dart's `_email` getter uses.
+  bool _autoStartHandled = false;
+  // True once we know the email step was skipped via a known-email `extra` —
+  // there's then no real "step 1" to fall back to on a back-tap, so it goes
+  // straight to Log in (canvas #s12's back target) instead of exposing a
+  // synthetic email step the investor never actually saw.
+  bool _skippedEmailStep = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_autoStartHandled) return;
+    _autoStartHandled = true;
+    final extra = GoRouterState.of(context).extra;
+    if (extra is String && extra.isNotEmpty) {
+      _emailController.text = extra;
+      _email = extra;
+      _skippedEmailStep = true;
+      _sendCode();
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -141,7 +172,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
   }
 
   void _onBack() {
-    if (_codeSent) {
+    if (_codeSent && !_skippedEmailStep) {
       setState(() => _codeSent = false);
     } else {
       context.go(Routes.login);
@@ -182,7 +213,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
       KInput(
         key: const ValueKey('reset-email-input'),
         label: 'Email',
-        icon: 'profile',
+        icon: 'mail',
         placeholder: 'you@email.com',
         keyboardType: TextInputType.emailAddress,
         controller: _emailController,
@@ -208,7 +239,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
       KInput(
         key: const ValueKey('reset-code-input'),
         label: 'Reset code',
-        placeholder: '123456',
+        placeholder: '6 digits',
         numeric: true,
         controller: _codeController,
         value: _code,
@@ -219,6 +250,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
         key: const ValueKey('reset-new-password-input'),
         label: 'New password',
         placeholder: 'At least 8 characters',
+        icon: 'lock',
         helper: 'At least 8 characters, one number',
         obscure: true,
         controller: _newPasswordController,
@@ -230,6 +262,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
         key: const ValueKey('reset-confirm-password-input'),
         label: 'Confirm new password',
         placeholder: 'Re-enter your new password',
+        icon: 'lock',
         obscure: true,
         controller: _confirmPasswordController,
         value: _confirmPassword,

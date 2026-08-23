@@ -109,8 +109,8 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
                     KInput(
                       label: 'BVN',
                       numeric: true,
-                      placeholder: '0000000000',
-                      helper: 'Dial *565*0# on your registered line to see yours.',
+                      placeholder: '11 digits',
+                      helper: 'Dial *565*0# on your registered line to see yours',
                       error: _showErrors && !_digitsPattern.hasMatch(_bvn.text.trim())
                           ? 'Enter a valid 11-digit BVN'
                           : null,
@@ -123,8 +123,7 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
                     KInput(
                       label: 'NIN',
                       numeric: true,
-                      placeholder: '00000000000',
-                      helper: 'Your 11-digit National Identification Number.',
+                      placeholder: '11 digits',
                       error: _showErrors && !_digitsPattern.hasMatch(_nin.text.trim())
                           ? 'Enter a valid 11-digit NIN'
                           : null,

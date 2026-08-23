@@ -144,7 +144,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             const SizedBox(height: 16),
             KInput(
               label: 'Email',
-              icon: 'profile',
+              icon: 'mail',
               placeholder: 'you@email.com',
               helper: 'We send your verification code here',
               keyboardType: TextInputType.emailAddress,
@@ -220,21 +220,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            Column(
-              children: [
-                KButton(
-                  label: 'Continue',
-                  iconRight: 'arrowUpRight',
-                  loading: _busy,
-                  onPressed: _busy ? null : _continue,
-                ),
-                const SizedBox(height: 10),
-                KButton(
-                  label: 'Log in',
-                  variant: KButtonVariant.ghost,
-                  onPressed: () => context.go(Routes.login),
-                ),
-              ],
+            // Mockup #s03's fixed bottom block is legal-line + Continue
+            // only, no icon on the button — the arrowUpRight icon and the
+            // extra "Log in" ghost button below it were both additions with
+            // no grounding in the canvas (removed 2026-08-23 exactness
+            // audit; "I already have an account" on the welcome slider
+            // already covers this nav path — welcome_slider_screen.dart).
+            KButton(
+              label: 'Continue',
+              loading: _busy,
+              onPressed: _busy ? null : _continue,
             ),
           ],
         ),
