@@ -552,8 +552,14 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(account.accountNumber,
-                            style: KType.title(color: KColor.featureInk).tnum),
+                        // mockup-raw/s41.html: 30px/800/-0.02em — bigger and
+                        // heavier than KType.title's 26px/700/-0.02em role.
+                        child: Text(
+                          account.accountNumber,
+                          style: KType.title(color: KColor.featureInk)
+                              .copyWith(fontSize: 30, fontWeight: KWeight.black, letterSpacing: -0.6)
+                              .tnum,
+                        ),
                       ),
                       GestureDetector(
                         onTap: () => _copy(account.accountNumber),
@@ -723,10 +729,8 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
               helper: '${data.balance} available',
             ),
             const SizedBox(height: 24),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 10),
-              child: KEyebrow('To'),
-            ),
+            // No "To" eyebrow label here (mockup-raw/s42.html) — the
+            // destination row sits directly under the amount input.
             KCard(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SelectRow(
@@ -760,8 +764,17 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
               ),
             ),
             const SizedBox(height: 12),
-            Text('Withdrawals arrive within 1 business day.',
-                style: KType.body(color: KColor.ink3)),
+            // mockup-raw/s42.html's footnote — deliberately NOT paired with
+            // the mockup's Fee/Arrives/You-receive breakdown card above it:
+            // that card computes a fee against the entered amount, and
+            // there's no fee/settlement field anywhere in WalletRepository
+            // or the API docs to compute it from — showing one would be
+            // fabricated financial data, same reasoning as the dropped
+            // "minimum ₦1,000" text on the Input's helper above.
+            Text(
+              'Money from a sale is available after it settles on T+3. Your passcode confirms this withdrawal.',
+              style: KType.body(color: KColor.ink3),
+            ),
             const SizedBox(height: 22),
             // "Cancel" / "Review" (spec 42) — was a single "Withdraw" button
             // that skipped straight past the review step's own confirmation.
@@ -770,7 +783,7 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                 Expanded(
                   child: KButton(
                     label: 'Cancel',
-                    variant: KButtonVariant.secondary,
+                    variant: KButtonVariant.ghost,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),

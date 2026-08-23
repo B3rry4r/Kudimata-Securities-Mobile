@@ -56,8 +56,12 @@ final _assets = [
   _asset(ticker: 'GTCO', name: 'Guaranty Trust Holding', priceKobo: 4815, changePct: 4.10, logoColor: '#2AA36B'),
   _asset(ticker: 'ZENITHBANK', name: 'Zenith Bank', priceKobo: 3620, changePct: -0.82, logoColor: '#6524A8'),
   _asset(ticker: 'DANGCEM', name: 'Dangote Cement', priceKobo: 41500, changePct: 0.35, logoColor: '#F07A45'),
-  _asset(ticker: 'AAPL', name: 'Apple Inc.', priceKobo: 0, changePct: 0, assetClass: 'us'),
 ];
+// No 'us'-class fixture asset: markets_screen.dart's own header comment
+// documents the real backend as NGX(+ETF)-only (2026-08-07 directive) — a
+// zero-priced AAPL row here doesn't represent anything the real API would
+// ever return, it just misleads anyone reading a screenshot from this
+// fixture into thinking a $0.00 price is a live bug.
 
 Map<String, dynamic> _assetByTicker(String ticker) {
   final upper = ticker.toUpperCase();

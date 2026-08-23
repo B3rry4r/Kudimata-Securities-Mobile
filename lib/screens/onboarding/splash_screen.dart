@@ -88,25 +88,19 @@ class _SplashScreenState extends State<SplashScreen> {
                 children: [
                   const KMark(size: 86, white: true),
                   const SizedBox(height: 22),
-                  Text.rich(
-                    TextSpan(
-                      style: KType.hero(color: KColor.featureInk).copyWith(
-                        fontSize: 26,
-                        letterSpacing: -0.39,
-                      ),
-                      children: [
-                        const TextSpan(text: 'Kudimata '),
-                        TextSpan(
-                          text: 'Invest',
-                          style: TextStyle(
-                            fontWeight: KWeight.regular,
-                            color: KColor.featureInk2,
-                          ),
-                        ),
-                      ],
+                  // Mockup #s01: ONE uniform string, weight 800, 28px,
+                  // -0.02em, solid --feature-ink — not split into a
+                  // bold/translucent pair like the Wordmark component
+                  // renders elsewhere. Splash spells this out by hand.
+                  Text(
+                    'Kudimata Invest',
+                    style: KType.hero(color: KColor.featureInk).copyWith(
+                      fontSize: 28,
+                      fontWeight: KWeight.black,
+                      letterSpacing: -0.56,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   Text(
                     "Own a piece of Nigeria's biggest companies",
                     textAlign: TextAlign.center,
@@ -122,7 +116,7 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Column(
                 children: [
                   KSpinner(size: 20, color: KColor.featureInk2),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
                   Text(
                     'Kudimata Securities Ltd · SEC registered'.upper,
                     textAlign: TextAlign.center,

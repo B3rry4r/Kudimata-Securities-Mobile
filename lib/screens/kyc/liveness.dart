@@ -136,7 +136,10 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KycTopBar(onBack: () => context.go(Routes.kycId)),
+            KycTopBar(
+              onBack: () => context.go(Routes.kycId),
+              stepLabel: 'Verification · 3 of 5',
+            ),
             const KycStepProgress(total: 5, current: 3),
             Expanded(
               child: LayoutBuilder(

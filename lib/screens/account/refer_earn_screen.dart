@@ -94,6 +94,11 @@ class _ReferEarnBody extends StatelessWidget {
         // but left the screen without any heading at all. This restores
         // the missing structure without reintroducing the cash/credits
         // mismatch.
+        // Mockup: support-chat illustration on a sun plate — additive,
+        // doesn't touch any of the real-data restructuring below
+        // (2026-08-23 exactness pass).
+        const KIllustration('support-chat', role: KIlloRole.small, tone: KIlloTone.sun),
+        const SizedBox(height: 14),
         Text('Bring a friend in', style: KType.title()),
         const SizedBox(height: 6),
         Text(

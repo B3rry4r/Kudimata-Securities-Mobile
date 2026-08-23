@@ -106,13 +106,18 @@ class KFreezeConfirm extends StatelessWidget {
     super.key,
     this.title = 'Freeze your account?',
     this.effects = const [],
-    required this.primary,
+    this.primary,
     this.secondary,
   });
 
   final String title;
   final List<String> effects;
-  final Widget primary;
+  // Nullable: screens whose spec places the confirm/cancel buttons elsewhere
+  // in the layout (e.g. below other content, in a non-default width ratio —
+  // see withdraw_mandate_screen.dart's screen-65 grid) omit these and render
+  // their own button row instead of forking this widget for a different
+  // button position.
+  final Widget? primary;
   final Widget? secondary;
 
   @override
@@ -142,11 +147,13 @@ class KFreezeConfirm extends StatelessWidget {
               ],
             ),
           ),
-        const SizedBox(height: 6),
-        Row(children: [
-          Expanded(child: primary),
-          if (secondary != null) ...[const SizedBox(width: 10), Expanded(child: secondary!)],
-        ]),
+        if (primary != null) ...[
+          const SizedBox(height: 6),
+          Row(children: [
+            Expanded(child: primary!),
+            if (secondary != null) ...[const SizedBox(width: 10), Expanded(child: secondary!)],
+          ]),
+        ],
       ],
     );
   }

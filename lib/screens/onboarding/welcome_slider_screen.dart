@@ -63,7 +63,7 @@ class _WelcomeSliderScreenState extends State<WelcomeSliderScreen> {
           padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
           child: Column(
             children: [
-              const SizedBox(height: KSpace.s12),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   const Expanded(child: KWordmark(size: 20)),
@@ -73,6 +73,7 @@ class _WelcomeSliderScreenState extends State<WelcomeSliderScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
               Expanded(
                 child: PageView.builder(
                   controller: _controller,
@@ -80,13 +81,28 @@ class _WelcomeSliderScreenState extends State<WelcomeSliderScreen> {
                   onPageChanged: (i) => setState(() => _index = i),
                   itemBuilder: (context, i) {
                     final s = _slides[i];
-                    return Center(
-                      child: KOnboardingSlide(
+                    // minHeight = the full available space, same finite
+                    // value for every slide (they all share this Expanded's
+                    // height budget) — KOnboardingSlide fills it exactly and
+                    // pins its dot row to the bottom instead of shrink-
+                    // wrapping to its own title/body length, which used to
+                    // make the card resize as you swiped between slides of
+                    // different text lengths. If a slide's illustration+text
+                    // is taller than the space left above the dots (e.g.
+                    // large accessibility text), KOnboardingSlide scrolls
+                    // just that inner region itself rather than overflowing
+                    // — found via test/shots_onboarding.dart, a signed-out
+                    // screenshot harness; this screen is unreachable by
+                    // route_walk_test.dart's signed-in-only overflow check,
+                    // so a real 25px overflow here went uncaught before.
+                    return LayoutBuilder(
+                      builder: (context, constraints) => KOnboardingSlide(
                         illustrationName: s.illustration,
                         title: s.title,
                         message: s.body,
                         index: _index,
                         count: _slides.length,
+                        minHeight: constraints.maxHeight,
                       ),
                     );
                   },

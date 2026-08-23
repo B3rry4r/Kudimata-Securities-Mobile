@@ -107,7 +107,12 @@ class _SuitabilityResultBody extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'You can retake this any time in Account → Personal info.',
+            // U+2192 (→) isn't in the bundled Nunito Sans font and there's
+            // no fontFamilyFallback configured, so it rendered as a tofu
+            // box on every device, not just in test screenshots (confirmed
+            // via fontTools: NunitoSans-Regular.ttf's cmap has no 0x2192).
+            // U+203A (›) is covered and reads the same way.
+            'You can retake this any time in Account › Personal info.',
             style: KType.data(color: KColor.ink3),
           ),
           const SizedBox(height: 28),

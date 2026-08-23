@@ -184,27 +184,30 @@ class _WalletBody extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Action row — Add money / Withdraw (sheet flows).
+        // mockup-raw/s40.html: Add money / Withdraw render as actual full-
+        // width Buttons (primary + secondary, icon-left) — was rendering as
+        // stacked icon-over-label tiles instead.
         Row(
           children: [
             Expanded(
-              child: _ActionTile(
-                icon: 'arrowDownLeft',
+              child: KButton(
                 label: 'Add money',
-                onTap: () => showAddMoneyFlow(context),
+                iconLeft: 'plus',
+                onPressed: () => showAddMoneyFlow(context),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
-              child: _ActionTile(
-                icon: 'arrowUp',
+              child: KButton(
                 label: 'Withdraw',
-                onTap: () => showWithdrawFlow(context),
+                variant: KButtonVariant.secondary,
+                iconLeft: 'send',
+                onPressed: () => showWithdrawFlow(context),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 16),
 
         // "Recent activity" (spec 40) — was "Recent". The eyebrow's trailing
         // link deliberately stays "Orders", not spec's literal "See all":
@@ -243,35 +246,18 @@ class _WalletBody extends StatelessWidget {
               ],
             ),
           ),
-      ],
-    );
-  }
-}
-
-// 1/2-width action tile — line icon over a label.
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({required this.icon, required this.label, required this.onTap});
-  final String icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return KCard(
-      padding: EdgeInsets.zero,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            KIcon(icon, size: 22),
-            const SizedBox(height: 8),
-            Text(label,
-                style: KType.label(color: KColor.ink).copyWith(letterSpacing: 0, height: 1.0)),
-          ],
+        const SizedBox(height: 14),
+        // mockup-raw/s40.html line 26 — was missing entirely. Mockup's
+        // literal copy names a specific bank/masked account ("GTB
+        // ••••6789") — that's example data for the mockup's one seeded
+        // user, not something this screen fetches; naming a fixed bank for
+        // every real investor would be fabricating their account details,
+        // so this keeps the sentence generic instead.
+        Text(
+          'Withdrawals go only to your DCS account, usually within one business day.',
+          style: KType.data(color: KColor.ink3),
         ),
-      ),
+      ],
     );
   }
 }
@@ -296,7 +282,7 @@ class _TxnRow extends StatelessWidget {
   // colored circle: indicator-tint, track, sun-tint respectively)").
   (Color, Color) get _iconColors => switch (txn.type) {
         TxnType.fund => (KColor.indicatorTint, KColor.indicator),
-        TxnType.buy || TxnType.sell => (KColor.track, KColor.ink),
+        TxnType.buy || TxnType.sell => (KColor.track, KColor.ink2),
         TxnType.withdraw || TxnType.convert => (KColor.sunTint, KColor.sunPress),
       };
 
@@ -316,8 +302,8 @@ class _TxnRow extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 34,
+              height: 34,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
               child: KIcon(_icon, size: 18, color: fg),

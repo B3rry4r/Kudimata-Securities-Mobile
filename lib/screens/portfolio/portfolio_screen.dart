@@ -87,8 +87,12 @@ class _PortfolioBody extends StatelessWidget {
       // floating KBottomNav (~70px + 12 margin + safe area).
       padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 100),
       children: [
+        // screen-specs.md #38 / mockup-raw/s38.html: title, BalancePanel,
+        // allocation card, digest, holdings card at a uniform 14px rhythm —
+        // no "Allocation"/"Holdings" eyebrow labels between them (the app
+        // had added those, and widened the rhythm to 16/28/12/20/28/12).
         const KScreenHead(title: 'Portfolio'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
         // The single ink BalancePanel — total value + all-time return.
         KBalancePanel(
@@ -104,17 +108,13 @@ class _PortfolioBody extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(height: 28),
-        const KEyebrow('Allocation'),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _AllocationCard(allocation: summary.allocation, holdingCount: holdings.length),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         _ConcentrationDigest(allocation: summary.allocation),
 
-        const SizedBox(height: 28),
-        const KEyebrow('Holdings'),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _HoldingsCard(holdings: holdings),
       ],
     );
@@ -133,7 +133,10 @@ class _AllocationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // mockup-raw/s38.html line 11: 14px card padding, 16px row gap, 120px
+    // donut — the app had 20px (KCard default), 20px, and 132px.
     return KCard(
+      padding: const EdgeInsets.all(14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -150,16 +153,16 @@ class _AllocationCard extends StatelessWidget {
             // entirely even though KAllocationDonut has always supported it.
             centerValue: '$holdingCount',
             centerLabel: holdingCount == 1 ? 'holding' : 'holdings',
-            size: 132,
+            size: 120,
             thickness: 18,
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 for (var i = 0; i < allocation.length; i++) ...[
-                  if (i != 0) const SizedBox(height: 12),
+                  if (i != 0) const SizedBox(height: 8),
                   _LegendRow(
                     color: KAllocationDonut.ramp[i % KAllocationDonut.ramp.length],
                     label: allocation[i].label,

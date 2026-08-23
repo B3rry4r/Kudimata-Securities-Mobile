@@ -23,8 +23,12 @@ class KCentered extends StatelessWidget {
 }
 
 // ── EMPTY ───────────────────────────────────────────────────────────────────
-/// Neutral empty medallion + title + message + one action. The design's bookmark
-/// glyph is not in the fixed KIcon set, so watchlist falls back to 'eye'.
+/// Illustrated scene + title + message + one action — the design system's
+/// StatusView pattern (readme.md names the plain icon-in-a-circle medallion
+/// this replaces explicitly as the thing "the redesign moved away from").
+/// [illustrationName] renders a real scene on its tinted plate; omit it and
+/// the old medallion (icon in a circle) still renders, so any call site that
+/// hasn't been given a matching scene yet keeps working unchanged.
 class KEmptyView extends StatelessWidget {
   const KEmptyView({
     super.key,
@@ -33,6 +37,7 @@ class KEmptyView extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.illustrationName,
   });
 
   /// Convenience builders mirroring the design's EmptyHoldings / EmptyTransactions
@@ -41,25 +46,29 @@ class KEmptyView extends StatelessWidget {
       : icon = 'portfolio',
         title = 'No holdings yet',
         message = 'Your investments will show here. Buy from ₦1,000.',
-        actionLabel = 'Browse markets';
+        actionLabel = 'Browse markets',
+        illustrationName = 'empty-portfolio';
 
   const KEmptyView.transactions({super.key, this.onAction})
       : icon = 'transfer',
         title = 'No transactions yet',
         message = 'Money you add, invest or withdraw will appear here.',
-        actionLabel = 'Add money';
+        actionLabel = 'Add money',
+        illustrationName = 'empty-wallet';
 
   const KEmptyView.watchlist({super.key, this.onAction})
       : icon = 'eye', // design used a bookmark glyph (not in the fixed KIcon set)
         title = 'Nothing saved yet',
         message = 'Save a stock to follow its price here.',
-        actionLabel = 'Browse markets';
+        actionLabel = 'Browse markets',
+        illustrationName = 'empty-watchlist';
 
   final String icon;
   final String title;
   final String message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String? illustrationName;
 
   @override
   Widget build(BuildContext context) {
@@ -68,17 +77,20 @@ class KEmptyView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: KColor.paper,
-              shape: BoxShape.circle,
-              border: Border.fromBorderSide(BorderSide(color: KColor.hairline, width: 1)),
+          if (illustrationName != null)
+            KIllustration(illustrationName!, role: KIlloRole.state)
+          else
+            Container(
+              width: 72,
+              height: 72,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: KColor.paper,
+                shape: BoxShape.circle,
+                border: Border.fromBorderSide(BorderSide(color: KColor.hairline, width: 1)),
+              ),
+              child: KIcon(safeIcon, size: 30, color: KColor.ink),
             ),
-            child: KIcon(safeIcon, size: 30, color: KColor.ink),
-          ),
           const SizedBox(height: 22),
           Text(title, textAlign: TextAlign.center, style: KType.title()),
           const SizedBox(height: 10),

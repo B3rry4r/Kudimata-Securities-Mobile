@@ -161,7 +161,7 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
-                    KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
+                    KSpace.gutter, 18, KSpace.gutter, KSpace.gutter),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

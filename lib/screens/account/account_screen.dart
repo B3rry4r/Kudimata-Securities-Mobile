@@ -19,12 +19,19 @@ import 'account_widgets.dart';
 
 // Menu order mirrors the design. `icon` maps to the fixed KIcon set; route is
 // the pushed sub-screen target.
+// Order and membership match the canvas mockup's #s45 block exactly
+// (2026-08-23 exactness pass) — Personal info, Security, Bank accounts,
+// Statements, Refer & earn, Help & support, Legal. "Notifications" was
+// dropped: it's not a row on this screen in the mockup (reachable from
+// Home's bell icon instead, screen 29) — an extra row this port had added.
+// Corporate actions / Tax documents / Data & privacy are in the mockup but
+// link to screen ids beyond this 66-screen canvas (unmocked, unbuilt) —
+// correctly omitted rather than linking somewhere real for something fake.
 const List<(String icon, String title, String route)> _items = [
   ('profile', 'Personal info', Routes.acctPersonal),
   ('fingerprint', 'Security', Routes.acctSecurity),
   ('wallet', 'Bank accounts', Routes.acctBanks),
   ('card', 'Statements & documents', Routes.acctStatements),
-  ('bell', 'Notifications', Routes.acctNotifications),
   ('send', 'Refer & earn', Routes.acctRefer),
   ('search', 'Help & support', Routes.acctHelp),
   ('card', 'Legal', Routes.acctLegal),
@@ -35,12 +42,6 @@ const List<(String icon, String title, String route)> _items = [
 // AI-credit metering backend exists yet (docs/redesign/PLAN.md).
 const int _exampleCreditsUsed = 3;
 const int _exampleCreditsTotal = 10;
-
-String _initials(String name) {
-  final parts = name.trim().split(RegExp(r'\s+'));
-  final letters = parts.map((p) => p.isEmpty ? '' : p[0]).take(2).join();
-  return letters.toUpperCase();
-}
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -113,25 +114,15 @@ class _AccountBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile header.
+          // Profile header — canvas mockup #s45 uses the illustrated Avatar
+          // (seeded per-user, per readme.md's "Characters are generated, not
+          // drawn"), not a bare initials-in-circle (2026-08-23 exactness
+          // pass — the prior port used the wrong identity treatment here).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: Row(
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: KColor.bg,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: KColor.hairline, width: 1),
-                  ),
-                  child: Text(
-                    _initials(user.fullName),
-                    style: KType.section().copyWith(fontSize: 22, height: 1.0),
-                  ),
-                ),
+                KAvatar(seed: user.email, size: 56),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -147,26 +138,36 @@ class _AccountBody extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          // The mockup's "Verified" StatusPill + "CHN ••• · NGX account
+          // live" subtitle need cscsNumber/verification-status fields that
+          // UserRepository.me() (UserProfile) doesn't carry — only
+          // UserRepository.personalInfo()/KycRepository.me() do (see
+          // personal_info_screen.dart's _fetchBvn for the exact pattern).
+          // Flagged, not added here: needs a second fetch wired in
+          // alongside _future above, not a one-line change.
+          const SizedBox(height: 16),
+          // Plans & credits sits as its own compact row above the menu
+          // group in the mockup (CreditMeter + a link), not as the menu's
+          // first item (2026-08-23 exactness pass).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
-            child: KAccountCard(
-              children: [
-                KAccountRow(
-                  icon: 'plus',
-                  title: 'Plans & credits',
-                  first: true,
-                  right: const KCreditMeter(
+            child: GestureDetector(
+              onTap: () => context.push(Routes.acctPlans),
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  const KCreditMeter(
                     used: _exampleCreditsUsed,
                     total: _exampleCreditsTotal,
                     compact: true,
                   ),
-                  onTap: () => context.push(Routes.acctPlans),
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Text('Plans & credits', style: KType.data(color: KColor.ink)),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           // Menu group.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),

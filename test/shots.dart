@@ -113,6 +113,17 @@ void _mockPlatformChannels() {
 typedef _Mounted = ({AppState state, GoRouter router, GlobalKey key});
 
 Future<_Mounted> _mount(WidgetTester tester) async {
+  // screen-specs.md: "Screens 01–66 are 390×880 phone frames." None of these
+  // harnesses were setting this — every capture rendered at flutter_test's
+  // default ~800×600 desktop-shaped surface instead, which understates
+  // width-constrained problems (text/buttons have ~2x the real width to
+  // work with) and can misrepresent anything sized relative to screen width
+  // (e.g. a maxWidth-capped keypad looks stranded with huge margins on an
+  // 800-wide canvas but properly fills a 390-wide phone).
+  tester.view.physicalSize = const Size(1170, 2640); // 390×880 @ 3x
+  tester.view.devicePixelRatio = 3.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   KColor.active = KPalette.light;
   final apiClient = ApiClient();
   // Without this, every API-backed screen just renders its generic
@@ -261,6 +272,31 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     await _capture(tester, key, '/tmp/shots/add_money_card.png');
+
+    mounted.state.dispose();
+  });
+
+  // Screen 42 (Withdraw) — same showKSheet-overlay reasoning as "capture add
+  // money flows" above: not a route, needs a real tap from the Wallet tab.
+  // Never previously captured (confirmed: absent from _routes above and from
+  // every existing screenshot in /tmp/shots).
+  testWidgets('capture withdraw flow', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    Directory('/tmp/shots').createSync(recursive: true);
+
+    final mounted = await _mount(tester);
+    final router = mounted.router;
+    final key = mounted.key;
+
+    router.go('/wallet');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.tap(find.text('Withdraw').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await _capture(tester, key, '/tmp/shots/withdraw.png');
 
     mounted.state.dispose();
   });

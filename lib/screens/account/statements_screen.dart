@@ -96,6 +96,7 @@ class _StatementsScreenState extends State<StatementsScreen> {
               icon: 'card',
               title: 'No documents yet',
               message: 'Your statements and contract notes will show here.',
+              illustrationName: 'empty-statements',
             );
           }
           return _StatementsBody(
@@ -150,6 +151,21 @@ class _StatementsBody extends StatelessWidget {
           title: 'What is a contract note?',
           body:
               'The receipt for one trade — what you bought, at what price, and every fee inside it. Free to read in plain English.',
+        ),
+        const SizedBox(height: 16),
+        // Mockup's "Email me a statement" action — same honest-gap pattern
+        // as the per-row download button above: no email-dispatch endpoint
+        // exists yet, so this tells the investor rather than silently
+        // failing (2026-08-23 exactness pass).
+        KButton(
+          label: 'Email me a statement',
+          variant: KButtonVariant.secondary,
+          iconLeft: 'mail',
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Emailing statements isn\'t available yet — check back soon.')),
+            );
+          },
         ),
       ],
     );

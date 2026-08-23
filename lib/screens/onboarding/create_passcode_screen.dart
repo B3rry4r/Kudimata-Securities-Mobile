@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
-import 'package:kudimata_invest/widgets/widgets.dart';
 import 'confirm_passcode_screen.dart';
 import 'onboarding_scaffold.dart';
 
@@ -75,21 +74,30 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
             ),
             Expanded(
               child: KOnboardBody(
-                paddingTop: 12,
+                paddingTop: 22,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: KScreenHead(title: 'Create a passcode'),
+                  // Ported 1:1 from the canvas mockup's #s07 block: a
+                  // centered flex column — title, then body, THEN the dots
+                  // (not dots-then-body) — gap:10px between children, dots
+                  // additionally offset margin-top:18px. The block sits near
+                  // the top with its own padding; the keypad is pushed to
+                  // the bottom by the Spacer below (CSS margin-top:auto in
+                  // the mockup — same mechanism), so the gap between them is
+                  // intentional, not a layout bug.
+                  Text(
+                    'Create a passcode',
+                    textAlign: TextAlign.center,
+                    style: KType.title(color: KColor.ink),
                   ),
-                  const SizedBox(height: 40),
-                  KPasscodeDots(filled: _code.length),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   Text(
                     "Six digits. You'll use it to open the app and to approve withdrawals.",
                     textAlign: TextAlign.center,
                     style: KType.body(color: KColor.ink3),
                   ),
+                  const SizedBox(height: 28),
+                  KPasscodeDots(filled: _code.length),
                   const Spacer(),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 300),

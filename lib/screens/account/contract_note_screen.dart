@@ -82,36 +82,50 @@ class ContractNoteScreen extends StatelessWidget {
                     style: KType.body(color: KColor.ink2),
                   ),
                 ),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 16),
+                // Static compliance copy from #s66's legal footer band — not
+                // backend-dependent (unlike the line-item breakdown above),
+                // so shown verbatim rather than omitted.
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
+                  child: Text(
+                    'Kudimata Securities Ltd, SEC-registered · shares registered to your CHN at the '
+                    'CSCS on settlement · this is a record of an executed order, not advice · fees '
+                    'comprise broker commission plus NGX, SEC and CSCS charges and VAT.',
+                    // #s66 explicitly overrides the micro role's usual
+                    // tracked-uppercase treatment for this block:
+                    // letter-spacing:0;text-transform:none — plain sentence
+                    // case, not a label.
+                    style: KType.micro(color: KColor.ink3).copyWith(letterSpacing: 0, height: 1.6),
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: KButton(
-                  label: 'Download PDF',
-                  variant: KButtonVariant.secondary,
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Downloads are not available yet — check back soon.'),
-                    ),
-                  ),
-                ),
+          // #s66: buttons stack full-width (not a 2-up row); Download PDF is
+          // the primary action with a download icon, Email is ghost.
+          KButton(
+            label: 'Download PDF',
+            iconLeft: 'download',
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Downloads are not available yet — check back soon.'),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: KButton(
-                  label: 'Email me this receipt',
-                  variant: KButtonVariant.secondary,
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Receipts are not available yet — check back soon.'),
-                    ),
-                  ),
-                ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          KButton(
+            label: 'Email me this receipt',
+            variant: KButtonVariant.ghost,
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Receipts are not available yet — check back soon.'),
               ),
-            ],
+            ),
           ),
         ],
       ),

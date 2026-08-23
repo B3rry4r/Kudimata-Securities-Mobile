@@ -692,20 +692,19 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Ported 1:1 from the canvas mockup's #s29 block: icon 20px, label in
+    // the --text-data role (not tracked/uppercase micro), padding 14px 10px.
     return KCard(
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            KIcon(icon, size: 22, color: KColor.ink),
+            KIcon(icon, size: 20, color: KColor.ink),
             const SizedBox(height: 8),
-            Text(label,
-                maxLines: 1,
-                style: KType.micro(color: KColor.ink, w: KWeight.medium)
-                    .copyWith(letterSpacing: 0.01 * 10)),
+            Text(label, maxLines: 1, style: KType.data(color: KColor.ink)),
           ],
         ),
       ),

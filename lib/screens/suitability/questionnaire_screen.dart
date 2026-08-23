@@ -120,32 +120,49 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Slim step-progress indicator.
+            // Header: back icon-button + step label, THEN the progress bar
+            // below it — ported 1:1 from the canvas mockup's #s27 block,
+            // which has these as two separate rows in that order. The
+            // previous version had no back affordance in the header at all
+            // (only the step label sat here, below a taller/differently
+            // radiused progress bar) and put the step label under the bar
+            // instead of beside the back button.
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+              child: Row(
                 children: [
-                  Row(
-                    children: List.generate(total, (i) {
-                      return Expanded(
-                        child: Container(
-                          height: 3,
-                          margin: EdgeInsets.only(right: i == total - 1 ? 0 : 6),
-                          decoration: BoxDecoration(
-                            color: i < current ? KColor.ink : KColor.hairline,
-                            borderRadius: BorderRadius.circular(KRadii.pill),
-                          ),
-                        ),
-                      );
-                    }),
+                  KIconButton(
+                    icon: 'back',
+                    variant: KIconButtonVariant.float,
+                    onPressed: _back,
+                    semanticLabel: 'back',
                   ),
-                  const SizedBox(height: 10),
-                  Text('Question $current of $total'.upper,
-                      style: KType.micro(color: KColor.ink3).tnum),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text('Question $current of $total'.upper,
+                        style: KType.micro(color: KColor.ink3).tnum),
+                  ),
                 ],
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: List.generate(total, (i) {
+                  return Expanded(
+                    child: Container(
+                      height: 5,
+                      margin: EdgeInsets.only(right: i == total - 1 ? 0 : 6),
+                      decoration: BoxDecoration(
+                        color: i < current ? KColor.indicator : KColor.track,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            const SizedBox(height: 24),
 
             // Body: question card + nav buttons.
             Expanded(
@@ -153,7 +170,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 child: Column(
                   children: [
-                    Text(q.prompt, style: KType.section()),
+                    Text(q.prompt, style: KType.title()),
                     const SizedBox(height: 16),
                     for (int i = 0; i < q.options.length; i++) ...[
                       if (i != 0) const SizedBox(height: 10),

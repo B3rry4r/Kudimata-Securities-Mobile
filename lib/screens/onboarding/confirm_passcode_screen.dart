@@ -33,7 +33,6 @@ import 'package:kudimata_invest/data/api/passcode_store.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
-import 'package:kudimata_invest/widgets/widgets.dart';
 import 'log_in_screen.dart' show hydrateGatingStateAndRoute;
 import 'onboarding_scaffold.dart';
 
@@ -203,22 +202,30 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
             ),
             Expanded(
               child: KOnboardBody(
-                paddingTop: 12,
+                paddingTop: 22,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: KScreenHead(title: 'Enter it again'),
+                  // Ported 1:1 from the canvas mockup's #s08 block — same
+                  // shape as create_passcode_screen.dart's #s07: centered
+                  // column, title then body then dots (dots get an extra
+                  // margin-top:18 on top of the 10px flex gap), keypad
+                  // pushed to the bottom by the Spacer (mockup's
+                  // margin-top:auto) rather than the whole group centering.
+                  Text(
+                    'Enter it again',
+                    textAlign: TextAlign.center,
+                    style: KType.title(color: KColor.ink),
                   ),
-                  const SizedBox(height: 40),
-                  KPasscodeDots(filled: _code.length, error: _error),
-                  const SizedBox(height: 18),
-                  if (_error)
+                  if (_error) ...[
+                    const SizedBox(height: 10),
                     Text(
                       "That didn't match. Try the six digits again.",
                       textAlign: TextAlign.center,
                       style: KType.body(color: KColor.loss, w: KWeight.medium),
                     ),
+                  ],
+                  const SizedBox(height: 28),
+                  KPasscodeDots(filled: _code.length, error: _error),
                   const Spacer(),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 300),

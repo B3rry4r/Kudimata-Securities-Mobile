@@ -58,6 +58,9 @@ class _WithdrawMandateScreenState extends State<WithdrawMandateScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // screen-65: buttons render below the Input + explainer, not
+          // immediately after the effects list — see KFreezeConfirm's
+          // nullable primary/secondary doc comment.
           KFreezeConfirm(
             title: 'Withdraw your mandate on ${widget.account.bankName} '
                 '${widget.account.accountNumberMasked}?',
@@ -67,16 +70,6 @@ class _WithdrawMandateScreenState extends State<WithdrawMandateScreen> {
               "We'll email you a copy of the instruction either way",
               'Withdrawals are blocked until a new mandate is active',
             ],
-            primary: KButton(
-              label: 'Withdraw mandate',
-              variant: KButtonVariant.destructive,
-              onPressed: _canConfirm ? _confirm : null,
-            ),
-            secondary: KButton(
-              label: 'Keep it',
-              variant: KButtonVariant.ghost,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
           ),
           const SizedBox(height: 16),
           KInput(
@@ -90,6 +83,29 @@ class _WithdrawMandateScreenState extends State<WithdrawMandateScreen> {
             'The CSCS takes up to two business days to remove a mandate. '
             'We email you a copy of the instruction either way.',
             style: KType.data(color: KColor.ink3),
+          ),
+          const SizedBox(height: 16),
+          // grid-template-columns:130px 1fr per spec — "Keep it" fixed
+          // width, "Withdraw mandate" takes the remaining space.
+          Row(
+            children: [
+              SizedBox(
+                width: 130,
+                child: KButton(
+                  label: 'Keep it',
+                  variant: KButtonVariant.secondary,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: KButton(
+                  label: 'Withdraw mandate',
+                  variant: KButtonVariant.destructive,
+                  onPressed: _canConfirm ? _confirm : null,
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -98,9 +98,13 @@ class KKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Each cell is an exact 64px-tall tappable slot, laid out as 4 rows of 3 so
-    // nothing overflows (a GridView aspect-ratio would clip the glyphs).
-    Widget cell(Widget? child, {VoidCallback? onTap, String? semantic}) {
+    // Ported 1:1 from the canvas mockup's #s07 block: CSS grid, 3 columns,
+    // 14px gap both axes, 64px-tall cells. Only the DIGIT keys sit on a
+    // paper/hairline/r-input rounded-square tile — delete and the
+    // biometric-slot key are bare icons with no visible box, exactly as
+    // authored (`<span style="height:64px;...border-radius:var(--r-input);
+    // cursor:pointer">` with no background/border for delete).
+    Widget cell(Widget? child, {VoidCallback? onTap, String? semantic, bool boxed = false}) {
       return Expanded(
         child: Semantics(
           button: onTap != null,
@@ -108,7 +112,26 @@ class KKeypad extends StatelessWidget {
           child: GestureDetector(
             onTap: onTap,
             behavior: HitTestBehavior.opaque,
-            child: SizedBox(height: 64, child: Center(child: child ?? const SizedBox.shrink())),
+            child: SizedBox(
+              height: 64,
+              child: Center(
+                child: child == null
+                    ? const SizedBox.shrink()
+                    : (boxed
+                        ? Container(
+                            width: double.infinity,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: KColor.paper,
+                              border: Border.all(color: KColor.hairline),
+                              borderRadius: BorderRadius.circular(KRadii.input),
+                            ),
+                            alignment: Alignment.center,
+                            child: child,
+                          )
+                        : child),
+              ),
+            ),
           ),
         ),
       );
@@ -118,33 +141,41 @@ class KKeypad extends StatelessWidget {
           Text(
             d,
             style: KType.title(color: KColor.ink).copyWith(
-              fontSize: 26,
-              fontWeight: KWeight.medium,
+              fontSize: 24,
+              fontWeight: KWeight.bold,
               letterSpacing: 0,
             ).tnum,
           ),
           onTap: () => onKey(d),
           semantic: d,
+          boxed: true,
         );
 
-    Widget row(List<Widget> kids) => Row(children: kids);
+    Widget row(List<Widget> kids) => Row(
+          children: [
+            for (var i = 0; i < kids.length; i++) ...[
+              if (i > 0) const SizedBox(width: 14),
+              kids[i],
+            ],
+          ],
+        );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         row([digit('1'), digit('2'), digit('3')]),
-        const SizedBox(height: 6),
+        const SizedBox(height: 14),
         row([digit('4'), digit('5'), digit('6')]),
-        const SizedBox(height: 6),
+        const SizedBox(height: 14),
         row([digit('7'), digit('8'), digit('9')]),
-        const SizedBox(height: 6),
+        const SizedBox(height: 14),
         row([
           leftAction != null
               ? cell(leftAction, onTap: onLeftAction, semantic: 'Use biometrics')
               : cell(null),
           digit('0'),
           cell(
-            KIcon('back', size: 28, color: KColor.ink2), // delete (backspace) affordance
+            KIcon('back', size: 22, color: KColor.ink2), // delete (backspace) affordance
             onTap: () => onKey('del'),
             semantic: 'Delete',
           ),

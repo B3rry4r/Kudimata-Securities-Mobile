@@ -93,10 +93,10 @@ class _OrderList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(KSpace.gutter, 16, KSpace.gutter, 24),
+      padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 24),
       children: [
-        const KEyebrow('Recent orders'),
-        const SizedBox(height: 12),
+        // mockup-raw/s44.html: SegmentedControl (in the parent Scaffold)
+        // goes straight into the card — no "Recent orders" eyebrow between.
         KCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Column(
@@ -136,18 +136,21 @@ class _OrderList extends StatelessWidget {
   }
 }
 
-/// One order row — title + units/price subtitle · amount + status badge.
+/// One order row — title + units/price subtitle, StatusPill inline to the
+/// right. mockup-raw/s44.html: `[title+subtitle flex:1] [StatusPill]` — was
+/// stacking the pill below the subtitle and adding an amount/date column
+/// the mockup doesn't show in this list (that pairing belongs to the
+/// Wallet activity list, s40, not Orders).
 class _OrderRow extends StatelessWidget {
   const _OrderRow({required this.txn});
   final Txn txn;
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = txn.incoming ? KColor.gain : KColor.ink;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -157,22 +160,11 @@ class _OrderRow extends StatelessWidget {
                 Text(txn.title, style: KType.cardTitle().copyWith(height: 20 / 15)),
                 const SizedBox(height: 4),
                 Text(txn.subtitle, style: KType.micro(color: KColor.ink3).tnum),
-                const SizedBox(height: 6),
-                _StatusBadge(status: txn.status),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(txn.amount,
-                  style: KType.cardTitle(color: amountColor).copyWith(height: 20 / 15).tnum),
-              const SizedBox(height: 4),
-              Text(txn.date, style: KType.micro(color: KColor.ink3).tnum),
-            ],
-          ),
+          _StatusBadge(status: txn.status),
         ],
       ),
     );

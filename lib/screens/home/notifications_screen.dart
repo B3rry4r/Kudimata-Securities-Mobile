@@ -155,22 +155,32 @@ class _NotificationsList extends StatelessWidget {
   }
 }
 
+/// Category-tinted 34px badge — screen-specs.md 47 / the canvas mockup's
+/// #s47 block colour each notification's icon by what it's about (security
+/// = loss-red, markets = indicator-grape, money-in/dividend = sun,
+/// verified/success = gain-green), not one flat neutral circle for every
+/// row (2026-08-23 exactness pass — the prior port dropped this).
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.icon});
   final String icon;
 
+  (Color bg, Color fg) get _tone => switch (icon) {
+        'shield' => (KColor.statusRejectedTint, KColor.loss),
+        'markets' => (KColor.indicatorTint, KColor.indicator),
+        'wallet' || 'arrowDown' => (KColor.sunTint, KColor.sunPress),
+        'check' => (KColor.statusApprovedTint, KColor.gain),
+        _ => (KColor.track, KColor.ink2),
+      };
+
   @override
   Widget build(BuildContext context) {
+    final (bg, fg) = _tone;
     return Container(
-      width: 38,
-      height: 38,
+      width: 34,
+      height: 34,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: KColor.bg,
-        shape: BoxShape.circle,
-        border: Border.all(color: KColor.hairline, width: 1),
-      ),
-      child: KIcon(KIcon.has(icon) ? icon : 'bell', size: 18, color: KColor.ink),
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      child: KIcon(KIcon.has(icon) ? icon : 'bell', size: 16, color: fg),
     );
   }
 }

@@ -28,7 +28,9 @@ class PlansScreen extends StatelessWidget {
             'Every plan states how many written answers you get. There is no unlimited tier.',
             style: KType.body(color: KColor.ink3),
           ),
-          const SizedBox(height: 20),
+          // Mockup: gap:12px uniformly between every child in this column
+          // (was 20/16/20 — inconsistent with the source; 2026-08-23 pass).
+          const SizedBox(height: 12),
           KPlanCard(
             name: 'Plus',
             price: '₦500',
@@ -39,7 +41,7 @@ class PlansScreen extends StatelessWidget {
               onPressed: () => _previewOnly(context, 'Plus'),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           KPlanCard(
             name: 'Pro',
             price: '₦2,000',
@@ -52,7 +54,7 @@ class PlansScreen extends StatelessWidget {
               onPressed: () => _previewOnly(context, 'Pro'),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Text(
             'Top up any time: ₦300 for 30 answers. Prices, fees, risk labels, the glossary and Pidgin re-reads stay free on every plan — what happens when I run out.',
             style: KType.data(color: KColor.ink3),

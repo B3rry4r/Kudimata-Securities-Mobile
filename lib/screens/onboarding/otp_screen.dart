@@ -179,7 +179,7 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
             Expanded(
               child: KOnboardBody(
-                paddingTop: 8,
+                paddingTop: 18,
                 children: [
                   const KIllustration('email-sent', role: KIlloRole.banner),
                   const SizedBox(height: 20),
@@ -187,7 +187,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     title: 'Check your email',
                     body: 'We sent a 6-digit code to ${email ?? 'your email'}.',
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 20),
                   Stack(
                     children: [
                       KOtpCells(digits: _digits, focusIndex: _focusIndex),

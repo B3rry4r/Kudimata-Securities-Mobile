@@ -181,6 +181,45 @@ class _SignUpScreenState extends State<SignUpScreen> {
             // against the field above it. A fixed gap is correct
             // regardless of how tall the content above it gets.
             const SizedBox(height: 28),
+            // Mockup #s03: legal line sits ABOVE Continue, reads "By
+            // continuing you agree to our [Terms], [Privacy] and [Risk]."
+            // — not "You'll review and accept... next." below the button.
+            // The mockup's fixed bottom block is legal-line + Continue
+            // only; the extra "Log in" ghost button below isn't in #s03 —
+            // kept here (not removed) since no code comment explains
+            // either way and cutting a working nav affordance felt riskier
+            // than flagging it. See docs/redesign/PLAN.md open questions.
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: KType.data(color: KColor.ink2),
+                children: [
+                  const TextSpan(text: 'By continuing you agree to our '),
+                  TextSpan(
+                    text: 'Terms of Service',
+                    style: KType.data(color: KColor.ink2)
+                        .copyWith(decoration: TextDecoration.underline),
+                    recognizer: _termsTap,
+                  ),
+                  const TextSpan(text: ', '),
+                  TextSpan(
+                    text: 'Privacy Policy',
+                    style: KType.data(color: KColor.ink2)
+                        .copyWith(decoration: TextDecoration.underline),
+                    recognizer: _privacyTap,
+                  ),
+                  const TextSpan(text: ' and '),
+                  TextSpan(
+                    text: 'Risk Disclosure',
+                    style: KType.data(color: KColor.ink2)
+                        .copyWith(decoration: TextDecoration.underline),
+                    recognizer: _riskTap,
+                  ),
+                  const TextSpan(text: '.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             Column(
               children: [
                 KButton(
@@ -196,39 +235,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   onPressed: () => context.go(Routes.login),
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: RichText(
-                textAlign: TextAlign.center,
-                text: TextSpan(
-                  style: KType.micro(color: KColor.ink3),
-                  children: [
-                    const TextSpan(text: "You'll review and accept our "),
-                    TextSpan(
-                      text: 'Terms of Service',
-                      style: KType.micro(color: KColor.ink2)
-                          .copyWith(decoration: TextDecoration.underline),
-                      recognizer: _termsTap,
-                    ),
-                    const TextSpan(text: ', '),
-                    TextSpan(
-                      text: 'Privacy Policy',
-                      style: KType.micro(color: KColor.ink2)
-                          .copyWith(decoration: TextDecoration.underline),
-                      recognizer: _privacyTap,
-                    ),
-                    const TextSpan(text: ' and '),
-                    TextSpan(
-                      text: 'Risk Disclosure',
-                      style: KType.micro(color: KColor.ink2)
-                          .copyWith(decoration: TextDecoration.underline),
-                      recognizer: _riskTap,
-                    ),
-                    const TextSpan(text: ' next.'),
-                  ],
-                ),
-              ),
             ),
           ],
         ),

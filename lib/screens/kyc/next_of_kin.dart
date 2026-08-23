@@ -74,7 +74,10 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KycTopBar(onBack: () => context.go(Routes.kycUtilityBill)),
+            KycTopBar(
+              onBack: () => context.go(Routes.kycUtilityBill),
+              stepLabel: 'Verification · 5 of 5',
+            ),
             const KycStepProgress(total: 5, current: 5),
             Expanded(
               child: SingleChildScrollView(

@@ -39,7 +39,10 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            KycTopBar(onBack: () => context.go(Routes.kycLiveness)),
+            KycTopBar(
+              onBack: () => context.go(Routes.kycLiveness),
+              stepLabel: 'Verification · 4 of 5',
+            ),
             const KycStepProgress(total: 5, current: 4),
             Expanded(
               child: SingleChildScrollView(

@@ -151,10 +151,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                     ),
                     const SizedBox(height: 14),
                     Row(children: [
+                      // Mockup: "Email us" is secondary, "Start a chat" is
+                      // primary (the default variant) — both were secondary
+                      // before, and neither had its icon-left set
+                      // (2026-08-23 exactness pass).
                       Expanded(
                         child: KButton(
                           label: 'Email us',
                           variant: KButtonVariant.secondary,
+                          iconLeft: 'mail',
                           onPressed: _emailUs,
                         ),
                       ),
@@ -162,7 +167,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                       Expanded(
                         child: KButton(
                           label: 'Start a chat',
-                          variant: KButtonVariant.secondary,
+                          iconLeft: 'send',
                           onPressed: _startChat,
                         ),
                       ),

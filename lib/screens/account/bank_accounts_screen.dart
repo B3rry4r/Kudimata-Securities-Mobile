@@ -94,22 +94,24 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
             );
           }
           final accounts = snapshot.data ?? const <BankAccountSummary>[];
+          // screen-specs.md spec 64 (2026-08-23 exactness pass, re-verified
+          // against the canvas mockup's real #s64 markup): the primary
+          // account renders as its own self-contained card — icon, name,
+          // "DCS active" pill, the mandate explainer, then inline "See the
+          // mandate" / "Withdraw mandate" buttons INSIDE the card, not a
+          // shared row list that opens an action sheet on tap. Non-primary
+          // accounts stay simple icon+meta+pill rows in their own card. This
+          // backend has no separate "DCS mandate" concept from the existing
+          // `primary` flag, so "DCS active"/"No mandate" map directly onto
+          // real `primary` rather than inventing a new field. The tap-to-
+          // open-sheet affordance (Set as primary / Remove) is kept as an
+          // ADDITIVE way to manage accounts beyond what the mockup shows —
+          // real functionality the backend supports, not a mockup regression.
+          final primary = accounts.where((a) => a.primary).toList();
+          final others = accounts.where((a) => !a.primary).toList();
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (accounts.isNotEmpty) ...[
-                // screen-specs.md spec 64 (2026-08-23 exactness pass). This
-                // backend has no separate "DCS mandate" concept from the
-                // existing `primary` flag — the primary account IS the one
-                // that receives sale/dividend proceeds — so "DCS active" /
-                // "No mandate" below map directly onto real `primary`
-                // rather than inventing a new field.
-                Text(
-                  'Your Direct Cash Settlement mandate sends sale proceeds and dividends from the CSCS to this account.',
-                  style: KType.body(color: KColor.ink2),
-                ),
-                const SizedBox(height: 16),
-              ],
               if (accounts.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
@@ -121,22 +123,32 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                     onAction: _openAdd,
                   ),
                 )
-              else
-                KAccountCard(
-                  children: [
-                    for (var i = 0; i < accounts.length; i++)
-                      _BankRow(
-                        account: accounts[i],
-                        first: i == 0,
-                        onTap: () => _openActions(accounts[i]),
-                      ),
-                  ],
-                ),
-              const SizedBox(height: 16),
-              // SEAM: bank-linking flow (account verification / mandate provider)
-              // plugs in here.
-              KButton(label: 'Add bank account', iconLeft: 'plus', onPressed: _openAdd),
+              else ...[
+                for (final account in primary) ...[
+                  _PrimaryAccountCard(
+                    account: account,
+                    onSeeMandate: () => context.push(Routes.acctStatements),
+                    onWithdrawMandate: () =>
+                        context.push(Routes.acctWithdrawMandate, extra: account),
+                    onTap: () => _openActions(account),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                for (final account in others) ...[
+                  _SecondaryAccountRow(account: account, onTap: () => _openActions(account)),
+                  const SizedBox(height: 14),
+                ],
+              ],
               if (accounts.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                // SEAM: bank-linking flow (account verification / mandate
+                // provider) plugs in here.
+                KButton(
+                  label: 'Add another account',
+                  iconLeft: 'plus',
+                  variant: KButtonVariant.secondary,
+                  onPressed: _openAdd,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Every account must be in your own name, matched to your BVN. One account carries the DCS mandate at a time.',
@@ -159,10 +171,39 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
 
 enum _RowAction { setPrimary, remove, withdrawMandate }
 
-class _BankRow extends StatelessWidget {
-  const _BankRow({required this.account, required this.first, required this.onTap});
+/// A plain colour-filled circle icon, no border — matches #s64's exact
+/// markup (`border-radius:50%;background:...`) rather than the shared
+/// KIconBubble (hairline-border variant used elsewhere), since this screen's
+/// two account cards use different bubble colours per status.
+class _StatusIconBubble extends StatelessWidget {
+  const _StatusIconBubble({required this.bg, required this.iconColor});
+  final Color bg;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: KIcon('wallet', size: 18, color: iconColor),
+    );
+  }
+}
+
+/// The account carrying the DCS mandate — its own card with the explainer
+/// and inline "See the mandate" / "Withdraw mandate" buttons, per #s64.
+class _PrimaryAccountCard extends StatelessWidget {
+  const _PrimaryAccountCard({
+    required this.account,
+    required this.onSeeMandate,
+    required this.onWithdrawMandate,
+    required this.onTap,
+  });
   final BankAccountSummary account;
-  final bool first;
+  final VoidCallback onSeeMandate;
+  final VoidCallback onWithdrawMandate;
   final VoidCallback onTap;
 
   @override
@@ -171,49 +212,95 @@ class _BankRow extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border(
-            top: first
-                ? BorderSide.none
-                : BorderSide(color: KColor.hairline, width: 1),
-          ),
+          color: KColor.paper,
+          border: Border.all(color: KColor.hairline),
+          borderRadius: BorderRadius.circular(KRadii.card),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                _StatusIconBubble(bg: KColor.indicatorTint, iconColor: KColor.indicator),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(account.bankName, style: KType.cardTitle()),
+                      Text('${account.accountNumberMasked} · added',
+                          style: KType.data(color: KColor.ink2)),
+                    ],
+                  ),
+                ),
+                const KStatusPill(status: KStatus.approved, label: 'DCS active', small: true),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Your Direct Cash Settlement mandate sends sale proceeds and dividends from the CSCS to this account.',
+              style: KType.data(color: KColor.ink2),
+            ),
+            const SizedBox(height: 10),
+            Column(
+              children: [
+                KButton(label: 'See the mandate', variant: KButtonVariant.secondary, onPressed: onSeeMandate),
+                const SizedBox(height: 8),
+                KButton(
+                  label: 'Withdraw mandate',
+                  variant: KButtonVariant.destructive,
+                  onPressed: onWithdrawMandate,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A non-primary linked account — a simpler card, icon + meta + status pill,
+/// no inline mandate actions. Tapping still opens the set-primary/remove
+/// sheet — real backend functionality the mockup doesn't need to show.
+class _SecondaryAccountRow extends StatelessWidget {
+  const _SecondaryAccountRow({required this.account, required this.onTap});
+  final BankAccountSummary account;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: KColor.paper,
+          border: Border.all(color: KColor.hairline),
+          borderRadius: BorderRadius.circular(KRadii.card),
+        ),
         child: Row(
           children: [
-            const KIconBubble('wallet', iconSize: 18),
-            const SizedBox(width: 14),
+            _StatusIconBubble(bg: KColor.track, iconColor: KColor.ink2),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(account.bankName,
-                            style: KType.cardTitle(w: KWeight.medium)),
-                      ),
-                      const SizedBox(width: 8),
-                      // "DCS active"/"No mandate" per screen-specs.md spec
-                      // 64 — mapped onto the real `primary` flag, the only
-                      // account-precedence concept this backend actually
-                      // has (2026-08-23 exactness pass).
-                      account.primary
-                          ? const KStatusPill(status: KStatus.approved, label: 'DCS active', small: true)
-                          : const KStatusPill(status: KStatus.pending, label: 'No mandate', small: true),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(account.accountNumberMasked,
-                      style: KType.micro(color: KColor.ink3)
-                          .copyWith(letterSpacing: 0.06 * 10)
-                          .tnum),
+                  Text(account.bankName, style: KType.cardTitle()),
+                  Text('${account.accountNumberMasked} · funding only',
+                      style: KType.data(color: KColor.ink2)),
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            const KRowChevron(),
+            const SizedBox(width: 8),
+            const KStatusPill(status: KStatus.pending, label: 'No mandate', small: true),
           ],
         ),
       ),
