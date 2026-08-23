@@ -153,39 +153,63 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 child: Column(
                   children: [
-                    KCard(
-                      padding: EdgeInsets.zero,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                            child: Text(q.prompt, style: KType.section()),
+                    Text(q.prompt, style: KType.section()),
+                    const SizedBox(height: 16),
+                    for (int i = 0; i < q.options.length; i++) ...[
+                      if (i != 0) const SizedBox(height: 10),
+                      _OptionRow(
+                        label: q.options[i],
+                        selected: _answers[_index] == i,
+                        onTap: () => setState(() => _answers[_index] = i),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    KExplainTrigger(
+                      label: 'What is this question for?',
+                      variant: KExplainTriggerVariant.inline,
+                      onTap: () => showModalBottomSheet<void>(
+                        context: context,
+                        backgroundColor: KColor.paper,
+                        shape: const RoundedRectangleBorder(borderRadius: KRadii.sheetR),
+                        builder: (context) => Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Why we ask this', style: KType.section()),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Your answers decide which products suit you — the SEC requires this before you can trade. There are no wrong answers.',
+                                style: KType.body(color: KColor.ink2),
+                              ),
+                            ],
                           ),
-                          for (int i = 0; i < q.options.length; i++)
-                            _OptionRow(
-                              label: q.options[i],
-                              selected: _answers[_index] == i,
-                              onTap: () => setState(() => _answers[_index] = i),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
                     const Spacer(),
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Expanded(
+                        SizedBox(
+                          // 100 (the original "editorial mono" figure) is 1.4px
+                          // too narrow for "Back" in Nunito Sans semibold — the
+                          // "Soft Landing" redesign's font swap renders very
+                          // slightly wider at the same nominal size. Found live
+                          // via route_walk_test.dart's overflow check.
+                          width: 112,
                           child: KButton(
                             label: 'Back',
-                            variant: KButtonVariant.ghost,
+                            variant: KButtonVariant.secondary,
+                            fullWidth: true,
                             onPressed: _submitting ? null : _back,
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: KButton(
-                            label: 'Next',
+                            label: 'Next question',
                             loading: _submitting,
                             onPressed: _submitting ? null : _next,
                           ),
@@ -203,9 +227,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   }
 }
 
-/// Selectable option row — hairline top divider, label that turns purple +
-/// medium when selected, and a trailing purple check (matches the design's
-/// questionnaire option, which shows no radio dot).
+/// Selectable option card — 2026-08-22 "Soft Landing" (screen-specs.md
+/// screen 27): the selected option is a full indicator-tinted card with an
+/// indicator border, not just tinted text — the same "selected choice card"
+/// treatment used throughout KYC's radio groups (screens 15, 20).
 class _OptionRow extends StatelessWidget {
   const _OptionRow({required this.label, required this.selected, required this.onTap});
   final String label;
@@ -219,9 +244,14 @@ class _OptionRow extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
+          color: selected ? KColor.indicatorTint : KColor.paper,
+          borderRadius: KRadii.cardR,
+          border: Border.all(
+            color: selected ? KColor.indicator : KColor.hairline,
+            width: selected ? 1.5 : 1,
+          ),
         ),
         child: Row(
           children: [
@@ -229,7 +259,7 @@ class _OptionRow extends StatelessWidget {
               child: Text(
                 label,
                 style: KType.body(
-                  color: selected ? KColor.indicator : KColor.ink,
+                  color: selected ? KColor.indicatorPress : KColor.ink,
                   w: selected ? KWeight.medium : KWeight.regular,
                 ),
               ),

@@ -11,6 +11,10 @@ class Routes {
 
   // ── Gated onboarding flow ────────────────────────────────────────────────
   static const String splash = '/';
+  // Illustrated welcome slider (2026-08-22 "Soft Landing" redesign, screen
+  // 02) — first thing a first-time (no passcode set yet) investor sees
+  // after splash, before sign-up/log-in.
+  static const String welcome = '/welcome';
   static const String signup = '/signup';
   static const String otp = '/otp';
   // ALL FOUR legal documents (terms of service, privacy policy, risk
@@ -95,4 +99,16 @@ class Routes {
   static const String acctNotifications = '/account/notifications';
   static const String acctLegal = '/account/legal';
   static const String acctStatements = '/account/statements';
+
+  // ── "Soft Landing" redesign additions (2026-08-22) ───────────────────────
+  // Self-service account freeze (audit P0) — reachable from Security
+  // (acctSecurity) and from a security alert notification.
+  static const String acctFreeze = '/account/security/freeze';
+  static const String securityAlert = '/security-alert';
+  // AI comprehension layer — UI-complete, content is static/canned pending
+  // a real backend (see docs/redesign/PLAN.md). [topic] identifies what's
+  // being explained, e.g. an asset ticker or a document kind.
+  static String explainThis(String topic) => '/explain/$topic';
+  static const String explainThisPath = '/explain/:topic';
+  static const String acctPlans = '/account/plans';
 }

@@ -6,7 +6,6 @@
 // — the secure store this comment used to say "plugs in later". See
 // _hydrateSignedIn() and forceSignOut() below. Every other flag here is still
 // in-memory only.
-import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart';
 
 import '../data/api/api_client.dart';
@@ -118,9 +117,6 @@ class AppState extends ChangeNotifier {
   /// instant it acts on it, so it never leaks into a later, unrelated
   /// security-reentry passcode change.
   bool loginPasscodeSetup = false;
-
-  // Appearance — System / Light / Dark (SEAM: persist to a store later).
-  ThemeMode themeMode = ThemeMode.system;
 
   // Live watchlist (tickers).
   final Set<String> _watchlist;
@@ -308,16 +304,6 @@ class AppState extends ChangeNotifier {
     watchlistVersion = 0;
     notifyListeners();
   }
-
-  void setThemeMode(ThemeMode m) {
-    if (m == themeMode) return;
-    themeMode = m;
-    notifyListeners();
-  }
-
-  /// Force theme-dependent rebuilds (e.g. when the OS brightness changes while
-  /// in System mode). No state change — just nudges listeners to re-read KColor.
-  void refreshTheme() => notifyListeners();
 
   void toggleWatch(String ticker) {
     if (!_watchlist.remove(ticker)) _watchlist.add(ticker);

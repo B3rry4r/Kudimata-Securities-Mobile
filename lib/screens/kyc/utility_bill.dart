@@ -74,6 +74,12 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
                                 _uploadError = null;
                               }),
                     ),
+                    const SizedBox(height: 20),
+                    const KNudgeCard(
+                      title: "Bill not in your name?",
+                      body:
+                          'Upload it anyway and add a short note in the next step — our desk reviews these by hand.',
+                    ),
                   ],
                 ),
               ),

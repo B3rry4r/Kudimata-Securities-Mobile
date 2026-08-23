@@ -60,7 +60,10 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (!mounted) return;
-    context.go(app.passcodeSet ? Routes.login : Routes.signup);
+    // First-time (no passcode set yet) investors see the illustrated welcome
+    // slider first (2026-08-22 "Soft Landing" redesign, screen 02) instead
+    // of landing straight on the sign-up form.
+    context.go(app.passcodeSet ? Routes.login : Routes.welcome);
   }
 
   @override
@@ -71,50 +74,65 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 2026-08-22 "Soft Landing" — the one full-bleed feature-tinted (grape)
+    // screen in the whole app; everything else sits on --bg/--paper. See
+    // docs/redesign/screen-specs.md screen 01.
     return Scaffold(
-      backgroundColor: KColor.paper,
-      body: Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const KMark(size: 56),
-                const SizedBox(height: 22),
-                Text.rich(
-                  TextSpan(
-                    style: KType.hero(color: KColor.ink).copyWith(
-                      fontSize: 26,
-                      letterSpacing: -0.39,
-                    ),
-                    children: [
-                      const TextSpan(text: 'Kudimata '),
-                      TextSpan(
-                        text: 'Invest',
-                        style: TextStyle(
-                          fontWeight: KWeight.regular,
-                          color: KColor.ink2,
-                        ),
+      backgroundColor: KColor.feature,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const KMark(size: 86, white: true),
+                  const SizedBox(height: 22),
+                  Text.rich(
+                    TextSpan(
+                      style: KType.hero(color: KColor.featureInk).copyWith(
+                        fontSize: 26,
+                        letterSpacing: -0.39,
                       ),
-                    ],
+                      children: [
+                        const TextSpan(text: 'Kudimata '),
+                        TextSpan(
+                          text: 'Invest',
+                          style: TextStyle(
+                            fontWeight: KWeight.regular,
+                            color: KColor.featureInk2,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  Text(
+                    "Own a piece of Nigeria's biggest companies",
+                    textAlign: TextAlign.center,
+                    style: KType.body(color: KColor.featureInk2),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 56,
-            child: Column(
-              children: [
-                KSpinner(size: 22, color: KColor.ink3),
-                const SizedBox(height: 18),
-                Text('NGX markets'.upper, style: KType.label(color: KColor.ink3)),
-              ],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 40,
+              child: Column(
+                children: [
+                  KSpinner(size: 20, color: KColor.featureInk2),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Kudimata Securities Ltd · SEC registered'.upper,
+                    textAlign: TextAlign.center,
+                    style: KType.micro(color: KColor.featureInk2),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

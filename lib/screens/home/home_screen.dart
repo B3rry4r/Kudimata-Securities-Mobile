@@ -43,6 +43,18 @@ const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 
 KTrend _kTrend(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
 
+/// Picks the holding with the largest |% change| and writes one plain
+/// sentence about it — the digest's actual number always traces to real
+/// data, even though the wording template itself is static.
+String _weeklyDigest(List<Asset> holdings) {
+  double pct(Asset a) =>
+      double.tryParse(a.change.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+  final top = holdings.reduce((a, b) => pct(a) >= pct(b) ? a : b);
+  final verb = top.trend == Trend.gain ? 'carried' : 'weighed on';
+  return '${top.name} $verb your portfolio this week, ${top.change} since your last check-in. '
+      'Nothing here needs a decision from you today.';
+}
+
 /// Combined payload for the single screen-level FutureBuilder.
 class _HomeData {
   const _HomeData({
@@ -409,6 +421,20 @@ class _HomeBody extends StatelessWidget {
               ),
         const SizedBox(height: 28),
 
+        // "Your week on the NGX" — a generated portfolio narrative
+        // (2026-08-22 "Soft Landing" redesign's comprehension layer, spec
+        // screen 29). No real AI backend exists yet for this (see
+        // docs/redesign/PLAN.md) — the sentence below is computed from the
+        // investor's own real holdings data (biggest mover), not canned
+        // per-account text, but it isn't LLM-generated either.
+        if (data.holdings.isNotEmpty) ...[
+          Padding(padding: _gut, child: KDigestCard(
+            title: 'Your week on the NGX',
+            body: _weeklyDigest(data.holdings),
+          )),
+          const SizedBox(height: 28),
+        ],
+
         // holdings preview → portfolio (header format matches Watchlist:
         // eyebrow left, See all right)
         Padding(
@@ -680,27 +706,34 @@ class _KycPrompt extends StatelessWidget {
     final gap = tradingEligibilityGap(app);
     if (gap == null) return const SizedBox.shrink();
 
+    // "This is the one important thing" grape-feature plate (2026-08-22
+    // redesign, spec screen 30's colour note) — the same indicator-tint /
+    // r-feature treatment used for the DCS explainer (KYC screen 19) and
+    // this screen's own onboarding-progress card.
     return Padding(
       padding: EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, 16),
-      child: KCard(
+      child: GestureDetector(
         onTap: () => context.push(gap.route),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            const _Bubble(icon: 'profile'),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(gap.title, style: KType.cardTitle()),
-                  const SizedBox(height: 2),
-                  Text(gap.message, style: KType.micro(color: KColor.ink3)),
-                ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.featureR),
+          child: Row(
+            children: [
+              const _Bubble(icon: 'profile'),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(gap.title, style: KType.cardTitle(color: KColor.indicatorPress)),
+                    const SizedBox(height: 2),
+                    Text(gap.message, style: KType.micro(color: KColor.ink3)),
+                  ],
+                ),
               ),
-            ),
-            KIcon('chevronRight', size: 20, color: KColor.ink3),
-          ],
+              KIcon('chevronRight', size: 20, color: KColor.indicator),
+            ],
+          ),
         ),
       ),
     );

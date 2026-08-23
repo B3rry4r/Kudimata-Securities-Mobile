@@ -68,32 +68,67 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final app = AppScope.of(context);
     return KAccountSubScaffold(
       title: 'Security',
-      child: KAccountCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          KAccountRow(
-            icon: 'card',
-            title: 'Change passcode',
-            // PasscodeStore (lib/data/api/passcode_store.dart) doesn't track
-            // a last-set timestamp, so this stays a plain, honest label
-            // rather than a fabricated "Last changed N days ago" — see this
-            // file's header note.
-            sub: 'Set a new 6-digit passcode',
-            right: const KRowChevron(),
-            first: true,
-            onTap: _changePasscode,
-          ),
-          if (!kIsWeb)
-            KAccountRow(
-              icon: 'fingerprint',
-              title: 'Biometric unlock',
-              sub: 'Unlock with your face or fingerprint',
-              crossAlign: CrossAxisAlignment.start,
-              right: KSwitch(
-                checked: app.biometricEnabled,
-                // SEAM: real biometric enrolment plugs in here.
-                onChanged: (v) => app.setBiometric(v),
+          KAccountCard(
+            children: [
+              KAccountRow(
+                icon: 'card',
+                title: 'Change passcode',
+                // PasscodeStore (lib/data/api/passcode_store.dart) doesn't
+                // track a last-set timestamp, so this stays a plain, honest
+                // label rather than a fabricated "Last changed N days ago"
+                // — see this file's header note.
+                sub: 'Set a new 6-digit passcode',
+                right: const KRowChevron(),
+                first: true,
+                onTap: _changePasscode,
               ),
-            ),
+              if (!kIsWeb)
+                KAccountRow(
+                  icon: 'fingerprint',
+                  title: 'Biometric unlock',
+                  sub: 'Unlock with your face or fingerprint',
+                  crossAlign: CrossAxisAlignment.start,
+                  right: KSwitch(
+                    checked: app.biometricEnabled,
+                    // SEAM: real biometric enrolment plugs in here.
+                    onChanged: (v) => app.setBiometric(v),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text('DEVICES SIGNED IN', style: KType.label()),
+          const SizedBox(height: 12),
+          // No real device/session feed exists on the backend yet (2026-08-22
+          // — see docs/redesign/PLAN.md) — this device's row is genuine
+          // (we're looking at it right now); everything else here is a
+          // placeholder shape for when that feed lands.
+          KAccountCard(
+            children: [
+              KAccountRow(
+                icon: 'card',
+                title: 'This device',
+                sub: 'Active now',
+                first: true,
+                right: const KStatusPill(status: KStatus.approved, label: 'Trusted', small: true),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const KNudgeCard(
+            tone: KNudgeTone.grape,
+            title: 'Nobody from Kudimata will ask for your passcode',
+            body: 'Not by call, not by WhatsApp, not by email. If someone does, it isn\'t us.',
+          ),
+          const SizedBox(height: 24),
+          KButton(
+            label: 'Freeze my account',
+            variant: KButtonVariant.destructive,
+            onPressed: () => context.push(Routes.acctFreeze),
+          ),
         ],
       ),
     );

@@ -32,36 +32,17 @@ class BiometricScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Spacer(),
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      color: KColor.bg,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: KColor.hairline, width: 1),
-                    ),
-                    child: const Center(
-                      child: KFingerprint(size: 48, stroke: 1.6),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Text(
-                    'Sign in faster',
-                    textAlign: TextAlign.center,
-                    style: KType.title(),
-                  ),
-                  const SizedBox(height: 12),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 280),
-                    child: Text(
-                      'Use your face or fingerprint to sign in instead of your passcode.',
-                      textAlign: TextAlign.center,
-                      style: KType.body(color: KColor.ink2),
-                    ),
+                  KStatusView(
+                    illustrationName: 'sign-in',
+                    tone: KStatusTone.pending,
+                    title: 'Unlock with your face',
+                    message:
+                        'Skip the passcode next time. Your face never leaves your phone — we only ever see a yes or a no.',
                   ),
                   const Spacer(),
                   KButton(
-                    label: 'Enable',
+                    label: 'Turn on Face ID',
+                    iconLeft: 'fingerprint',
                     // SEAM: real biometric enrolment (local_auth) plugs in here.
                     onPressed: () {
                       final app = AppScope.read(context);
@@ -72,7 +53,7 @@ class BiometricScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   KButton(
-                    label: 'Maybe later',
+                    label: 'Not now',
                     variant: KButtonVariant.ghost,
                     onPressed: () {
                       AppScope.read(context).setSignedIn(true);

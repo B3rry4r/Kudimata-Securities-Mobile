@@ -30,6 +30,12 @@ const List<(String icon, String title, String route)> _items = [
   ('card', 'Legal', Routes.acctLegal),
 ];
 
+// Plans & credits sits as its own row above the menu group, alongside a
+// compact credit meter — screen 45. Static example numbers: no real
+// AI-credit metering backend exists yet (docs/redesign/PLAN.md).
+const int _exampleCreditsUsed = 3;
+const int _exampleCreditsTotal = 10;
+
 String _initials(String name) {
   final parts = name.trim().split(RegExp(r'\s+'));
   final letters = parts.map((p) => p.isEmpty ? '' : p[0]).take(2).join();
@@ -141,6 +147,25 @@ class _AccountBody extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
+            child: KAccountCard(
+              children: [
+                KAccountRow(
+                  icon: 'plus',
+                  title: 'Plans & credits',
+                  first: true,
+                  right: const KCreditMeter(
+                    used: _exampleCreditsUsed,
+                    total: _exampleCreditsTotal,
+                    compact: true,
+                  ),
+                  onTap: () => context.push(Routes.acctPlans),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
           // Menu group.
           Padding(
@@ -155,32 +180,6 @@ class _AccountBody extends StatelessWidget {
                     first: i == 0,
                     onTap: () => context.push(_items[i].$3),
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-          // Appearance — System / Light / Dark.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const KEyebrow('Appearance'),
-                const SizedBox(height: 12),
-                Builder(builder: (context) {
-                  final app = AppScope.of(context);
-                  return KSegmentedControl(
-                    value: app.themeMode.name,
-                    onChanged: (v) => app.setThemeMode(
-                      ThemeMode.values.firstWhere((m) => m.name == v),
-                    ),
-                    options: const [
-                      KSegmentOption(value: 'system', label: 'System'),
-                      KSegmentOption(value: 'light', label: 'Light'),
-                      KSegmentOption(value: 'dark', label: 'Dark'),
-                    ],
-                  );
-                }),
               ],
             ),
           ),

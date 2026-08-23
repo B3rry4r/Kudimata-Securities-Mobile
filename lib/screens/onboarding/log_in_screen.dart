@@ -378,6 +378,10 @@ class _LogInScreenState extends State<LogInScreen> {
               children: [
                 const KWordmark(center: true),
                 const SizedBox(height: 28),
+                const KAvatar.guide(size: KIllo.avatarLg),
+                const SizedBox(height: 14),
+                Text('Welcome back', style: KType.title()),
+                const SizedBox(height: 4),
                 Text('Enter your passcode', style: KType.body(color: KColor.ink2)),
                 const SizedBox(height: 24),
                 KPasscodeDots(filled: _code.length, error: _error),

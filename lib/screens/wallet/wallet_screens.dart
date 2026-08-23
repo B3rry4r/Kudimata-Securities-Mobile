@@ -199,7 +199,7 @@ class _WalletBody extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Naira wallet — the one rich ink surface on this screen.
-        KBalancePanel(label: 'Naira wallet', balance: balance),
+        KBalancePanel(label: 'Available to invest', balance: balance),
         const SizedBox(height: 12),
 
         // Action row — Add money / Withdraw (sheet flows).
@@ -316,8 +316,18 @@ class _TxnRow extends StatelessWidget {
         TxnType.convert => 'transfer',
       };
 
+  // Colored icon circle per ledger type (2026-08-22 "Soft Landing" —
+  // screen-specs.md #40: "Icon (arrowDown, markets, wallet — each in a
+  // colored circle: indicator-tint, track, sun-tint respectively)").
+  (Color, Color) get _iconColors => switch (txn.type) {
+        TxnType.fund => (KColor.indicatorTint, KColor.indicator),
+        TxnType.buy || TxnType.sell => (KColor.track, KColor.ink),
+        TxnType.withdraw || TxnType.convert => (KColor.sunTint, KColor.sunPress),
+      };
+
   @override
   Widget build(BuildContext context) {
+    final (bg, fg) = _iconColors;
     return GestureDetector(
       onTap: () => context.push(Routes.transactionDetail(txn.id)),
       behavior: HitTestBehavior.opaque,
@@ -334,12 +344,8 @@ class _TxnRow extends StatelessWidget {
               width: 38,
               height: 38,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: KColor.bg,
-                shape: BoxShape.circle,
-                border: Border.fromBorderSide(BorderSide(color: KColor.hairline, width: 1)),
-              ),
-              child: KIcon(_icon, size: 18),
+              decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+              child: KIcon(_icon, size: 18, color: fg),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -398,10 +404,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         TxnType.convert => 'Conversion',
       };
 
-  (KStatusTone, String, Color) _status(TxnStatus s) => switch (s) {
-        TxnStatus.completed => (KStatusTone.success, 'Completed', KColor.gain),
-        TxnStatus.pending => (KStatusTone.pending, 'Pending', KColor.ink2),
-        TxnStatus.failed => (KStatusTone.error, 'Failed', KColor.loss),
+  // "On its way"/"Completed"/"Failed" per screen-specs.md #43 — mapped onto
+  // the shared workflow-state vocabulary (KStatus), not a bespoke pill.
+  (KStatus, String) _status(TxnStatus s) => switch (s) {
+        TxnStatus.completed => (KStatus.approved, 'Completed'),
+        TxnStatus.pending => (KStatus.review, 'On its way'),
+        TxnStatus.failed => (KStatus.rejected, 'Failed'),
       };
 
   Future<void> _getReceipt() async {
@@ -470,7 +478,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         final txn = snapshot.data;
         if (txn == null) return _notFoundScaffold;
 
-        final (_, statusLabel, dotColor) = _status(txn.status);
+        final (statusEnum, statusLabel) = _status(txn.status);
         final amountColor = txn.incoming ? KColor.gain : KColor.ink;
 
         final rows = <(String, String)>[
@@ -489,6 +497,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(KSpace.gutter, 20, KSpace.gutter, 24),
               children: [
+                // Money-in-transit illustration, warm-plated per
+                // screen-specs.md #43's colour note — distinct from the
+                // grape/sun plates used elsewhere, for neutral/in-progress
+                // money-movement states.
+                const KIllustration('wallet-fund', role: KIlloRole.small, tone: KIlloTone.warm),
+                const SizedBox(height: 20),
                 KCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -502,7 +516,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         ),
                         child: Column(
                           children: [
-                            _StatusPill(label: statusLabel, dotColor: dotColor),
+                            KStatusPill(status: statusEnum, label: statusLabel),
                             const SizedBox(height: 16),
                             Text(txn.amount,
                                 style: KType.hero(color: amountColor).tnum),
@@ -536,35 +550,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 }
 
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label, required this.dotColor});
-  final String label;
-  final Color dotColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-      decoration: BoxDecoration(
-        color: KColor.bg,
-        borderRadius: BorderRadius.circular(KRadii.pill),
-        border: Border.all(color: KColor.hairline, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(label.upper, style: KType.label(color: KColor.ink2)),
-        ],
-      ),
-    );
-  }
-}
 
 class _DetailRow extends StatelessWidget {
   const _DetailRow({required this.label, required this.value, required this.last});

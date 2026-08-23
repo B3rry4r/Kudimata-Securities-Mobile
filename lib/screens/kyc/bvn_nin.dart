@@ -132,6 +132,12 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
                       const SizedBox(height: 16),
                       Text(_error!, style: KType.body(color: KColor.loss)),
                     ],
+                    const SizedBox(height: 20),
+                    const KExplainPanel(
+                      title: 'What is a BVN for?',
+                      body:
+                          "It's the number your bank already uses to prove you are you. We use it to match your name to your bank account so your money can only ever come back to you.",
+                    ),
                   ],
                 ),
               ),

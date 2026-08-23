@@ -1,7 +1,11 @@
 // Kudimata Securities — app entry. Boots the gated-flow → tab-shell router under a
-// single AppState (AppScope), with light/dark theming driven by AppState.themeMode
-// (System / Light / Dark). The Stage-1 gallery still lives at lib/gallery/ but is
-// no longer referenced.
+// single AppState (AppScope). Light-only theming (2026-08-22 "Soft Landing"
+// redesign — the design system's tokens/base.css declares `color-scheme:
+// light` and its readme is explicit that dark is an undesigned draft: "no
+// surface, illustration plate or contrast pair has been designed against
+// it" — so the former System/Light/Dark toggle was removed rather than
+// shipping an undesigned dark experience with the new illustration set).
+// The Stage-1 gallery still lives at lib/gallery/ but is no longer referenced.
 //
 // Also constructs the single shared AuthTokenStore + ApiClient here, before the
 // first frame, and wires ApiClient.onSessionExpired to this same AppState's
@@ -29,7 +33,7 @@ class KudimataApp extends StatefulWidget {
   State<KudimataApp> createState() => _KudimataAppState();
 }
 
-class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
+class _KudimataAppState extends State<KudimataApp> {
   // Single session-state instance; the router gate listens to it. Single
   // shared token store, handed to both AppState (local signedIn hydration)
   // and ApiClient (auth header / refresh), so both agree on one token pair.
@@ -46,7 +50,6 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
     _state.apiClient = ApiClient(tokenStore: _tokenStore, onSessionExpired: _state.forceSignOut);
     // Single shared KYC form holder — see lib/screens/kyc/kyc_form_state.dart.
     _state.kycForm = KycFormState();
-    WidgetsBinding.instance.addObserver(this);
     _state.addListener(_onState);
     // Prime AppState.isWatched() with the investor's real saved watchlist
     // once startup hydration (signedIn) resolves — see
@@ -60,40 +63,21 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
     });
   }
 
-  void _onState() => setState(() {}); // re-resolve brightness on themeMode change
-
-  @override
-  void didChangePlatformBrightness() {
-    // OS light/dark changed — re-resolve our palette and rebuild every screen
-    // (the per-route ListenableBuilders listen to AppState).
-    setState(() {});
-    _state.refreshTheme();
-  }
+  void _onState() => setState(() {});
 
   @override
   void dispose() {
     _state.removeListener(_onState);
-    WidgetsBinding.instance.removeObserver(this);
     _state.dispose();
     super.dispose();
-  }
-
-  Brightness _resolve() {
-    switch (_state.themeMode) {
-      case ThemeMode.light:
-        return Brightness.light;
-      case ThemeMode.dark:
-        return Brightness.dark;
-      case ThemeMode.system:
-        return WidgetsBinding.instance.platformDispatcher.platformBrightness;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     // Set the active palette BEFORE the subtree builds so every KColor.x read
-    // (in our custom widgets) returns the themed colour this frame.
-    KColor.active = _resolve() == Brightness.dark ? KPalette.dark : KPalette.light;
+    // (in our custom widgets) returns the themed colour this frame. Always
+    // light — see this file's header comment.
+    KColor.active = KPalette.light;
 
     return AppScope(
       state: _state,
@@ -101,8 +85,6 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
         title: 'Kudimata Invest',
         debugShowCheckedModeBanner: false,
         theme: KTheme.light(),
-        darkTheme: KTheme.dark(),
-        themeMode: _state.themeMode,
         routerConfig: _router,
       ),
     );

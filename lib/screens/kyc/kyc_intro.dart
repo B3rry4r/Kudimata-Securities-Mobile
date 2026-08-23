@@ -93,60 +93,70 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const KScreenHead(title: "Let's verify you"),
-              const SizedBox(height: 28),
-              KCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    for (var i = 0; i < _rows.length; i++)
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: i == 0
-                                ? BorderSide.none
-                                : BorderSide(color: KColor.hairline, width: 1),
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(18),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const KIllustration('kyc-intro', role: KIlloRole.small),
+                      const SizedBox(height: 20),
+                      const KScreenHead(title: "Let's verify you"),
+                      const SizedBox(height: 28),
+                      KCard(
+                        padding: EdgeInsets.zero,
+                        child: Column(
                           children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: KColor.bg,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: KColor.hairline, width: 1),
+                            for (var i = 0; i < _rows.length; i++)
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    top: i == 0
+                                        ? BorderSide.none
+                                        : BorderSide(color: KColor.hairline, width: 1),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(18),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: KColor.indicatorTint,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: KIcon(_rows[i].icon, size: 20, color: KColor.indicator),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          KEyebrow(_rows[i].eyebrow),
+                                          const SizedBox(height: 4),
+                                          Text(_rows[i].line, style: KType.body(color: KColor.ink)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: KIcon(_rows[i].icon, size: 20, color: KColor.ink),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  KEyebrow(_rows[i].eyebrow),
-                                  const SizedBox(height: 4),
-                                  Text(_rows[i].line, style: KType.body(color: KColor.ink)),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
                       ),
-                  ],
+                      const SizedBox(height: 16),
+                      Text(
+                        'Required by our regulator before you can invest.',
+                        style: KType.body(color: KColor.ink3),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Required by our regulator before you can invest.',
-                style: KType.body(color: KColor.ink3),
-              ),
-              const Spacer(),
               KButton(
                 label: 'Start',
                 iconRight: 'arrowUpRight',

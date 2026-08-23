@@ -65,6 +65,11 @@ const Map<String, String> _kIconPaths = {
   // almost every important thing... this is a darn fintech app!").
   'shieldCheck': '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>'
       '<path d="m9 12 2 2 4-4"/>',
+  // Lucide 'triangle-alert' — 2026-08-22 "Soft Landing", used for the
+  // "no wrong answers but read the fine print" style callouts (e.g.
+  // suitability_result_screen.dart's "no foreign stocks yet" note).
+  'alert': '<path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>'
+      '<path d="M12 9v4"/><path d="M12 17h.01"/>',
   // custom — drawn in the same Lucide idiom (shared.jsx Fingerprint)
   'fingerprint': '<path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>'
       '<path d="M5 19.5C5.5 18 6 16 6 14a6 6 0 0 1 .34-2"/>'

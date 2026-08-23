@@ -158,9 +158,8 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                           Positioned.fill(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: KColor.bg,
+                                color: KColor.indicatorTint,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: KColor.hairline, width: 1),
                               ),
                               alignment: Alignment.center,
                               child: _buildFrameContent(),
@@ -405,14 +404,17 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
   }
 }
 
-/// The dashed guidance ring around the selfie frame (ink at low opacity).
+/// The dashed guidance ring around the selfie frame — 2026-08-22 "Soft
+/// Landing": docs/redesign/screen-specs.md screen 17 calls for a dashed
+/// indicator-soft border (kept as a circle rather than the spec's 250×330
+/// oval — reshaping risks the live CameraPreview's FittedBox-cover math).
 class _DashedRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = KColor.ink.withValues(alpha: 0.35);
+      ..color = KColor.indicatorSoft;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 1;
     const dash = 7.0;

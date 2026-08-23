@@ -16,6 +16,7 @@ import 'routes.dart';
 
 // Onboarding / security.
 import '../screens/onboarding/splash_screen.dart';
+import '../screens/onboarding/welcome_slider_screen.dart';
 import '../screens/onboarding/sign_up_screen.dart';
 import '../screens/onboarding/otp_screen.dart';
 import '../screens/onboarding/create_passcode_screen.dart';
@@ -58,6 +59,7 @@ import '../screens/home/search_screen.dart';
 import '../screens/markets/asset_list_screen.dart';
 import '../screens/markets/asset_detail_screen.dart';
 import '../screens/markets/watchlist_screen.dart';
+import '../screens/markets/explain_screen.dart';
 
 // Portfolio pushed.
 import '../screens/portfolio/holding_detail_screen.dart';
@@ -73,6 +75,9 @@ import '../screens/account/security_screen.dart';
 import '../screens/account/notifications_settings_screen.dart';
 import '../screens/account/legal_screen.dart';
 import '../screens/account/statements_screen.dart';
+import '../screens/account/freeze_account_screen.dart';
+import '../screens/account/security_alert_screen.dart';
+import '../screens/account/plans_screen.dart';
 
 // Shared states (used for missing-data placeholders).
 import '../screens/shared/state_views.dart';
@@ -101,6 +106,7 @@ GoRouter buildRouter(AppState state) {
     routes: [
       // ── Gated onboarding ──────────────────────────────────────────────--
       GoRoute(path: Routes.splash, builder: (_, _) => themed(() => SplashScreen())),
+      GoRoute(path: Routes.welcome, builder: (_, _) => themed(() => WelcomeSliderScreen())),
       GoRoute(path: Routes.signup, builder: (_, _) => themed(() => SignUpScreen())),
       GoRoute(path: Routes.otp, builder: (_, _) => themed(() => OtpScreen())),
       GoRoute(
@@ -198,6 +204,10 @@ GoRouter buildRouter(AppState state) {
         builder: (_, st) => themed(() => AssetDetailScreen(ticker: st.pathParameters['ticker']!)),
       ),
       GoRoute(
+        path: Routes.explainThisPath,
+        builder: (_, st) => themed(() => ExplainScreen(topic: st.pathParameters['topic']!)),
+      ),
+      GoRoute(
         path: Routes.holdingDetailPath,
         builder: (_, st) => themed(() => HoldingDetailScreen(ticker: st.pathParameters['ticker']!)),
       ),
@@ -216,6 +226,9 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.acctNotifications, builder: (_, _) => themed(() => NotificationsSettingsScreen())),
       GoRoute(path: Routes.acctLegal, builder: (_, _) => themed(() => LegalScreen())),
       GoRoute(path: Routes.acctStatements, builder: (_, _) => themed(() => StatementsScreen())),
+      GoRoute(path: Routes.acctFreeze, builder: (_, _) => themed(() => FreezeAccountScreen())),
+      GoRoute(path: Routes.securityAlert, builder: (_, _) => themed(() => SecurityAlertScreen())),
+      GoRoute(path: Routes.acctPlans, builder: (_, _) => themed(() => PlansScreen())),
 
       // ── Tab shell (StatefulShellRoute / indexedStack) ──────────────────--
       StatefulShellRoute.indexedStack(
@@ -266,7 +279,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
 
   // Locations that belong to the gated flow (reachable while signed out).
   const gated = <String>{
-    Routes.splash, Routes.signup, Routes.otp,
+    Routes.splash, Routes.welcome, Routes.signup, Routes.otp,
     Routes.createPasscode, Routes.confirmPasscode,
     Routes.biometric, Routes.login, Routes.reset,
     Routes.kycIntro, Routes.kycBvn, Routes.kycId,
@@ -280,7 +293,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
   // in, regardless of how the app landed there (fresh navigation, stale
   // history, deep link).
   const preAuthOnly = <String>{
-    Routes.splash, Routes.signup, Routes.otp, Routes.reset,
+    Routes.splash, Routes.welcome, Routes.signup, Routes.otp, Routes.reset,
   };
 
   if (state.signedIn) {
