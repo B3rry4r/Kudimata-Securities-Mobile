@@ -377,6 +377,7 @@ class _CardFundSheet extends StatefulWidget {
 class _CardFundSheetState extends State<_CardFundSheet> {
   late final TextEditingController _amount = TextEditingController(text: '20,000');
   bool _busy = false;
+  String? _amountError;
 
   @override
   void dispose() {
@@ -386,27 +387,53 @@ class _CardFundSheetState extends State<_CardFundSheet> {
 
   Future<void> _continue() async {
     final amountKobo = _parseAmountKobo(_amount.text);
-    if (amountKobo <= 0) return;
-    setState(() => _busy = true);
+    if (amountKobo <= 0) {
+      setState(() => _amountError = 'Enter an amount to continue');
+      return;
+    }
+    setState(() {
+      _amountError = null;
+      _busy = true;
+    });
     final repo = WalletRepository(AppScope.read(context).apiClient);
     try {
       final result = await repo.fund(amountKobo: amountKobo, method: 'card');
-      final uri = Uri.tryParse(result.checkoutUrl);
-      if (uri != null) {
-        try {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } catch (_) {
-          // Best-effort external hand-off — same seam
-          // help_support_screen.dart's _launch uses.
-        }
-      }
+      // A checkout link failure on the backend (Flutterwave unreachable/
+      // rejected) comes back as an empty string, NOT a thrown ApiException —
+      // `Uri.tryParse('')` returns a valid EMPTY Uri, not null, so checking
+      // for null alone here would silently "succeed" at launching nothing.
+      final url = result.checkoutUrl;
+      final uri = url.isEmpty ? null : Uri.tryParse(url);
+      final launched = uri != null &&
+          (uri.scheme == 'https' || uri.scheme == 'http') &&
+          await _launchExternally(uri);
       if (!mounted) return;
+      if (!launched) {
+        setState(() => _busy = false);
+        _showErrorSheet(
+          context,
+          title: 'Could not open checkout',
+          message: "We couldn't open a payment window. Please try again.",
+        );
+        return;
+      }
       Navigator.of(context).pop();
       _showAwaitingPaymentSheet(context);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
       _showErrorSheet(context, title: 'Could not start payment', message: e.message);
+    }
+  }
+
+  /// launchUrl() can fail two ways: throwing (no app/browser can handle the
+  /// scheme) or just returning false — checking only for a thrown exception,
+  /// as this sheet originally did, misses the second case entirely.
+  Future<bool> _launchExternally(Uri uri) async {
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
     }
   }
 
@@ -422,6 +449,7 @@ class _CardFundSheetState extends State<_CardFundSheet> {
           numeric: true,
           amount: true,
           prefix: '₦',
+          error: _amountError,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         const SizedBox(height: 16),
