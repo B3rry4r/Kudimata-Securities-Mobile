@@ -94,6 +94,19 @@ new Nunito Sans font vs. the old Space Grotesk — bumped to 112px).
   a placeholder until that backend exists.
 - [ ] **Referral credits, corporate actions, tax documents, data & privacy** — screen 45/55 reference nav ids beyond the 66-screen canvas (unmocked). Lower priority; note as future work.
 
+### 5. Post-merge verification pass — DONE
+Merged to `main` (commit `63c9492`), then re-verified for real rather than
+trusting the merge summary: `flutter analyze` clean, full test suite green,
+and a fresh `test/shots.dart` visual pass caught one real bug the earlier
+checks missed — `KButton`'s label wasn't wrapped in `Flexible`, so any
+button with a long enough label (found on `/security-alert`'s destructive
+"Freeze my account and sign that device out") rendered as a genuine
+RenderFlex overflow, independent of the button's own width. Fixed at the
+root in `lib/widgets/buttons.dart` (commit `27c0059`) — every button in the
+app benefits, not just that one screen. Re-verified clean after the fix:
+0 analyze issues, 0 render overflows across all 24 screenshotted routes,
+7/7 tests passing.
+
 ## Decisions made along the way
 - **Dark mode removed**, not just hidden — the design system's own readme says dark is an undesigned draft; shipping it with the new illustrations would look broken. See `main.dart`.
 - **"Passport" mockup copy vs current app "International passport" naming**: the mockup (screen 16) predates the app's own recent rename; keep the app's current "International passport" + "Voter's card" strings, don't regress to the mockup's plain "Passport".
