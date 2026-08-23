@@ -51,12 +51,12 @@ class KAssetRow extends StatelessWidget {
             alignment: Alignment.center,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: logo != null ? KColor.bg : (logoColor ?? KColor.ink),
+              color: logo != null ? KColor.bg : (logoColor ?? KColor.indicatorTint),
               shape: BoxShape.circle,
             ),
             child: logo ??
                 Text(_initials,
-                    style: KType.label(color: KColor.featureInk, w: KWeight.semibold)
+                    style: KType.label(color: logoColor != null ? KColor.featureInk : KColor.indicator, w: KWeight.semibold)
                         .copyWith(fontSize: 12, letterSpacing: 0.24, height: 1.0)),
           ),
           const SizedBox(width: 12),
@@ -183,6 +183,7 @@ class KBalancePanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: KColor.feature,
         borderRadius: KRadii.featureR,
+        boxShadow: KShadow.indicator,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,6 +198,163 @@ class KBalancePanel extends StatelessWidget {
           ],
           if (chart != null) ...[const SizedBox(height: 20), chart!],
           if (action != null) ...[const SizedBox(height: 20), action!],
+        ],
+      ),
+    );
+  }
+}
+
+enum KRiskTier { low, medium, high }
+
+/// The redesigned asset/product card (2026-08-22, new — components/finance/
+/// ProductCard.jsx). The audit's finding was that more text rows on the old
+/// card wasn't the fix: risk/fees/liquidity/minimum sit in a 2x2 grid under
+/// the price, and "Explain this" is part of the card, not a help link.
+class KProductCard extends StatelessWidget {
+  const KProductCard({
+    super.key,
+    required this.name,
+    this.market,
+    this.price,
+    this.change,
+    this.risk = KRiskTier.medium,
+    this.fee,
+    this.liquidity,
+    this.minimum,
+    this.spot,
+    this.onExplain,
+    this.action,
+  });
+
+  final String name;
+  final String? market;
+  final String? price;
+  final String? change;
+  final KRiskTier risk;
+  final String? fee;
+  final String? liquidity;
+  final String? minimum;
+  final Widget? spot;
+  final VoidCallback? onExplain;
+  final Widget? action;
+
+  bool get _up => change == null || !(change!.trim().startsWith('-') || change!.trim().startsWith('−'));
+
+  Color get _riskColor => switch (risk) {
+        KRiskTier.low => KColor.gain,
+        KRiskTier.medium => KColor.sunPress,
+        KRiskTier.high => KColor.loss,
+      };
+
+  String get _riskLabel => switch (risk) {
+        KRiskTier.low => 'Low',
+        KRiskTier.medium => 'Medium',
+        KRiskTier.high => 'High',
+      };
+
+  Widget _cell(String label, String? value, {Color? color}) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label.upper, style: KType.micro(color: KColor.ink3)),
+          const SizedBox(height: 4),
+          Text(value ?? '—',
+              style: KType.data(color: color ?? KColor.ink, w: KWeight.semibold).tnum),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: KColor.paper,
+        border: Border.all(color: KColor.hairline, width: 1),
+        borderRadius: KRadii.cardR,
+        boxShadow: KShadow.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (spot != null) ...[spot!, const SizedBox(width: 14)],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(name, style: KType.cardTitle()),
+                    if (market != null) ...[
+                      const SizedBox(height: 2),
+                      Text(market!, style: KType.data(color: KColor.ink3)),
+                    ],
+                  ],
+                ),
+              ),
+              if (price != null || change != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (price != null) Text(price!, style: KType.cardTitle().tnum),
+                    if (change != null) ...[
+                      const SizedBox(height: 2),
+                      Text(change!,
+                          style: KType.data(color: _up ? KColor.gain : KColor.loss).tnum),
+                    ],
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cell('Risk', _riskLabel, color: _riskColor),
+              const SizedBox(width: 14),
+              _cell('Fees', fee),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cell('Liquidity', liquidity),
+              const SizedBox(width: 14),
+              _cell('Minimum', minimum),
+            ],
+          ),
+          if (onExplain != null || action != null) ...[
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                if (onExplain != null)
+                  GestureDetector(
+                    onTap: onExplain,
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: KColor.indicatorTint,
+                        borderRadius: KRadii.pillR,
+                      ),
+                      child: Text('Explain this',
+                          style: KType.cardTitle(color: KColor.indicator).copyWith(fontSize: 13)),
+                    ),
+                  ),
+                if (onExplain != null && action != null) const SizedBox(width: 10),
+                ?action,
+              ],
+            ),
+          ],
         ],
       ),
     );

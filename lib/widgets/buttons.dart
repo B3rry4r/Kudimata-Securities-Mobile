@@ -5,7 +5,7 @@ import '../theme/tokens.dart';
 import 'k_icon.dart';
 import 'spinner.dart';
 
-enum KButtonVariant { primary, secondary, ghost }
+enum KButtonVariant { primary, secondary, ghost, warm, destructive }
 
 enum KButtonSize { lg, md, sm }
 
@@ -80,6 +80,18 @@ class _KButtonState extends State<KButton> {
         bg = _pressed && !blocked ? KColor.bg : const Color(0x00000000);
         fg = disabled ? KColor.ink3 : KColor.ink;
         break;
+      case KButtonVariant.warm:
+        // Celebration/personality only — never gain/loss, never an error. Screens
+        // 50/53 (Plans & credits "Pro" upsell CTA).
+        bg = disabled ? KColor.ink3 : (_pressed && !widget.loading ? KColor.warmPress : KColor.warm);
+        fg = KColor.featureInk;
+        break;
+      case KButtonVariant.destructive:
+        // Reserved for freeze / suspend / cancel-order (screens 44, 50, 51).
+        bg = KColor.paper;
+        fg = disabled ? KColor.ink3 : KColor.loss;
+        border = KColor.loss;
+        break;
     }
 
     final iconSize = 18.0;
@@ -126,7 +138,10 @@ class _KButtonState extends State<KButton> {
             color: bg,
             borderRadius: KRadii.buttonR,
             border: Border.all(
-              color: widget.variant == KButtonVariant.secondary ? border : const Color(0x00000000),
+              color: widget.variant == KButtonVariant.secondary ||
+                      widget.variant == KButtonVariant.destructive
+                  ? border
+                  : const Color(0x00000000),
               width: 1,
             ),
           ),

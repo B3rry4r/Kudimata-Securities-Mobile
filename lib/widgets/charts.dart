@@ -240,16 +240,14 @@ class KAllocationDonut extends StatelessWidget {
   final String? centerLabel;
   final String? centerValue;
 
-  static const ramp = [
-    Color(0xFF670099),
-    Color(0xFF8C39B8),
-    Color(0xFFB07FD4),
-    Color(0xFFD2B3E6),
-    Color(0xFFECDDF5),
-  ];
+  /// The grape ramp (tokens/colors.css --ramp-1..5) — exposed statically too,
+  /// since screens building their own legend alongside the donut (e.g.
+  /// portfolio_screen.dart) need the same colour-per-segment mapping.
+  static List<Color> get ramp => KColor.ramp;
 
   @override
   Widget build(BuildContext context) {
+    final ramp = KColor.ramp;
     final sections = [
       for (var i = 0; i < segments.length; i++)
         PieChartSectionData(

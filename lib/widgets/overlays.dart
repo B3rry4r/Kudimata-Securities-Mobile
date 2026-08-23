@@ -35,10 +35,10 @@ class KSheet extends StatelessWidget {
             Center(
               child: Container(
                 width: 40,
-                height: 4,
+                height: 5,
                 margin: const EdgeInsets.only(top: 12, bottom: 18),
                 decoration: BoxDecoration(
-                  color: KColor.hairline,
+                  color: KColor.track,
                   borderRadius: BorderRadius.circular(KRadii.pill),
                 ),
               ),

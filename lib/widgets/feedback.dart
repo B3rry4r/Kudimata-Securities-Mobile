@@ -1,8 +1,61 @@
-// Toast + StatusView. Ported from components/feedback/{Toast,StatusView}.jsx.
+// Toast + StatusView + StatusPill. Ported from
+// components/feedback/{Toast,StatusView}.jsx and components/data/StatusPill.jsx.
 // Colour is carried by a small mark only — the card/medallion stays white.
 import 'package:flutter/widgets.dart';
 import '../theme/tokens.dart';
+import 'buttons.dart';
+import 'illustration.dart';
 import 'k_icon.dart';
+
+/// Workflow status vocabulary (2026-08-22 "Soft Landing" — components/data/
+/// StatusPill.jsx's STATUS map). Inherits the movement logic: resolved-good
+/// reads gain, resolved-bad reads loss, waiting stays neutral ink, and the
+/// one state needing a human decision carries the purple indicator.
+enum KStatus { pending, review, approved, rejected, expired, flagged }
+
+/// Tinted pill + dot — the dashboard/order/KYC workflow-state vocabulary.
+class KStatusPill extends StatelessWidget {
+  const KStatusPill({super.key, required this.status, this.label, this.dot = true, this.small = false});
+
+  final KStatus status;
+  final String? label;
+  final bool dot;
+  final bool small;
+
+  (String, Color, Color) get _spec => switch (status) {
+        KStatus.pending => ('Pending', KColor.ink2, KColor.statusPendingTint),
+        KStatus.review => ('Under review', KColor.indicator, KColor.statusReviewTint),
+        KStatus.approved => ('Approved', KColor.gain, KColor.statusApprovedTint),
+        KStatus.rejected => ('Rejected', KColor.loss, KColor.statusRejectedTint),
+        KStatus.expired => ('Expired', KColor.ink2, KColor.track),
+        KStatus.flagged => ('Flagged', KColor.loss, KColor.statusRejectedTint),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final (defaultLabel, color, tint) = _spec;
+    final fontSize = small ? 10.0 : 11.0;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: small ? 8 : 10, vertical: small ? 3 : 4),
+      decoration: BoxDecoration(color: tint, borderRadius: KRadii.pillR),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (dot) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Text((label ?? defaultLabel).upper,
+              style: KType.label(color: color).copyWith(fontSize: fontSize, height: 1.3)),
+        ],
+      ),
+    );
+  }
+}
 
 enum KToastTone { success, error, info }
 
@@ -96,10 +149,17 @@ class KToast extends StatelessWidget {
 enum KStatusTone { success, error, pending }
 
 /// StatusView — the big centred result for an outcome screen or sheet.
+/// Illustration-led (2026-08-22 "Soft Landing" — the audit's own finding was
+/// that the old icon-in-a-ring medallion "is exactly where the app felt like
+/// a form"). [illustrationName] should name the scene that actually fits the
+/// screen (e.g. 'kyc-not-approved', 'offline', 'empty-wallet') — the per-tone
+/// default here is a generic fallback for call sites not yet updated with a
+/// specific scene.
 class KStatusView extends StatelessWidget {
   const KStatusView({
     super.key,
     this.tone = KStatusTone.success,
+    this.illustrationName,
     this.title,
     this.message,
     this.primary,
@@ -109,6 +169,7 @@ class KStatusView extends StatelessWidget {
   });
 
   final KStatusTone tone;
+  final String? illustrationName;
   final String? title;
   final String? message;
   final String? primary;
@@ -118,28 +179,24 @@ class KStatusView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (String icon, Color color, Color ring) = switch (tone) {
-      KStatusTone.success => ('check', KColor.gain, const Color(0x29209A5B)),
-      KStatusTone.error => ('close', KColor.loss, const Color(0x29C8443D)),
-      KStatusTone.pending => ('transfer', KColor.ink, KColor.hairline),
+    final (defaultName, plateTone) = switch (tone) {
+      KStatusTone.success => ('kyc-approved', KIlloTone.sun),
+      KStatusTone.error => ('error', KIlloTone.indicator),
+      KStatusTone.pending => ('loading', KIlloTone.indicator),
     };
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 72,
-          height: 72,
-          alignment: Alignment.center,
-          margin: const EdgeInsets.only(bottom: 22),
-          decoration: BoxDecoration(
-            color: KColor.paper,
-            shape: BoxShape.circle,
-            border: Border.all(color: color, width: 2),
-            boxShadow: [BoxShadow(color: ring, blurRadius: 0, spreadRadius: 8)],
+        SizedBox(
+          width: 240,
+          child: KIllustration(
+            illustrationName ?? defaultName,
+            role: KIlloRole.state,
+            tone: plateTone,
           ),
-          child: KIcon(icon, size: 32, stroke: 2.4, color: color),
         ),
+        const SizedBox(height: 22),
         if (title != null)
           Text(title!, textAlign: TextAlign.center, style: KType.title()),
         if (message != null) ...[
@@ -151,43 +208,13 @@ class KStatusView extends StatelessWidget {
           ),
         ],
         if (primary != null || secondary != null) ...[
-          const SizedBox(height: 28),
-          if (primary != null)
-            _StatusButton(label: primary!, onTap: onPrimary, primary: true),
+          const SizedBox(height: 24),
+          if (primary != null) KButton(label: primary!, onPressed: onPrimary),
           if (primary != null && secondary != null) const SizedBox(height: 10),
           if (secondary != null)
-            _StatusButton(label: secondary!, onTap: onSecondary, primary: false),
+            KButton(label: secondary!, onPressed: onSecondary, variant: KButtonVariant.secondary),
         ],
       ],
-    );
-  }
-}
-
-class _StatusButton extends StatelessWidget {
-  const _StatusButton({required this.label, required this.onTap, required this.primary});
-  final String label;
-  final VoidCallback? onTap;
-  final bool primary;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 50,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: primary ? KColor.indicator : KColor.paper,
-          borderRadius: KRadii.buttonR,
-          border: primary ? null : Border.all(color: KColor.hairline, width: 1),
-        ),
-        child: Text(label,
-            style: KType.cardTitle(
-              color: primary ? KColor.featureInk : KColor.ink,
-              w: KWeight.semibold,
-            ).copyWith(letterSpacing: -0.15, height: 1.0)),
-      ),
     );
   }
 }
