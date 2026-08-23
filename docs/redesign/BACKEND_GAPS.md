@@ -380,14 +380,57 @@ smaller fixes.
   screen shows the two real fields rather than inventing the other two —
   a real product-model mismatch between the canvas's assumptions and how
   referrals actually work here, worth reconciling upstream.
-- **Order cancellation** (re-confirmed) — no `POST /orders/:id/cancel` (or
-  similar) exists; blocks the Orders screen's cancel action for an unfilled
-  order, independently re-confirmed during this pass (see also gap §6).
+- **Order cancellation** — STALE, partially fixed: `PATCH
+  /orders/:id/cancel` now exists (investor-only, own pending order) and
+  `OrdersRepository.cancel()` calls it correctly — but the Orders screen
+  itself (`order_status_screen.dart`) still can't use it: it sources its
+  list from `GET /transactions`, which carries no `orderId` field, so
+  there's nothing valid to pass `cancel()`. Needs an investor-scoped `GET
+  /orders` list wired into this screen instead (see that screen's own
+  header comment for the full trail). Left here as a reminder that this
+  exact doc drifted out of sync with reality once already ("no cancel
+  endpoint exists" was stale even before this rewrite) — re-verify
+  against the code before trusting any gap claim in this file.
 - **Test-fixture gap, not a product gap**: `test/fixtures/mock_api_adapter.dart`
   has no `/statements` mock, so the Statements screen's own screenshot
   shows its (correctly-styled) error state rather than real-looking data.
   Harmless for production, worth fixing so future screenshot audits of
   this screen are actually useful.
+- **NGX All-Share index row** on Markets (#32/#60) — canvas shows a live
+  "104,562.18 · +0.84% today · Open · closes 14:30" index figure. No real
+  NGX index feed exists anywhere in this app (`AssetRepository` only has
+  per-instrument quotes); rendering a number here would be a fabricated
+  market index, not a data-shape gap that can be closed by wiring
+  existing fields. Deliberately not built — needs a real index data
+  source (an NGX data vendor, most likely) before it can ship.
+- **Portfolio change label says "all-time", canvas says "today"** — the
+  Home/Portfolio `BalancePanel`'s change line
+  (`HoldingsRepository.summary()`) is genuinely computed as all-time
+  unrealized return, not day-over-day change (see that repository's own
+  doc comment) — there is no daily-change aggregate on the backend to
+  wire instead. Rendering "today" over an all-time figure would misstate
+  what the number means, so the label stays honest rather than matching
+  the canvas's exact word. Needs a real daily-change aggregate
+  (`PortfolioSummary` gaining a second figure) to close for real.
+- **2026-08-24 rebuild — Home/Markets/Asset-detail structural fixes**: an
+  earlier "full re-audit" pass (commit `27b829a`) found real, concrete
+  deviations from the canvas on these three screens and documented them
+  as accepted exceptions ("prior approved decision", "regression risk")
+  instead of fixing them. They were not actually approved for this
+  canvas — rebuilt this pass to match s29/s30 (Home verified/not
+  verified), s32/s60 (Markets open/closed) and s33 (Asset detail)
+  structurally. See git log for the full diff; the two gaps immediately
+  above (NGX index, portfolio change label) are what's left after that
+  rebuild — both are real data-availability gaps, not deferred fixes.
+  Also fixed in the same pass: `KProductCard`'s risk/fee/liquidity/
+  minimum cells were rendering "—" as if unmodelled — they're real,
+  product-wide constants (1.35% fee, T+3, ₦5,000 minimum) already used
+  correctly elsewhere; and the asset-detail hero price line was missing
+  the absolute change figure even though the backend already returns
+  `changeAbsKobo` — the mobile `Asset` model just never parsed it. Added
+  a real `Asset.sector` backend column (NGX sector classification) so
+  Markets' category chips and the asset-detail subtitle are genuinely
+  wired instead of omitted.
 
 ## Priority read, if useful for scoping
 
