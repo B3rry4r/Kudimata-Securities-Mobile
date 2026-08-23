@@ -20,18 +20,23 @@
 // has no limit-order selector, so [orderType] defaults to market and
 // [limitPrice] stays unset from this screen.
 //
-// The Order resource shape itself isn't threaded into a domain model here —
-// this call only needs to succeed or throw; the caller already knows the
-// ticker/side/amount it just submitted and renders the existing success UI
-// from that, not from the response body. Kudimata holds client funds in a
-// custodial wallet (see wallet_repository.dart), so a buy fills against that
-// balance synchronously — no per-order checkout/payment step here.
+// UPDATED 2026-08-24: the backend's POST /orders now returns a real, usable
+// Order body (id, reference, status, ...) — previously this call only
+// needed to succeed or throw, since the response had nothing usable in it
+// (no reference number). placeOrder() now parses and returns that body
+// (lib/data/models.dart's [Order]) so a caller — e.g. trade_flows.dart's
+// sell flow — can read [Order.reference] for the "Reference · KDM-SL-9021"
+// row on SalePlacedScreen, rather than discarding it. Kudimata holds client
+// funds in a custodial wallet (see wallet_repository.dart), so a buy fills
+// against that balance synchronously — no per-order checkout/payment step
+// here.
 //
 // Construct with the ONE shared ApiClient, reached via
 // `AppScope.read(context).apiClient` (see main.dart / AppState.apiClient /
 // lib/data/api/README.md) — never a second ApiClient instance:
 //   final _repo = OrderPlacementRepository(AppScope.read(context).apiClient);
 import '../api/api_client.dart';
+import '../models.dart' show Order;
 
 enum OrderSide { buy, sell }
 
@@ -44,8 +49,9 @@ class OrderPlacementRepository {
   /// Places an order. Exactly one of [units]/[amountKobo] must be provided —
   /// mirrors the Amount sheet's naira/shares toggle (whichever the investor
   /// actually entered). Throws [ApiException] on failure (via
-  /// [ApiClient.post]); never throws a raw DioException.
-  Future<void> placeOrder({
+  /// [ApiClient.post]); never throws a raw DioException. Returns the created
+  /// [Order] (id, reference, status, ...) parsed from the response body.
+  Future<Order> placeOrder({
     required String ticker,
     required OrderSide side,
     double? units,
@@ -65,6 +71,7 @@ class OrderPlacementRepository {
     if (units != null) data['units'] = units;
     if (amountKobo != null) data['amountKobo'] = amountKobo;
     if (limitPrice != null) data['limitPrice'] = limitPrice;
-    await _client.post('/orders', data: data);
+    final response = await _client.post('/orders', data: data);
+    return Order.fromJson(response.data as Map<String, dynamic>);
   }
 }

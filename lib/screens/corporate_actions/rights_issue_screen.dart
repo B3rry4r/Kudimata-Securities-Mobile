@@ -1,37 +1,108 @@
-// Rights issue detail (screen 82, 2026-08-23 "Soft Landing" — new feature
-// area). Pushed with a RightsIssueFixture `extra`, same pattern as
-// account/withdraw_mandate_screen.dart's BankAccountSummary `extra`.
+// Rights issue detail (screen 82, 2026-08-23 "Soft Landing"). Wired per
+// lib/data/api/README.md's FutureBuilder convention:
+// CorporateActionsRepository.rightsIssues() (GET /rights-issues) replaces
+// the static `RightsIssueFixture` this screen used to be pushed with, and
+// .electRightsIssue() (POST /rights-issues/:id/elect) replaces the
+// always-"not available yet" Take up / Let it lapse buttons.
 //
-// Real backend gap, flagged rather than faked: there is no rights-issue
-// entity or subscription endpoint anywhere in this app or in
-// Kudimata-Securities-Backend/.pipeline/registry.json (see
-// corporate_actions_data.dart's header). s82.html's own footer says "Take
-// up" should land on screen 37 (order placed) "with the rights reference",
-// and "Let it lapse" should "record the decision and stop the reminders" —
-// both are real backend actions (place a subscription order against the
-// CSCS; persist a lapse decision) that don't exist yet. So neither button
-// silently succeeds or fakes navigating to an order-confirmation screen
-// (which would tell the investor money moved when it didn't) — both surface
-// the same honest "not available yet" message
-// withdraw_mandate_screen.dart/plans_screen.dart use elsewhere in this app.
+// NOTE — no `extra`/id argument: app_router.dart's GoRoute for
+// Routes.corpActionsRightsIssue constructs `RightsIssueScreen()` with no
+// forwarded `extra` (router files are out of scope for this pass — see
+// corporate_actions_screen.dart's header comment for the full reasoning),
+// so this screen can't be told WHICH rights issue to show via navigation.
+// It fetches the caller's own list instead and picks the most relevant
+// item itself: the first still-open one the caller hasn't elected on yet,
+// falling back to the most recent item overall (so a caller with only
+// closed/already-decided issues still sees their own history rather than
+// an empty screen). A real per-item detail route (GET /rights-issues/:id
+// doesn't even exist server-side yet) is a genuine follow-up, not
+// something this pass can wire.
 import 'package:flutter/material.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/corporate_actions_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
-import 'corporate_actions_data.dart';
 import 'corporate_actions_widgets.dart';
 
 class RightsIssueScreen extends StatefulWidget {
-  const RightsIssueScreen({super.key, this.rightsIssue = kMockRightsIssue});
-  final RightsIssueFixture rightsIssue;
+  const RightsIssueScreen({super.key});
 
   @override
   State<RightsIssueScreen> createState() => _RightsIssueScreenState();
 }
 
 class _RightsIssueScreenState extends State<RightsIssueScreen> {
-  late final _controller =
-      TextEditingController(text: widget.rightsIssue.entitlementShares.toString());
-  late int _units = widget.rightsIssue.entitlementShares;
+  late final _repo = CorporateActionsRepository(AppScope.read(context).apiClient);
+  late Future<List<RightsIssueListItem>> _future = _repo.rightsIssues();
+
+  RightsIssueListItem? _pickRelevant(List<RightsIssueListItem> items) {
+    for (final item in items) {
+      if (item.status == CorpActionStatus.open && !item.alreadyElected) return item;
+    }
+    return items.isEmpty ? null : items.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<RightsIssueListItem>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const KCorpActionScaffold(
+            title: 'Rights issue',
+            child: Padding(padding: EdgeInsets.symmetric(vertical: 40), child: KLoadingView()),
+          );
+        }
+        if (snapshot.hasError) {
+          return KCorpActionScaffold(
+            title: 'Rights issue',
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: KErrorView(onPrimary: () => setState(() => _future = _repo.rightsIssues())),
+            ),
+          );
+        }
+        final items = snapshot.data ?? const <RightsIssueListItem>[];
+        final item = _pickRelevant(items);
+        if (item == null) {
+          return const KCorpActionScaffold(
+            title: 'Rights issue',
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: KEmptyView(
+                icon: 'portfolio',
+                title: 'No rights issue to show',
+                message: 'Rights issues on companies you hold will show up here.',
+              ),
+            ),
+          );
+        }
+        return KCorpActionScaffold(
+          title: '${item.ticker} rights issue',
+          child: _RightsIssueDetail(key: ValueKey(item.id), repo: _repo, item: item),
+        );
+      },
+    );
+  }
+}
+
+class _RightsIssueDetail extends StatefulWidget {
+  const _RightsIssueDetail({super.key, required this.repo, required this.item});
+  final CorporateActionsRepository repo;
+  final RightsIssueListItem item;
+
+  @override
+  State<_RightsIssueDetail> createState() => _RightsIssueDetailState();
+}
+
+class _RightsIssueDetailState extends State<_RightsIssueDetail> {
+  late RightsIssueListItem _item = widget.item;
+  late final _controller = TextEditingController(text: _item.entitlementUnits.toString());
+  late int _units = _item.entitlementUnits;
+  bool _busy = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -42,99 +113,181 @@ class _RightsIssueScreenState extends State<RightsIssueScreen> {
   void _onChanged(String value) {
     final parsed = int.tryParse(value.trim());
     setState(() {
-      _units = parsed == null
-          ? 0
-          : parsed.clamp(0, widget.rightsIssue.entitlementShares);
+      _units = parsed == null ? 0 : parsed.clamp(0, _item.entitlementUnits);
     });
   }
 
-  String get _costLabel {
-    final total = _units * widget.rightsIssue.rightsPricePerShare;
-    final fixed = total.toStringAsFixed(2);
-    final parts = fixed.split('.');
-    final buf = StringBuffer();
-    final whole = parts[0];
-    for (var i = 0; i < whole.length; i++) {
-      final fromEnd = whole.length - i;
-      if (i != 0 && fromEnd % 3 == 0) buf.write(',');
-      buf.write(whole[i]);
+  String get _costLabel => _formatNaira(_units * _item.subscriptionPriceKobo);
+
+  Future<void> _takeUp() async {
+    if (_units <= 0) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final election = await widget.repo.electRightsIssue(
+        _item.id,
+        decision: RightsIssueDecision.takeUp,
+        unitsSubscribed: _units,
+      );
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _item = _item.withElection(election);
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
     }
-    return '₦$buf.${parts[1]}';
   }
 
-  void _notAvailable(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  Future<void> _lapse() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final election =
+          await widget.repo.electRightsIssue(_item.id, decision: RightsIssueDecision.lapse);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _item = _item.withElection(election);
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final r = widget.rightsIssue;
-    return KCorpActionScaffold(
-      title: '${r.companyName} rights issue',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    final r = _item;
+    final election = r.election;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: KColor.paper,
+            border: Border.all(color: KColor.hairline, width: 1),
+            borderRadius: BorderRadius.circular(KRadii.card),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Column(
+            children: [
+              KFactRow(
+                label: 'Your entitlement',
+                value: '${r.entitlementUnits} shares · ${r.ratioText}',
+                first: true,
+              ),
+              KFactRow(label: 'Rights price', value: _formatNaira(r.subscriptionPriceKobo)),
+              KFactRow(
+                label: 'Cost to take it all',
+                value: _formatNaira(r.entitlementUnits * r.subscriptionPriceKobo),
+                emphasis: true,
+              ),
+              KFactRow(label: 'Closes', value: _fullDate(r.closeDate)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (election != null) ...[
           Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: KColor.paper,
               border: Border.all(color: KColor.hairline, width: 1),
               borderRadius: BorderRadius.circular(KRadii.card),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                KFactRow(
-                  label: 'Your entitlement',
-                  value: '${r.entitlementShares} shares · ${r.ratioLabel}',
-                  first: true,
+                Row(
+                  children: [
+                    const KStatusPill(status: KStatus.approved, label: 'Decided', small: true),
+                    const SizedBox(width: 10),
+                    Text(_fullDate(election.decidedAt), style: KType.micro(color: KColor.ink3)),
+                  ],
                 ),
-                KFactRow(label: 'Rights price', value: r.rightsPriceLabel),
-                KFactRow(label: 'Market price today', value: r.marketPriceLabel),
-                KFactRow(
-                  label: 'Cost to take it all',
-                  value: r.costToTakeAllLabel,
-                  emphasis: true,
+                const SizedBox(height: 8),
+                Text(
+                  election.decision == RightsIssueDecision.takeUp
+                      ? 'You took up ${election.unitsSubscribed} of ${election.entitlementUnits} shares '
+                          '(${_formatNaira(election.unitsSubscribed * r.subscriptionPriceKobo)}).'
+                      : 'You let this offer lapse.',
+                  style: KType.data(color: KColor.ink2),
                 ),
-                KFactRow(label: 'Closes', value: r.closesLabel),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+        ] else ...[
           KInput(
             label: 'How many will you take?',
             controller: _controller,
             numeric: true,
             keyboardType: TextInputType.number,
-            suffix: 'of ${r.entitlementShares}',
-            helper: 'Wallet ${r.walletBalanceLabel} · part of the entitlement is fine',
+            suffix: 'of ${r.entitlementUnits}',
             onChanged: _onChanged,
           ),
           const SizedBox(height: 12),
           const KExplainPanel(
             title: 'What happens if I ignore it?',
-            body: 'Your slice of the company gets smaller and you keep your ₦3,360. '
-                "Neither choice is wrong — taking it up only makes sense if you still "
-                'want more GTCO.',
+            body: 'Your slice of the company gets smaller. Neither choice is wrong — taking it '
+                'up only makes sense if you still want more of this stock.',
           ),
           const SizedBox(height: 20),
           KButton(
             label: _units > 0 ? 'Take up $_units for $_costLabel' : 'Take up 0 shares',
-            onPressed: _units > 0
-                ? () => _notAvailable(
-                    "Taking up a rights issue isn't available yet — contact support to "
-                    'subscribe to this offer.')
-                : null,
+            loading: _busy,
+            onPressed: _units > 0 && !_busy ? _takeUp : null,
           ),
           const SizedBox(height: 10),
           KButton(
             label: 'Let it lapse',
             variant: KButtonVariant.ghost,
-            onPressed: () => _notAvailable(
-                "Recording a lapse decision isn't available yet — this offer will "
-                'keep showing as needing an answer until it closes.'),
+            onPressed: _busy ? null : _lapse,
           ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(_error!, style: KType.micro(color: KColor.loss)),
+          ],
         ],
-      ),
+      ],
     );
   }
+}
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// "2026-03-27T14:30:00.000Z" -> "27 Mar 2026 · 14:30".
+String _fullDate(DateTime dt) {
+  final local = dt.toLocal();
+  final hh = local.hour.toString().padLeft(2, '0');
+  final mm = local.minute.toString().padLeft(2, '0');
+  return '${local.day} ${_months[local.month - 1]} ${local.year} · $hh:$mm';
+}
+
+/// Minor-unit kobo -> "₦3,360.00" (thousands-grouped, 2dp).
+String _formatNaira(int kobo) {
+  final abs = kobo.abs();
+  final whole = abs ~/ 100;
+  final minor = (abs % 100).toString().padLeft(2, '0');
+  final wholeStr = whole.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]},',
+      );
+  return '₦$wholeStr.$minor';
 }

@@ -47,6 +47,42 @@ class OrdersRepository {
   const OrdersRepository(this._client);
   final ApiClient _client;
 
+  /// Added 2026-08-24 alongside the backend's new `PATCH /orders/:id/cancel`
+  /// (see BACKEND_GAPS.md §6/§14 — previously "no cancel endpoint exists
+  /// anywhere in this backend"). Added here — despite this class's header
+  /// comment explaining it otherwise deliberately avoids the Order resource
+  /// — because `OrderStatusScreen` already constructs exactly this
+  /// repository and nothing else; cancel is the one Order-resource route an
+  /// investor can call directly, given an id they already hold.
+  ///
+  /// Investor-only, own-order-only, and only while the order is still
+  /// `pending` server-side — cancelling an order that has since filled
+  /// (or was already rejected/cancelled) 422s with
+  /// `ORDER_NOT_CANCELLABLE`, which arrives as [ApiException.message] and
+  /// is NOT swallowed here; the caller must catch it and show the real
+  /// message rather than pretending the cancel succeeded. Returns the
+  /// updated [Order] (status now `cancelled`) on success.
+  ///
+  /// CALLER NOTE (real, verified gap — see this repository's own header
+  /// comment): `OrdersRepository.orders()` above sources its list from
+  /// `GET /transactions`, whose wire `Transaction` shape carries no
+  /// `orderId` (confirmed against
+  /// Kudimata-Securities-Backend/src/common/types/transaction.types.ts and
+  /// prisma/schema.prisma's `Transaction.orderId` comment: "NOT a
+  /// registry.json wire field... Internal linkage only"). A `Txn.id` from
+  /// that list is a Transaction id, not an Order id, so it cannot be passed
+  /// to this method — doing so would 404 against the Order table on every
+  /// call, not genuinely cancel anything. This method is real and correct;
+  /// what's still missing is a way for `OrderStatusScreen` to obtain a real
+  /// Order id per row (either an investor-scoped `GET /orders` list, or
+  /// `orderId` added to the Transaction wire shape) — see
+  /// order_status_screen.dart's own comment on the (still un-added)
+  /// "Cancel the unfilled N order" button.
+  Future<Order> cancel(String orderId) async {
+    final response = await _client.patch('/orders/$orderId/cancel');
+    return Order.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Mirrors the order-status screen's old
   /// `MockData.txns.where((t) => t.type == TxnType.buy || t.type ==
   /// TxnType.sell)` filter. `GET /transactions` is a

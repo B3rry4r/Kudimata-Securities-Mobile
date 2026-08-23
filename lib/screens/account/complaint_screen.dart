@@ -1,33 +1,29 @@
 // Screen 87 — "File a complaint" (2026-08-23 "Soft Landing" canvas exactness
-// pass, s87.html). Reached from Help & support's "File a complaint" button
-// (previously a bare `mailto:` hand-off — see help_support_screen.dart's
-// `_fileComplaint`) or from any failure state elsewhere in the app.
+// pass, s87.html; wired to a real backend 2026-08-24). Reached from Help &
+// support's "File a complaint" button (previously a bare `mailto:` hand-off
+// — see help_support_screen.dart's `_fileComplaint`) or from any failure
+// state elsewhere in the app.
 //
-// REAL BACKEND GAP, flagged rather than faked: no complaint/ticketing
-// resource exists anywhere in this app's backend contract — confirmed
-// against Kudimata-Securities-Backend/.pipeline/registry.json (no
-// "complaint" or "ticket" match) and its account-help.json fragment (no
-// reads/actions declared for this screen family at all). The canvas wires
-// "Send complaint" straight to screen 88 (a tracked-complaint view) with a
-// generated reference like "CMP-2026-0184", but manufacturing that reference
-// and navigating on as if the complaint had actually been filed would be
-// exactly the "faking success" this app's convention explicitly avoids
-// (withdraw_mandate_screen.dart, plans_screen.dart). So this screen builds
-// the full, real form — category picker, reference/description inputs, a
-// real local file picker for the optional attachment — and on submit tells
-// the investor honestly that filing isn't wired to a backend yet, the same
-// pattern as those two screens, rather than pretending a complaint was
-// registered.
+// REAL BACKEND, wired: Kudimata-Securities-Backend now has a Complaint
+// resource (src/complaints/*, src/common/types/complaint.types.ts) —
+// POST /complaints/upload-url for the optional attachment, POST /complaints
+// to file. See lib/data/repositories/complaint_repository.dart for the
+// exact request/response shapes. "Send complaint" files for real and
+// navigates to screen 88 (ComplaintTrackedScreen) with the backend's own
+// returned Complaint — no more manufactured reference, no more honest-gap
+// snackbar.
 //
-// What a real complaint/ticketing resource would need (for whoever wires the
-// backend): POST /complaints {category, reference?, description,
-// attachmentObjectKey?} -> Complaint {id, reference, status, filedAt,
-// answerDueAt, ...}; GET /complaints/:id or GET /complaints/:id/timeline for
-// screen 88's status + step history; and a category taxonomy (this screen's
-// `_kComplaintTopics`, mirrored from help_support_screen.dart's own FAQ
-// headlines: order/trade, money movement, verification, fees, other).
+// Category taxonomy (`_kComplaintTopics`) is still a client-side picker
+// convenience, not a server enum — FileComplaintDto validates `category` as
+// a non-empty string, mirrored from help_support_screen.dart's own FAQ
+// headlines: order/trade, money movement, verification, fees, other.
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/complaint_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
@@ -57,7 +53,13 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
   final _referenceController = TextEditingController();
   final _descriptionController = TextEditingController();
   KFileInfo? _attachment;
+  String? _attachmentObjectKey;
+  bool _uploading = false;
+  String? _attachmentError;
+  bool _sending = false;
   bool _showErrors = false;
+
+  late final _repo = ComplaintRepository(AppScope.read(context).apiClient);
 
   @override
   void dispose() {
@@ -75,38 +77,80 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
     if (picked != null) setState(() => _topic = picked);
   }
 
-  /// Real local file selection (file_picker, same package
-  /// utility_bill.dart/id_upload.dart already use) — no fake preview. There
-  /// is simply nowhere to upload it to yet (see file header), so unlike
-  /// those KYC screens this never calls a repository; it just holds the
-  /// picked file for display, matching this screen's honest-form-no-fake-
-  /// submission stance end to end.
+  /// Real local file selection (file_picker) followed by the real
+  /// presigned-upload flow — mirrors id_upload.dart/utility_bill.dart's
+  /// pattern exactly: request a presigned URL, PUT the bytes straight to
+  /// it, then keep the returned object key to send along with the
+  /// complaint on submit (see ComplaintRepository's file header for why
+  /// there's no separate "register document" step here, unlike KYC).
   Future<void> _pickAttachment() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['jpg', 'jpeg', 'png', 'pdf'],
-      withData: false,
+      withData: true,
     );
     if (result == null || result.files.isEmpty) return;
     final picked = result.files.single;
-    setState(() => _attachment = KFileInfo(name: picked.name, size: picked.size));
+    final bytes = picked.bytes;
+    if (bytes == null) {
+      setState(() => _attachmentError = "Couldn't read that file. Please try again.");
+      return;
+    }
+
+    setState(() {
+      _uploading = true;
+      _attachmentError = null;
+    });
+
+    final contentType = _contentTypeFor(picked.name);
+    try {
+      final upload = await _repo.uploadUrl(fileName: picked.name, contentType: contentType);
+      await _repo.putFile(upload.uploadUrl, bytes, contentType: contentType);
+      if (!mounted) return;
+      setState(() {
+        _attachment = KFileInfo(name: picked.name, size: picked.size);
+        _attachmentObjectKey = upload.objectKey;
+        _uploading = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _uploading = false;
+        _attachmentError = e.message;
+      });
+    }
   }
 
-  bool get _canSend => _descriptionController.text.trim().isNotEmpty;
+  String _contentTypeFor(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    return 'image/jpeg';
+  }
 
-  void _send() {
-    if (!_canSend) {
+  Future<void> _send() async {
+    if (_descriptionController.text.trim().isEmpty) {
       setState(() => _showErrors = true);
       return;
     }
-    // Honest gap, not a fake success — see file header.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Filing a complaint isn't available yet — email us instead and we'll log it by hand.",
-        ),
-      ),
-    );
+    if (_uploading || _sending) return;
+
+    setState(() => _sending = true);
+    try {
+      final complaint = await _repo.file(
+        category: _topic,
+        orderOrTxnRef: _referenceController.text.trim(),
+        description: _descriptionController.text.trim(),
+        attachmentObjectKey: _attachmentObjectKey,
+      );
+      if (!mounted) return;
+      setState(() => _sending = false);
+      context.push(Routes.acctComplaintTracked, extra: complaint);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   void _showEscalationInfo() {
@@ -165,11 +209,20 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
           const SizedBox(height: 12),
           KFileUpload(
             label: 'Anything to attach',
-            prompt: 'Screenshot, statement or note',
+            prompt: _uploading ? 'Uploading…' : 'Screenshot, statement or note',
             hint: 'PDF, PNG or JPG · up to 10 MB',
+            helper: _uploading ? 'Uploading your attachment…' : null,
+            error: _attachmentError,
+            disabled: _uploading,
             file: _attachment,
-            onPick: _pickAttachment,
-            onRemove: () => setState(() => _attachment = null),
+            onPick: _uploading ? null : _pickAttachment,
+            onRemove: _uploading
+                ? null
+                : () => setState(() {
+                      _attachment = null;
+                      _attachmentObjectKey = null;
+                      _attachmentError = null;
+                    }),
           ),
           const SizedBox(height: 12),
           GestureDetector(
@@ -194,7 +247,11 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          KButton(label: 'Send complaint', onPressed: _send),
+          KButton(
+            label: 'Send complaint',
+            loading: _sending,
+            onPressed: _uploading || _sending ? null : _send,
+          ),
         ],
       ),
     );

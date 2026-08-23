@@ -1,17 +1,19 @@
-// KYC 7 — next of kin (step 5 of 5, final). Name / relationship / phone.
-// Continue finalizes the draft: POST /kyc-submissions/draft/finalize
-// (2026-08-20, phased-KYC directive — was POST /kyc-submissions, the
-// all-at-once call, before this) — requires steps 2-4 (id document,
-// liveness, utility bill) already done, computes the real vendorDecision
-// from everything accumulated across the earlier steps, and leaves
-// 'draft' for good. Then sets kycSubmitted, clears the held draft id
-// (KycFormState.reset), and advances to the Submitted (pending review)
-// screen. See lib/data/repositories/kyc_repository.dart.
+// KYC 8 of 8 — next of kin (2026-08-24 re-sequencing: was step 5 of 5/final;
+// there's now a Review & submit screen after this one). Name / relationship
+// / phone.
+//
+// Continue no longer finalizes the draft directly — it stashes these three
+// fields on KycFormState (the draft itself has nowhere to hold them until
+// finalize is actually called) and hands off to Review & submit
+// (review_submit_screen.dart), which is the one screen that now calls
+// POST /kyc-submissions/draft/finalize (2026-08-20, phased-KYC directive —
+// was POST /kyc-submissions, the all-at-once call, before that) — requires
+// steps 2-5 (id document, liveness, utility bill, ready-to-finalize)
+// already done, computes the real vendorDecision from everything
+// accumulated across the earlier steps, and leaves 'draft' for good.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
-import 'package:kudimata_invest/data/api/api_exception.dart';
-import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -41,14 +43,28 @@ const List<String> _relationships = [
 class _NextOfKinScreenState extends State<NextOfKinScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
-  bool _busy = false;
   String? _relationship;
+  bool _showErrors = false;
+  bool _prefilled = false;
 
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Resume-aware (Review & submit's "Edit" jumps back here) — prefill
+    // from whatever KycFormState already holds this session.
+    if (_prefilled) return;
+    _prefilled = true;
+    final form = AppScope.read(context).kycForm;
+    _name.text = form.nextOfKinName ?? '';
+    _phone.text = form.nextOfKinPhone ?? '';
+    _relationship = form.nextOfKinRelationship;
   }
 
   Future<void> _pickRelationship() async {
@@ -72,32 +88,20 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
     setState(() => _relationship = picked);
   }
 
-  Future<void> _submit() async {
-    final app = AppScope.read(context);
-    setState(() => _busy = true);
-    final repo = KycRepository(app.apiClient);
-    try {
-      await repo.finalizeDraft(
-        nextOfKinName: _name.text,
-        nextOfKinRelationship: _relationship ?? '',
-        nextOfKinPhone: _phone.text,
-      );
-      if (!mounted) return;
-      app.kycForm.reset();
-      app.setKycSubmitted(true);
-      context.go(Routes.kycSubmitted);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      _showErrorSheet(context, message: e.message);
-    } catch (_) {
-      // Widened from `on ApiException` only (2026-08-20) — any OTHER
-      // exception type used to leave `_busy` stuck true forever (a
-      // permanent loading spinner on the final submit button).
-      if (!mounted) return;
-      setState(() => _busy = false);
-      _showErrorSheet(context, message: 'Something went wrong. Please try again.');
+  bool get _valid =>
+      _name.text.trim().isNotEmpty && _relationship != null && _phone.text.trim().isNotEmpty;
+
+  void _continue() {
+    if (!_valid) {
+      setState(() => _showErrors = true);
+      return;
     }
+    AppScope.read(context).kycForm.setNextOfKin(
+          name: _name.text.trim(),
+          relationship: _relationship!,
+          phone: _phone.text.trim(),
+        );
+    context.go(Routes.kycReview);
   }
 
   @override
@@ -109,10 +113,10 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(
-              onBack: () => context.go(Routes.kycUtilityBill),
-              stepLabel: 'Verification · 5 of 5',
+              onBack: () => context.go(Routes.kycDeclarations),
+              stepLabel: 'Verification · 8 of 8',
             ),
-            const KycStepProgress(total: 5, current: 5),
+            const KycStepProgress(total: 8, current: 8),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -132,19 +136,31 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
                           KInput(
                               label: 'Full name',
                               placeholder: 'Ngozi Okonkwo',
-                              controller: _name),
+                              controller: _name,
+                              error: _showErrors && _name.text.trim().isEmpty ? 'Enter a full name' : null,
+                              onChanged: (_) {
+                                if (_showErrors) setState(() {});
+                              }),
                           const SizedBox(height: 16),
                           _RelationshipField(
                             value: _relationship,
                             onTap: _pickRelationship,
                           ),
+                          if (_showErrors && _relationship == null) ...[
+                            const SizedBox(height: 6),
+                            Text('Select a relationship', style: KType.data(color: KColor.loss)),
+                          ],
                           const SizedBox(height: 16),
                           KInput(
                               label: 'Phone number',
                               prefix: '+234',
                               placeholder: '802 987 6543',
                               keyboardType: TextInputType.phone,
-                              controller: _phone),
+                              controller: _phone,
+                              error: _showErrors && _phone.text.trim().isEmpty ? 'Enter a phone number' : null,
+                              onChanged: (_) {
+                                if (_showErrors) setState(() {});
+                              }),
                         ],
                       ),
                     ),
@@ -156,13 +172,10 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
               padding: const EdgeInsets.fromLTRB(
                   KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
               child: KButton(
-                // This app's flow has no separate review screen (spec 22) —
-                // this button IS the final submit (calls finalizeDraft
-                // directly), so it gets that screen's real button label
-                // rather than a generic "Continue" on the last step.
-                label: 'Submit for verification',
-                loading: _busy,
-                onPressed: _busy ? null : _submit,
+                // Review & submit (screen 22) is the new final step — this
+                // one hands off to it rather than submitting directly.
+                label: 'Review and submit',
+                onPressed: _continue,
               ),
             ),
           ],
@@ -170,27 +183,6 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
       ),
     );
   }
-}
-
-/// Shown when the POST /kyc-submissions (or a document registration) call
-/// fails with an [ApiException] — [message] is that exception's
-/// human-readable summary (safe to show directly, per
-/// lib/data/api/api_exception.dart). The form's entered values stay intact
-/// so the user can retry without re-typing anything.
-void _showErrorSheet(BuildContext context, {required String message}) {
-  showKSheet<void>(
-    context,
-    child: Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: KStatusView(
-        tone: KStatusTone.error,
-        title: 'Submission failed',
-        message: message,
-        primary: 'Try again',
-        onPrimary: () => Navigator.of(context).pop(),
-      ),
-    ),
-  );
 }
 
 /// "Relationship" field's closed/collapsed state — same visual chrome as

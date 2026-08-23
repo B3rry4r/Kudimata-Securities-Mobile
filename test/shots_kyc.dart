@@ -21,6 +21,7 @@ import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_client.dart';
 import 'package:kudimata_invest/router/app_router.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/kyc/kyc_form_state.dart';
 import 'package:kudimata_invest/theme/app_theme.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 
@@ -31,10 +32,14 @@ import 'fixtures/mock_api_adapter.dart';
 const _routes = <String, (String, bool, bool, bool)>{
   '13_kyc_intro': (Routes.kycIntro, false, false, false),
   '14_bvn_nin': (Routes.kycBvn, false, false, false),
+  '15_chn': (Routes.kycChn, false, false, false),
   '16_id_upload': (Routes.kycId, false, false, false),
   '17_liveness': (Routes.kycLiveness, false, false, false),
   '18_utility_bill': (Routes.kycUtilityBill, false, false, false),
+  '19_bank_dcs': (Routes.kycBankDcs, false, false, false),
+  '20_declarations': (Routes.kycDeclarations, false, false, false),
   '21_next_of_kin': (Routes.kycNextOfKin, false, false, false),
+  '22_review_submit': (Routes.kycReview, false, false, false),
   '23_24_submitted_pending': (Routes.kycSubmitted, true, false, false),
   '25_approved': (Routes.kycApproved, true, false, false),
   '26_outcome_not_approved': (Routes.kycOutcome, true, false, false),
@@ -125,7 +130,11 @@ Future<_Mounted> _mount(
     ..kycSubmitted = kycSubmitted
     ..kycApproved = kycApproved
     ..suitabilityComplete = suitabilityComplete
-    ..apiClient = apiClient;
+    ..apiClient = apiClient
+    // declarations_screen.dart/next_of_kin.dart/review_submit_screen.dart
+    // read AppScope.read(context).kycForm at build time (2026-08-24) —
+    // main.dart's real bootstrap always sets this too.
+    ..kycForm = KycFormState();
   final router = buildRouter(state);
   final key = GlobalKey();
 

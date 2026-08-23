@@ -158,9 +158,15 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             tone: KNudgeTone.sun,
             title: 'Price alerts',
             body: "We'll notify you if a name on this list moves more than 5% in a day. Nothing else — no daily noise.",
-            // Screen 86 (s86.html) — per-asset alert thresholds, UI-complete
-            // preview (see price_alerts_screen.dart's header for the real
-            // backend gap).
+            // Screen 86 (s86.html) — per-asset alert thresholds, now wired
+            // to a real PriceAlert CRUD backend (see
+            // price_alerts_screen.dart's header). The threshold/on-off state
+            // itself is genuinely saved server-side; that backend's own
+            // notification-delivery scheduler isn't wired yet, so this
+            // card's "We'll notify you..." promise is currently ahead of
+            // what actually fires — flagged in price_alerts_screen.dart's
+            // header rather than rewritten here, since this screen is owned
+            // by concurrent work outside this change's scope.
             action: KButton(
               label: 'Manage price alerts',
               variant: KButtonVariant.secondary,

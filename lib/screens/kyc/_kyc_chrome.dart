@@ -16,7 +16,7 @@ class KycTopBar extends StatelessWidget {
   const KycTopBar({super.key, this.onBack, this.stepLabel});
   final VoidCallback? onBack;
 
-  /// e.g. "Verification · 1 of 5" — sits beside the back button, same row.
+  /// e.g. "Verification · 1 of 8" — sits beside the back button, same row.
   /// Ported 1:1 from the canvas mockup's #s14-#s21 blocks: the step label is
   /// part of the header row (`padding:14px 20px 10px`), not a caption under
   /// the progress bar — was previously rendered as "STEP N OF total" below

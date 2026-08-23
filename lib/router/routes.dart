@@ -33,15 +33,31 @@ class Routes {
   // ── KYC ──────────────────────────────────────────────────────────────────
   static const String kycIntro = '/kyc';
   static const String kycBvn = '/kyc/bvn';
+  // CHN · optional — 2 of 8 (2026-08-24 canvas screen 15, re-sequencing the
+  // real 5-step flow to the canvas's real 8 steps). Right after bvn/nin,
+  // before id upload.
+  static const String kycChn = '/kyc/chn';
   static const String kycId = '/kyc/id';
   static const String kycLiveness = '/kyc/liveness';
   static const String kycChecking = '/kyc/checking';
-  // Utility bill upload — step 4 of 5 (2026-08-20 phased-KYC directive:
+  // Utility bill upload — step 5 of 8 (2026-08-20 phased-KYC directive:
   // "we need to collect Utility bill"). documentKind 'proof_of_address'
   // already existed in the backend schema; this is the first screen that
   // actually collects it.
   static const String kycUtilityBill = '/kyc/utility-bill';
+  // Bank & Direct Cash Settlement — 6 of 8 (2026-08-24 canvas screen 19).
+  // Collects a real bank account (BankAccountsRepository — same mechanism
+  // Account → Bank accounts uses) during KYC and sets it primary/DCS.
+  static const String kycBankDcs = '/kyc/bank-dcs';
+  // Declarations · PEP — 7 of 8 (2026-08-24 canvas screen 20). PATCHes
+  // pepSelfDeclared onto the draft.
+  static const String kycDeclarations = '/kyc/declarations';
   static const String kycNextOfKin = '/kyc/next-of-kin';
+  // Review & submit — new final screen (2026-08-24 canvas screen 22). Next
+  // of kin's Continue now lands here instead of calling finalizeDraft()
+  // directly; THIS screen's "Submit for verification" is what actually
+  // calls it.
+  static const String kycReview = '/kyc/review';
   static const String kycSubmitted = '/kyc/submitted';
   static const String kycApproved = '/kyc/approved';
   static const String kycOutcome = '/kyc/outcome';

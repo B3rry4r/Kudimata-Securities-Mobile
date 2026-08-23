@@ -143,7 +143,7 @@ class _PartnerDisclosuresScreenState extends State<PartnerDisclosuresScreen> {
   static const _points = [
     'Blue Marina Securities is a dealing member of the NGX and executes your orders.',
     'Your shares are registered to your own CHN at the CSCS, in your name.',
-    'Money from a sale or a dividend moves CSCS → your bank under your DCS mandate.',
+    'Money from a sale or a dividend moves from the CSCS to your bank under your DCS mandate.',
     'If we add another executing broker, it appears on your receipts and as its own '
         'statement section.',
   ];

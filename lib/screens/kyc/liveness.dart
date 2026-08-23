@@ -1,4 +1,4 @@
-// KYC 4 — liveness selfie (step 3 of 5). On mobile: a framed selfie capture
+// KYC 4 — liveness selfie (step 4 of 8). On mobile: a framed selfie capture
 // — a live front-camera preview inside a circle with a dashed guidance
 // ring (or the captured photo once taken), plus a round shutter button. On
 // web: a file picker instead (2026-08-19) — package:camera's web support is
@@ -138,9 +138,9 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycId),
-              stepLabel: 'Verification · 3 of 5',
+              stepLabel: 'Verification · 4 of 8',
             ),
-            const KycStepProgress(total: 5, current: 3),
+            const KycStepProgress(total: 8, current: 4),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -433,6 +433,9 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
       );
 
       if (!mounted) return;
+      // Real client-side capture timestamp — review_submit_screen.dart's
+      // "Selfie" row shows this (the backend has no such field of its own).
+      AppScope.read(context).kycForm.setSelfieCapturedAt(DateTime.now());
       context.go(Routes.kycChecking);
     } on ApiException catch (e) {
       if (!mounted) return;

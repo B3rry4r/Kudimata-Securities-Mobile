@@ -85,6 +85,79 @@ class Txn {
   final bool incoming;
 }
 
+/// Wire shape for the backend's Order resource (registry.json "Order" plus
+/// the 2026-08-24 additions `reference`/`destinationBankAccountId` — see
+/// Kudimata-Securities-Backend's src/common/types/order.types.ts). Returned
+/// by `POST /orders` (OrderPlacementRepository.placeOrder) and
+/// `PATCH /orders/:id/cancel` (OrdersRepository.cancel) — both parse it via
+/// [Order.fromJson] rather than discarding the response body, so a real
+/// order id/reference is available to the caller instead of being thrown
+/// away.
+///
+/// [side]/[orderType]/[status] are kept as raw wire strings ('buy'/'sell',
+/// 'market'/'limit', 'pending'/'approved'/'rejected'/'cancelled') rather
+/// than new enums — `order_placement_repository.dart` already declares its
+/// own `OrderSide`/`OrderType` enums for the *request* side of this same
+/// resource, and this model only needs to round-trip the response, not
+/// branch on it, in every screen that touches it today.
+@immutable
+class Order {
+  const Order({
+    required this.id,
+    required this.ticker,
+    required this.side,
+    required this.units,
+    required this.orderType,
+    required this.status,
+    required this.createdAt,
+    this.amountKobo,
+    this.limitPrice,
+    this.price,
+    this.value,
+    this.reference,
+    this.destinationBankAccountId,
+  });
+
+  final String id;
+  final String ticker;
+  final String side; // 'buy' | 'sell'
+  final num units;
+  final String orderType; // 'market' | 'limit'
+  final String status; // 'pending' | 'approved' | 'rejected' | 'cancelled'
+  final String createdAt; // ISO-8601 timestamp
+  final int? amountKobo;
+  final int? limitPrice;
+  final int? price;
+  final int? value;
+
+  /// Short investor-facing reference (e.g. "KDM-SL-9021"), distinct from
+  /// [id] (a UUID). Null only for an order created before this field
+  /// existed (2026-08-24) — screens must degrade gracefully (omit the row),
+  /// never render the literal string "null".
+  final String? reference;
+
+  /// Bank account a sell order's proceeds pay out to directly; null means
+  /// proceeds go to the wallet (today's only real behavior for every order
+  /// that predates this field, and for every buy order).
+  final String? destinationBankAccountId;
+
+  factory Order.fromJson(Map<String, dynamic> json) => Order(
+        id: json['id'] as String? ?? '',
+        ticker: json['ticker'] as String? ?? '',
+        side: json['side'] as String? ?? 'buy',
+        units: (json['units'] as num?) ?? 0,
+        orderType: json['orderType'] as String? ?? 'market',
+        status: json['status'] as String? ?? 'pending',
+        createdAt: json['createdAt'] as String? ?? '',
+        amountKobo: (json['amountKobo'] as num?)?.toInt(),
+        limitPrice: (json['limitPrice'] as num?)?.toInt(),
+        price: (json['price'] as num?)?.toInt(),
+        value: (json['value'] as num?)?.toInt(),
+        reference: json['reference'] as String?,
+        destinationBankAccountId: json['destinationBankAccountId'] as String?,
+      );
+}
+
 @immutable
 class AppNotification {
   const AppNotification({

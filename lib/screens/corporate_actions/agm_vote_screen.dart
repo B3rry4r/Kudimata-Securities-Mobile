@@ -1,101 +1,222 @@
-// AGM · vote your shares (screen 83, 2026-08-23 "Soft Landing" — new
-// feature area). Pushed with an AgmFixture `extra`.
+// AGM · vote your shares (screen 83, 2026-08-23 "Soft Landing"). Wired per
+// lib/data/api/README.md's FutureBuilder convention:
+// CorporateActionsRepository.agmMeetings() (GET /agm-meetings) replaces the
+// static `AgmFixture` (and its 3 fabricated placeholder resolutions — only
+// 2 ever had real canvas content) this screen used to be pushed with, and
+// .submitAgmVote() (POST /agm-meetings/:id/vote) replaces the
+// always-"not available yet" Submit button. Real resolutions come straight
+// from `AgmMeetingListItem.resolutions` — whatever count/text the backend
+// actually declared for the meeting, not a fixed 3/5.
 //
-// Real backend gap: there is no AGM/resolution/proxy-vote entity or
-// endpoint anywhere in this app or in Kudimata-Securities-Backend/.pipeline/
-// registry.json (see corporate_actions_data.dart's header). s83.html's
-// footer says "Submit" should go "back to 81 marked voted" and "the full
-// notice is sent as a PDF through the document email" — both real backend
-// actions (persisting a proxy vote per resolution; emailing a document)
-// that don't exist yet. Selecting For/Against/Abstain per resolution is
-// real local UI state (so the screen feels alive and matches the design's
-// selected chips), but tapping either button surfaces the same honest "not
-// available yet" message the rest of this app uses rather than pretending
-// the vote was recorded or the email was sent.
+// NOTE — no `extra`/id argument, same reasoning as rights_issue_screen.dart:
+// app_router.dart's GoRoute for Routes.corpActionsAgm constructs
+// `AgmVoteScreen()` with no forwarded `extra` (router files out of scope
+// for this pass), so this screen fetches the caller's own AGM list and
+// picks the most relevant meeting itself: the first still-open one with
+// voting not yet closed that the caller hasn't voted on, falling back to
+// the most recent meeting overall.
 import 'package:flutter/material.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/corporate_actions_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
-import 'corporate_actions_data.dart';
 import 'corporate_actions_widgets.dart';
 
-enum _Ballot { forIt, against, abstain }
-
 class AgmVoteScreen extends StatefulWidget {
-  const AgmVoteScreen({super.key, this.agm = kMockAgm});
-  final AgmFixture agm;
+  const AgmVoteScreen({super.key});
 
   @override
   State<AgmVoteScreen> createState() => _AgmVoteScreenState();
 }
 
 class _AgmVoteScreenState extends State<AgmVoteScreen> {
-  // Every resolution defaults to "For", matching s83.html's own chips
-  // (selected="{{ true }}" on the first PillChip of both shown resolutions).
-  late final Map<int, _Ballot> _votes = {
-    for (final r in widget.agm.resolutions) r.index: _Ballot.forIt,
-  };
+  late final _repo = CorporateActionsRepository(AppScope.read(context).apiClient);
+  late Future<List<AgmMeetingListItem>> _future = _repo.agmMeetings();
 
-  void _notAvailable(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  AgmMeetingListItem? _pickRelevant(List<AgmMeetingListItem> items) {
+    final now = DateTime.now();
+    for (final item in items) {
+      if (item.status == CorpActionStatus.open &&
+          !item.alreadyVoted &&
+          item.votesCloseAt.isAfter(now)) {
+        return item;
+      }
+    }
+    return items.isEmpty ? null : items.first;
   }
 
   @override
   Widget build(BuildContext context) {
-    final agm = widget.agm;
-    return KCorpActionScaffold(
-      title: '${agm.companyName} AGM',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'You hold ${agm.sharesHeld} shares, so you have ${agm.sharesHeld} votes on '
-            'each resolution. Votes close ${agm.votesCloseLabel}, the meeting is '
-            '${agm.meetingLabel}.',
-            style: KType.data(color: KColor.ink2),
+    return FutureBuilder<List<AgmMeetingListItem>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const KCorpActionScaffold(
+            title: 'AGM',
+            child: Padding(padding: EdgeInsets.symmetric(vertical: 40), child: KLoadingView()),
+          );
+        }
+        if (snapshot.hasError) {
+          return KCorpActionScaffold(
+            title: 'AGM',
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: KErrorView(onPrimary: () => setState(() => _future = _repo.agmMeetings())),
+            ),
+          );
+        }
+        final items = snapshot.data ?? const <AgmMeetingListItem>[];
+        final item = _pickRelevant(items);
+        if (item == null) {
+          return const KCorpActionScaffold(
+            title: 'AGM',
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: KEmptyView(
+                icon: 'portfolio',
+                title: 'No AGM to show',
+                message: 'AGM meetings on companies you hold will show up here.',
+              ),
+            ),
+          );
+        }
+        return KCorpActionScaffold(
+          title: '${item.ticker} AGM',
+          child: _AgmDetail(key: ValueKey(item.id), repo: _repo, item: item),
+        );
+      },
+    );
+  }
+}
+
+class _AgmDetail extends StatefulWidget {
+  const _AgmDetail({super.key, required this.repo, required this.item});
+  final CorporateActionsRepository repo;
+  final AgmMeetingListItem item;
+
+  @override
+  State<_AgmDetail> createState() => _AgmDetailState();
+}
+
+class _AgmDetailState extends State<_AgmDetail> {
+  late AgmMeetingListItem _item = widget.item;
+
+  // Every resolution defaults to "For", matching s83.html's own chips
+  // (selected="{{ true }}" on the first PillChip shown). Keyed by
+  // resolution id (the real backend key), not display order.
+  late final Map<String, AgmVoteChoice> _votes = {
+    for (final r in _item.resolutions) r.id: AgmVoteChoice.forIt,
+  };
+
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _submit() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final vote = await widget.repo.submitAgmVote(_item.id, _votes);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _item = _item.withVote(vote);
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final agm = _item;
+    final vote = agm.vote;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          agm.eligibleUnits > 0
+              ? 'You hold ${agm.eligibleUnits} shares, so you have ${agm.eligibleUnits} votes on '
+                  'each resolution. Votes close ${_fullDate(agm.votesCloseAt)}.'
+              : 'Votes close ${_fullDate(agm.votesCloseAt)}.',
+          style: KType.data(color: KColor.ink2),
+        ),
+        const SizedBox(height: 12),
+        for (final resolution in agm.resolutions) ...[
+          _ResolutionCard(
+            index: resolution.order,
+            description: resolution.description,
+            selected: vote != null ? vote.votes[resolution.id] : _votes[resolution.id],
+            readOnly: vote != null,
+            onChanged: (b) => setState(() => _votes[resolution.id] = b),
           ),
           const SizedBox(height: 12),
-          for (final resolution in agm.resolutions) ...[
-            _ResolutionCard(
-              resolution: resolution,
-              selected: _votes[resolution.index]!,
-              onChanged: (b) => setState(() => _votes[resolution.index] = b),
-            ),
-            const SizedBox(height: 12),
-          ],
+        ],
+        if (vote != null) ...[
+          Row(
+            children: [
+              const KStatusPill(status: KStatus.approved, label: 'Voted', small: true),
+              const SizedBox(width: 10),
+              Text('on ${_fullDate(vote.submittedAt)}', style: KType.micro(color: KColor.ink3)),
+            ],
+          ),
+        ] else ...[
           Text(
-            'We submit your votes as your proxy and email the confirmation.',
+            'We submit your votes as your proxy.',
             style: KType.data(color: KColor.ink3),
           ),
           const SizedBox(height: 20),
           KButton(
             label: 'Submit my votes',
-            onPressed: () => _notAvailable(
-                "Submitting proxy votes isn't available yet — contact support to vote "
-                'this AGM.'),
+            loading: _busy,
+            onPressed: _busy ? null : _submit,
           ),
-          const SizedBox(height: 10),
-          KButton(
-            label: 'Email me the notice of meeting',
-            variant: KButtonVariant.ghost,
-            onPressed: () => _notAvailable(
-                "Emailing the notice of meeting isn't available yet — check back soon."),
-          ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(_error!, style: KType.micro(color: KColor.loss)),
+          ],
         ],
-      ),
+        const SizedBox(height: 10),
+        // No document-email endpoint exists anywhere in
+        // Kudimata-Securities-Backend's corporate-actions module — a real,
+        // still-accurate backend gap (not something this pass wires),
+        // same honest "not available yet" message the rest of this app
+        // uses rather than pretending an email was sent.
+        KButton(
+          label: 'Email me the notice of meeting',
+          variant: KButtonVariant.ghost,
+          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Emailing the notice of meeting isn't available yet — check back soon."),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _ResolutionCard extends StatelessWidget {
   const _ResolutionCard({
-    required this.resolution,
+    required this.index,
+    required this.description,
     required this.selected,
+    required this.readOnly,
     required this.onChanged,
   });
 
-  final AgmResolutionFixture resolution;
-  final _Ballot selected;
-  final ValueChanged<_Ballot> onChanged;
+  final int index;
+  final String description;
+  final AgmVoteChoice? selected;
+  final bool readOnly;
+  final ValueChanged<AgmVoteChoice> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -111,26 +232,26 @@ class _ResolutionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('${resolution.index} · ${resolution.title}', style: KType.cardTitle()),
+          Text('$index · $description', style: KType.cardTitle()),
           const SizedBox(height: 10),
           Row(
             children: [
               KPillChip(
                 label: 'For',
-                selected: selected == _Ballot.forIt,
-                onTap: () => onChanged(_Ballot.forIt),
+                selected: selected == AgmVoteChoice.forIt,
+                onTap: readOnly ? null : () => onChanged(AgmVoteChoice.forIt),
               ),
               const SizedBox(width: 8),
               KPillChip(
                 label: 'Against',
-                selected: selected == _Ballot.against,
-                onTap: () => onChanged(_Ballot.against),
+                selected: selected == AgmVoteChoice.against,
+                onTap: readOnly ? null : () => onChanged(AgmVoteChoice.against),
               ),
               const SizedBox(width: 8),
               KPillChip(
                 label: 'Abstain',
-                selected: selected == _Ballot.abstain,
-                onTap: () => onChanged(_Ballot.abstain),
+                selected: selected == AgmVoteChoice.abstain,
+                onTap: readOnly ? null : () => onChanged(AgmVoteChoice.abstain),
               ),
             ],
           ),
@@ -138,4 +259,17 @@ class _ResolutionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// "2026-04-04T18:00:00.000Z" -> "04 Apr 2026 · 18:00".
+String _fullDate(DateTime dt) {
+  final local = dt.toLocal();
+  final hh = local.hour.toString().padLeft(2, '0');
+  final mm = local.minute.toString().padLeft(2, '0');
+  return '${local.day.toString().padLeft(2, '0')} ${_months[local.month - 1]} ${local.year} · $hh:$mm';
 }

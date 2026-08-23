@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_client.dart';
 import 'package:kudimata_invest/router/app_router.dart';
+import 'package:kudimata_invest/screens/kyc/kyc_form_state.dart';
 import 'package:kudimata_invest/theme/app_theme.dart';
 import 'package:kudimata_invest/screens/home/home_screen.dart';
 import 'package:kudimata_invest/screens/portfolio/portfolio_screen.dart';
@@ -31,7 +32,14 @@ void main() {
       // requests fail against this bogus/unreachable client, surfacing as a
       // handled KErrorView (per each screen's FutureBuilder), not an
       // uncaught exception — which is all this test actually asserts on.
-      ..apiClient = ApiClient();
+      ..apiClient = ApiClient()
+      // Added 2026-08-24: declarations_screen.dart/next_of_kin.dart/
+      // review_submit_screen.dart now read AppScope.read(context).kycForm
+      // at BUILD time (not just from an event handler, like the pre-existing
+      // KYC screens did), so an unset `late final` here throws the same
+      // LateInitializationError apiClient above already guards against —
+      // main.dart's real bootstrap always sets this too.
+      ..kycForm = KycFormState();
     final router = buildRouter(state);
 
     await tester.pumpWidget(
@@ -55,9 +63,11 @@ void main() {
       // gated
       '/signup', '/otp', '/passcode/create', '/passcode/confirm', '/biometric',
       '/onboarding/personal', '/login', '/reset',
-      // kyc
-      '/kyc', '/kyc/bvn', '/kyc/id', '/kyc/liveness', '/kyc/utility-bill',
-      '/kyc/next-of-kin', '/kyc/submitted', '/kyc/approved',
+      // kyc (2026-08-24: re-sequenced to 8 real steps — chn, bank-dcs,
+      // declarations, review are new)
+      '/kyc', '/kyc/bvn', '/kyc/chn', '/kyc/id', '/kyc/liveness', '/kyc/utility-bill',
+      '/kyc/bank-dcs', '/kyc/declarations', '/kyc/next-of-kin', '/kyc/review',
+      '/kyc/submitted', '/kyc/approved',
       // suitability
       '/suitability', '/suitability/result', '/suitability/terms',
       // 2026-08-22 "Soft Landing" redesign additions — added after this

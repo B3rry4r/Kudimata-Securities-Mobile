@@ -622,6 +622,29 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   await refreshKycGatingState(context);
   if (!context.mounted) return;
   AppScope.read(context).setSignedIn(true);
+
+  // Dormancy gate (2026-08-24, mobile canvas screen 89) — the backend
+  // promotes an idle-12-months account to accountStatus 'dormant' at the
+  // moment of a successful login (AuthService.checkAndApplyDormancy(),
+  // checked BEFORE the login being handled here even happens — so this
+  // fetch always sees the up-to-date status). Login itself still succeeds
+  // for a dormant account (only 'suspended' is blocked server-side), so
+  // this is the one place that has to decide whether to route to Home or
+  // to the Dormant account screen instead. Best-effort: a failure to fetch
+  // personal info here just falls through to Home as before, same
+  // "never regress existing behavior over a network hiccup" posture
+  // refreshKycGatingState's own header comment describes.
+  try {
+    final info = await UserRepository(AppScope.read(context).apiClient).personalInfo();
+    if (!context.mounted) return;
+    if (info.accountStatus == 'dormant') {
+      context.go(Routes.acctDormant);
+      return;
+    }
+  } on ApiException {
+    // Fall through to Home — see comment above.
+  }
+
   context.go(Routes.home);
 }
 

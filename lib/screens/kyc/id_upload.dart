@@ -1,4 +1,4 @@
-// KYC 3 — ID upload (step 2 of 5). ID-type chips + a file dropzone wired to
+// KYC 3 — ID upload (step 3 of 8). ID-type chips + a file dropzone wired to
 // the real presigned-upload flow (registry.json "KycDocument": POST
 // /kyc-documents/upload-url -> presigned S3 PUT -> POST /kyc-documents;
 // see lib/data/repositories/kyc_document_repository.dart). NIN itself
@@ -96,10 +96,10 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(
-              onBack: () => context.go(Routes.kycBvn),
-              stepLabel: 'Verification · 2 of 5',
+              onBack: () => context.go(Routes.kycChn),
+              stepLabel: 'Verification · 3 of 8',
             ),
-            const KycStepProgress(total: 5, current: 2),
+            const KycStepProgress(total: 8, current: 3),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

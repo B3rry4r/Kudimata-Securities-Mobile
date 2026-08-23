@@ -34,6 +34,56 @@ class KycFormState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Added 2026-08-24 (re-sequencing to the canvas's real 8-step flow) ────
+  // Next-of-kin (step 8) no longer finalizes the draft itself — Review &
+  // submit (the new final screen) does, so these three fields have to
+  // survive the hop between those two screens. Same in-memory-only pattern
+  // [draftId] already uses; NOT sent anywhere until review_submit_screen.dart
+  // calls KycRepository.finalizeDraft with them.
+  String? nextOfKinName;
+  String? nextOfKinRelationship;
+  String? nextOfKinPhone;
+
+  void setNextOfKin({required String name, required String relationship, required String phone}) {
+    nextOfKinName = name;
+    nextOfKinRelationship = relationship;
+    nextOfKinPhone = phone;
+    notifyListeners();
+  }
+
+  /// When the liveness selfie was captured/uploaded this session — a real
+  /// client-side timestamp (NOT fabricated), shown on the review screen's
+  /// "Selfie" row. Null until liveness.dart's capture succeeds, or after a
+  /// [reset]; the backend itself has no "captured at" field for this.
+  DateTime? selfieCapturedAt;
+
+  void setSelfieCapturedAt(DateTime v) {
+    selfieCapturedAt = v;
+    notifyListeners();
+  }
+
+  /// The PEP declaration's free-text detail (screen 20 "Declarations · PEP")
+  /// — see review_submit_screen.dart's own doc comment: `pepSelfDeclared`
+  /// itself IS persisted (KycRepository.updateDraftFields), but who/what
+  /// position is NOT — no backend field exists for it (confirmed against
+  /// UpdateKycDraftFieldsRequest, backend common/types/kyc.types.ts). Held
+  /// here purely so the SAME session's review screen can echo back what was
+  /// just typed; lost on app restart, same as [reset] below.
+  String? pepWho;
+  String? pepPosition;
+
+  /// "I trade for myself, with my own money" (screen 20) — also has no
+  /// backend field; a pure client-side confirmation, defaults to true
+  /// (checked) matching the canvas's own default state.
+  bool tradeForSelf = true;
+
+  void setDeclarations({required bool tradeForSelf, String? pepWho, String? pepPosition}) {
+    this.tradeForSelf = tradeForSelf;
+    this.pepWho = pepWho;
+    this.pepPosition = pepPosition;
+    notifyListeners();
+  }
+
   /// Clears the held draft id for a fresh attempt (kyc-outcome screen's
   /// "Resubmit documents"/"Start again" actions — see
   /// lib/screens/kyc/outcome_not_approved.dart — and a completed submission
@@ -43,6 +93,13 @@ class KycFormState extends ChangeNotifier {
   /// server-side once the previous one is no longer 'draft').
   void reset() {
     draftId = null;
+    nextOfKinName = null;
+    nextOfKinRelationship = null;
+    nextOfKinPhone = null;
+    selfieCapturedAt = null;
+    pepWho = null;
+    pepPosition = null;
+    tradeForSelf = true;
     notifyListeners();
   }
 }

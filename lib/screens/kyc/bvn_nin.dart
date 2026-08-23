@@ -1,4 +1,4 @@
-// KYC 2 — BVN + NIN, combined onto one screen (step 1 of 5). Two 11-digit
+// KYC 2 — BVN + NIN, combined onto one screen (step 1 of 8). Two 11-digit
 // numeric fields. Mirrors the old separate Bvn screen's UI, plus a NIN
 // field moved here from id_upload.dart (2026-08-20, phased-KYC directive —
 // user picked the 4-step preview grouping BVN+NIN on one screen before
@@ -65,7 +65,7 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
       if (!mounted) return;
       final id = result.id;
       if (id != null) AppScope.read(context).kycForm.setDraftId(id);
-      context.go(Routes.kycId);
+      context.go(Routes.kycChn);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -91,9 +91,9 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycIntro),
-              stepLabel: 'Verification · 1 of 5',
+              stepLabel: 'Verification · 1 of 8',
             ),
-            const KycStepProgress(total: 5, current: 1),
+            const KycStepProgress(total: 8, current: 1),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

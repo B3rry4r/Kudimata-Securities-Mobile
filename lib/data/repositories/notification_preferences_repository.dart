@@ -5,12 +5,21 @@
 // from asset_repository.dart's example, not its field mapping).
 //
 // registry.json's NotificationPreference resource (dispatcher ruling C-5,
-// UA-19) is EMAIL-ONLY: `{userId, ordersEmail, priceAlertsEmail,
+// UA-19) was originally EMAIL-ONLY: `{userId, ordersEmail, priceAlertsEmail,
 // accountEmail}` via `GET /notification-preferences/me` /
 // `PUT /notification-preferences/me`. There is no backend concept of a Push
 // or SMS channel — the screen's former 3-channel (Push/Email/SMS) grid was
 // pared down to the Email column only as part of this wiring; see the
 // screen file for that UI change.
+//
+// Extended 2026-08-24 (mobile canvas screen 91 "Data & privacy"): the
+// backend's NotificationPreference/UpdateNotificationPreferenceRequest types
+// (Kudimata-Securities-Backend src/common/types/notification.types.ts) now
+// also carry `improveAppConsent`/`productEmailsConsent` — analytics/
+// marketing consent flags, distinct from the three email-channel toggles
+// above but stored on this SAME per-user resource. `update()` is a full
+// replace (see below) so both new fields are always sent alongside the
+// three existing ones, never on their own.
 //
 // Judgment call (flagged per README's "if a field is genuinely missing,
 // that's a per-screen judgment call to flag" precedent, extended here to a
@@ -22,7 +31,7 @@
 // calls `_client.patch`.
 import '../api/api_client.dart';
 
-/// Email-only notification preferences (userId omitted — the screen never
+/// Notification/consent preferences (userId omitted — the screen never
 /// needs to render or send it back; each request is scoped to the signed-in
 /// investor via `/me`). Fields are mutable so the screen can apply an
 /// optimistic toggle in place and revert it on a failed [update], the same
@@ -33,11 +42,15 @@ class NotificationPreferences {
     required this.ordersEmail,
     required this.priceAlertsEmail,
     required this.accountEmail,
+    required this.improveAppConsent,
+    required this.productEmailsConsent,
   });
 
   bool ordersEmail;
   bool priceAlertsEmail;
   bool accountEmail;
+  bool improveAppConsent;
+  bool productEmailsConsent;
 }
 
 class NotificationPreferencesRepository {
@@ -52,10 +65,12 @@ class NotificationPreferencesRepository {
     return _fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// Persists all three email toggles at once — registry.json's payload for
-  /// `updateNotificationPreferences`/`PUT /notification-preferences/me` is
-  /// the full object, not a per-field patch, so the screen always sends the
-  /// current in-memory [prefs] after applying one optimistic change.
+  /// Persists all five fields at once — the backend's `PUT
+  /// /notification-preferences/me` (UpdateNotificationPreferenceRequest) is
+  /// a full replace, not a per-field patch, so the screen always sends the
+  /// current in-memory [prefs] — every field, including the three this
+  /// particular caller's screen may not itself render — after applying one
+  /// optimistic change.
   Future<NotificationPreferences> update(NotificationPreferences prefs) async {
     final response = await _client.patch(
       '/notification-preferences/me',
@@ -63,6 +78,8 @@ class NotificationPreferencesRepository {
         'ordersEmail': prefs.ordersEmail,
         'priceAlertsEmail': prefs.priceAlertsEmail,
         'accountEmail': prefs.accountEmail,
+        'improveAppConsent': prefs.improveAppConsent,
+        'productEmailsConsent': prefs.productEmailsConsent,
       },
     );
     return _fromJson(response.data as Map<String, dynamic>);
@@ -72,5 +89,7 @@ class NotificationPreferencesRepository {
         ordersEmail: json['ordersEmail'] as bool? ?? false,
         priceAlertsEmail: json['priceAlertsEmail'] as bool? ?? false,
         accountEmail: json['accountEmail'] as bool? ?? false,
+        improveAppConsent: json['improveAppConsent'] as bool? ?? false,
+        productEmailsConsent: json['productEmailsConsent'] as bool? ?? false,
       );
 }

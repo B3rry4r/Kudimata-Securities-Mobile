@@ -1,4 +1,4 @@
-// KYC 6 — utility bill upload (step 4 of 5). NEW screen (2026-08-20,
+// KYC 6 — utility bill upload (step 5 of 8). NEW screen (2026-08-20,
 // phased-KYC directive: "we need to collect Utility bill") — documentKind
 // 'proof_of_address' already existed in the backend schema, it just was
 // never collected anywhere in the KYC flow's UI until now. Mirrors
@@ -41,9 +41,9 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycLiveness),
-              stepLabel: 'Verification · 4 of 5',
+              stepLabel: 'Verification · 5 of 8',
             ),
-            const KycStepProgress(total: 5, current: 4),
+            const KycStepProgress(total: 8, current: 5),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -190,6 +190,6 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
       setState(() => _showErrors = true);
       return;
     }
-    context.go(Routes.kycNextOfKin);
+    context.go(Routes.kycBankDcs);
   }
 }

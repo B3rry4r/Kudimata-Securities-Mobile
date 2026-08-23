@@ -230,6 +230,199 @@ Map<String, dynamic> _portfolioSummary() => {
       'chartSeries': [2380000, 2395000, 2402000, 2410000, 2418650].map((v) => v * 100).toList(),
     };
 
+Map<String, dynamic> _priceAlert({
+  required String id,
+  required String ticker,
+  double? thresholdPct,
+  int? thresholdPriceKobo,
+  required bool active,
+}) {
+  final asset = _assetByTicker(ticker);
+  return {
+    'id': id,
+    'userId': 'U1',
+    'ticker': ticker,
+    'thresholdPct': thresholdPct,
+    'thresholdPriceKobo': thresholdPriceKobo,
+    'active': active,
+    'createdAt': '2026-03-01T00:00:00.000Z',
+    'priceKobo': asset['priceKobo'],
+    'changeAbsKobo': 0,
+    'changePct': asset['changePct'],
+    'asOf': '2026-03-14T09:41:00.000Z',
+  };
+}
+
+// Screen 86 (price alerts): MTNN (the watchlist's first item, i.e. the
+// screen's "featured" card) carries a %-based alert; ZENITHBANK carries a
+// price-target alert, so a screenshot exercises both threshold shapes.
+// GTCO deliberately has none, so the toggle-row "No alert set" state also
+// renders.
+final _priceAlerts = [
+  _priceAlert(id: 'PA1', ticker: 'MTNN', thresholdPct: 5, active: true),
+  _priceAlert(id: 'PA2', ticker: 'ZENITHBANK', thresholdPriceKobo: 3620, active: true),
+];
+
+// ── Dividends + e-dividend mandate (screen 84) ─────────────────────────────
+
+Map<String, dynamic> _dividend({
+  required String id,
+  required String ticker,
+  required int grossKobo,
+  required int whtKobo,
+  required int netKobo,
+  required String payDate,
+}) {
+  return {
+    'id': id,
+    'userId': 'U1',
+    'ticker': ticker,
+    'grossKobo': grossKobo,
+    'whtKobo': whtKobo,
+    'netKobo': netKobo,
+    'payDate': payDate,
+    'transactionId': 'TX1044',
+  };
+}
+
+// MTNN dividend, WHT_RATE=10% (dividends.service.ts) — 457,778 gross,
+// 45,778 WHT, 412,000 net, matching _transactions' own "MTN dividend"
+// +412000 entry so the two screens agree.
+final _dividends = [
+  _dividend(
+    id: 'DIV1',
+    ticker: 'MTNN',
+    grossKobo: 457778,
+    whtKobo: 45778,
+    netKobo: 412000,
+    payDate: '2026-02-28',
+  ),
+];
+
+Map<String, dynamic> _dividendSummary() => {
+      'year': 2026,
+      'paidThisYearKobo': 412000,
+      // Genuinely null from the real backend — no registrar integration
+      // exists (dividend_repository.dart's header comment). Mirrored here
+      // so the screenshot shows the real "—" honest-gap rendering, not a
+      // fabricated estimate.
+      'unclaimedKobo': null,
+    };
+
+// Unsigned by default so the screenshot exercises the "Sign the e-dividend
+// mandate" call-to-action button, same default state the old static
+// fixture always showed.
+Map<String, dynamic> _eDividendMandate({String status = 'unsigned', String? signedAt}) => {
+      'userId': 'U1',
+      'status': status,
+      'signedAt': signedAt,
+    };
+
+// ── Corporate actions — rights issues + AGM meetings (screens 81-83) ──────
+
+// GTCO (a held ticker per _holdingsList()) 1-for-5 rights issue — 120 GTCO
+// units held -> 24-unit entitlement, matching ratio.util.ts's floor(units *
+// numerator/denominator) shape.
+Map<String, dynamic> _rightsIssue() => {
+      'id': 'RI1',
+      'ticker': 'GTCO',
+      'ratioText': '1 for 5',
+      'subscriptionPriceKobo': 4200,
+      'closeDate': '2026-09-27',
+      'status': 'open',
+      'entitlementUnits': 24,
+      'alreadyElected': false,
+      'election': null,
+    };
+
+// MTNN (the other held ticker) AGM — 5 real resolutions (not a fixed
+// 3-item placeholder), same NGX order-of-business set the old static
+// fixture used.
+Map<String, dynamic> _agmMeeting() => {
+      'id': 'AGM1',
+      'ticker': 'MTNN',
+      'title': 'MTN Nigeria Annual General Meeting 2026',
+      'votesCloseAt': '2026-09-04T18:00:00.000Z',
+      'status': 'open',
+      'resolutions': [
+        {'id': 'RES1', 'order': 1, 'description': 'Approve the 2025 accounts'},
+        {'id': 'RES2', 'order': 2, 'description': 'Declare a final dividend of ₦20.00'},
+        {'id': 'RES3', 'order': 3, 'description': "Re-elect a director retiring by rotation"},
+        {'id': 'RES4', 'order': 4, 'description': "Fix the auditors' remuneration"},
+        {'id': 'RES5', 'order': 5, 'description': 'Elect the audit committee'},
+      ],
+      'eligibleUnits': 120,
+      'alreadyVoted': false,
+      'vote': null,
+    };
+
+// ── KYC draft (2026-08-24 — chn/bank-dcs/declarations/review screens) ─────
+
+Map<String, dynamic> _kycDocument({
+  required String kind,
+  required String name,
+  required String uploadedAt,
+}) =>
+    {
+      'id': 'DOC-$kind',
+      'kycSubmissionId': 'KYC1',
+      'objectKey': 'kyc/$kind.jpg',
+      'documentName': name,
+      'documentKind': kind,
+      'uploadedAt': uploadedAt,
+    };
+
+/// A fully-populated in-progress draft — every field the new review/chn/
+/// declarations screens read has a realistic, non-null value so their
+/// screenshots exercise the real rendered content, not the "not provided
+/// yet" fallback text.
+Map<String, dynamic> _kycDraft() => {
+      'id': 'KYC1',
+      'userId': 'U1',
+      'bvn': '22143459901',
+      'nin': '77889012345',
+      'chn': '1234567890',
+      'pepSelfDeclared': false,
+      'tier': 'Tier 2',
+      'documentType': 'drivers_licence',
+      'documents': [
+        _kycDocument(kind: 'drivers_licence', name: "Driver's licence", uploadedAt: '2026-03-14T09:30:00.000Z'),
+        _kycDocument(kind: 'liveness_selfie', name: 'Face liveness check', uploadedAt: '2026-03-14T09:35:00.000Z'),
+        _kycDocument(kind: 'proof_of_address', name: 'IBEDC bill', uploadedAt: '2026-02-20T00:00:00.000Z'),
+      ],
+      'name': 'Adebayo Okonkwo',
+      'dob': '1994-06-12',
+      'address': '14 Adeola Odeku Street, Victoria Island',
+      'city': 'Lagos',
+      'state': 'Lagos',
+      'nextOfKin': null,
+      'vendorDecision': 'no_decision',
+      'vendorDetail': null,
+      'status': 'draft',
+      'flagReason': null,
+      'flagDetail': null,
+      'submittedAt': '2026-03-14T09:00:00.000Z',
+      'assignedTo': null,
+      'attemptCount': 0,
+      'maxAttempts': 3,
+      'livenessMatchPct': 97.5,
+      'providerChecks': {'bvnLookup': 'CONFIRMED', 'sanctionsPep': 'not_checked', 'duplicateAccount': 'not_checked'},
+      'reviewerChecks': null,
+      'internalNote': null,
+      'currentStep': 5,
+      'totalSteps': 5,
+      'verificationSignals': {'nin': true, 'bvn': true, 'name': true, 'dob': true, 'liveness': true},
+    };
+
+// GET /banks — a small realistic subset (bank_dcs_screen.dart's picker).
+final _banks = [
+  {'code': '058', 'name': 'Guaranty Trust Bank'},
+  {'code': '011', 'name': 'First Bank of Nigeria'},
+  {'code': '057', 'name': 'Zenith Bank'},
+  {'code': '033', 'name': 'United Bank for Africa'},
+  {'code': '044', 'name': 'Access Bank'},
+];
+
 /// A single, generic mock [HttpClientAdapter] for test/shots.dart — matches
 /// on [RequestOptions.path] (the relative path passed to ApiClient's verbs,
 /// never the full resolved URL) since that's what every repository call
@@ -262,12 +455,40 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path == '/assets/trending') return _assets;
     if (path == '/assets') return _assets;
     if (path == '/watchlist-items') return _assets.take(3).toList();
+    if (path == '/price-alerts') return _priceAlerts;
     if (path == '/bank-accounts') {
       return [
         {'id': 'BA1', 'bankName': 'GTBank', 'accountNumberMasked': '••••6789', 'primary': true},
       ];
     }
     if (path == '/notifications') return _paginated(_notifications);
+    if (path == '/dividends') return _paginated(_dividends);
+    if (path == '/dividends/summary') return _dividendSummary();
+    if (path == '/e-dividend-mandate/sign') return _eDividendMandate(status: 'signed', signedAt: '2026-03-14T09:00:00.000Z');
+    if (path == '/e-dividend-mandate/me') return _eDividendMandate();
+    if (path == '/rights-issues') return [_rightsIssue()];
+    if (path.startsWith('/rights-issues/') && path.endsWith('/elect')) {
+      return {
+        'id': 'RE1',
+        'rightsIssueId': 'RI1',
+        'userId': 'U1',
+        'decision': 'take_up',
+        'entitlementUnits': 24,
+        'unitsSubscribed': 24,
+        'decidedAt': '2026-03-14T09:00:00.000Z',
+      };
+    }
+    if (path == '/agm-meetings') return [_agmMeeting()];
+    if (path.startsWith('/agm-meetings/') && path.endsWith('/vote')) {
+      return {
+        'id': 'AV1',
+        'agmMeetingId': 'AGM1',
+        'userId': 'U1',
+        'votes': {'RES1': 'for', 'RES2': 'for', 'RES3': 'for', 'RES4': 'for', 'RES5': 'for'},
+        'eligibleUnits': 120,
+        'submittedAt': '2026-03-14T09:00:00.000Z',
+      };
+    }
     if (path == '/transactions') return _paginated(_transactions);
     // Must be checked before the generic '/transactions/:id' fallback below
     // — 'virtual-account' would otherwise match as an :id and return a
@@ -306,6 +527,15 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path == '/kyc-submissions/me') {
       return {'status': 'approved', 'submittedAt': '2025-11-01T00:00:00.000Z'};
     }
+    // GET (resume)/POST (draftStep1)/PATCH (updateDraftFields) all resolve
+    // by path only — see this file's header — so one fixture answers all
+    // three for '/kyc-submissions/draft'. Realistic enough for
+    // review_submit_screen.dart (2026-08-24) to render every summary row
+    // with real-looking data, and for chn_screen.dart/declarations_screen.dart's
+    // resume-prefill fetch.
+    if (path == '/kyc-submissions/draft') return _kycDraft();
+    if (path == '/banks') return _banks;
+    if (path == '/banks/resolve-account-name') return {'accountName': 'ADEBAYO OKONKWO'};
     if (path == '/notification-preferences/me') {
       return {'orderUpdates': true, 'security': true, 'marketing': false};
     }

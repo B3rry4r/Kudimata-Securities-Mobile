@@ -1230,6 +1230,7 @@ class SellOrderInput {
     required this.net,
     required this.avgPrice,
     required this.price,
+    this.reference,
   });
 
   final double units;
@@ -1239,6 +1240,25 @@ class SellOrderInput {
   final double net;
   final double avgPrice;
   final double price;
+
+  /// Investor-facing order reference (e.g. "KDM-SL-9021") returned by
+  /// `POST /orders` (OrderPlacementRepository.placeOrder) once the sell
+  /// order is actually placed — null until `_SellReviewSheetState._confirm`
+  /// attaches it via [copyWith], and stays null in the (now rare) case the
+  /// backend doesn't return one. [SalePlacedScreen] omits its "Reference"
+  /// row rather than ever rendering the literal string "null".
+  final String? reference;
+
+  SellOrderInput copyWith({String? reference}) => SellOrderInput(
+        units: units,
+        holdingTotalUnits: holdingTotalUnits,
+        gross: gross,
+        fee: fee,
+        net: net,
+        avgPrice: avgPrice,
+        price: price,
+        reference: reference ?? this.reference,
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1516,13 +1536,13 @@ class _SellReviewSheetState extends State<_SellReviewSheet> {
   Future<void> _confirm() async {
     setState(() => _placing = true);
     try {
-      await _repo.placeOrder(
+      final order = await _repo.placeOrder(
         ticker: widget.asset.ticker,
         side: OrderSide.sell,
         units: widget.input.units,
       );
       if (!mounted) return;
-      Navigator.of(context).pop(widget.input);
+      Navigator.of(context).pop(widget.input.copyWith(reference: order.reference));
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -1543,12 +1563,14 @@ class _SellReviewSheetState extends State<_SellReviewSheet> {
 // named route pointing at this same screen and swap that direct push for
 // `context.push(Routes.salePlaced)` without anything here needing to change.
 //
-// REAL BACKEND GAP: OrderPlacementRepository.placeOrder() returns void — the
-// backend never hands the client a created-order id/reference (confirmed
-// against its own doc comment: "this call only needs to succeed or throw").
-// So spec 79's "Reference · KDM-SL-9021" row is dropped rather than shown
-// with an invented reference number — `POST /orders` would need to return
-// the created Order's id/reference for that row to be honest.
+// RESOLVED 2026-08-24 (was a REAL BACKEND GAP): `POST /orders` now returns a
+// real `Order.reference` (e.g. "KDM-SL-9021", distinct from the order's
+// uuid `id`) and OrderPlacementRepository.placeOrder() parses and returns
+// it instead of discarding the response body. `_SellReviewSheetState._confirm`
+// threads it onto [SellOrderInput.reference], so spec 79's "Reference ·
+// KDM-SL-9021" row below is real data, not invented — and degrades
+// gracefully (the row is simply omitted) for the rare case `reference` is
+// still null (e.g. an order created before this field existed).
 // ─────────────────────────────────────────────────────────────────────────────
 
 class SalePlacedScreen extends StatelessWidget {
@@ -1609,6 +1631,12 @@ class SalePlacedScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                           child: Column(
                             children: [
+                              // Spec 79's "Reference · KDM-SL-9021" row —
+                              // real Order.reference now, omitted (not
+                              // "null") when it isn't set. See this
+                              // section's header comment.
+                              if (input.reference != null)
+                                _SummaryRow(label: 'Reference', value: input.reference!),
                               _SummaryRow(label: 'Settles', value: '$settleLabel · T+3'),
                               _SummaryRow(label: 'Then goes to', value: 'Your wallet'),
                             ],

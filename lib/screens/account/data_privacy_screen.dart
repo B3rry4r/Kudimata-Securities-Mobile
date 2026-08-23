@@ -3,18 +3,19 @@
 // retention doc (#96), a data export, and account closure (#90) — not a
 // document viewer itself.
 //
-// REAL GAP: the two optional switches below ("Improve the app" / "Product
-// emails") have NO backing endpoint. The only consent/preferences resource
-// anywhere in this app is `NotificationPreferencesRepository`
-// (GET/PATCH /notification-preferences/me), and that is a fixed
-// orders/priceAlerts/account EMAIL-CHANNEL model, not a generic
-// consent-purpose model (analytics opt-in, marketing opt-in) — a different
-// concept the NDPA consent set here actually needs. These two switches are
-// therefore LOCAL-ONLY UI state (defaults match the design: "Improve the
-// app" on, "Product emails" off) until a real consent-preferences endpoint
-// exists — "Save choices" cannot persist them server-side today, and says
-// so honestly (a toast) rather than silently no-op-ing or pretending to
-// sync.
+// Wired 2026-08-24 per lib/data/api/README.md's FutureBuilder convention
+// against NotificationPreferencesRepository (GET/PUT
+// /notification-preferences/me), whose NotificationPreference resource now
+// carries `improveAppConsent`/`productEmailsConsent` alongside the three
+// existing email-channel fields (Kudimata-Securities-Backend
+// src/common/types/notification.types.ts). The two switches below
+// ("Improve the app" / "Product emails") read their initial state from the
+// real GET on load and persist through the real PUT (full replace — the
+// backend requires all five fields together, so every update sends the
+// current in-memory preference object, not just the two fields this screen
+// renders) on each toggle, optimistically, reverting with a real error
+// message on failure — same technique
+// notifications_settings_screen.dart uses for its own three switches.
 //
 // "Download my data" (canvas screen #93, an emailed-ZIP export) is outside
 // this cluster's 8 screens and has no route/repository anywhere in this app
@@ -22,6 +23,10 @@
 // established pattern statements_screen.dart / withdraw_mandate_screen.dart
 // already use for a real, known, unbuilt capability.
 import 'package:flutter/material.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/notification_preferences_repository.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
@@ -36,8 +41,8 @@ class DataPrivacyScreen extends StatefulWidget {
 }
 
 class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
-  bool _improveApp = true;
-  bool _productEmails = false;
+  late final _repo = NotificationPreferencesRepository(AppScope.read(context).apiClient);
+  late Future<NotificationPreferences> _future = _repo.me();
 
   void _openDataNotice() {
     Navigator.of(context).push(
@@ -57,15 +62,40 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     );
   }
 
-  void _save() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Saved on this device. Synced consent preferences are not available yet.',
-        ),
-      ),
-    );
-    Navigator.of(context).maybePop();
+  Future<void> _toggleImproveApp(NotificationPreferences prefs, bool value) async {
+    final previous = prefs.improveAppConsent;
+    setState(() => prefs.improveAppConsent = value);
+    try {
+      await _repo.update(prefs);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => prefs.improveAppConsent = previous);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => prefs.improveAppConsent = previous);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Something went wrong. Please try again.')),
+      );
+    }
+  }
+
+  Future<void> _toggleProductEmails(NotificationPreferences prefs, bool value) async {
+    final previous = prefs.productEmailsConsent;
+    setState(() => prefs.productEmailsConsent = value);
+    try {
+      await _repo.update(prefs);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => prefs.productEmailsConsent = previous);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => prefs.productEmailsConsent = previous);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Something went wrong. Please try again.')),
+      );
+    }
   }
 
   Widget _switchRow({
@@ -92,74 +122,91 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     );
   }
 
+  Widget _body(NotificationPreferences prefs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Under the Nigeria Data Protection Act you decide what we may do beyond running '
+          'your account.',
+          style: KType.body(color: KColor.ink2),
+        ),
+        const SizedBox(height: 16),
+        KAccountCard(
+          children: [
+            _switchRow(
+              checked: true,
+              label: 'Run my account',
+              description: 'Required — KYC, trading, statements, tax',
+              first: true,
+            ),
+            _switchRow(
+              checked: prefs.improveAppConsent,
+              label: 'Improve the app',
+              description: 'Anonymous usage, no holdings data',
+              onChanged: (v) => _toggleImproveApp(prefs, v),
+            ),
+            _switchRow(
+              checked: prefs.productEmailsConsent,
+              label: 'Product emails',
+              description: 'New features and market explainers',
+              onChanged: (v) => _toggleProductEmails(prefs, v),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        KAccountCard(
+          children: [
+            KAccountRow(
+              title: 'How long we keep things',
+              sub: 'Trading records 6 years, as the SEC requires',
+              right: const KRowChevron(),
+              first: true,
+              onTap: _openDataNotice,
+            ),
+            KAccountRow(
+              title: 'Download my data',
+              sub: 'Emailed as a ZIP',
+              right: const KRowChevron(),
+              onTap: _exportData,
+            ),
+            KAccountRow(
+              title: 'Close my account and delete what you can',
+              titleColor: KColor.loss,
+              right: const KRowChevron(),
+              onTap: _openClose,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          "Turning off the optional switches never limits trading, and we don't sell data to "
+          'anyone.',
+          style: KType.data(color: KColor.ink3),
+        ),
+        const SizedBox(height: 24),
+        KButton(label: 'Done', onPressed: () => Navigator.of(context).maybePop()),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Data & privacy',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Under the Nigeria Data Protection Act you decide what we may do beyond running '
-            'your account.',
-            style: KType.body(color: KColor.ink2),
-          ),
-          const SizedBox(height: 16),
-          KAccountCard(
-            children: [
-              _switchRow(
-                checked: true,
-                label: 'Run my account',
-                description: 'Required — KYC, trading, statements, tax',
-                first: true,
-              ),
-              _switchRow(
-                checked: _improveApp,
-                label: 'Improve the app',
-                description: 'Anonymous usage, no holdings data',
-                onChanged: (v) => setState(() => _improveApp = v),
-              ),
-              _switchRow(
-                checked: _productEmails,
-                label: 'Product emails',
-                description: 'New features and market explainers',
-                onChanged: (v) => setState(() => _productEmails = v),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          KAccountCard(
-            children: [
-              KAccountRow(
-                title: 'How long we keep things',
-                sub: 'Trading records 6 years, as the SEC requires',
-                right: const KRowChevron(),
-                first: true,
-                onTap: _openDataNotice,
-              ),
-              KAccountRow(
-                title: 'Download my data',
-                sub: 'Emailed as a ZIP',
-                right: const KRowChevron(),
-                onTap: _exportData,
-              ),
-              KAccountRow(
-                title: 'Close my account and delete what you can',
-                titleColor: KColor.loss,
-                right: const KRowChevron(),
-                onTap: _openClose,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "Turning off the optional switches never limits trading, and we don't sell data to "
-            'anyone.',
-            style: KType.data(color: KColor.ink3),
-          ),
-          const SizedBox(height: 24),
-          KButton(label: 'Save choices', onPressed: _save),
-        ],
+      child: FutureBuilder<NotificationPreferences>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const KLoadingView();
+          }
+          if (snapshot.hasError) {
+            return KErrorView(
+              onPrimary: () => setState(() => _future = _repo.me()),
+            );
+          }
+          return _body(snapshot.data!);
+        },
       ),
     );
   }

@@ -1,4 +1,4 @@
-// KYC 5 — verifying liveness (interstitial between step 3 and step 4 of 5).
+// KYC 5 — verifying liveness (interstitial right after step 4 of 8, before step 5).
 // A centred spinner while the REAL liveness check runs server-side.
 //
 // REPURPOSED 2026-08-20 (phased-KYC directive): previously a pure UX-pacing
@@ -66,9 +66,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycLiveness),
-              stepLabel: 'Verification · 3 of 5',
+              stepLabel: 'Verification · 4 of 8',
             ),
-            const KycStepProgress(total: 5, current: 3),
+            const KycStepProgress(total: 8, current: 4),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),

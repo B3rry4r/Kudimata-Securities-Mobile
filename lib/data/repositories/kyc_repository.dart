@@ -54,6 +54,11 @@ class KycSubmissionStatus {
     this.id,
     this.vendorDecision,
     this.bvn,
+    this.nin,
+    this.chn,
+    this.pepSelfDeclared,
+    this.documentType,
+    this.documents = const [],
     this.flagReason,
     this.flagDetail,
     this.attemptCount = 0,
@@ -67,6 +72,23 @@ class KycSubmissionStatus {
   final String? id;
   final String? vendorDecision;
   final String? bvn; // masked "••• 4821" — see [KycRepository.me]
+  /// Masked the SAME way as [bvn] (see [KycRepository._maskBvn]) — the
+  /// backend applies no server-side masking to nin any more than it does to
+  /// bvn for the investor's own GET .../me|draft, so this mirrors bvn's
+  /// existing client-side masking rather than showing it in full on the
+  /// review screen (added 2026-08-24 for review_submit_screen.dart).
+  final String? nin;
+  /// Added 2026-08-24 (canvas screens 15/22) — the CSCS CHN, not masked
+  /// server-side (kyc-submissions.service.ts's toWire: "not sensitive like
+  /// bvn/nin"), so not masked here either.
+  final String? chn;
+  final bool? pepSelfDeclared;
+  /// Set once step 2 (id document) registers — null on a fresh draft.
+  final String? documentType;
+  /// Every document registered against this submission/draft so far —
+  /// added 2026-08-24 for review_submit_screen.dart's per-step summary rows
+  /// (id file count, proof-of-address filename/date).
+  final List<KycDocumentSummary> documents;
   final String? flagReason;
   final String? flagDetail;
   final int attemptCount;
@@ -126,6 +148,24 @@ class KycVerificationSignals {
   final bool? name;
   final bool? dob;
   final bool? liveness;
+}
+
+/// One registered KycDocument (registry.json) — see
+/// [KycSubmissionStatus.documents]. Only the fields review_submit_screen.dart
+/// actually needs (document kind, its own display name, when it was
+/// uploaded); the full KycDocument wire shape carries more (id, objectKey)
+/// that no mobile screen reads.
+class KycDocumentSummary {
+  const KycDocumentSummary({required this.documentKind, required this.documentName, this.uploadedAt});
+  final String documentKind;
+  final String documentName;
+  final DateTime? uploadedAt;
+
+  factory KycDocumentSummary.fromJson(Map<String, dynamic> json) => KycDocumentSummary(
+        documentKind: json['documentKind'] as String? ?? '',
+        documentName: json['documentName'] as String? ?? '',
+        uploadedAt: DateTime.tryParse(json['uploadedAt'] as String? ?? ''),
+      );
 }
 
 class KycRepository {
@@ -197,6 +237,21 @@ class KycRepository {
     return _fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// PATCH /kyc-submissions/draft (2026-08-24, canvas screens 15 "CHN" and
+  /// 20 "Declarations · PEP") — a lightweight field update on the caller's
+  /// EXISTING draft, independent of the heavier verification steps. At
+  /// least one of [chn]/[pepSelfDeclared] should be passed; either omitted
+  /// leaves that field untouched server-side (see
+  /// UpdateKycDraftFieldsRequest's doc comment, backend
+  /// common/types/kyc.types.ts).
+  Future<KycSubmissionStatus> updateDraftFields({String? chn, bool? pepSelfDeclared}) async {
+    final response = await _client.patch('/kyc-submissions/draft', data: {
+      'chn': ?chn,
+      'pepSelfDeclared': ?pepSelfDeclared,
+    });
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// GET /kyc-submissions/draft (resume support) — the investor's current
   /// in-progress draft, or null if there is none (never started, or
   /// already finalized/decided). kyc_intro.dart's "Start" button and
@@ -240,6 +295,13 @@ class KycRepository {
       id: json['id'] as String?,
       vendorDecision: json['vendorDecision'] as String?,
       bvn: _maskBvn(json['bvn'] as String?),
+      nin: _maskBvn(json['nin'] as String?),
+      chn: json['chn'] as String?,
+      pepSelfDeclared: json['pepSelfDeclared'] as bool?,
+      documentType: json['documentType'] as String?,
+      documents: (json['documents'] as List<dynamic>? ?? const [])
+          .map((d) => KycDocumentSummary.fromJson(d as Map<String, dynamic>))
+          .toList(),
       flagReason: json['flagReason'] as String?,
       flagDetail: json['flagDetail'] as String?,
       attemptCount: json['attemptCount'] as int? ?? 0,

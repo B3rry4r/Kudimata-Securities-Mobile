@@ -32,34 +32,53 @@ class KycIntroScreen extends StatefulWidget {
 }
 
 class _KycIntroScreenState extends State<KycIntroScreen> {
-  // 2026-08-23 exactness pass: the design mockup's own checklist (screen 13)
-  // lists 8 items — CHN, bank/DCS, and two declarations among them — that
-  // don't exist as separate steps anywhere in this app's real backend flow
-  // (see KycRepository/kyc-submissions.service.ts: a draft only ever has 5
-  // steps). Copying the mockup's 8-item list verbatim would show the
-  // investor steps they'll never actually be asked to do — less "exact,"
-  // not more. This lists exactly this app's real 5 steps instead.
+  // 2026-08-24 re-sequencing: the design mockup's own checklist (screen 13)
+  // lists all 8 real steps — CHN, bank/DCS, and the two declarations are now
+  // genuinely built (chn_screen.dart, bank_dcs_screen.dart,
+  // declarations_screen.dart) and wired into the flow between id-upload and
+  // next-of-kin, so this list now matches the mockup verbatim instead of the
+  // narrower 5-item list a prior pass deliberately trimmed it to.
   static const _rows = [
     _KycRow('IDENTITY', 'Your BVN and NIN — checked with NIBSS.', 'profile'),
+    _KycRow('CHN', 'Your CSCS number, if you already have one.', 'card'),
     _KycRow('DOCUMENT', 'A government ID — NIN, international passport, licence or voter\'s card.', 'card'),
     // Face liveness check — fingerprint/profile motif (no camera icon in
     // the set). Eyebrow renamed from 'SELFIE' 2026-08-20 ("please don't
     // use selfie wording for face liveness check").
     _KycRow('FACE LIVENESS', 'A quick liveness check to match your face.', 'fingerprint'),
     _KycRow('ADDRESS', 'A utility bill dated in the last three months.', 'card'),
+    _KycRow('BANK & DCS', 'The account your dividends and sale proceeds settle to.', 'wallet'),
+    _KycRow('DECLARATIONS', 'Two short SEC-required questions.', 'profile'),
     _KycRow('NEXT OF KIN', 'Who to contact if we can\'t reach you.', 'profile'),
   ];
 
   bool _busy = false;
 
-  /// Which route a given currentStep (2-5, per KycRepository.getDraft's doc
-  /// comment — a draft always exists past step 1) resumes into. Step 1 has
-  /// no entry here since a draft's currentStep is never reported as 1.
+  /// Which route a given backend currentStep (2-5, per
+  /// KycRepository.getDraft's doc comment — a draft always exists past step
+  /// 1) resumes into. The backend only tracks 5 milestones
+  /// (KYC_TOTAL_STEPS, kyc-submissions.service.ts) — CHN/bank-DCS/
+  /// declarations/next-of-kin/review are mobile-only screens layered
+  /// between those milestones, so several backend steps fan out to more
+  /// than one mobile route:
+  ///   backend 2 (no id document yet)   -> mobile step 2 (CHN), the first
+  ///                                        untracked screen after step 1;
+  ///                                        its own Continue/Skip always
+  ///                                        lands on step 3 (ID upload)
+  ///   backend 3 (liveness not done)    -> mobile step 4 (selfie capture)
+  ///   backend 4 (no utility bill)      -> mobile step 5 (utility bill)
+  ///   backend 5 (ready to finalize)    -> mobile step 6 (Bank & DCS), the
+  ///                                        first of the three untracked
+  ///                                        steps (bank/DCS, declarations,
+  ///                                        next of kin) still left; each
+  ///                                        is safe to redo/re-answer.
+  /// Step 1 has no entry here since a draft's currentStep is never reported
+  /// as 1.
   static const _stepRoutes = {
-    2: Routes.kycId,
+    2: Routes.kycChn,
     3: Routes.kycLiveness,
     4: Routes.kycUtilityBill,
-    5: Routes.kycNextOfKin,
+    5: Routes.kycBankDcs,
   };
 
   Future<void> _start() async {
@@ -111,10 +130,8 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
                       const SizedBox(height: 20),
                       const KScreenHead(
                         title: 'Verify to start investing',
-                        // "Five steps" not the mockup's "Eight" — see the
-                        // header comment on _rows above.
                         body:
-                            'The NGX requires this before your CSCS account can open. Five steps, about six minutes.',
+                            'The NGX requires this before your CSCS account can open. Eight steps, about six minutes.',
                       ),
                       const SizedBox(height: 28),
                       KCard(

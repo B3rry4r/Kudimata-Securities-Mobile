@@ -31,11 +31,15 @@ import '../screens/onboarding/legal_preview_screen.dart';
 // KYC.
 import '../screens/kyc/kyc_intro.dart';
 import '../screens/kyc/bvn_nin.dart';
+import '../screens/kyc/chn_screen.dart';
 import '../screens/kyc/id_upload.dart';
 import '../screens/kyc/liveness.dart';
 import '../screens/kyc/checking.dart';
 import '../screens/kyc/utility_bill.dart';
+import '../screens/kyc/bank_dcs_screen.dart';
+import '../screens/kyc/declarations_screen.dart';
 import '../screens/kyc/next_of_kin.dart';
+import '../screens/kyc/review_submit_screen.dart';
 import '../screens/kyc/submitted.dart';
 import '../screens/kyc/approved.dart';
 import '../screens/kyc/outcome_not_approved.dart';
@@ -202,11 +206,15 @@ GoRouter buildRouter(AppState state) {
       // ── KYC ───────────────────────────────────────────────────────────--
       GoRoute(path: Routes.kycIntro, builder: (_, _) => themed(() => KycIntroScreen())),
       GoRoute(path: Routes.kycBvn, builder: (_, _) => themed(() => BvnNinScreen())),
+      GoRoute(path: Routes.kycChn, builder: (_, _) => themed(() => ChnScreen())),
       GoRoute(path: Routes.kycId, builder: (_, _) => themed(() => IdUploadScreen())),
       GoRoute(path: Routes.kycLiveness, builder: (_, _) => themed(() => LivenessScreen())),
       GoRoute(path: Routes.kycChecking, builder: (_, _) => themed(() => CheckingScreen())),
       GoRoute(path: Routes.kycUtilityBill, builder: (_, _) => themed(() => UtilityBillScreen())),
+      GoRoute(path: Routes.kycBankDcs, builder: (_, _) => themed(() => BankDcsScreen())),
+      GoRoute(path: Routes.kycDeclarations, builder: (_, _) => themed(() => DeclarationsScreen())),
       GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => themed(() => NextOfKinScreen())),
+      GoRoute(path: Routes.kycReview, builder: (_, _) => themed(() => ReviewSubmitScreen())),
       GoRoute(path: Routes.kycSubmitted, builder: (_, _) => themed(() => SubmittedScreen())),
       GoRoute(path: Routes.kycApproved, builder: (_, _) => themed(() => ApprovedScreen())),
       GoRoute(path: Routes.kycOutcome, builder: (_, _) => themed(() => KycOutcomeScreen())),
@@ -408,8 +416,9 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.splash, Routes.welcome, Routes.signup, Routes.otp,
     Routes.createPasscode, Routes.confirmPasscode,
     Routes.biometric, Routes.login, Routes.reset,
-    Routes.kycIntro, Routes.kycBvn, Routes.kycId,
-    Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill, Routes.kycNextOfKin,
+    Routes.kycIntro, Routes.kycBvn, Routes.kycChn, Routes.kycId,
+    Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill,
+    Routes.kycBankDcs, Routes.kycDeclarations, Routes.kycNextOfKin, Routes.kycReview,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     Routes.questionnaire, Routes.suitabilityResult,
     Routes.termsOfService,

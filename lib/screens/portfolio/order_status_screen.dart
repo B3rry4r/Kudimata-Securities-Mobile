@@ -129,11 +129,44 @@ class _OrderList extends StatelessWidget {
         // mockup-raw/s44.html line 22: footer padding-top is 18, not 16.
         const SizedBox(height: 18),
         // mockup-raw/s44.html line 23: a destructive "Cancel the MTNN
-        // order" button precedes "Go to my portfolio" — deliberately NOT
-        // added: there is no cancel endpoint anywhere in this backend
-        // (checked orders_repository.dart and the wider api — POST/PATCH
-        // /transactions/:id/cancel doesn't exist), so a working cancel
-        // action can't be wired without fabricating one.
+        // order" button precedes "Go to my portfolio" — still deliberately
+        // NOT added, but the reason has narrowed (2026-08-24 re-check):
+        //
+        // The backend NOW has a real, working cancel endpoint —
+        // `PATCH /orders/:id/cancel` (investor role, own order only, 422
+        // via ApiException.message if the order isn't `pending` any more)
+        // — and OrdersRepository.cancel(orderId) above calls it correctly.
+        // That part of the old gap is closed.
+        //
+        // What's NOT closed: this screen's list is sourced from
+        // `GET /transactions` (see OrdersRepository's own header comment —
+        // investors have no `GET /orders` list endpoint, only
+        // staff/compliance roles do), and the wire `Transaction` shape
+        // carries no `orderId` field at all — confirmed against
+        // Kudimata-Securities-Backend/src/common/types/transaction.types.ts
+        // and prisma/schema.prisma's `Transaction.orderId` comment ("NOT a
+        // registry.json wire field... Internal linkage only"). So every
+        // `Txn` row here only has a *Transaction* id, never the *Order* id
+        // `cancel()` needs — passing `txn.id` to it would 404 against the
+        // Order table on every single call, not genuinely cancel anything.
+        // Wiring the button against that id would be exactly the kind of
+        // "looks wired, silently fails" affordance this app's own
+        // conventions rule out.
+        //
+        // (Independently re-confirmed while researching this: no code path
+        // in TransactionsService ever creates a buy/sell Transaction row
+        // today either, so this screen's list is empty against the live
+        // backend regardless — a separate, deeper, pre-existing gap, not
+        // introduced by this pass.)
+        //
+        // Real fix needs either an investor-scoped `GET /orders` list, or
+        // `orderId` added to the Transaction wire shape — backend work, out
+        // of scope for a mobile-only pass. Once either lands, wire this
+        // button using OrdersRepository.cancel(orderId), with a confirm
+        // dialog (see freeze_account_screen.dart's AlertDialog pattern) and
+        // a `setState(() => _future = _repo.orders())` refresh on success —
+        // exactly the shape this repository's cancel() is already built to
+        // support.
         KButton(
           label: 'Go to my portfolio',
           variant: KButtonVariant.ghost,

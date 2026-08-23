@@ -97,6 +97,16 @@ class UserRepository {
     await _client.post('/users/me/freeze', data: {});
   }
 
+  /// POST /users/me/request-closure — self-service account-closure request
+  /// (2026-08-24, mobile canvas screen 90). No request body, same shape as
+  /// [freeze] above. Unlike [freeze], this does NOT revoke sessions or
+  /// change account status server-side — it only records a closure request
+  /// for staff to action; the account stays fully open and functional, so
+  /// callers must NOT sign the user out after this succeeds.
+  Future<void> requestClosure() async {
+    await _client.post('/users/me/request-closure', data: {});
+  }
+
   static const _months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
