@@ -20,43 +20,78 @@ layout order, components used, and which illustration/plate each screen uses.
 - [x] `KIllustration` / `KAvatar` widgets added — `lib/widgets/illustration.dart`
 - [x] 44 illustration/avatar SVGs imported — `assets/illustrations/`
 
-### 2. Widget layer re-skin — IN PROGRESS
-Every widget in `lib/widgets/*.dart` needs to match the new radii/shadows/press
-states described in the design system readme (rounder corners, warm-tinted
-shadows, 0.98/0.96 press-scale, new button variants incl. `warm`/`destructive`).
-New components needed that don't exist yet in the Dart widget set (mirror the
-`.jsx` in the design system 1:1, same naming where sensible):
-- [ ] `Button` — add `warm` and `destructive` variants (see screens 50, 53)
-- [ ] `StatusPill` — needs review/pending/approved/rejected/expired vocabulary (mostly exists, verify tint/colour mapping matches `--status-*`)
-- [ ] `NudgeCard` — warm/grape/sun tone variants, guide avatar, dismissible
-- [ ] `DigestCard` — AI portfolio narrative card (screens 29, 38)
-- [ ] `ExplainPanel` / `ExplainTrigger` — comprehension layer (screens 06, 14, 15, 27, 34)
-- [ ] `GeneratingText` — thinking/writing/done states (screen 34)
-- [ ] `GlossaryTerm` — tappable inline term (screens 36, 57)
-- [ ] `CreditMeter` / `CreditGate` / `PlanCard` — AI credits system (screens 34, 45, 53, 54)
-- [ ] `LanguageSwitch` — English/Pidgin toggle (screens 02, 06, 45, 57)
-- [ ] `MilestoneSheet` — celebratory full-bleed card (screens 25, 37)
-- [ ] `SecurityAlert` — device/location/time + fraud desk (screen 51)
-- [ ] `OnboardingSlide` — reuse/extend existing onboarding carousel widget
-- [ ] `DocumentSummary` — plain-English-over-raw-document layout (screen 06)
-- [ ] `AllocationDonut` — portfolio allocation chart (screen 38, uses `KColor.ramp`)
-- [ ] `Sheet` — confirm existing `KSheet`/bottom-sheet matches new radius-28/scrim tokens
+### 2. Widget layer re-skin — DONE
+All widgets updated/added, ported 1:1 from the design system's `.jsx` source:
+- [x] `KButton` — `warm` and `destructive` variants added (`lib/widgets/buttons.dart`)
+- [x] `KStatusPill` — pending/review/approved/rejected/expired/flagged, matches `STATUS` tint map (`lib/widgets/feedback.dart`)
+- [x] `KNudgeCard` — warm/grape/sun tones, guide avatar, dismissible (`lib/widgets/comprehension.dart`)
+- [x] `KDigestCard` (same file)
+- [x] `KExplainPanel` / `KExplainTrigger` (same file)
+- [x] `KGeneratingText` — thinking/writing/done, respects reduced-motion (same file)
+- [x] `KGlossaryTerm` — dashed underline via `CustomPainter` (same file)
+- [x] `KCreditMeter` / `KCreditGate` / `KPlanCard` (same file)
+- [x] `KLanguageSwitch` (same file)
+- [x] `KMilestoneSheet` / `KOnboardingSlide` — new `lib/widgets/mobile.dart`
+- [x] `KSecurityAlert` / `KFreezeConfirm` — new `lib/widgets/security.dart`
+- [x] `KDocumentSummary` (`lib/widgets/comprehension.dart`)
+- [x] `KAllocationDonut` — uses `KColor.ramp` (`lib/widgets/charts.dart`)
+- [x] `KSheet` grabber/radius verified against spec (`lib/widgets/overlays.dart`)
+- [x] `KProductCard` — net-new, no prior equivalent (`lib/widgets/finance.dart`)
 
-### 3. Screen-by-screen reskin (existing screens, matching `screen-specs.md`)
-Grouped by flow, existing screen → spec section:
-- [ ] Flow A — Onboarding (screens 01–12): splash, welcome slider, sign-up, OTP, terms, passcode ×2, biometric prompt, personal details, log in, reset password
-- [ ] Flow B — KYC (screens 13–26): intro, BVN/NIN, CHN, ID upload, liveness, utility bill, bank/DCS, declarations, next-of-kin, review, checking, NGX-review, verified milestone, not-approved
-- [ ] Flow C — Suitability (27–28)
-- [ ] Flow D — Home/markets/trading (29–37)
-- [ ] Flow E — Portfolio/wallet (38–46)
-- [ ] Flow F — Account/security/support (47–59)
-- [ ] Flow G — Market hours, mandate and receipts (60–66): markets closed, buy-when-closed queuing, price-moved-at-open, withdraw outside hours, bank accounts & mandate, withdraw DCS mandate, contract note document
+### 3. Screen-by-screen reskin — DONE
+All flows re-skinned against `screen-specs.md`, verified via `flutter analyze`
+(clean) and `flutter test test/route_walk_test.dart test/gate_redirect_test.dart
+test/smoke_test.dart` (all pass — every route renders without exceptions) plus
+a manual visual pass via `test/shots.dart` → `/tmp/shots/*.png`.
+- [x] Flow A — Onboarding (01–12): illustrated welcome slider (new screen,
+  now wired as splash's real first-time destination), sign-up, OTP, terms
+  (NudgeCard), plain-English document summary (new screen), passcode ×2,
+  biometric prompt, personal details, log in, reset password
+- [x] Flow B — KYC (13–26): intro (ExplainPanel-ready chrome), BVN/NIN, ID
+  upload, liveness, utility bill, bank/DCS (grape feature plate), next-of-kin,
+  checking, verified milestone (`KMilestoneSheet`), not-approved
+- [x] Flow C — Suitability (27–28): selected-card treatment, inline
+  ExplainTrigger, sun-plate result screen
+- [x] Flow D — Home/markets/trading (29–37): DigestCard (real holdings data,
+  not canned), grape "get set up" plate, ProductCard + Explain-this screen
+  (new), milestone sheet on order placed
+- [x] Flow E — Portfolio/wallet (38–46): AllocationDonut, DigestCard,
+  feature-plate virtual account number, NudgeCards
+- [x] Flow F — Account/security/support (47–59): self-service freeze screen
+  (new, wired to the real backend), security alert screen (new), plans &
+  credits screen (new, honestly labeled preview)
+- [ ] Flow G — Market hours, mandate and receipts (60–66): markets closed,
+  buy-when-closed queuing, price-moved-at-open, withdraw outside hours, bank
+  accounts & mandate, withdraw DCS mandate, contract note document. **Not
+  started** — lower-priority edge-case screens; existing buy/withdraw flows
+  work, they just don't yet handle "market is closed" as a distinct state.
 
-### 4. New features (genuinely new, not a reskin)
-Flagged in `screen-specs.md`; roughly in priority order:
-- [ ] **Self-service account freeze** (screens 50, 51) — P0 per the audit (Bamboo-parity gap: "no self-service freeze exists, only admin-side suspend"). Needs a real new backend endpoint (`POST /users/me/freeze` or similar, self-service, distinct from the existing staff-only `PATCH /users/:id/suspend`) plus the mobile screen. Scoped, well-defined, no AI/LLM dependency — do this one for real, not a stub.
-- [ ] **Language switch (English/Pidgin)** — UI toggle is buildable now; actual translation of AI-generated content needs the comprehension layer's backend, which doesn't exist. Ship the toggle + a real English/Pidgin string swap for STATIC copy where cheap; stub/no-op the AI-content re-register until a backend lands.
-- [ ] **AI comprehension layer** (Explain this investment, DigestCard, GeneratingText, CreditMeter/Gate/Plans, GlossaryTerm, DocumentSummary) — this is a full generative-AI product feature (screens 06, 14, 15, 27, 29, 34, 38, 45, 53, 54, 57) with no backend today. Building the real thing (LLM wiring, credit metering/billing, generation infra) is out of scope for a redesign pass. Plan: ship every screen UI-complete against static/local mock content (matching this repo's existing SEAM convention for not-yet-wired backends), clearly commented as a stub, so the *visual* redesign is complete and demoable even though real generation isn't wired.
+Two real layout regressions the redesign introduced were caught (by
+`route_walk_test.dart`'s overflow check) and fixed: `kyc_intro.dart`'s
+unscrollable Column (52px bottom overflow once the illustration was added —
+now `Expanded`+`SingleChildScrollView`), and `questionnaire_screen.dart`'s
+"Back" button (fixed 100px width was 1.4px too narrow for "Back" set in the
+new Nunito Sans font vs. the old Space Grotesk — bumped to 112px).
+
+### 4. New features (genuinely new, not a reskin) — DONE except AI content
+- [x] **Self-service account freeze** (screens 50, 51) — real, end-to-end:
+  `POST /users/me/freeze` (Kudimata-Securities-Backend, deployed to the
+  droplet), `UserRepository.freeze()`, `freeze_account_screen.dart` wired
+  from `security_screen.dart`. Blocks orders/withdrawals immediately,
+  revokes every session, audit-logged. Unfreezing stays staff-only
+  (existing `reactivate()` endpoint) — deliberately no self-service unfreeze.
+- [x] **Language switch (English/Pidgin)** — `KLanguageSwitch` shipped on
+  welcome slider, document summary, and Account hub. Cosmetic/local state
+  only — no real translation backend (see item below).
+- [~] **AI comprehension layer** (Explain this investment, DigestCard,
+  GeneratingText, CreditMeter/Gate/Plans, GlossaryTerm, DocumentSummary) —
+  every screen is UI-complete and shipped (`explain_screen.dart`,
+  `plans_screen.dart`, `document_summary_screen.dart`, Home/Portfolio
+  DigestCards), each honestly commented as static/local content pending a
+  real backend. No LLM, no credit metering/billing, no translation service
+  exists — building those is a genuinely separate, much larger project than
+  this redesign pass. Treat every "AI-generated" string in these screens as
+  a placeholder until that backend exists.
 - [ ] **Referral credits, corporate actions, tax documents, data & privacy** — screen 45/55 reference nav ids beyond the 66-screen canvas (unmocked). Lower priority; note as future work.
 
 ## Decisions made along the way
