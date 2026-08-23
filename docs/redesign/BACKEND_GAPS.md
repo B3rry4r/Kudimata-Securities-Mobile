@@ -1,42 +1,63 @@
 # Backend gaps — what's needed for the redesigned UI to be 100% real
 
-## Status (2026-08-24) — first implementation pass done on the backend
+## Status (2026-08-24, updated same day) — backend AND mobile now wired end-to-end for most of this
 
-Kudimata-Securities-Backend commit `1d78d59` closes the additive/low-risk
-half of this document: **§1 (dividends + corporate actions, minus real
-dividend-ledger data being backfilled), §2 (complaints), §5 (price alerts,
-CRUD only — see below), §6 (sell destination + order reference + cancel),
-§8 (dormancy check + closure request, not the router bug), §10 (consent
-toggles)** now have real endpoints. Not yet true on the mobile side — the
-Flutter repositories/screens still need wiring to these new endpoints, and
-the mobile UI still shows the honest "not available yet" states until that
-happens. Specifics:
+Two passes today. First closed the additive backend half of this doc
+(`Kudimata-Securities-Backend` commit `1d78d59`); a second pass (commits
+`089d62d`, `429525d`, `c10e6e1` on the backend, `0781df0` on mobile) fixed
+a real correctness bug the user caught, added the last KYC piece, redid
+every transactional email, and — critically — **wired the Flutter app to
+all of it**. This doc was previously "backend real, mobile still mock" for
+everything below; that's now closed for most items.
 
-- **Done, real endpoints exist**: `POST /dividends/declare` (staff) +
-  `GET /dividends`/`GET /dividends/summary` (now correctly credits
-  WalletBalance too), `POST/GET /e-dividend-mandate`, `GET/POST
-  /rights-issues` + election, `GET/POST /agm-meetings` + voting,
-  `GET/POST/PATCH/DELETE /price-alerts` (CRUD only — see below),
-  `POST/GET /complaints` + upload-url, `PATCH /orders/:id/cancel`, a real
-  `Order.reference`, `Order.destinationBankAccountId` (storage only, see
-  below), `POST /users/me/request-closure`, dormancy auto-detection on
-  login, `PUT /notification-preferences/me`'s two new consent fields.
-- **Still a real gap, not silently closed**: §5's price-alert
-  *notification* trigger has no scheduler wired to it anywhere (needs an
-  app-wide scheduled-job decision) — alerts can be created/managed but
-  won't actually fire yet. §6's sell-to-bank-account payout still only
-  credits the wallet — `destinationBankAccountId` is stored and validated
-  but doesn't yet redirect the actual payout (needs the withdraw
-  tier-limit/Flutterwave logic, deliberately not risked in that pass — see
-  the backend's own commit message). §8's `Routes.reset`/`preAuthOnly`
-  router bug is unfixed (frontend-only, still open). §13 (phased-KYC
-  completion) only gained `chn`/`pepSelfDeclared` fields on the existing
-  step-1 handler — CHN/PEP/Bank&DCS/review-step SCREENS and the rest of
-  that project are untouched, still the single biggest remaining item.
-  §3/§4/§9/§11/§12/§14 are entirely untouched.
-- **Not yet true on mobile**: none of the Flutter repositories
-  (`lib/data/repositories/`) have been pointed at these new endpoints yet —
-  that's the next real step to make any of this visible in the app itself.
+- **Done end-to-end (backend + mobile wired)**: dividends (history,
+  summary, e-mandate — `dividends_screen.dart`), corporate actions (rights
+  issues + AGM voting — `corporate_actions_screen.dart` and children),
+  price alerts (full CRUD — `price_alerts_screen.dart`), complaints (file +
+  track, real presigned upload — `complaint_screen.dart` +
+  `complaint_tracked_screen.dart`), order cancel + real reference number
+  (`orders_repository.dart`, `trade_flows.dart`'s `SalePlacedScreen`),
+  dormancy (auto-detected at login, routes to the Dormant screen —
+  `log_in_screen.dart`), account closure request
+  (`close_account_screen.dart`), the two new consent toggles
+  (`data_privacy_screen.dart`). All 10 transactional emails rewritten to
+  the new canvas designs, plus the 2 that didn't exist (dividend-paid,
+  document-ready).
+- **DCS fix (user caught this before it shipped anywhere real)**: the
+  first version of sell-proceeds-to-bank-account only checked *ownership*
+  of the destination bank account, not that it was the investor's actual
+  DCS-mandated account. Per how DCS really works (and the design's own
+  "withdrawals can only ever go to a DCS account" copy), there is exactly
+  one lawful destination — corrected server-side to require
+  `BankAccount.primary === true`, with tests for accept/reject cases. Sell
+  proceeds still only credit the wallet, not an actual bank payout — see
+  below, unchanged from the original scoping.
+- **§13 phased-KYC — now mostly done.** All 3 missing real steps built
+  (CHN, Bank & DCS-during-KYC reusing the real bank-linking endpoints, PEP
+  declarations) plus a new Review & submit screen, and the whole flow
+  re-sequenced from 5 to the canvas's real 8 steps. Screen 24 "NGX account
+  under review" deliberately not built — no real backend state exists to
+  justify it. Two small real gaps remain: the PEP "who/position" detail
+  fields and the "trade for myself" checkbox have no backend column (only
+  the yes/no PEP flag persists), and Review's optional note field has
+  nowhere to send its value.
+- **Still a real gap, not silently closed**:
+  - Price-alert *notification delivery* has no scheduler wired anywhere
+    (alerts save for real, they just won't fire yet — app-wide job
+    infrastructure doesn't exist).
+  - Sell-to-bank-account payout still only credits the wallet — the
+    destination is now correctly validated as the real DCS account, but
+    actually redirecting the payout needs the withdrawal module's
+    tier-limit/Flutterwave logic, deliberately not risked without live
+    testing.
+  - `order_status_screen.dart` still can't show a cancel button for real —
+    it sources from `GET /transactions`, which has no link back to
+    `Order`. The new investor-scoped `GET /orders` closes the backend half
+    of this; the screen itself needs a follow-up to actually use it.
+  - `Routes.reset`/`preAuthOnly` router bug (§8) — unfixed, frontend-only.
+  - §3, §4, §9, §11, §12, §14 are entirely untouched. §9 (account closure)
+    is now request-only, same as originally scoped — no real closure
+    workflow exists past the request landing with staff.
 
 ---
 
