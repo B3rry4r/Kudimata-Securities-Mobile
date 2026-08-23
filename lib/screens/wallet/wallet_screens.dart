@@ -36,7 +36,6 @@ typedef _WalletData = ({
   String balance,
   String? pending,
   List<Txn> txns,
-  bool devFundEnabled,
 });
 
 class WalletScreen extends StatefulWidget {
@@ -65,7 +64,6 @@ class _WalletScreenState extends State<WalletScreen> {
   // move the balance while this tab just sits open.
   Timer? _pollTimer;
   static const _pollInterval = Duration(seconds: 8);
-  bool _devFundBusy = false;
 
   @override
   void initState() {
@@ -83,13 +81,12 @@ class _WalletScreenState extends State<WalletScreen> {
     // Record `.wait`, not fire-then-sequential-await — see home_screen.dart's
     // _load() for why (an early rejection would otherwise leave the other
     // future's eventual rejection unlistened-to: an "unhandled exception").
-    final (balanceDetail, page, devFundEnabled) =
-        await (_walletRepo.balanceDetail(), _txnRepo.list(), _walletRepo.devFundEnabled()).wait;
+    final (balanceDetail, page) =
+        await (_walletRepo.balanceDetail(), _txnRepo.list()).wait;
     return (
       balance: balanceDetail.available,
       pending: balanceDetail.pending,
       txns: page.data,
-      devFundEnabled: devFundEnabled,
     );
   }
 
@@ -101,29 +98,6 @@ class _WalletScreenState extends State<WalletScreen> {
     } on Object {
       // A poll tick failing (flaky network blip) shouldn't blank out an
       // already-loaded screen — just try again next tick.
-    }
-  }
-
-  Future<void> _devFund() async {
-    setState(() => _devFundBusy = true);
-    try {
-      // ₦10,000 — a fixed, convenient amount for exercising the market-buy
-      // wallet-balance gate (see the backend's applyWalletSideEffect); not
-      // user-entered, since this is a one-tap test convenience, not a real
-      // funding flow.
-      await _walletRepo.devFund(amountKobo: 1_000_000);
-      if (!mounted) return;
-      final data = await _load();
-      if (!mounted) return;
-      setState(() => _data = data);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Added ₦10,000 (test funding)')),
-      );
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-    } finally {
-      if (mounted) setState(() => _devFundBusy = false);
     }
   }
 
@@ -169,9 +143,6 @@ class _WalletScreenState extends State<WalletScreen> {
                 balance: data.balance,
                 pending: data.pending,
                 txns: data.txns,
-                showDevFund: data.devFundEnabled,
-                devFundBusy: _devFundBusy,
-                onDevFund: _devFund,
               );
             },
           ),
@@ -187,9 +158,6 @@ class _WalletBody extends StatelessWidget {
     required this.balance,
     required this.pending,
     required this.txns,
-    required this.showDevFund,
-    required this.devFundBusy,
-    required this.onDevFund,
   });
   final String balance;
 
@@ -197,13 +165,6 @@ class _WalletBody extends StatelessWidget {
   /// nothing held, in which case KBalancePanel shows no change line at all.
   final String? pending;
   final List<Txn> txns;
-
-  /// True only when the backend reports Flutterwave is on a sandbox key
-  /// (GET /transactions/dev-fund/enabled) — never shown against a live key,
-  /// however this build got configured.
-  final bool showDevFund;
-  final bool devFundBusy;
-  final VoidCallback onDevFund;
 
   @override
   Widget build(BuildContext context) {
@@ -243,20 +204,6 @@ class _WalletBody extends StatelessWidget {
             ),
           ],
         ),
-
-        // Sandbox-only convenience (2026-08-20) — an instant ₦10,000 test
-        // credit, no real Flutterwave checkout, for exercising the
-        // wallet-balance gate on a market buy. Only ever rendered when the
-        // backend itself confirms Flutterwave is on a sandbox key.
-        if (showDevFund) ...[
-          const SizedBox(height: 10),
-          KButton(
-            label: 'Add ₦10,000 (test funding)',
-            variant: KButtonVariant.ghost,
-            loading: devFundBusy,
-            onPressed: devFundBusy ? null : onDevFund,
-          ),
-        ],
         const SizedBox(height: 28),
 
         // "Recent activity" (spec 40) — was "Recent". The eyebrow's trailing

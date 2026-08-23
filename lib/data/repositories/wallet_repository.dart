@@ -48,11 +48,9 @@ import 'bank_accounts_repository.dart' show BankAccountSummary;
 /// the investor to in order to actually move money (see [WalletRepository]'s
 /// file header — the backend no longer attempts a direct card charge).
 ///
-/// SUPERSEDED (2026-08-07): the Add money sheet no longer calls fund() —
-/// wallet funding moved to [WalletRepository.virtualAccount] (a dedicated
-/// bank-transfer account, not a checkout redirect). [fund] is kept here
-/// unused rather than removed, matching the backend's own choice to keep
-/// its v3 checkout code wired but unused (see backend supersedes.json S-8).
+/// 2026-08-23: the Add money sheet offers this alongside
+/// [WalletRepository.virtualAccount] as the "pay by card" option — see
+/// wallet_flows.dart's showAddMoneyFlow.
 typedef FundResult = ({Txn transaction, String checkoutUrl});
 
 /// GET /transactions/virtual-account response — the investor's own
@@ -96,33 +94,6 @@ class WalletRepository {
   Future<Map<String, dynamic>> _rawBalance() async {
     final response = await _client.get('/wallet-balance');
     return response.data as Map<String, dynamic>;
-  }
-
-  /// GET /transactions/dev-fund/enabled (2026-08-20, "I need an easy way to
-  /// simulate funding an account... when flutterwave is on test"). The
-  /// backend gates this on the SAME sandbox-vs-live signal
-  /// FlutterwaveAdapter itself uses (FLWSECK_TEST- vs FLWSECK-), so this
-  /// button can never appear pointed at a live Flutterwave key, however this
-  /// gets called. Never throws on a network failure — just hides the
-  /// button, same treatment as any other "nice to have" affordance.
-  Future<bool> devFundEnabled() async {
-    try {
-      final response = await _client.get('/transactions/dev-fund/enabled');
-      final json = response.data as Map<String, dynamic>;
-      return json['enabled'] as bool? ?? false;
-    } on Object {
-      return false;
-    }
-  }
-
-  /// POST /transactions/dev-fund — instantly credits the wallet in sandbox
-  /// mode, no real Flutterwave checkout involved. Unlike [fund], the
-  /// returned Transaction is already `completed`.
-  Future<Txn> devFund({required int amountKobo}) async {
-    final response = await _client.post('/transactions/dev-fund', data: {
-      'amountKobo': amountKobo,
-    });
-    return _fromJson(response.data as Map<String, dynamic>);
   }
 
   /// POST /transactions/fund. [amountKobo] is the amount the Add money sheet

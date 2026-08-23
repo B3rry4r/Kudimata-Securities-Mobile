@@ -10,18 +10,26 @@
 // step is left in place (not popped) so the user can retry without
 // re-entering anything.
 //
-// Add money (2026-08-07, backend supersedes.json S-8): no longer a
-// checkout-link redirect. WalletRepository.virtualAccount() (GET
-// /transactions/virtual-account) returns the investor's own permanent,
-// dedicated bank account (Flutterwave v4 Virtual Accounts) — _AddMoneySheet
-// just displays it with a copy button. No amount entry, no method choice,
-// no review/confirm step: the investor transfers whatever they want,
-// whenever they want, from their own banking app, and the wallet balance
-// updates once the backend's webhook confirms the transfer landed (same
-// "check back later / pull to refresh" pattern the old pending-checkout
-// sheet used, just without ever leaving this app). Withdraw is UNCHANGED —
-// withdrawals still go server-to-bank directly via v3, so its review step
-// keeps the original immediate KStatusView success flow.
+// Add money offers TWO real funding paths (2026-08-23 — restored the card
+// option after "isnt there a way we can offer two options, one for
+// transfer... one for payment gateway"): _AddMoneyChooser picks between
+// them, then either
+//   - Bank transfer: WalletRepository.virtualAccount() (GET
+//     /transactions/virtual-account), the investor's own permanent, dedicated
+//     bank account (Flutterwave v4 Virtual Accounts) — _AddMoneySheet just
+//     displays it with a copy button. No amount entry, no review/confirm
+//     step: the investor transfers whatever they want, whenever they want,
+//     from their own banking app, and the wallet balance updates once the
+//     backend's webhook confirms the transfer landed.
+//   - Card: WalletRepository.fund() (POST /transactions/fund) creates a
+//     pending Transaction and returns a Flutterwave hosted-checkout link,
+//     which _CardFundSheet opens externally (same launchUrl pattern
+//     help_support_screen.dart uses) — the investor completes payment in
+//     their browser/card app, and the balance updates once Flutterwave's
+//     webhook confirms it server-to-server.
+// Withdraw is UNCHANGED — withdrawals still go server-to-bank directly via
+// v3, so its review step keeps the original immediate KStatusView success
+// flow.
 //
 // The withdraw destination: POST /transactions/withdraw needs a saved
 // `BankAccount.id` (registry.json), not a raw bank code/account number. No
@@ -42,6 +50,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
@@ -70,7 +79,7 @@ Future<void> showAddMoneyFlow(BuildContext context) async {
   await showKSheet<void>(
     context,
     title: 'Add money',
-    child: const _AddMoneySheet(),
+    child: const _AddMoneyChooser(),
   );
 }
 
@@ -244,6 +253,29 @@ void _showSuccessSheet(
   );
 }
 
+/// Shown after a card-fund checkout link has been handed off to an external
+/// browser/card app — the payment itself is NOT confirmed yet (that only
+/// happens once Flutterwave's webhook lands, server-to-server), so this is
+/// deliberately `KStatusTone.pending`, not `success`, matching
+/// `_ensureEligibleToTransact`'s own use of the pending tone for an
+/// in-progress, not-yet-true state.
+void _showAwaitingPaymentSheet(BuildContext context) {
+  showKSheet<void>(
+    context,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: KStatusView(
+        tone: KStatusTone.pending,
+        title: 'Complete your payment',
+        message: 'Finish paying in the window that just opened. Your '
+            'balance updates here as soon as we confirm it.',
+        primary: 'Done',
+        onPrimary: () => Navigator.of(context).pop(),
+      ),
+    ),
+  );
+}
+
 /// Shown over the still-open review sheet when a fund/withdraw call fails
 /// with an [ApiException] (e.g. insufficient balance) — [message] is that
 /// exception's human-readable summary (safe to show directly, per
@@ -278,8 +310,140 @@ int _parseAmountKobo(String amountText) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ADD MONEY — the investor's dedicated funding account (no amount/method
-// entry, no review/confirm step — see file header).
+// ADD MONEY — Step 0: choose a funding path (see file header).
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AddMoneyChooser extends StatelessWidget {
+  const _AddMoneyChooser();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              _SelectRow(
+                icon: 'wallet',
+                title: 'Bank transfer',
+                sub: 'Free · usually under 5 minutes',
+                trailingChevron: true,
+                first: true,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  showKSheet<void>(
+                    context,
+                    title: 'Bank transfer',
+                    child: const _AddMoneySheet(),
+                  );
+                },
+              ),
+              _SelectRow(
+                icon: 'card',
+                title: 'Debit or credit card',
+                sub: 'Instant, via Flutterwave',
+                trailingChevron: true,
+                first: false,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  showKSheet<void>(
+                    context,
+                    title: 'Add money by card',
+                    child: const _CardFundSheet(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD MONEY — Card: amount entry → Flutterwave hosted checkout (external).
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CardFundSheet extends StatefulWidget {
+  const _CardFundSheet();
+  @override
+  State<_CardFundSheet> createState() => _CardFundSheetState();
+}
+
+class _CardFundSheetState extends State<_CardFundSheet> {
+  late final TextEditingController _amount = TextEditingController(text: '20,000');
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    super.dispose();
+  }
+
+  Future<void> _continue() async {
+    final amountKobo = _parseAmountKobo(_amount.text);
+    if (amountKobo <= 0) return;
+    setState(() => _busy = true);
+    final repo = WalletRepository(AppScope.read(context).apiClient);
+    try {
+      final result = await repo.fund(amountKobo: amountKobo, method: 'card');
+      final uri = Uri.tryParse(result.checkoutUrl);
+      if (uri != null) {
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {
+          // Best-effort external hand-off — same seam
+          // help_support_screen.dart's _launch uses.
+        }
+      }
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _showAwaitingPaymentSheet(context);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _showErrorSheet(context, title: 'Could not start payment', message: e.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KInput(
+          label: 'Amount',
+          controller: _amount,
+          numeric: true,
+          amount: true,
+          prefix: '₦',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          "You'll pay by card on Flutterwave's secure checkout page — your "
+          'balance updates here once the payment is confirmed.',
+          style: KType.body(color: KColor.ink3),
+        ),
+        const SizedBox(height: 22),
+        KButton(
+          label: 'Continue to payment',
+          loading: _busy,
+          onPressed: _busy ? null : _continue,
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD MONEY — Bank transfer: the investor's dedicated funding account (no
+// amount entry, no review/confirm step — see file header).
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AddMoneySheet extends StatefulWidget {
