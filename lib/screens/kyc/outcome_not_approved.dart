@@ -164,6 +164,7 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
     final canResubmit = result.canResubmit;
     return KStatusView(
       tone: KStatusTone.error,
+      illustrationName: 'kyc-not-approved',
       title: "We couldn't verify you",
       message: message,
       primary: canResubmit ? 'Resubmit documents' : 'Contact support',
@@ -180,6 +181,7 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
         : "One of our team needs to take a closer look at your submission. We'll notify you once it's resolved.";
     return KStatusView(
       tone: KStatusTone.pending,
+      illustrationName: 'kyc-not-approved',
       title: 'Your account needs manual review',
       message: message,
       secondary: 'Back to home',
@@ -190,6 +192,7 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
   Widget _buildExpired() {
     return KStatusView(
       tone: KStatusTone.error,
+      illustrationName: 'timeout',
       title: 'Your submission expired',
       message: "It's been a while since you started — please start your verification again.",
       primary: 'Start again',

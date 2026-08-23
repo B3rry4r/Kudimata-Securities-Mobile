@@ -305,35 +305,50 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const KEyebrow('Your funding account'),
-            const SizedBox(height: 10),
-            KCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            // Full grape "feature plate" (2026-08-22 "Soft Landing" —
+            // screen-specs.md #41's colour note: same treatment as the
+            // Splash screen, reused for the single most important piece of
+            // data on this sheet — the virtual account number).
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: KColor.feature, borderRadius: KRadii.featureR),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _SummaryRow(label: 'Bank', value: account.bankName),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Account number', style: KType.body(color: KColor.ink2)),
-                        Row(
-                          children: [
-                            Text(account.accountNumber,
-                                style: KType.body(color: KColor.ink, w: KWeight.medium).tnum),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () => _copy(account.accountNumber),
-                              behavior: HitTestBehavior.opaque,
-                              child: Text('Copy',
-                                  style: KType.label(color: KColor.indicator, w: KWeight.semibold)),
-                            ),
-                          ],
+                  Text('Your account number'.upper,
+                      style: KType.label(color: KColor.sun)),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(account.accountNumber,
+                            style: KType.title(color: KColor.featureInk).tnum),
+                      ),
+                      GestureDetector(
+                        onTap: () => _copy(account.accountNumber),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0x29FFFFFF),
+                            borderRadius: KRadii.pillR,
+                          ),
+                          child: Text('Copy',
+                              style: KType.label(color: KColor.featureInk)),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 4),
+                  // Spec (#41) also shows the account holder's name here
+                  // ("Providus Bank · Adebayo Okonkwo") — VirtualAccountDetails
+                  // only carries accountNumber/bankName, so that's omitted
+                  // rather than fabricated; add it if the backend/repository
+                  // ever exposes it.
+                  Text(account.bankName, style: KType.body(color: KColor.featureInk2)),
                 ],
               ),
             ),

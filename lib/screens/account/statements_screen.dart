@@ -126,6 +126,13 @@ class _StatementsBody extends StatelessWidget {
         const KEyebrow('Contract notes'),
         const SizedBox(height: 10),
         _Section(items: notes, emptyLabel: 'No contract notes yet.', onDownload: onDownload),
+        const SizedBox(height: 24),
+        const KNudgeCard(
+          tone: KNudgeTone.grape,
+          title: 'What is a contract note?',
+          body:
+              'The receipt for one trade — what you bought, at what price, and every fee inside it. Free to read in plain English.',
+        ),
       ],
     );
   }

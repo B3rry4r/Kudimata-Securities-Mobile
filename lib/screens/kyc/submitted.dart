@@ -72,6 +72,14 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
   /// which just leaves the pending view showing.
   String? _errorMessage;
 
+  /// True only once a real check has actually CONFIRMED the submission is
+  /// still pending/review — see build()'s doc comment for why this exists
+  /// (2026-08-20 fix: "why is 'we're reviewing your kyc' the first thing
+  /// that shows before it proceeds to show verified... being reviewed
+  /// stay as being reviewed"). Before the first check completes, this
+  /// screen no longer guesses "still pending" by default.
+  bool _confirmedPending = false;
+
   @override
   void initState() {
     super.initState();
@@ -94,8 +102,10 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
         context.go(Routes.kycOutcome);
         return;
       }
-      // pending | review — stay on this pending view (accurate copy for
-      // both) and schedule another check, unless the poll cap is reached.
+      // pending | review — ONLY NOW is it real: a check actually ran and
+      // confirmed it. Schedule another check, unless the poll cap is
+      // reached.
+      setState(() => _confirmedPending = true);
       final startedAt = _pollingStartedAt;
       if (startedAt != null && DateTime.now().difference(startedAt) < _maxPollDuration) {
         _timer = Timer(_pollInterval, _checkStatus);
@@ -145,13 +155,31 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
                     secondary: 'Back to home',
                     onSecondary: () => context.go(Routes.home),
                   )
-                : KStatusView(
-                    tone: KStatusTone.pending,
-                    title: "We're reviewing your details",
-                    message:
-                        "This usually takes a few minutes. We'll notify you when you're verified.",
-                    secondary: 'Back to home',
-                    onSecondary: () => context.go(Routes.home),
+                // A neutral "checking" state until a real check has
+                // actually confirmed the submission is still
+                // pending/review (2026-08-20 fix — reported: "why is
+                // 'we're reviewing your kyc' the first thing that shows
+                // before it proceeds to show verified"). Previously this
+                // was the unconditional default render — shown for the
+                // entire ~1.4s before the very first status check even
+                // fired, so even an instant auto-approval always flashed
+                // "under review" first. `_confirmedPending` only flips
+                // true once a check genuinely comes back pending/review —
+                // never assumed.
+                : !_confirmedPending
+                    ? const KStatusView(
+                        tone: KStatusTone.pending,
+                        title: 'Checking your status…',
+                        message: 'Just a moment while we confirm your KYC status.',
+                      )
+                    : KStatusView(
+                        tone: KStatusTone.pending,
+                        illustrationName: 'kyc-checking',
+                        title: "We're reviewing your details",
+                        message:
+                            "This usually takes a few minutes. We'll notify you when you're verified.",
+                        secondary: 'Back to home',
+                        onSecondary: () => context.go(Routes.home),
                   ),
           ),
         ),

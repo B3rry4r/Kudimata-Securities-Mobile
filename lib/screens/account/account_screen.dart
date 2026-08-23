@@ -30,6 +30,12 @@ const List<(String icon, String title, String route)> _items = [
   ('card', 'Legal', Routes.acctLegal),
 ];
 
+// Plans & credits sits as its own row above the menu group, alongside a
+// compact credit meter — screen 45. Static example numbers: no real
+// AI-credit metering backend exists yet (docs/redesign/PLAN.md).
+const int _exampleCreditsUsed = 3;
+const int _exampleCreditsTotal = 10;
+
 String _initials(String name) {
   final parts = name.trim().split(RegExp(r'\s+'));
   final letters = parts.map((p) => p.isEmpty ? '' : p[0]).take(2).join();
@@ -137,6 +143,25 @@ class _AccountBody extends StatelessWidget {
                       Text(user.email, style: KType.body(color: KColor.ink3)),
                     ],
                   ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
+            child: KAccountCard(
+              children: [
+                KAccountRow(
+                  icon: 'plus',
+                  title: 'Plans & credits',
+                  first: true,
+                  right: const KCreditMeter(
+                    used: _exampleCreditsUsed,
+                    total: _exampleCreditsTotal,
+                    compact: true,
+                  ),
+                  onTap: () => context.push(Routes.acctPlans),
                 ),
               ],
             ),

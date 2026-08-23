@@ -610,23 +610,33 @@ Future<void> _showSuccessSheet(
 }) {
   HapticFeedback.lightImpact();
   final amountStr = _formatNaira(input.amountNaira);
+  // KMilestoneSheet (2026-08-22 "Soft Landing", spec screen 37's celebratory
+  // "first trade" pattern) — shown for every order for now, not just a
+  // genuine first trade: this app doesn't track "has this investor ever
+  // traded before" anywhere yet, and adding that state is out of scope for
+  // this redesign pass. The spec itself notes the milestone treatment is
+  // meant to run once then fall back to a plain confirmation — worth
+  // revisiting once first-trade tracking exists.
   return showKSheet<void>(
     context,
-    child: Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: KStatusView(
-        tone: KStatusTone.success,
-        title: 'Order placed',
-        message: side.isSell
-            ? 'You sold $amountStr of ${asset.ticker}. Proceeds settle T+3.'
-            : 'You bought $amountStr of ${asset.ticker}. Shares settle T+3.',
-        primary: 'View portfolio',
-        onPrimary: () {
+    child: KMilestoneSheet(
+      illustrationName: 'milestone-first-trade',
+      eyebrow: side.isSell ? 'Order placed' : 'Your order',
+      title: 'Order placed',
+      message: side.isSell
+          ? 'You sold $amountStr of ${asset.ticker}. Proceeds settle T+3.'
+          : 'You bought $amountStr of ${asset.ticker}. Shares settle T+3.',
+      primary: KButton(
+        label: 'View portfolio',
+        onPressed: () {
           Navigator.of(context).pop();
           context.go(Routes.portfolio);
         },
-        secondary: 'Done',
-        onSecondary: () => Navigator.of(context).pop(),
+      ),
+      secondary: KButton(
+        label: 'Done',
+        variant: KButtonVariant.ghost,
+        onPressed: () => Navigator.of(context).pop(),
       ),
     ),
   );

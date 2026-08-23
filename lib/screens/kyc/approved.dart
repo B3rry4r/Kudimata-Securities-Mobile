@@ -114,12 +114,18 @@ class _ApprovedScreenState extends State<ApprovedScreen> {
       // the questionnaire regardless). The questionnaire screen itself is
       // unchanged and still reachable for anyone who wants to complete it
       // voluntarily.
-      return KStatusView(
-        tone: KStatusTone.success,
+      // KMilestoneSheet, not KStatusView — a once-per-investor celebration
+      // moment (2026-08-22 "Soft Landing", screen 25), sun-tinted rather
+      // than the routine pending/error status views below. Same
+      // "Start investing" -> Home behaviour as before (2026-08-20 fix: the
+      // questionnaire is no longer mandatory post-KYC — do not point this
+      // at Routes.questionnaire again).
+      return KMilestoneSheet(
+        illustrationName: 'kyc-approved',
+        eyebrow: 'Verification complete',
         title: "You're verified",
         message: 'Your money is ready to invest.',
-        primary: 'Start investing',
-        onPrimary: () => context.go(Routes.home),
+        primary: KButton(label: 'Start investing', onPressed: () => context.go(Routes.home)),
       );
     }
     if (status == 'pending' || status == 'review') {

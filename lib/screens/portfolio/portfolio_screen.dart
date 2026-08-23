@@ -109,6 +109,9 @@ class _PortfolioBody extends StatelessWidget {
         const SizedBox(height: 12),
         _AllocationCard(allocation: summary.allocation),
 
+        const SizedBox(height: 20),
+        _ConcentrationDigest(allocation: summary.allocation),
+
         const SizedBox(height: 28),
         const KEyebrow('Holdings'),
         const SizedBox(height: 12),
@@ -159,6 +162,35 @@ class _AllocationCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// AI portfolio-concentration narrative (2026-08-22 "Soft Landing" —
+/// components/comprehension/DigestCard.jsx, design-system readme's
+/// comprehension layer). Real numbers from `summary.allocation` — no
+/// generation backend exists yet (see docs/redesign/PLAN.md), so this is a
+/// deterministic sentence built from the two largest slices rather than
+/// an actual LLM call; the copy pattern matches screen-specs.md #38
+/// exactly ("Heavy on two names — X and Y are Z% of what you own...").
+class _ConcentrationDigest extends StatelessWidget {
+  const _ConcentrationDigest({required this.allocation});
+  final List<PortfolioAllocationSlice> allocation;
+
+  @override
+  Widget build(BuildContext context) {
+    if (allocation.isEmpty) return const SizedBox.shrink();
+    final sorted = [...allocation]..sort((a, b) => b.value.compareTo(a.value));
+    final top = sorted.take(2).toList();
+    final combined = top.fold<double>(0, (sum, s) => sum + s.value);
+    final names = top.map((s) => s.label).join(' and ');
+    final body = top.length > 1
+        ? '$names are ${combined.toStringAsFixed(0)}% of what you own — if either falls hard, the whole portfolio feels it.'
+        : '${top.first.label} is ${top.first.value.toStringAsFixed(0)}% of what you own — a single concentrated position.';
+    return KDigestCard(
+      eyebrow: 'Portfolio health',
+      title: top.length > 1 ? 'Heavy on two names' : 'A concentrated portfolio',
+      body: body,
     );
   }
 }

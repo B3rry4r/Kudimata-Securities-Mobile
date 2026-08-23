@@ -44,6 +44,7 @@ import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -234,6 +235,24 @@ class _AssetDetailBody extends StatelessWidget {
                     onDark: true,
                     height: 150,
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // The redesigned product card (2026-08-22 "Soft Landing" —
+              // components/finance/ProductCard.jsx). Deliberately leaves
+              // fee/liquidity/minimum blank (renders "—") rather than
+              // inventing numbers: registry.json's Asset/Quote resources
+              // have no such fields yet — same documented product gap as
+              // _StatGrid below, and the audit itself lists these as
+              // "Missing," not something to fabricate. `risk` uses a
+              // generic default for the same reason.
+              Padding(
+                padding: _gut,
+                child: KProductCard(
+                  name: asset.name,
+                  market: '${asset.ticker} · NGX',
+                  onExplain: () => context.push(Routes.explainThis(asset.ticker)),
                 ),
               ),
               const SizedBox(height: 16),

@@ -39,8 +39,10 @@ class KycTopBar extends StatelessWidget {
   }
 }
 
-/// Segmented step-progress strip — ink for done/current, hairline ahead, plus a
-/// tracked "STEP n OF total" caption. Mirrors StepProgress.
+/// Segmented step-progress strip — indicator (grape) for done/current, track
+/// ahead, plus a tracked "STEP n OF total" caption. 2026-08-22 "Soft
+/// Landing": docs/redesign/screen-specs.md's Flow B header note — "filled
+/// segments = --indicator, unfilled = --track".
 class KycStepProgress extends StatelessWidget {
   const KycStepProgress({super.key, this.total = 4, required this.current});
   final int total;
@@ -64,7 +66,7 @@ class KycStepProgress extends StatelessWidget {
                     curve: KMotion.easeSoft,
                     height: 3,
                     decoration: BoxDecoration(
-                      color: i < current ? KColor.ink : KColor.hairline,
+                      color: i < current ? KColor.indicator : KColor.track,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),

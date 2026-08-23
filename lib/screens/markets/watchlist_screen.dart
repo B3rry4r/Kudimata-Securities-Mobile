@@ -145,6 +145,15 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: _gut,
+          child: KNudgeCard(
+            tone: KNudgeTone.sun,
+            title: 'Price alerts',
+            body: "We'll notify you if a name on this list moves more than 5% in a day. Nothing else — no daily noise.",
+          ),
+        ),
       ],
     );
   }
@@ -154,17 +163,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
       padding: const EdgeInsets.fromLTRB(32, 80, 32, 0),
       child: Column(
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: KColor.paper,
-              shape: BoxShape.circle,
-              border: Border.all(color: KColor.hairline, width: 1),
-            ),
-            child: KIcon('eye', size: 30, color: KColor.ink),
-          ),
+          const KIllustration('empty-watchlist', role: KIlloRole.state),
           const SizedBox(height: 22),
           Text('Nothing saved yet', style: KType.title()),
           const SizedBox(height: 10),

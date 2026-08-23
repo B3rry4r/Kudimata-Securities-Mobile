@@ -73,6 +73,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: _error != null
                       ? [
+                          const KIllustration('error', role: KIlloRole.state),
+                          const SizedBox(height: 22),
                           Text("Couldn't complete your face liveness check",
                               textAlign: TextAlign.center, style: KType.section()),
                           const SizedBox(height: 10),
@@ -81,7 +83,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           KButton(label: 'Try again', onPressed: _verify),
                         ]
                       : [
-                          KSpinner(size: 40, stroke: 2, color: KColor.ink),
+                          const KIllustration('kyc-checking', role: KIlloRole.state),
                           const SizedBox(height: 22),
                           Text('Checking your face liveness…',
                               textAlign: TextAlign.center, style: KType.section()),

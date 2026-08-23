@@ -87,6 +87,14 @@ class UserRepository {
     await _client.patch('/users/me', data: body);
   }
 
+  /// POST /users/me/freeze — self-service account freeze (2026-08-22 "Soft
+  /// Landing" redesign, audit P0). No request body; the backend blocks new
+  /// orders/withdrawals and revokes every session immediately. Lifting a
+  /// freeze stays a staff action — there is no self-service unfreeze.
+  Future<void> freeze() async {
+    await _client.post('/users/me/freeze', data: {});
+  }
+
   static const _months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',

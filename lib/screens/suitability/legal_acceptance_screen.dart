@@ -160,6 +160,15 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // 2026-08-22 "Soft Landing" — screen-specs.md
+                              // screen 05: grape-toned (not warm) NudgeCard
+                              // for the "you can lose money" risk warning.
+                              const KNudgeCard(
+                                tone: KNudgeTone.grape,
+                                body:
+                                    "Share prices fall as well as rise. Only invest money you won't need for the next few years.",
+                              ),
+                              const SizedBox(height: 14),
                               if (_error != null) ...[
                                 Text(_error!, style: KType.body(color: KColor.loss)),
                                 const SizedBox(height: 12),

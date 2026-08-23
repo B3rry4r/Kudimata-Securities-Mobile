@@ -189,6 +189,15 @@ class _SearchScreenState extends State<SearchScreen> {
             const Padding(padding: _gut, child: KEyebrow('Trending')),
             const SizedBox(height: 8),
             trendingBlock,
+            const SizedBox(height: 24),
+            Padding(
+              padding: _gut,
+              child: KNudgeCard(
+                tone: KNudgeTone.grape,
+                title: 'Not sure what to search for?',
+                body: "Try a sector — banking, telecoms, cement — and we'll show the NGX-listed companies in it.",
+              ),
+            ),
           ],
         );
       },

@@ -85,6 +85,17 @@ class _OrderList extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        // Static explainer nudge (2026-08-22 "Soft Landing" —
+        // screen-specs.md #44). No "Cancel order" action added here: there
+        // is no OrdersRepository cancel endpoint to wire it to yet.
+        const KNudgeCard(
+          title: 'Why is my order still filling?',
+          body:
+              'A market order fills in pieces when a company trades thinly. '
+              "You'll get a notification the moment it completes.",
+          tone: KNudgeTone.grape,
+        ),
       ],
     );
   }
@@ -133,29 +144,21 @@ class _OrderRow extends StatelessWidget {
   }
 }
 
-/// Status pill mapped from TxnStatus.
+/// Status pill mapped from TxnStatus (2026-08-22 "Soft Landing" —
+/// screen-specs.md #44 calls for the shared StatusPill vocabulary, not a
+/// bespoke badge).
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
   final TxnStatus status;
 
   @override
   Widget build(BuildContext context) {
-    final (String label, KBadgeTone tone, String icon) = switch (status) {
-      TxnStatus.completed => ('Filled', KBadgeTone.gain, 'check'),
-      TxnStatus.pending => ('Pending', KBadgeTone.indicator, 'transfer'),
-      TxnStatus.failed => ('Failed', KBadgeTone.loss, 'close'),
+    final (KStatus status_, String label) = switch (status) {
+      TxnStatus.completed => (KStatus.approved, 'Filled'),
+      TxnStatus.pending => (KStatus.review, 'Filling'),
+      TxnStatus.failed => (KStatus.rejected, 'Cancelled'),
     };
-    final color = switch (tone) {
-      KBadgeTone.gain => KColor.gain,
-      KBadgeTone.loss => KColor.loss,
-      KBadgeTone.indicator => KColor.indicator,
-      KBadgeTone.neutral => KColor.ink2,
-    };
-    return KBadge(
-      label: label,
-      tone: tone,
-      icon: KIcon(icon, size: 12, color: color),
-    );
+    return KStatusPill(status: status_, label: label, small: true);
   }
 }
 

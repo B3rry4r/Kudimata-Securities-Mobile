@@ -127,6 +127,17 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                   ),
               ],
             ),
+          const SizedBox(height: 24),
+          KNudgeCard(
+            tone: KNudgeTone.warm,
+            title: 'Report fraud',
+            body: 'If you think someone else is in your account, freeze it first — then call $_kSupportPhone.',
+            action: KButton(
+              label: 'Freeze my account',
+              variant: KButtonVariant.destructive,
+              onPressed: () => context.push(Routes.acctFreeze),
+            ),
+          ),
         ],
       ),
     );

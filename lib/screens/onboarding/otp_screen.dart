@@ -177,6 +177,8 @@ class _OtpScreenState extends State<OtpScreen> {
               child: KOnboardBody(
                 paddingTop: 8,
                 children: [
+                  const KIllustration('email-sent', role: KIlloRole.banner),
+                  const SizedBox(height: 20),
                   KScreenHead(
                     title: "Verify it's you",
                     body: 'We sent a 6-digit code to ${email ?? 'your email'}',
