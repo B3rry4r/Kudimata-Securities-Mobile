@@ -206,6 +206,38 @@ class KSuccessView extends StatelessWidget {
   }
 }
 
+// ── KEY/VALUE ROW ────────────────────────────────────────────────────────--
+/// A plain "label … value" metadata row (tabular-nums value, right-aligned)
+/// — the small data-summary cards on state screens (89 "Dormant account",
+/// 90 "Close your account", 92 "Locked out") use this, distinct from
+/// `KAccountRow`'s tappable icon+title+chevron pattern. `first` drops the
+/// top hairline, same convention as `KAccountRow.first`.
+class KKeyValueRow extends StatelessWidget {
+  const KKeyValueRow({super.key, required this.label, required this.value, this.first = false});
+  final String label;
+  final String value;
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 11),
+      decoration: BoxDecoration(
+        border: Border(
+          top: first ? BorderSide.none : BorderSide(color: KColor.hairline, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: KType.data(color: KColor.ink2))),
+          const SizedBox(width: 12),
+          Text(value, style: KType.data(color: KColor.ink).tnum),
+        ],
+      ),
+    );
+  }
+}
+
 // ── LOADING ─────────────────────────────────────────────────────────────--
 /// A simple centred spinner for inline/section loading.
 class KLoadingView extends StatelessWidget {

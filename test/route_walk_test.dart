@@ -65,6 +65,16 @@ void main() {
       // /security-alert (found only via test/shots.dart's visual check).
       '/welcome', '/account/security/freeze', '/security-alert',
       '/account/plans', '/explain/MTNN',
+      // 2026-08-23 canvas-expansion additions (screens 76-97). Routes needing
+      // an `extra` (acctStatementDetail, acctComplaintTracked) are skipped
+      // here, same as the pre-existing acctWithdrawMandate/contractNote.
+      '/account/tax', '/watchlist/alerts',
+      '/corporate-actions', '/corporate-actions/rights-issue',
+      '/corporate-actions/agm', '/corporate-actions/dividends',
+      '/account/help/complaint',
+      '/account/dormant', '/account/close', '/account/data-privacy', '/locked-out',
+      '/account/legal/partner-disclosures', '/account/legal/referral-terms',
+      '/account/legal/data-notice', '/account/legal/closure-terms',
     ];
 
     // Let a page transition fully settle so we test one route at a time (the

@@ -1,0 +1,14 @@
+/* Softer than the editorial system it replaces — every corner is rounder,
+   because roundness is most of what separates calm from strict. */
+:root{
+  --r-button:14px;
+  --r-input:14px;
+  --r-card:20px;
+  --r-feature:24px;
+  --r-sheet:28px;
+  --r-pill:999px;
+  --r-segment:10px;
+  --r-table:18px;
+  --r-chip:10px;
+  --r-illo:18px;   /* the tinted plate an illustration sits on */
+}

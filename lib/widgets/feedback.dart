@@ -166,6 +166,7 @@ class KStatusView extends StatelessWidget {
     this.onPrimary,
     this.secondary,
     this.onSecondary,
+    this.extra,
   });
 
   final KStatusTone tone;
@@ -176,6 +177,13 @@ class KStatusView extends StatelessWidget {
   final VoidCallback? onPrimary;
   final String? secondary;
   final VoidCallback? onSecondary;
+
+  /// Optional content rendered between [message] and the button(s) — e.g. a
+  /// small data-summary card (screens 89 "Dormant account" / 92 "Locked
+  /// out" both show a two-row card here). Nullable/additive so every
+  /// existing call site (KYC outcomes, order status, wallet flows, ...) is
+  /// unaffected.
+  final Widget? extra;
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +214,10 @@ class KStatusView extends StatelessWidget {
             child: Text(message!,
                 textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),
           ),
+        ],
+        if (extra != null) ...[
+          const SizedBox(height: 20),
+          SizedBox(width: double.infinity, child: extra!),
         ],
         if (primary != null || secondary != null) ...[
           const SizedBox(height: 24),

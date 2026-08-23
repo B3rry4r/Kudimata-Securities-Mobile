@@ -1,0 +1,12 @@
+/* One easing for everything functional, one gentler curve for the moments that
+   are meant to feel like a gift. Nothing bounces; nothing springs. */
+:root{
+  --dur-fast:120ms; /* @kind other */
+  --dur-base:220ms; /* @kind other */
+  --dur-slow:360ms; /* @kind other */
+  --dur-settle:640ms; /* @kind other */  /* milestone reveal, comprehension panel */
+  --ease-soft:cubic-bezier(.32,.72,0,1); /* @kind other */
+  --ease-settle:cubic-bezier(.22,.68,.24,1); /* @kind other */
+  --press-scale:.98; /* @kind other */
+  --press-scale-icon:.96; /* @kind other */
+}

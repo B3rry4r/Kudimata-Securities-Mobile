@@ -23,6 +23,22 @@
 // here — the button now tells the investor honestly that downloads
 // aren't ready yet, instead of silently launching a link that just shows
 // a raw S3 error in their browser.
+// PER-BROKER STATEMENT DETAIL (2026-08-23, design-canvas growth pass, screen
+// 76): monthly-statement rows push StatementDetailScreen via the named
+// Routes.acctStatementDetail route (wired centrally once all screen-cluster
+// agents finished their file-disjoint passes), the same way a contract-note
+// row already pushes ContractNoteScreen via Routes.contractNote.
+//
+// TAX DOCUMENTS ENTRY POINT (same pass, screen 85): the design canvas's
+// screen 52 footer describes reaching Tax documents from a "tax" tab on
+// this screen (alongside statements/contract notes) or from the Dividends
+// screen (84, owned by another agent's cluster this pass). Rebuilding this
+// screen's two stacked sections into a three-way tab/segmented-control
+// layout is a bigger structural change than this pass's two-screen scope
+// (76, 85) covers, so instead this adds one more small section — same
+// eyebrow + card-row shape as the sections above — as an honest, working
+// entry point today; it can be folded into a real tab control later without
+// changing TaxDocumentsScreen itself.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -103,7 +119,10 @@ class _StatementsScreenState extends State<StatementsScreen> {
             statements: statements,
             notes: notes,
             onDownload: _download,
+            onOpenStatement: (statement) =>
+                context.push(Routes.acctStatementDetail, extra: statement),
             onOpenNote: (statement) => context.push(Routes.contractNote, extra: statement),
+            onOpenTax: () => context.push(Routes.acctTax),
           );
         },
       ),
@@ -116,13 +135,17 @@ class _StatementsBody extends StatelessWidget {
     required this.statements,
     required this.notes,
     required this.onDownload,
+    required this.onOpenStatement,
     required this.onOpenNote,
+    required this.onOpenTax,
   });
 
   final List<Statement> statements;
   final List<Statement> notes;
   final void Function(Statement statement) onDownload;
+  final void Function(Statement statement) onOpenStatement;
   final void Function(Statement statement) onOpenNote;
+  final VoidCallback onOpenTax;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +154,14 @@ class _StatementsBody extends StatelessWidget {
       children: [
         const KEyebrow('Monthly statements'),
         const SizedBox(height: 10),
-        _Section(items: statements, emptyLabel: 'No statements yet.', onDownload: onDownload),
+        // Rows here open the per-broker statement detail (screen 76) on tap
+        // — mirrors the contract-notes row -> screen 66 wiring just below.
+        _Section(
+          items: statements,
+          emptyLabel: 'No statements yet.',
+          onDownload: onDownload,
+          onOpen: onOpenStatement,
+        ),
         const SizedBox(height: 24),
         const KEyebrow('Contract notes'),
         const SizedBox(height: 10),
@@ -144,6 +174,21 @@ class _StatementsBody extends StatelessWidget {
           emptyLabel: 'No contract notes yet.',
           onDownload: onDownload,
           onOpen: onOpenNote,
+        ),
+        const SizedBox(height: 24),
+        const KEyebrow('Tax'),
+        const SizedBox(height: 10),
+        KAccountCard(
+          children: [
+            KAccountRow(
+              icon: 'card',
+              title: 'Tax documents',
+              sub: 'Dividends & withholding tax',
+              right: const KRowChevron(),
+              first: true,
+              onTap: onOpenTax,
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         const KNudgeCard(

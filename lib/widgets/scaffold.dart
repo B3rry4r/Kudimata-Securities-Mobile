@@ -47,9 +47,15 @@ class KScreenHead extends StatelessWidget {
 /// status-bar height is included in both [preferredSize] and the top padding, so
 /// the bar always sits below the notch on every device.
 class KDetailHeader extends StatelessWidget implements PreferredSizeWidget {
-  const KDetailHeader({super.key, required this.title, this.onBack});
+  const KDetailHeader({super.key, required this.title, this.onBack, this.trailing});
   final String title;
   final VoidCallback? onBack;
+
+  /// Optional trailing content after the title (e.g. a `KStatusPill` — spec
+  /// screen 80's "Sell MTNN · 60" header carries a "Part-filled" pill). Added
+  /// as a prop rather than a second bespoke header widget, per this app's
+  /// "extend, don't fork a shared component" convention.
+  final Widget? trailing;
 
   static const double _bar = 52;
 
@@ -87,7 +93,8 @@ class KDetailHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Text(title, style: KType.section()),
+              Expanded(child: Text(title, style: KType.section())),
+              ?trailing,
             ],
           ),
         ),

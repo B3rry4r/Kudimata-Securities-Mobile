@@ -152,6 +152,14 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             tone: KNudgeTone.sun,
             title: 'Price alerts',
             body: "We'll notify you if a name on this list moves more than 5% in a day. Nothing else — no daily noise.",
+            // Screen 86 (s86.html) — per-asset alert thresholds, UI-complete
+            // preview (see price_alerts_screen.dart's header for the real
+            // backend gap).
+            action: KButton(
+              label: 'Manage price alerts',
+              variant: KButtonVariant.secondary,
+              onPressed: () => context.push(Routes.priceAlerts),
+            ),
           ),
         ),
         const SizedBox(height: 16),

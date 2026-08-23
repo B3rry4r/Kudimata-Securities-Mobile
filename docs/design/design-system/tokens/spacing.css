@@ -1,0 +1,17 @@
+/* 8-pt grid with 4 as the half step. */
+:root{
+  --s-4:4px;--s-8:8px;--s-12:12px;--s-16:16px;--s-20:20px;--s-24:24px;--s-32:32px;--s-40:40px;
+  --gap-group:12px;   /* inside a group */
+  --gap-row:16px;     /* between rows */
+  --gap-section:32px; /* between sections */
+  --gutter:20px;      /* mobile screen gutter */
+
+  /* dashboard additions — desktop chrome + dense table metrics */
+  --gutter-desktop:32px;
+  --sidenav-w:236px;
+  --topbar-h:60px;
+  --row-h:52px;        /* table row */
+  --row-h-dense:44px;
+  --cell-pad-x:16px;
+  --content-max:1440px;
+}

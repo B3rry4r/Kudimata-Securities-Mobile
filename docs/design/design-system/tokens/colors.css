@@ -1,0 +1,70 @@
+/* Soft Landing. Warm paper, plum ink, grape accent, and two warm accents that
+   carry positive feeling without borrowing the gain/loss semantics. */
+:root{
+  /* surfaces */
+  --paper:#FFFFFF;          /* cards, rows, sheets */
+  --bg:#FFFDF9;             /* app / page background — warm, never grey */
+  --track:#EFE9DE;          /* recessed control track */
+  --feature:#6524A8;        /* the one rich surface per view — grape, never near-black */
+  --feature-2:#7B3BBE;      /* its lifted inner surface */
+  --feature-ink:#FFFFFF;
+  --feature-ink-2:rgba(255,255,255,.72);
+
+  /* ink */
+  --ink:#20201E;            /* primary text */
+  --ink-2:#5C564E;          /* secondary text, body copy */
+  --ink-3:#726B62;          /* tertiary text, labels, placeholders — 4.9:1 on paper */
+  --hairline:#EBE6DD;       /* every rule, divider, card edge */
+
+  /* primary accent */
+  --indicator:#6524A8;
+  --indicator-press:#4A1A80;
+  --indicator-tint:#F0E7FA;
+  --indicator-soft:#A16BE0;  /* illustration + chart weight of the same hue */
+
+  /* warm accents — celebration, nudges, personal moments.
+     Never used for gain/loss, never used for errors. */
+  --warm:#F07A45;
+  --warm-press:#A63C13;   /* 5.5:1 on --warm-tint; #C2481A was 4.3:1 and failed AA */
+  --warm-tint:#FDEDE3;
+  --sun:#F5C542;
+  --sun-press:#C9973F;
+  --sun-tint:#FDF4DC;
+
+  /* movement / semantic */
+  --gain:#2AA36B;
+  --loss:#D0503F;
+  --gain-on-feature:#9DEBC4;   /* on the grape panel only */
+  --loss-on-feature:#FFB3A8;
+  --gain-on-ink:var(--gain-on-feature);
+  --loss-on-ink:var(--loss-on-feature);
+
+  /* grape ramp — allocation donuts only */
+  --ramp-1:#6524A8;--ramp-2:#8B4FC4;--ramp-3:#A16BE0;--ramp-4:#C9A6EC;--ramp-5:#EDE0FA;
+
+  /* semantic aliases */
+  --surface-page:var(--bg);
+  --surface-card:var(--paper);
+  --surface-feature:var(--feature);
+  --text-primary:var(--ink);
+  --text-secondary:var(--ink-2);
+  --text-tertiary:var(--ink-3);
+  --border-default:var(--hairline);
+  --border-focus:var(--indicator);
+  --border-error:var(--loss);
+  --action-primary:var(--indicator);
+  --action-primary-press:var(--indicator-press);
+  --action-primary-tint:var(--indicator-tint);
+
+  /* status — workflow states keep the movement logic */
+  --status-approved:var(--gain);
+  --status-approved-tint:rgba(42,163,107,.12);
+  --status-rejected:var(--loss);
+  --status-rejected-tint:rgba(208,80,63,.12);
+  --status-pending:var(--ink-2);
+  --status-pending-tint:var(--track);
+  --status-review:var(--indicator);
+  --status-review-tint:var(--indicator-tint);
+
+  --scrim:rgba(43,26,61,.36);
+}

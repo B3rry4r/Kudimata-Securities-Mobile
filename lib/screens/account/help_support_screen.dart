@@ -87,12 +87,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     );
   }
 
+  // Screen 87 (2026-08-23 canvas exactness pass) — a real complaint form now
+  // exists (complaint_screen.dart) so this no longer bounces straight out to
+  // a bare mailto: link.
   void _fileComplaint() {
-    _launch(Uri(
-      scheme: 'mailto',
-      path: _kSupportEmail,
-      query: 'subject=${Uri.encodeComponent('Complaint')}',
-    ));
+    context.push(Routes.acctComplaint);
   }
 
   @override

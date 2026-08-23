@@ -84,10 +84,16 @@ Future<void> showAddMoneyFlow(BuildContext context) async {
 }
 
 /// Withdraw: amount + destination bank → review → success. Same gate as
-/// [showAddMoneyFlow].
+/// [showAddMoneyFlow]. Outside roughly 09:00-21:00 on a weekday, spec screen
+/// 63's "outside hours" variant shows instead — see [_isOutsideWithdrawHours]
+/// and [_OutsideHoursWithdrawSheet].
 Future<void> showWithdrawFlow(BuildContext context) async {
   if (!await _ensureEligibleToTransact(context)) return;
   if (!context.mounted) return;
+  if (_isOutsideWithdrawHours()) {
+    await showKSheet<void>(context, child: const _OutsideHoursWithdrawSheet());
+    return;
+  }
   await showKSheet<void>(
     context,
     title: 'Withdraw',
@@ -886,5 +892,225 @@ class _WithdrawReviewState extends State<_WithdrawReview> {
       setState(() => _busy = false);
       _showErrorSheet(context, title: 'Withdrawal failed', message: e.message);
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WITHDRAW — outside-hours variant (spec screen 63, 2026-08-23 "Soft
+// Landing" exactness pass — Flow G was entirely unbuilt until now).
+//
+// REAL BACKEND GAP, flagged rather than faked: WalletRepository.withdraw()
+// (POST /transactions/withdraw) has no queuing/scheduling concept — this
+// file's own header already documents "Withdraw is UNCHANGED — withdrawals
+// still go server-to-bank directly via v3", i.e. no off-hours-vs-daytime
+// branching exists server-side. So this sheet does NOT claim spec 63's
+// literal "Sent to your bank · Tomorrow from 09:00" — that promises a
+// specific processing time nothing server-side actually commits to. It
+// keeps the honest "Within 1 business day" wording the normal withdraw
+// review already uses (_WithdrawReview above), and "Queue it for 09:00"
+// submits the SAME real withdraw() call right away — a transfer initiated
+// at night genuinely does land the next business day anyway, so the framing
+// is honest; only the literal "09:00" clock promise is dropped. Fee is
+// genuinely ₦0.00, same established fact as the normal withdraw flow (no
+// fee concept exists anywhere in this backend's Transaction model) — spec
+// 63's "₦50.00" is mock example data, not a real rate.
+//
+// Trigger: outside a rough 09:00-21:00 weekday window, client-clock only —
+// same class of heuristic as market_hours.dart's isNgxOpenNow(), not
+// authoritative bank-processing-window data (no such field exists in this
+// API). Spec 63's footer third trigger, "...or with unsettled cash", is
+// shown as CONTEXT inside the sheet (the settling-amount line, whenever
+// [WalletRepository.balanceDetail]'s `pending` is non-null) rather than a
+// second independent trigger — modelling "does THIS entered amount touch
+// unsettled cash" before the amount is even typed would itself be a
+// fabricated distinction.
+//
+// No destination-bank row here, matching s63.html exactly (unlike s42's
+// _WithdrawSheet above, this sheet's markup never shows one) — it resolves
+// to the same primary/first saved account [_WithdrawSheet] does, silently,
+// same documented picker-UI gap as this file's header.
+//
+// "Queue -> 43 Transaction" (spec footer): on success this pushes straight
+// to the real transaction-detail screen instead of a generic success sheet,
+// matching that nav note.
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool _isOutsideWithdrawHours() {
+  final now = DateTime.now();
+  if (now.weekday == DateTime.saturday || now.weekday == DateTime.sunday) return true;
+  final minutes = now.hour * 60 + now.minute;
+  return minutes < 9 * 60 || minutes >= 21 * 60;
+}
+
+typedef _OutsideHoursInit = ({String available, String? pending, BankAccountSummary? account});
+
+class _OutsideHoursWithdrawSheet extends StatefulWidget {
+  const _OutsideHoursWithdrawSheet();
+  @override
+  State<_OutsideHoursWithdrawSheet> createState() => _OutsideHoursWithdrawSheetState();
+}
+
+class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> {
+  late final TextEditingController _amount = TextEditingController(text: '20,000');
+  late final _repo = WalletRepository(AppScope.read(context).apiClient);
+  late Future<_OutsideHoursInit> _init = _load();
+  bool _busy = false;
+  String? _error;
+
+  Future<_OutsideHoursInit> _load() async {
+    final (detail, accounts) = await (_repo.balanceDetail(), _repo.bankAccounts()).wait;
+    BankAccountSummary? account;
+    for (final a in accounts) {
+      if (a.primary) {
+        account = a;
+        break;
+      }
+    }
+    account ??= accounts.isEmpty ? null : accounts.first;
+    return (available: detail.available, pending: detail.pending, account: account);
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    super.dispose();
+  }
+
+  String get _requestedAtLabel {
+    final now = DateTime.now();
+    final hh = now.hour.toString().padLeft(2, '0');
+    final mm = now.minute.toString().padLeft(2, '0');
+    return 'Today · $hh:$mm';
+  }
+
+  Future<void> _confirm(BankAccountSummary account) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final txn = await _repo.withdraw(
+        amountKobo: _parseAmountKobo(_amount.text),
+        bankAccountId: account.id,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      context.push(Routes.transactionDetail(txn.id));
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_OutsideHoursInit>(
+      future: _init,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: KLoadingView(),
+          );
+        }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: KErrorView(onPrimary: () => setState(() => _init = _load())),
+          );
+        }
+        final data = snapshot.data!;
+        final account = data.account;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // s63.html: "Withdraw" + the "Queued for morning" pill share one
+            // row — the sheet is opened untitled and this row built
+            // explicitly, same pattern as trade_flows.dart's market-closed
+            // buy sheet.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Withdraw', style: KType.section()),
+                const KStatusPill(status: KStatus.pending, label: 'Queued for morning', small: true),
+              ],
+            ),
+            const SizedBox(height: 14),
+            KInput(
+              label: 'Amount',
+              controller: _amount,
+              numeric: true,
+              amount: true,
+              prefix: '₦',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => setState(() {}),
+              helper: data.pending != null
+                  ? '${data.available} available · ${data.pending} of it still settling'
+                  : '${data.available} available',
+            ),
+            const SizedBox(height: 14),
+            Container(
+              decoration: BoxDecoration(
+                color: KColor.bg,
+                border: Border.all(color: KColor.hairline, width: 1),
+                borderRadius: KRadii.cardR,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _SummaryRow(label: 'Requested', value: _requestedAtLabel),
+                  // Honest wording — see this section's header comment for
+                  // why this isn't spec 63's literal "Tomorrow from 09:00".
+                  _SummaryRow(label: 'Sent to your bank', value: 'Within 1 business day'),
+                  _SummaryRow(label: 'Fee', value: '₦0.00'),
+                  _SummaryRow(label: 'You receive', value: '₦${_amount.text}'),
+                ],
+              ),
+            ),
+            if (data.pending != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(color: KColor.sunTint, borderRadius: KRadii.cardR),
+                child: Text(
+                  "${data.pending} of your balance is still settling and can't be withdrawn "
+                  'until it clears — usually T+3 after a sale.',
+                  style: KType.data(color: KColor.ink2),
+                ),
+              ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(_error!, style: KType.body(color: KColor.loss)),
+            ],
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: KButton(
+                    label: 'Cancel',
+                    variant: KButtonVariant.ghost,
+                    onPressed: _busy ? null : () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: KButton(
+                    label: 'Queue it for 09:00',
+                    loading: _busy,
+                    onPressed: account == null || _busy ? null : () => _confirm(account),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
   }
 }

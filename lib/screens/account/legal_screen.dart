@@ -18,9 +18,11 @@
 // pushes an in-app read-only viewer instead of ever touching S3 at all —
 // one process for legal content everywhere in the app, not two.
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -66,7 +68,53 @@ class _LegalScreenState extends State<LegalScreen> {
               message: 'Legal documents will show here once published.',
             );
           }
-          return _LegalList(docs: docs, onTap: _open);
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _LegalList(docs: docs, onTap: _open),
+                const SizedBox(height: 24),
+                // Screens 94-97 (2026-08-23 canvas expansion) — per the
+                // canvas's own note ("Flow L · one viewer pattern · each one
+                // opens where it applies, and lives in Account → Legal"),
+                // these are reference screens, not backend-fetched
+                // LegalDocument rows like the list above, so they're a
+                // separate static section rather than faking backend
+                // entries for documents that don't (all) exist yet.
+                const KEyebrow('More'),
+                const SizedBox(height: 10),
+                KAccountCard(
+                  children: [
+                    KAccountRow(
+                      icon: 'card',
+                      title: 'Partner disclosures',
+                      right: const KRowChevron(),
+                      first: true,
+                      onTap: () => context.push(Routes.acctLegalPartnerDisclosures),
+                    ),
+                    KAccountRow(
+                      icon: 'send',
+                      title: 'Referral terms',
+                      right: const KRowChevron(),
+                      onTap: () => context.push(Routes.acctLegalReferralTerms),
+                    ),
+                    KAccountRow(
+                      icon: 'shieldCheck',
+                      title: 'Data notice · NDPA',
+                      right: const KRowChevron(),
+                      onTap: () => context.push(Routes.acctLegalDataNotice),
+                    ),
+                    KAccountRow(
+                      icon: 'close',
+                      title: 'Account closure terms',
+                      right: const KRowChevron(),
+                      onTap: () => context.push(Routes.acctLegalClosureTerms),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
         },
       ),
     );

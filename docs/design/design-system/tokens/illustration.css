@@ -1,0 +1,42 @@
+/* The illustration system. Scenes come from Semcore (MIT), recoloured to these
+   seven values; characters are generated per user id in the Adventurer style
+   (CC BY 4.0 — one credit line in About). Files live in assets/illustrations/.
+
+   Rules: one illustration per view, never inside data, never behind a figure,
+   never as texture. Scenes always sit on a tinted plate, never on bare paper. */
+:root{
+  /* the seven colours every scene is reduced to */
+  --illo-line:#2B1A3D;
+  --illo-grey:#7C6C86;
+  --illo-tint:#E9E0F2;
+  --illo-grape:#A16BE0;
+  --illo-sun:#F5C542;
+  --illo-coral:#F07A45;
+  --illo-gain:#6FD3A4;
+
+  /* plates an illustration is placed on */
+  --illo-plate:var(--indicator-tint);      /* default — most states */
+  --illo-plate-warm:var(--warm-tint);      /* nudges, personal moments */
+  --illo-plate-sun:var(--sun-tint);        /* milestones */
+
+  /* drawn size per role — the drawing, not the plate */
+  --illo-hero:200px;      /* onboarding slide, Explain this opening */
+  --illo-state:160px;     /* empty, waiting, outcome states */
+  --illo-small:120px;     /* statements, inline cards */
+  --illo-banner:140px;    /* email header */
+  --illo-plate-pad:28px;  /* breathing room inside the plate */
+
+  /* character sizes */
+  --avatar-xs:28px;   /* AI mark inline with copy */
+  --avatar-sm:40px;   /* nudge card, list rows */
+  --avatar-md:56px;   /* Explain panel */
+  --avatar-lg:88px;   /* profile, milestone */
+}
+.k-illo{display:flex;align-items:center;justify-content:center;background:var(--illo-plate);border-radius:var(--r-illo);padding:var(--illo-plate-pad)}
+/* Source files have mixed intrinsic sizes, so the height is resolved by role —
+   max-height alone would let a small viewBox decide how big the drawing looks. */
+.k-illo>img,.k-illo>svg{display:block;width:100%;height:var(--illo-state);object-fit:contain}
+.k-illo--hero>img,.k-illo--hero>svg{height:var(--illo-hero)}
+.k-illo--small>img,.k-illo--small>svg{height:var(--illo-small)}
+.k-illo--banner>img,.k-illo--banner>svg{height:var(--illo-banner)}
+.k-avatar{border-radius:var(--r-pill);flex:none;display:block}

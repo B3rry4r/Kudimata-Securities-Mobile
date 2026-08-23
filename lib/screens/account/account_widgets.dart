@@ -42,6 +42,7 @@ class KAccountRow extends StatelessWidget {
     this.first = false,
     this.onTap,
     this.crossAlign = CrossAxisAlignment.center,
+    this.titleColor,
   });
 
   final String? icon;
@@ -51,6 +52,11 @@ class KAccountRow extends StatelessWidget {
   final bool first;
   final VoidCallback? onTap;
   final CrossAxisAlignment crossAlign;
+
+  /// Overrides the title's ink colour — e.g. `KColor.loss` for a
+  /// destructive row (screen 91's "Close my account and delete what you
+  /// can"). Null keeps the existing default (ink).
+  final Color? titleColor;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +81,7 @@ class KAccountRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: KType.cardTitle(w: KWeight.medium)),
+                Text(title, style: KType.cardTitle(color: titleColor, w: KWeight.medium)),
                 if (sub != null) ...[
                   const SizedBox(height: 2),
                   Text(sub!,
@@ -123,15 +129,21 @@ class KAccountCard extends StatelessWidget {
 /// Pushed-screen scaffold: KDetailHeader + scrollable body with 20px gutters.
 /// (Root tab supplies its own Scaffold without a bottom nav — the shell adds it.)
 class KAccountSubScaffold extends StatelessWidget {
-  const KAccountSubScaffold({super.key, required this.title, required this.child});
+  const KAccountSubScaffold({super.key, required this.title, required this.child, this.headerTrailing});
   final String title;
   final Widget child;
+
+  /// Passed straight through to [KDetailHeader.trailing] — e.g. the
+  /// complaint-tracked screen's reference/status pill next to the title
+  /// (screen 88). Added as a prop rather than a bespoke scaffold, per this
+  /// app's "extend, don't fork a shared component" convention.
+  final Widget? headerTrailing;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KColor.bg,
-      appBar: KDetailHeader(title: title),
+      appBar: KDetailHeader(title: title, trailing: headerTrailing),
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(

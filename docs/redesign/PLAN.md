@@ -1,113 +1,123 @@
 # "Soft Landing" redesign — tracking
 
-Branch: `redesign/soft-landing`. Source: Kudimata Design System (Claude Design
-project `b88dc96c-642d-4cb1-af7e-06764002af55`) + the "App redesign: Design
-system flows" canvas mockup (project `a30e5872-cfee-4fa8-8882-d4d76f36d173`,
-file `Kudimata Invest App.dc.html`) + `Kudimata_Full_Audit (1).docx` (2026-08-22
+Source: Kudimata Design System (Claude Design project
+`b88dc96c-642d-4cb1-af7e-06764002af55`) + the "App redesign: Design system
+flows" canvas (project `a30e5872-cfee-4fa8-8882-d4d76f36d173`, file
+`Kudimata Invest App.dc.html`) + `Kudimata_Full_Audit (1).docx` (2026-08-22
 product/design audit that called for this direction change).
 
-Per-screen specs extracted from the canvas mockup: **`docs/redesign/screen-specs.md`**
-(66 mobile screens across flows A–G, plus 7 email templates out of scope for
-this repo). Read that file before touching any screen — it has exact copy,
-layout order, components used, and which illustration/plate each screen uses.
+**The canvas is the source of truth, not a hand-transcribed spec doc.** The
+previous version of this tracking doc pointed at a `screen-specs.md` that
+manually transcribed all 66 screens — it silently went stale the moment the
+canvas grew to 97 screens, and nobody updated it. Rather than repeat that
+failure mode, the canvas file itself is now committed straight into the repo:
+**`docs/design/kudimata-invest-app.dc.html`** (open it in a browser — it's a
+static self-contained page, screens are `<div id="sNN">` blocks in order) and
+**`docs/design/design-system/`** (tokens, styles, readme — the Flutter port
+lives in `lib/theme/tokens.dart` / `lib/widgets/`). Read the actual screen
+markup before touching any screen; don't trust a paraphrase of it, including
+the one in this file.
 
-## Status
+## Status (2026-08-23, canvas-expansion pass)
+
+The canvas grew from 66 to **97 screens** sometime after the original
+"Soft Landing" pass was merged (commit `63c9492`) and audited (commit
+`9285800` and later fixes). 10 of the 97 are email templates (screens
+67-75, 93) — out of scope for this Flutter app. That leaves **87 real
+in-app mobile screens**.
 
 ### 1. Foundation — DONE
-- [x] Tokens ported (colors/typography/spacing/radii/elevation/motion/illustration) — `lib/theme/tokens.dart`
-- [x] Nunito + Nunito Sans bundled, Space Grotesk removed — `pubspec.yaml`, `assets/fonts/`
-- [x] Dark mode removed (design system is light-only; see `main.dart` header comment)
-- [x] `KIllustration` / `KAvatar` widgets added — `lib/widgets/illustration.dart`
-- [x] 44 illustration/avatar SVGs imported — `assets/illustrations/`
+Tokens, fonts, illustrations, dark-mode removal. Unchanged since the
+original pass — see git history (`5452a5d`, `ed574c5`) for detail, not
+worth re-stating here.
 
-### 2. Widget layer re-skin — DONE
-All widgets updated/added, ported 1:1 from the design system's `.jsx` source:
-- [x] `KButton` — `warm` and `destructive` variants added (`lib/widgets/buttons.dart`)
-- [x] `KStatusPill` — pending/review/approved/rejected/expired/flagged, matches `STATUS` tint map (`lib/widgets/feedback.dart`)
-- [x] `KNudgeCard` — warm/grape/sun tones, guide avatar, dismissible (`lib/widgets/comprehension.dart`)
-- [x] `KDigestCard` (same file)
-- [x] `KExplainPanel` / `KExplainTrigger` (same file)
-- [x] `KGeneratingText` — thinking/writing/done, respects reduced-motion (same file)
-- [x] `KGlossaryTerm` — dashed underline via `CustomPainter` (same file)
-- [x] `KCreditMeter` / `KCreditGate` / `KPlanCard` (same file)
-- [x] `KLanguageSwitch` (same file)
-- [x] `KMilestoneSheet` / `KOnboardingSlide` — new `lib/widgets/mobile.dart`
-- [x] `KSecurityAlert` / `KFreezeConfirm` — new `lib/widgets/security.dart`
-- [x] `KDocumentSummary` (`lib/widgets/comprehension.dart`)
-- [x] `KAllocationDonut` — uses `KColor.ramp` (`lib/widgets/charts.dart`)
-- [x] `KSheet` grabber/radius verified against spec (`lib/widgets/overlays.dart`)
-- [x] `KProductCard` — net-new, no prior equivalent (`lib/widgets/finance.dart`)
+### 2. Widget layer — DONE, additively extended this pass
+Original widget set unchanged. This pass added, all via new optional props
+on existing widgets rather than forked components (per the house "never
+fork" rule):
+- `KFreezeConfirm.primary`/`.secondary` made nullable — a caller can place
+  its own button row elsewhere in the layout instead of using the built-in
+  one (`lib/widgets/security.dart`; needed once #s65's spec put the buttons
+  below an Input+explainer, not right after the effects list)
+- `KInput.multiline`/`.minLines` — real textarea support (`lib/widgets/inputs.dart`)
+- `KAccountSubScaffold.headerTrailing`, `KAccountRow.titleColor` (`lib/screens/account/account_widgets.dart`)
+- `KStatusView.extra` — optional content slot between message and buttons (`lib/widgets/feedback.dart`)
+- `KDetailHeader.trailing` (`lib/widgets/scaffold.dart`)
+- `KKeyValueRow` — new shared label/value row (`lib/screens/shared/state_views.dart`)
+- A plain `'shield'` icon alongside the existing `'shieldCheck'` (`lib/widgets/k_icon.dart`)
 
-### 3. Screen-by-screen reskin — DONE
-All flows re-skinned against `screen-specs.md`, verified via `flutter analyze`
-(clean) and `flutter test test/route_walk_test.dart test/gate_redirect_test.dart
-test/smoke_test.dart` (all pass — every route renders without exceptions) plus
-a manual visual pass via `test/shots.dart` → `/tmp/shots/*.png`.
-- [x] Flow A — Onboarding (01–12): illustrated welcome slider (new screen,
-  now wired as splash's real first-time destination), sign-up, OTP, terms
-  (NudgeCard), plain-English document summary (new screen), passcode ×2,
-  biometric prompt, personal details, log in, reset password
-- [x] Flow B — KYC (13–26): intro (ExplainPanel-ready chrome), BVN/NIN, ID
-  upload, liveness, utility bill, bank/DCS (grape feature plate), next-of-kin,
-  checking, verified milestone (`KMilestoneSheet`), not-approved
-- [x] Flow C — Suitability (27–28): selected-card treatment, inline
-  ExplainTrigger, sun-plate result screen
-- [x] Flow D — Home/markets/trading (29–37): DigestCard (real holdings data,
-  not canned), grape "get set up" plate, ProductCard + Explain-this screen
-  (new), milestone sheet on order placed
-- [x] Flow E — Portfolio/wallet (38–46): AllocationDonut, DigestCard,
-  feature-plate virtual account number, NudgeCards
-- [x] Flow F — Account/security/support (47–59): self-service freeze screen
-  (new, wired to the real backend), security alert screen (new), plans &
-  credits screen (new, honestly labeled preview)
-- [ ] Flow G — Market hours, mandate and receipts (60–66): markets closed,
-  buy-when-closed queuing, price-moved-at-open, withdraw outside hours, bank
-  accounts & mandate, withdraw DCS mandate, contract note document. **Not
-  started** — lower-priority edge-case screens; existing buy/withdraw flows
-  work, they just don't yet handle "market is closed" as a distinct state.
+### 3. Screens 1-66 — reskinned, exactness-audited, believed current
+Flows A-F (onboarding through account/security/support) were reskinned in
+the original pass and have had multiple follow-up exactness passes (see git
+log for `screen-specs.md` era commits + the 2026-08-23 bank-accounts/
+withdraw-mandate fixes in commit `d68d3ab`). **Not re-verified screen-by-screen
+in this pass** — the audit docx has previously found real gaps in a
+"done" pass before, so treat this as believed-current, not guaranteed.
+Next real audit pass should re-walk 1-66 against the committed canvas file
+the same way this pass built 76-97, screen by screen with a screenshot.
 
-Two real layout regressions the redesign introduced were caught (by
-`route_walk_test.dart`'s overflow check) and fixed: `kyc_intro.dart`'s
-unscrollable Column (52px bottom overflow once the illustration was added —
-now `Expanded`+`SingleChildScrollView`), and `questionnaire_screen.dart`'s
-"Back" button (fixed 100px width was 1.4px too narrow for "Back" set in the
-new Nunito Sans font vs. the old Space Grotesk — bumped to 112px).
+### 4. Screens 60-66 (Flow G — market hours, mandate, receipts) — DONE
+- #60 Markets closed: inline banner state on the Markets tab, not a route
+- #61 Buy · market closed: `_MarketClosedBuySheet` in `trade_flows.dart`,
+  re-verified against spec this pass (title/pill layout, radio-card
+  treatment, real computed next-session date)
+- #62 Price moved at the open: `lib/screens/trade/price_moved_screen.dart`
+- #63 Withdraw · outside hours: `_OutsideHoursWithdrawSheet` in
+  `lib/screens/wallet/wallet_flows.dart` (new this pass)
+- #64 Bank accounts & mandate: `lib/screens/account/bank_accounts_screen.dart`
+- #65 Withdraw the DCS mandate: `lib/screens/account/withdraw_mandate_screen.dart`
+- #66 Contract note: `lib/screens/account/contract_note_screen.dart`
 
-### 4. New features (genuinely new, not a reskin) — DONE except AI content
-- [x] **Self-service account freeze** (screens 50, 51) — real, end-to-end:
-  `POST /users/me/freeze` (Kudimata-Securities-Backend, deployed to the
-  droplet), `UserRepository.freeze()`, `freeze_account_screen.dart` wired
-  from `security_screen.dart`. Blocks orders/withdrawals immediately,
-  revokes every session, audit-logged. Unfreezing stays staff-only
-  (existing `reactivate()` endpoint) — deliberately no self-service unfreeze.
-- [x] **Language switch (English/Pidgin)** — `KLanguageSwitch` shipped on
-  welcome slider, document summary, and Account hub. Cosmetic/local state
-  only — no real translation backend (see item below).
-- [~] **AI comprehension layer** (Explain this investment, DigestCard,
-  GeneratingText, CreditMeter/Gate/Plans, GlossaryTerm, DocumentSummary) —
-  every screen is UI-complete and shipped (`explain_screen.dart`,
-  `plans_screen.dart`, `document_summary_screen.dart`, Home/Portfolio
-  DigestCards), each honestly commented as static/local content pending a
-  real backend. No LLM, no credit metering/billing, no translation service
-  exists — building those is a genuinely separate, much larger project than
-  this redesign pass. Treat every "AI-generated" string in these screens as
-  a placeholder until that backend exists.
-- [ ] **Referral credits, corporate actions, tax documents, data & privacy** — screen 45/55 reference nav ids beyond the 66-screen canvas (unmocked). Lower priority; note as future work.
+### 5. Screens 76-97 (canvas expansion) — DONE, this pass
+Built by 6 parallel, file-disjoint agents, then centrally wired (routes,
+entry points) and verified (`flutter analyze` clean, `flutter test` clean,
+`test/shots_expansion.dart` — no layout errors across all 18 new routes at
+the real 390x880 viewport). Every screen matches its canvas markup;
+every gap where the backend can't support the real action yet is flagged
+honestly in-code (see `BACKEND_GAPS.md`) rather than faked.
 
-### 5. Post-merge verification pass — DONE
-Merged to `main` (commit `63c9492`), then re-verified for real rather than
-trusting the merge summary: `flutter analyze` clean, full test suite green,
-and a fresh `test/shots.dart` visual pass caught one real bug the earlier
-checks missed — `KButton`'s label wasn't wrapped in `Flexible`, so any
-button with a long enough label (found on `/security-alert`'s destructive
-"Freeze my account and sign that device out") rendered as a genuine
-RenderFlex overflow, independent of the button's own width. Fixed at the
-root in `lib/widgets/buttons.dart` (commit `27c0059`) — every button in the
-app benefits, not just that one screen. Re-verified clean after the fix:
-0 analyze issues, 0 render overflows across all 24 screenshotted routes,
-7/7 tests passing.
+| # | Screen | File | Entry point |
+|---|---|---|---|
+| 76 | Statement · per broker | `lib/screens/account/statement_detail_screen.dart` | Statements → row tap |
+| 77-79 | Sell (amount/review/placed) | `lib/screens/trade/trade_flows.dart` (`_runSellFlow` etc.) | Holding detail → Sell |
+| 80 | Order lifecycle · part-fills | `lib/screens/trade/order_fill_progress_screen.dart` | **Not yet wired** — no route, no real fill data to drive it (see below) |
+| 81 | Corporate actions | `lib/screens/corporate_actions/corporate_actions_screen.dart` | **Not yet wired from Portfolio/Holding detail** — canvas doesn't draw an entry affordance on #38/#39 itself; open design decision, see below |
+| 82 | Rights issue | `lib/screens/corporate_actions/rights_issue_screen.dart` | From Corporate actions hub |
+| 83 | AGM · vote your shares | `lib/screens/corporate_actions/agm_vote_screen.dart` | From Corporate actions hub |
+| 84 | Dividends & e-mandate | `lib/screens/corporate_actions/dividends_screen.dart` | From Corporate actions hub |
+| 85 | Tax documents | `lib/screens/account/tax_documents_screen.dart` | Statements → Tax row |
+| 86 | Price alerts | `lib/screens/markets/price_alerts_screen.dart` | Watchlist → "Manage price alerts" |
+| 87 | File a complaint | `lib/screens/account/complaint_screen.dart` | Help & support → File a complaint |
+| 88 | Complaint · tracked | `lib/screens/account/complaint_tracked_screen.dart` | Route registered, **no live entry point** (submission has no backend to return a tracked complaint from yet) |
+| 89 | Dormant account | `lib/screens/account/dormant_account_screen.dart` | Route registered, **not auto-triggered** (no dormancy signal exists — see gaps doc) |
+| 90 | Close your account | `lib/screens/account/close_account_screen.dart` | From Dormant account / Data & privacy |
+| 91 | Data & privacy | `lib/screens/account/data_privacy_screen.dart` | Account hub |
+| 92 | Locked out | `lib/screens/onboarding/locked_out_screen.dart` | Route registered, **not auto-triggered** (no failed-attempt counter exists — see gaps doc) |
+| 94 | Partner disclosures | `lib/screens/account/legal_reference_screens.dart` | Account → Legal |
+| 95 | Referral terms | `lib/screens/account/legal_reference_screens.dart` | Account → Legal |
+| 96 | Data notice · NDPA | `lib/screens/account/legal_reference_screens.dart` | Account → Legal, Data & privacy |
+| 97 | Account closure terms | `lib/screens/account/legal_reference_screens.dart` | Account → Legal, Close account |
 
-## Decisions made along the way
-- **Dark mode removed**, not just hidden — the design system's own readme says dark is an undesigned draft; shipping it with the new illustrations would look broken. See `main.dart`.
-- **"Passport" mockup copy vs current app "International passport" naming**: the mockup (screen 16) predates the app's own recent rename; keep the app's current "International passport" + "Voter's card" strings, don't regress to the mockup's plain "Passport".
-- **"Blue Marina" executing-broker references** (screens 39, 52): the mockup implies a co-branded/introducing-broker model not confirmed in the current data model. Treat as presentational copy only for now — do not invent new backend fields for this without product confirmation.
+### Open design decisions (not code gaps — need a product/design call)
+- **#81 Corporate actions entry point**: the canvas's own footer note says
+  "Entry from 38, 39 or a notification," but neither #38 (Portfolio) nor #39
+  (Holding detail) actually draws an entry affordance in their own markup —
+  and #38 has its own comment insisting on no extra elements beyond exactly
+  what the canvas draws, from a prior exactness audit. Didn't invent a
+  banner rather than risk a second mismatch. Needs a real design call on
+  where/how this surfaces (permanent row? conditional banner only when a
+  decision is pending? notification-only?).
+- **#80 Order fill progress**: fully built (`order_fill_progress_screen.dart`)
+  but takes required real params (fills list, remaining units, callbacks) —
+  nothing constructs it yet because there's no partial-fill data anywhere
+  in the order model. Route it from Order status once that data exists.
+- **Dead code follow-up**: `trade_flows.dart`'s original shared `_AmountSheet`/
+  `_ReviewSheet`/`_showSuccessSheet` still contain `isSell` branches that are
+  now unreachable (only `side: _Side.buy` is ever passed to `_runTradeFlow`
+  since the dedicated sell flow shipped). Left in place deliberately this
+  pass to avoid a risky wide-diff edit under time pressure — real cleanup,
+  not a functional bug. Worth a dedicated pass.
+
+See **`BACKEND_GAPS.md`** for every real backend gap found across both this
+pass and the original redesign — the AI comprehension layer, corporate
+actions, dividends, complaints, dormancy, and more.

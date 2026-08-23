@@ -24,9 +24,13 @@ import 'account_widgets.dart';
 // Statements, Refer & earn, Help & support, Legal. "Notifications" was
 // dropped: it's not a row on this screen in the mockup (reachable from
 // Home's bell icon instead, screen 29) — an extra row this port had added.
-// Corporate actions / Tax documents / Data & privacy are in the mockup but
-// link to screen ids beyond this 66-screen canvas (unmocked, unbuilt) —
-// correctly omitted rather than linking somewhere real for something fake.
+// Corporate actions (screen 81) links from Portfolio/holding detail per the
+// canvas's own footer note (#s81: "Entry from 38, 39 or a notification"),
+// not from this screen — kept off this list on purpose. Tax documents
+// (screen 85) is reachable via Statements & documents (statements_screen.dart),
+// matching the canvas's own nesting. Data & privacy (screen 91) IS a direct
+// row here — its footer note says "From 45 Account" explicitly (2026-08-23,
+// once the canvas grew from 66 to 97 screens and these existed to link to).
 const List<(String icon, String title, String route)> _items = [
   ('profile', 'Personal info', Routes.acctPersonal),
   ('fingerprint', 'Security', Routes.acctSecurity),
@@ -35,6 +39,7 @@ const List<(String icon, String title, String route)> _items = [
   ('send', 'Refer & earn', Routes.acctRefer),
   ('search', 'Help & support', Routes.acctHelp),
   ('card', 'Legal', Routes.acctLegal),
+  ('shieldCheck', 'Data & privacy', Routes.acctDataPrivacy),
 ];
 
 // Plans & credits sits as its own row above the menu group, alongside a

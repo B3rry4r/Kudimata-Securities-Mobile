@@ -84,6 +84,22 @@ import '../screens/account/contract_note_screen.dart';
 import '../data/repositories/bank_accounts_repository.dart' show BankAccountSummary;
 import '../data/repositories/statements_repository.dart' show Statement;
 
+// Screens 76-97 (2026-08-23 canvas expansion).
+import '../screens/account/statement_detail_screen.dart';
+import '../screens/account/tax_documents_screen.dart';
+import '../screens/markets/price_alerts_screen.dart';
+import '../screens/corporate_actions/corporate_actions_screen.dart';
+import '../screens/corporate_actions/rights_issue_screen.dart';
+import '../screens/corporate_actions/agm_vote_screen.dart';
+import '../screens/corporate_actions/dividends_screen.dart';
+import '../screens/account/complaint_screen.dart';
+import '../screens/account/complaint_tracked_screen.dart';
+import '../screens/account/dormant_account_screen.dart';
+import '../screens/account/close_account_screen.dart';
+import '../screens/account/data_privacy_screen.dart';
+import '../screens/onboarding/locked_out_screen.dart';
+import '../screens/account/legal_reference_screens.dart';
+
 // Shared states (used for missing-data placeholders).
 import '../screens/shared/state_views.dart';
 
@@ -275,6 +291,69 @@ GoRouter buildRouter(AppState state) {
           }
           return themed(() => ContractNoteScreen(statement: statement));
         },
+      ),
+
+      // ── Screens 76-97 (2026-08-23 canvas expansion) ──────────────────────
+      GoRoute(
+        // Screen 76 — pushed from statements_screen.dart with a Statement
+        // `extra`.
+        path: Routes.acctStatementDetail,
+        builder: (_, st) {
+          final statement = st.extra;
+          if (statement is! Statement) {
+            return themed(() => const KErrorView());
+          }
+          return themed(() => StatementDetailScreen(statement: statement));
+        },
+      ),
+      GoRoute(path: Routes.acctTax, builder: (_, _) => themed(() => TaxDocumentsScreen())),
+      GoRoute(path: Routes.priceAlerts, builder: (_, _) => themed(() => PriceAlertsScreen())),
+      GoRoute(path: Routes.corpActions, builder: (_, _) => themed(() => CorporateActionsScreen())),
+      GoRoute(
+        path: Routes.corpActionsRightsIssue,
+        builder: (_, _) => themed(() => RightsIssueScreen()),
+      ),
+      GoRoute(path: Routes.corpActionsAgm, builder: (_, _) => themed(() => AgmVoteScreen())),
+      GoRoute(
+        path: Routes.corpActionsDividends,
+        builder: (_, _) => themed(() => DividendsScreen()),
+      ),
+      GoRoute(path: Routes.acctComplaint, builder: (_, _) => themed(() => ComplaintScreen())),
+      GoRoute(
+        // Pushed with a ComplaintSummary `extra` — no live entry point yet
+        // (see routes.dart), registered so the built screen is reachable
+        // once complaint submission has a real backend to return one from.
+        path: Routes.acctComplaintTracked,
+        builder: (_, st) {
+          final complaint = st.extra;
+          if (complaint is! ComplaintSummary) {
+            return themed(() => const KErrorView());
+          }
+          return themed(() => ComplaintTrackedScreen(complaint: complaint));
+        },
+      ),
+      GoRoute(path: Routes.acctDormant, builder: (_, _) => themed(() => DormantAccountScreen())),
+      GoRoute(path: Routes.acctClose, builder: (_, _) => themed(() => CloseAccountScreen())),
+      GoRoute(
+        path: Routes.acctDataPrivacy,
+        builder: (_, _) => themed(() => DataPrivacyScreen()),
+      ),
+      GoRoute(path: Routes.lockedOut, builder: (_, _) => themed(() => LockedOutScreen())),
+      GoRoute(
+        path: Routes.acctLegalPartnerDisclosures,
+        builder: (_, _) => themed(() => PartnerDisclosuresScreen()),
+      ),
+      GoRoute(
+        path: Routes.acctLegalReferralTerms,
+        builder: (_, _) => themed(() => ReferralTermsScreen()),
+      ),
+      GoRoute(
+        path: Routes.acctLegalDataNotice,
+        builder: (_, _) => themed(() => DataNoticeScreen()),
+      ),
+      GoRoute(
+        path: Routes.acctLegalClosureTerms,
+        builder: (_, _) => themed(() => AccountClosureTermsScreen()),
       ),
 
       // ── Tab shell (StatefulShellRoute / indexedStack) ──────────────────--

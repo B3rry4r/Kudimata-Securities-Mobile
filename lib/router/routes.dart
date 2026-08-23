@@ -128,4 +128,37 @@ class Routes {
   // same reasoning as documentSummary above (needs the already-fetched
   // title/date/size, not just an id). Reachable from Statements & documents.
   static const String contractNote = '/account/statements/contract-note';
+
+  // ── Screens 76-97 — canvas expansion from 66 to 97 screens (2026-08-23) ──
+  // Statement detail / per-broker breakdown (screen 76) — pushed with a
+  // Statement `extra`, same reasoning as contractNote above.
+  static const String acctStatementDetail = '/account/statements/detail';
+  // Tax documents (screen 85).
+  static const String acctTax = '/account/tax';
+  // Price alerts (screen 86). Reachable from Watchlist and Notification
+  // settings.
+  static const String priceAlerts = '/watchlist/alerts';
+  // Corporate actions hub + detail screens (screens 81-84).
+  static const String corpActions = '/corporate-actions';
+  static const String corpActionsRightsIssue = '/corporate-actions/rights-issue';
+  static const String corpActionsAgm = '/corporate-actions/agm';
+  static const String corpActionsDividends = '/corporate-actions/dividends';
+  // File / track a complaint (screens 87-88). acctComplaintTracked is pushed
+  // with a ComplaintSummary `extra` — no live entry point yet since
+  // submitting a complaint has no real backend to return one from (see
+  // complaint_screen.dart), registered so the built screen is reachable
+  // once that exists.
+  static const String acctComplaint = '/account/help/complaint';
+  static const String acctComplaintTracked = '/account/help/complaint/tracked';
+  // Account lifecycle edge states (screens 89, 90, 92).
+  static const String acctDormant = '/account/dormant';
+  static const String acctClose = '/account/close';
+  static const String lockedOut = '/locked-out';
+  // Data & privacy (screen 91).
+  static const String acctDataPrivacy = '/account/data-privacy';
+  // Reference/legal documents (screens 94-97).
+  static const String acctLegalPartnerDisclosures = '/account/legal/partner-disclosures';
+  static const String acctLegalReferralTerms = '/account/legal/referral-terms';
+  static const String acctLegalDataNotice = '/account/legal/data-notice';
+  static const String acctLegalClosureTerms = '/account/legal/closure-terms';
 }

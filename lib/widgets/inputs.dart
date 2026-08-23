@@ -26,6 +26,8 @@ class KInput extends StatefulWidget {
     this.trailing,
     this.amount = false,
     this.amountSize = 26,
+    this.multiline = false,
+    this.minLines = 3,
   });
 
   final String? label;
@@ -51,6 +53,15 @@ class KInput extends StatefulWidget {
 
   /// The figure size when [amount] is true.
   final double amountSize;
+
+  /// Grows into a multi-line free-text field instead of the fixed 50px
+  /// single-line row — for the rare "describe what happened" style field
+  /// (e.g. the complaint form's "What happened?"), not a new component,
+  /// just KInput's existing frame with wrapping enabled.
+  final bool multiline;
+
+  /// Minimum visible lines when [multiline] is true.
+  final int minLines;
 
   @override
   State<KInput> createState() => _KInputState();
@@ -90,14 +101,19 @@ class _KInputState extends State<KInput> {
         AnimatedContainer(
           duration: KMotion.fast,
           curve: KMotion.easeSoft,
-          height: widget.amount ? 64 : 50,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: widget.amount ? 64 : (widget.multiline ? null : 50),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: widget.multiline ? 14 : 0,
+          ),
           decoration: BoxDecoration(
             color: widget.disabled ? KColor.bg : KColor.paper,
             borderRadius: BorderRadius.circular(KRadii.input),
             border: Border.all(color: borderColor, width: 1),
           ),
           child: Row(
+            crossAxisAlignment:
+                widget.multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
             children: [
               if (widget.icon != null) ...[
                 KIcon(widget.icon!, size: 18, color: focused ? KColor.ink : KColor.ink3),
@@ -122,8 +138,16 @@ class _KInputState extends State<KInput> {
                   enabled: !widget.disabled,
                   onChanged: widget.onChanged,
                   obscureText: _obscured,
+                  maxLines: widget.multiline ? null : 1,
+                  minLines: widget.multiline ? widget.minLines : null,
+                  textInputAction:
+                      widget.multiline ? TextInputAction.newline : TextInputAction.done,
                   keyboardType: widget.keyboardType ??
-                      (widget.numeric ? TextInputType.number : TextInputType.text),
+                      (widget.multiline
+                          ? TextInputType.multiline
+                          : widget.numeric
+                              ? TextInputType.number
+                              : TextInputType.text),
                   cursorColor: KColor.indicator,
                   cursorWidth: 1.5,
                   style: KType

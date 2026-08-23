@@ -1,0 +1,24 @@
+/* Two faces. Nunito carries feeling (headlines, balances, milestones);
+   Nunito Sans carries information (body, data, labels). Figures stay tabular. */
+:root{
+  --weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;--weight-black:800;
+
+  --size-hero:40px;      --lh-hero:44px;      --track-hero:-0.025em;
+  --size-title:26px;     --lh-title:32px;     --track-title:-0.02em;
+  --size-section:19px;   --lh-section:25px;   --track-section:-0.015em;
+  --size-card-title:16px;--lh-card-title:22px;--track-card-title:-0.01em;
+  --size-body:15px;      --lh-body:24px;      --track-body:0; /* @kind other */
+  --size-label:11px;     --lh-label:14px;     --track-label:0.14em;
+  --size-micro:10px;     --lh-micro:13px;     --track-micro:0.04em;
+  --size-data:14px;      --lh-data:20px;      --track-data:-0.005em;
+
+  /* display roles use Nunito; everything else uses Nunito Sans */
+  --text-hero:var(--weight-black) var(--size-hero)/var(--lh-hero) var(--font-display);
+  --text-title:var(--weight-bold) var(--size-title)/var(--lh-title) var(--font-display);
+  --text-section:var(--weight-bold) var(--size-section)/var(--lh-section) var(--font-display);
+  --text-card-title:var(--weight-bold) var(--size-card-title)/var(--lh-card-title) var(--font-display);
+  --text-body:var(--weight-regular) var(--size-body)/var(--lh-body) var(--font-core);
+  --text-label:var(--weight-semibold) var(--size-label)/var(--lh-label) var(--font-core);
+  --text-micro:var(--weight-semibold) var(--size-micro)/var(--lh-micro) var(--font-core);
+  --text-data:var(--weight-regular) var(--size-data)/var(--lh-data) var(--font-core);
+}

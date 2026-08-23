@@ -25,6 +25,21 @@
 // initState and shows the resolved figure — "…" while loading, "—" if the
 // fetch fails, since this is a secondary informational element and must not
 // block or crash the trade flow.
+//
+// 2026-08-23 "Soft Landing" exactness pass, spec screens 77-79: the shared
+// _AmountSheet/_ReviewSheet/_showSuccessSheet below (and the `side` flag
+// that picks between Buy/Sell inside them) are now BUY-ONLY. They were
+// written before spec 77-79 existed, when "the sell flow was never detailed
+// in this canvas" was literally true — it no longer is, and 77-79's shape
+// (a proceeds-destination choice, an explicit fee %, a capital-gains note,
+// no risk checkbox) is structurally different enough from the buy sheets
+// that reusing them would mean threading a maze of `if (isSell)` branches
+// through code written for a different screen. [showSellFlow] now runs its
+// own dedicated flow (see "SELL FLOW" section near the end of this file)
+// instead. The `_Side.sell` branches left in the shared sheets below are
+// dead code as of this pass (nothing calls them with `side: _Side.sell`
+// anymore) — kept rather than stripped to limit the size of this diff; a
+// follow-up cleanup could remove them.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -36,6 +51,8 @@ import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/order_placement_repository.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
+import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart'
+    show BankAccountSummary;
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/markets/market_hours.dart';
@@ -59,11 +76,13 @@ Future<void> showBuyFlow(BuildContext context, Asset asset) async {
   await _runTradeFlow(context, asset, side: _Side.buy);
 }
 
-/// Sell flow: amount → review → success. Same gate as [showBuyFlow].
+/// Sell flow: amount + destination → review → placed (spec screens 77-79 —
+/// see "SELL FLOW" section near the end of this file). Same gate as
+/// [showBuyFlow].
 Future<void> showSellFlow(BuildContext context, Asset asset) async {
   if (!await _ensureEligibleToTrade(context)) return;
   if (!context.mounted) return;
-  await _runTradeFlow(context, asset, side: _Side.sell);
+  await _runSellFlow(context, asset);
 }
 
 /// Runs the three sheets in sequence, each one only opening once the
@@ -78,12 +97,11 @@ Future<void> showSellFlow(BuildContext context, Asset asset) async {
 /// Each sheet now returns its result through the SAME showKSheet Future
 /// instead of reaching for Navigator/context itself to chain onward.
 Future<void> _runTradeFlow(BuildContext context, Asset asset, {required _Side side}) async {
+  // BUY-ONLY as of the 2026-08-23 pass — see this file's header comment.
   // Flow G, spec screens 60-61 — a BUY while the NGX is shut queues instead
   // of going through the normal amount/review/confirm chain (spec 61's own
   // nav note: "Queue -> 62", a LATER/separate screen, not this flow's
-  // success step). Sell isn't covered by the mockup at all here (spec 33's
-  // own note: the sell flow was never detailed in this canvas) — sell stays
-  // on the normal flow regardless of market hours.
+  // success step).
   if (side == _Side.buy && !isNgxOpenNow()) {
     await _showMarketClosedBuySheet(context, asset);
     return;
@@ -153,6 +171,109 @@ String _formatNaira(double value) {
   return '${negative ? '−' : ''}₦$buf';
 }
 
+/// Naira value -> "₦16,104.00" (2 decimals, kobo-precise) — for the sell
+/// flow's spec-exact figures (gross/fee/proceeds/gain), which the mockup
+/// shows to the kobo, unlike the buy flow's whole-naira mock figures above.
+String _formatNairaDecimal(double value) {
+  final kobo = (value * 100).round();
+  final negative = kobo < 0;
+  final absKobo = negative ? -kobo : kobo;
+  final wholeNaira = absKobo ~/ 100;
+  final koboRemainder = absKobo % 100;
+  final wholeStr = wholeNaira.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]},',
+      );
+  return '${negative ? '−' : ''}₦$wholeStr.${koboRemainder.toString().padLeft(2, '0')}';
+}
+
+/// Share-units value -> "60" (whole) or "60.5" (one decimal only when
+/// needed) — matches the mockup's plain integer share counts without adding
+/// a false ".0" to every figure.
+String _formatShares(double units) =>
+    units == units.roundToDouble() ? units.toStringAsFixed(0) : units.toStringAsFixed(1);
+
+/// The next NGX trading session's date, skipping weekends — client-clock
+/// heuristic only, same class of approximation as market_hours.dart's
+/// isNgxOpenNow() (good enough to label a queued order's UI, not
+/// authoritative exchange-calendar data — a public holiday isn't accounted
+/// for, same gap isNgxOpenNow() already has). If it's currently a weekday
+/// before 10:00 (the sheet can still be reached then — see isNgxOpenNow),
+/// the next session is TODAY, not tomorrow.
+String _nextTradingSessionLabel() {
+  final now = DateTime.now();
+  final isWeekday = now.weekday != DateTime.saturday && now.weekday != DateTime.sunday;
+  final minutesSinceMidnight = now.hour * 60 + now.minute;
+  var day = now;
+  if (!(isWeekday && minutesSinceMidnight < 10 * 60)) {
+    do {
+      day = day.add(const Duration(days: 1));
+    } while (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday);
+  }
+  const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return '${weekdayNames[day.weekday - 1]} ${day.day} ${months[day.month - 1]}';
+}
+
+/// A bordered, optionally-tinted radio row — the visual shape s61/s77 both
+/// draw a selectable option in (Radio + title + description inside a
+/// hairline/indicator-bordered card). Local to this file's screens rather
+/// than a design-system component: it composes existing KRadio/KColor/KType
+/// primitives for a single app-level layout pattern, not a new primitive
+/// itself.
+class _RadioOptionCard extends StatelessWidget {
+  const _RadioOptionCard({
+    required this.checked,
+    required this.title,
+    required this.description,
+    this.disabled = false,
+  });
+
+  final bool checked;
+  final String title;
+  final String description;
+  final bool disabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: disabled ? 0.55 : 1,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 15),
+        decoration: BoxDecoration(
+          color: checked ? KColor.indicatorTint : KColor.bg,
+          border: Border.all(
+            color: checked ? KColor.indicator : KColor.hairline,
+            width: checked ? 1.5 : 1,
+          ),
+          borderRadius: KRadii.cardR,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            KRadio(checked: checked, disabled: disabled),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: KType.body(color: KColor.ink)),
+                  const SizedBox(height: 2),
+                  Text(description, style: KType.data(color: KColor.ink2)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Flow G, spec screen 61 — "Buy · market closed". A limit order placed now
 // genuinely sits `pending` server-side until the broker adapter fills it
@@ -166,12 +287,19 @@ String _formatNaira(double value) {
 // risk promising a queuing behaviour that isn't real. Only the limit-price
 // path ships — which the spec's own mockup already shows pre-selected by
 // default anyway ("Only up to ₦275.00 a share (selected)").
+//
+// 2026-08-23 exactness pass: s61.html renders "Buy MTNN" and the "Market
+// closed" StatusPill in the SAME row inside the sheet body, not via the
+// sheet's own separate title bar — the sheet is opened untitled and that row
+// built explicitly, matching s77/s63's identical pattern for the same
+// reason. The surviving limit-price option is now the same bordered/tinted
+// radio-card treatment s61 draws it as (shared _RadioOptionCard, also reused
+// by the new sell flow below) rather than plain paragraph text.
 // ─────────────────────────────────────────────────────────────────────────────
 
 Future<void> _showMarketClosedBuySheet(BuildContext context, Asset asset) {
   return showKSheet<void>(
     context,
-    title: 'Buy ${asset.ticker}',
     child: _MarketClosedBuySheet(asset: asset),
   );
 }
@@ -240,7 +368,15 @@ class _MarketClosedBuySheetState extends State<_MarketClosedBuySheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const KStatusPill(status: KStatus.pending, label: 'Market closed', small: true),
+        // s61.html: "Buy MTNN" + the "Market closed" pill share one row —
+        // see _showMarketClosedBuySheet's doc comment.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Buy ${widget.asset.ticker}', style: KType.section()),
+            const KStatusPill(status: KStatus.pending, label: 'Market closed', small: true),
+          ],
+        ),
         const SizedBox(height: 14),
         KInput(
           label: 'Amount',
@@ -256,12 +392,16 @@ class _MarketClosedBuySheetState extends State<_MarketClosedBuySheet> {
           'Last close ${widget.asset.price} · minimum ₦5,000',
           style: KType.micro(color: KColor.ink3),
         ),
-        const SizedBox(height: 18),
-        Text('Only up to a limit price a share', style: KType.cardTitle()),
-        const SizedBox(height: 4),
-        Text(
-          'If it opens above this, nothing is bought — your money stays in your wallet.',
-          style: KType.body(color: KColor.ink3),
+        const SizedBox(height: 14),
+        // s61.html's surviving radio card (the market-order radio above it
+        // is deliberately dropped — see this class's doc comment). The
+        // limit price itself is still editable underneath: the mockup shows
+        // a fixed "₦275.00" as example data, but a real order needs a real
+        // investor-chosen figure, not a hardcoded one.
+        _RadioOptionCard(
+          checked: true,
+          title: 'Only up to ₦${_limitPrice.text} a share',
+          description: 'A limit — if it opens above this, nothing is bought',
         ),
         const SizedBox(height: 10),
         KInput(
@@ -274,7 +414,7 @@ class _MarketClosedBuySheetState extends State<_MarketClosedBuySheet> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),
-        _SummaryRow(label: 'Queued for', value: 'Next market open · 10:00'),
+        _SummaryRow(label: 'Queued for', value: '${_nextTradingSessionLabel()} · 10:00'),
         _SummaryRow(label: 'Held from your wallet', value: _formatNaira(_amountNaira)),
         _SummaryRow(label: 'Cancel any time', value: 'Until it fills'),
         const SizedBox(height: 14),
@@ -879,4 +1019,474 @@ Future<void> _showSuccessSheet(
       ),
     ),
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SELL FLOW — spec screens 77 (amount + destination) → 78 (review) → 79
+// (placed). Dedicated implementation, not a reuse of the buy-only shared
+// sheets above — see this file's header comment for why.
+//
+// REAL BACKEND GAP, flagged rather than faked: `POST /orders`
+// (OrderPlacementRepository.placeOrder) has no destination/payout field —
+// checked against its own doc comment ("this call only needs to succeed or
+// throw... [no] response body" — there isn't even an order id/reference
+// coming back, see [SalePlacedScreen] below). A sell order has exactly one
+// real outcome server-side: proceeds credited to the investor's Kudimata
+// wallet once the trade settles (the same applyWalletSideEffect path every
+// sell already goes through). Spec 77's second destination option —
+// "straight to GTB ••••6789 by Direct Cash Settlement" — has no backend
+// support: there is no field on the Order resource for it, and
+// BankAccountsRepository's DCS-mandate account is a WITHDRAWAL destination
+// (WalletRepository.withdraw), not a sell-proceeds destination. Rather than
+// letting the investor pick that option and then silently ignoring their
+// choice, that row renders disabled with an honest inline note; "My
+// Kudimata wallet" — the one real outcome — is the only selectable option,
+// pre-selected, matching the spec's own default.
+// ─────────────────────────────────────────────────────────────────────────────
+
+Future<void> _runSellFlow(BuildContext context, Asset asset) async {
+  final amountInput = await showKSheet<SellOrderInput>(
+    context,
+    child: _SellAmountSheet(asset: asset),
+  );
+  if (amountInput == null || !context.mounted) return;
+
+  final placed = await showKSheet<SellOrderInput>(
+    context,
+    title: 'Review sale',
+    child: _SellReviewSheet(asset: asset, input: amountInput),
+  );
+  if (placed == null || !context.mounted) return;
+
+  // Pushed directly (MaterialPageRoute, not a named go_router route) — see
+  // SalePlacedScreen's own doc comment for why.
+  await Navigator.of(context, rootNavigator: true).push<void>(
+    MaterialPageRoute(builder: (_) => SalePlacedScreen(asset: asset, input: placed)),
+  );
+}
+
+/// Mock sell fee rate (spec 78's exact "Fees · 1.35%") — same class of
+/// placeholder as [_kFeeNaira] above: the Order resource has no fee field,
+/// so this is a fixed design figure, not a real backend rate.
+const double _kSellFeeRate = 0.0135;
+
+/// What the investor chose on the Amount+destination sheet, threaded through
+/// Review -> confirm -> [SalePlacedScreen].
+class SellOrderInput {
+  const SellOrderInput({
+    required this.units,
+    required this.holdingTotalUnits,
+    required this.gross,
+    required this.fee,
+    required this.net,
+    required this.avgPrice,
+    required this.price,
+  });
+
+  final double units;
+  final double holdingTotalUnits;
+  final double gross;
+  final double fee;
+  final double net;
+  final double avgPrice;
+  final double price;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sell — Step 1: amount + (real-gap-flagged) destination.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SellAmountSheet extends StatefulWidget {
+  const _SellAmountSheet({required this.asset});
+  final Asset asset;
+
+  @override
+  State<_SellAmountSheet> createState() => _SellAmountSheetState();
+}
+
+class _SellAmountSheetState extends State<_SellAmountSheet> {
+  late final TextEditingController _amount = TextEditingController(text: '60');
+  late final _holdingsRepo = HoldingsRepository(AppScope.read(context).apiClient);
+  late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
+  late Future<(Holding, List<BankAccountSummary>)> _future = _load();
+
+  // Naira/Shares toggle — spec 77 places it in the header row (a
+  // SegmentedControl next to "Sell MTNN"), not below the input like the
+  // buy-only _AmountSheet above.
+  String _unit = 'shares';
+
+  Future<(Holding, List<BankAccountSummary>)> _load() =>
+      (_holdingsRepo.byTicker(widget.asset.ticker), _walletRepo.bankAccounts()).wait;
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    super.dispose();
+  }
+
+  double get _price => _parsePrice(widget.asset.price);
+  double get _amountValue => double.tryParse(_amount.text.replaceAll(RegExp('[^0-9.]'), '')) ?? 0;
+  double get _units => _unit == 'shares' ? _amountValue : (_price > 0 ? _amountValue / _price : 0);
+  double get _amountNaira => _unit == 'naira' ? _amountValue : _amountValue * _price;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<(Holding, List<BankAccountSummary>)>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: KLoadingView(),
+          );
+        }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: KErrorView(onPrimary: () => setState(() => _future = _load())),
+          );
+        }
+        final (holding, accounts) = snapshot.data!;
+        final holdingUnits = double.tryParse(holding.units.replaceAll(RegExp('[^0-9.]'), '')) ?? 0;
+        final avgPrice = _parsePrice(holding.avgPrice);
+        final gross = _amountNaira;
+        final fee = gross * _kSellFeeRate;
+
+        BankAccountSummary? primary;
+        for (final a in accounts) {
+          if (a.primary) {
+            primary = a;
+            break;
+          }
+        }
+        primary ??= accounts.isEmpty ? null : accounts.first;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Sell ${widget.asset.ticker}', style: KType.section()),
+                SizedBox(
+                  width: 150,
+                  child: KSegmentedControl(
+                    value: _unit,
+                    onChanged: (v) => setState(() => _unit = v),
+                    options: const [
+                      KSegmentOption(value: 'naira', label: '₦'),
+                      KSegmentOption(value: 'shares', label: 'Shares'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            KInput(
+              controller: _amount,
+              numeric: true,
+              amount: true,
+              prefix: _unit == 'naira' ? '₦' : null,
+              suffix: _unit == 'shares' ? 'of ${_formatShares(holdingUnits)}' : null,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => setState(() {}),
+              helper: '≈ ${_formatNairaDecimal(gross)} at ${widget.asset.price} · '
+                  'fees ${_formatNairaDecimal(fee)}',
+            ),
+            const SizedBox(height: 16),
+            const KEyebrow('Send the money to'),
+            const SizedBox(height: 8),
+            _RadioOptionCard(
+              checked: true,
+              title: 'My Kudimata wallet',
+              description: 'Ready to buy something else once this sale settles',
+            ),
+            const SizedBox(height: 10),
+            _RadioOptionCard(
+              checked: false,
+              disabled: true,
+              title: primary == null
+                  ? 'Straight to your bank'
+                  : 'Straight to ${primary.bankName} ${primary.accountNumberMasked}',
+              description: 'Not available yet — sale proceeds always go to your wallet for now',
+            ),
+            const SizedBox(height: 12),
+            RichText(
+              text: TextSpan(
+                style: KType.data(color: KColor.ink3),
+                children: [
+                  const TextSpan(text: 'Proceeds settle '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    // No glossary/explainer screen to link to yet — same
+                    // "shortcut affordance, no-op here" pattern as the
+                    // Amount sheet's ghost buttons above.
+                    child: KGlossaryTerm(text: 'T+3', onTap: () {}),
+                  ),
+                  const TextSpan(text: ' and land in your wallet. Nothing is available before then.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                SizedBox(
+                  width: 110,
+                  child: KButton(
+                    label: 'Cancel',
+                    variant: KButtonVariant.ghost,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: KButton(
+                    label: 'Review sale',
+                    onPressed: _units <= 0
+                        ? null
+                        : () => Navigator.of(context).pop(SellOrderInput(
+                              units: _units,
+                              holdingTotalUnits: holdingUnits,
+                              gross: gross,
+                              fee: fee,
+                              net: gross - fee,
+                              avgPrice: avgPrice,
+                              price: _price,
+                            )),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sell — Step 2: review + confirm (spec 78).
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SellReviewSheet extends StatefulWidget {
+  const _SellReviewSheet({required this.asset, required this.input});
+  final Asset asset;
+  final SellOrderInput input;
+
+  @override
+  State<_SellReviewSheet> createState() => _SellReviewSheetState();
+}
+
+class _SellReviewSheetState extends State<_SellReviewSheet> {
+  late final _repo = OrderPlacementRepository(AppScope.read(context).apiClient);
+  bool _placing = false;
+  bool _failed = false;
+  String? _failureMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) {
+      return KErrorView.orderFailed(
+        message: _failureMessage,
+        onPrimary: () {
+          setState(() => _failed = false);
+          _confirm();
+        },
+        onSecondary: () => Navigator.of(context).pop(),
+      );
+    }
+
+    final input = widget.input;
+    final gain = (input.price - input.avgPrice) * input.units;
+    final gainLabel = gain >= 0
+        ? 'realises a gain of ${_formatNairaDecimal(gain)}'
+        : 'realises a loss of ${_formatNairaDecimal(-gain)}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SummaryRow(
+          label: 'Selling',
+          value: '${_formatShares(input.units)} of ${_formatShares(input.holdingTotalUnits)} '
+              '${widget.asset.ticker}',
+        ),
+        _SummaryRow(label: 'At market', value: '≈ ${widget.asset.price}'),
+        _SummaryRow(label: 'Gross', value: _formatNairaDecimal(input.gross)),
+        _SummaryRow(label: 'Fees · 1.35%', value: '−${_formatNairaDecimal(input.fee)}'),
+        // Real gap: always "Your wallet" — see this section's header comment.
+        _SummaryRow(label: 'Goes to', value: 'Your wallet'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 15, 0, 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('You receive', style: KType.cardTitle(w: KWeight.semibold)),
+              Text(_formatNairaDecimal(input.net),
+                  style: KType.section().tnum.copyWith(fontWeight: KWeight.bold)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(color: KColor.sunTint, borderRadius: KRadii.cardR),
+          child: Text(
+            'You bought these at ${_formatNairaDecimal(input.avgPrice)}, so this sale '
+            '$gainLabel. Nigeria charges no capital gains tax on NGX-listed shares held over a year.',
+            style: KType.data(color: KColor.ink2),
+          ),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            SizedBox(
+              width: 100,
+              child: KButton(
+                label: 'Back',
+                variant: KButtonVariant.ghost,
+                onPressed: _placing ? null : () => Navigator.of(context).pop(),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: KButton(
+                label: 'Place sell order',
+                loading: _placing,
+                onPressed: _placing ? null : _confirm,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirm() async {
+    setState(() => _placing = true);
+    try {
+      await _repo.placeOrder(
+        ticker: widget.asset.ticker,
+        side: OrderSide.sell,
+        units: widget.input.units,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(widget.input);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _placing = false;
+        _failed = true;
+        _failureMessage = e.message;
+      });
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sell — Step 3: placed (spec 79). A real, pushed screen — not a sheet, per
+// the mockup (full status-bar chrome, no scrim/drag-handle). Pushed directly
+// via MaterialPageRoute (see _runSellFlow) rather than a named go_router
+// route: Routes.salePlaced doesn't exist yet, per this build's constraint
+// not to touch lib/router/*. The central route-wiring pass can register a
+// named route pointing at this same screen and swap that direct push for
+// `context.push(Routes.salePlaced)` without anything here needing to change.
+//
+// REAL BACKEND GAP: OrderPlacementRepository.placeOrder() returns void — the
+// backend never hands the client a created-order id/reference (confirmed
+// against its own doc comment: "this call only needs to succeed or throw").
+// So spec 79's "Reference · KDM-SL-9021" row is dropped rather than shown
+// with an invented reference number — `POST /orders` would need to return
+// the created Order's id/reference for that row to be honest.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class SalePlacedScreen extends StatelessWidget {
+  const SalePlacedScreen({super.key, required this.asset, required this.input});
+  final Asset asset;
+  final SellOrderInput input;
+
+  /// T+3 settlement date computed from TODAY (the real placement moment) by
+  /// skipping weekends — client-clock heuristic only, same class of
+  /// approximation as market_hours.dart's isNgxOpenNow(); not authoritative
+  /// settlement-calendar data (a public holiday isn't accounted for).
+  static String _settleLabel() {
+    var day = DateTime.now();
+    var remaining = 3;
+    while (remaining > 0) {
+      day = day.add(const Duration(days: 1));
+      if (day.weekday != DateTime.saturday && day.weekday != DateTime.sunday) remaining--;
+    }
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${day.day} ${months[day.month - 1]} ${day.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settleLabel = _settleLabel();
+    return Scaffold(
+      backgroundColor: KColor.bg,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, 28),
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        KStatusView(
+                          tone: KStatusTone.pending,
+                          illustrationName: 'portfolio-growth',
+                          title: 'Sell order placed',
+                          message: '${_formatShares(input.units)} ${asset.ticker} shares are on '
+                              'the market. The money reaches your wallet on $settleLabel, once '
+                              'the CSCS settles the trade.',
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: KColor.paper,
+                            border: Border.all(color: KColor.hairline, width: 1),
+                            borderRadius: KRadii.cardR,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          child: Column(
+                            children: [
+                              _SummaryRow(label: 'Settles', value: '$settleLabel · T+3'),
+                              _SummaryRow(label: 'Then goes to', value: 'Your wallet'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              KButton(
+                label: 'Follow this order',
+                onPressed: () {
+                  Navigator.of(context, rootNavigator: true).pop();
+                  context.push(Routes.orderStatus);
+                },
+              ),
+              const SizedBox(height: 10),
+              KButton(
+                label: 'Back to my portfolio',
+                variant: KButtonVariant.ghost,
+                onPressed: () => context.go(Routes.portfolio),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

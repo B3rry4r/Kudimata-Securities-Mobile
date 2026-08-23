@@ -1,0 +1,15 @@
+/* Minimal element defaults. Components carry their own styling inline. */
+*{box-sizing:border-box}
+/* Light is the system. Nothing here is designed against a dark canvas, so the
+   document declares light explicitly rather than inheriting the OS preference. */
+:root{color-scheme:light}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+html{background:var(--surface-page)}
+body{margin:0;background:var(--surface-page);color:var(--text-primary);font:var(--text-body);font-family:var(--font-core)}
+h1,h2,h3,h4{font-family:var(--font-display);margin:0}
+::selection{background:var(--indicator-tint);color:var(--ink)}
+a{color:var(--indicator);text-decoration:none;border-bottom:1px solid transparent;transition:border-color var(--dur-fast) var(--ease-soft),color var(--dur-fast) var(--ease-soft)}
+a:hover{color:var(--indicator-press);border-bottom-color:var(--indicator-press)}
+p{text-wrap:pretty}
+.k-tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.k-eyebrow{font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3)}
