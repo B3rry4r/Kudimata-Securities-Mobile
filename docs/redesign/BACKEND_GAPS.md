@@ -1,5 +1,45 @@
 # Backend gaps — what's needed for the redesigned UI to be 100% real
 
+## Status (2026-08-24) — first implementation pass done on the backend
+
+Kudimata-Securities-Backend commit `1d78d59` closes the additive/low-risk
+half of this document: **§1 (dividends + corporate actions, minus real
+dividend-ledger data being backfilled), §2 (complaints), §5 (price alerts,
+CRUD only — see below), §6 (sell destination + order reference + cancel),
+§8 (dormancy check + closure request, not the router bug), §10 (consent
+toggles)** now have real endpoints. Not yet true on the mobile side — the
+Flutter repositories/screens still need wiring to these new endpoints, and
+the mobile UI still shows the honest "not available yet" states until that
+happens. Specifics:
+
+- **Done, real endpoints exist**: `POST /dividends/declare` (staff) +
+  `GET /dividends`/`GET /dividends/summary` (now correctly credits
+  WalletBalance too), `POST/GET /e-dividend-mandate`, `GET/POST
+  /rights-issues` + election, `GET/POST /agm-meetings` + voting,
+  `GET/POST/PATCH/DELETE /price-alerts` (CRUD only — see below),
+  `POST/GET /complaints` + upload-url, `PATCH /orders/:id/cancel`, a real
+  `Order.reference`, `Order.destinationBankAccountId` (storage only, see
+  below), `POST /users/me/request-closure`, dormancy auto-detection on
+  login, `PUT /notification-preferences/me`'s two new consent fields.
+- **Still a real gap, not silently closed**: §5's price-alert
+  *notification* trigger has no scheduler wired to it anywhere (needs an
+  app-wide scheduled-job decision) — alerts can be created/managed but
+  won't actually fire yet. §6's sell-to-bank-account payout still only
+  credits the wallet — `destinationBankAccountId` is stored and validated
+  but doesn't yet redirect the actual payout (needs the withdraw
+  tier-limit/Flutterwave logic, deliberately not risked in that pass — see
+  the backend's own commit message). §8's `Routes.reset`/`preAuthOnly`
+  router bug is unfixed (frontend-only, still open). §13 (phased-KYC
+  completion) only gained `chn`/`pepSelfDeclared` fields on the existing
+  step-1 handler — CHN/PEP/Bank&DCS/review-step SCREENS and the rest of
+  that project are untouched, still the single biggest remaining item.
+  §3/§4/§9/§11/§12/§14 are entirely untouched.
+- **Not yet true on mobile**: none of the Flutter repositories
+  (`lib/data/repositories/`) have been pointed at these new endpoints yet —
+  that's the next real step to make any of this visible in the app itself.
+
+---
+
 Every screen in this app is built to match the design canvas exactly,
 regardless of whether the backend can support its real actions yet — per
 explicit product direction, the UI is never held back to fit the current
