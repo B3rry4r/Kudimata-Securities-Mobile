@@ -210,7 +210,13 @@ class _StatGrid extends StatelessWidget {
       crossAxisCount: 2,
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      childAspectRatio: 1.55,
+      // 1.55 (the original ratio) only fit KStatCard's icon+label+value —
+      // the P/L card is the one cell with a 4th `sub` line (see below),
+      // which overflowed every cell's identical fixed height by 15px since
+      // GridView.count forces all children to the same size regardless of
+      // their own content. 1.3 gives every cell enough room for that 4th
+      // line even though only P/L uses it.
+      childAspectRatio: 1.3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
