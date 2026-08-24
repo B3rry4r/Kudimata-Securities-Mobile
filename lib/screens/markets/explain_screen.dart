@@ -1,15 +1,17 @@
 // "Explain this investment" (pushed) — the AI/comprehension layer's
 // centerpiece (2026-08-22 "Soft Landing" redesign, screen-specs.md screen
-// 34). UI-COMPLETE, CONTENT-STATIC: there is no real generative-AI backend
-// yet (see docs/redesign/PLAN.md) — the answer shown here is a canned,
-// per-topic plain-English explanation, not an LLM call. KGeneratingText's
-// "writing" animation still runs for real (it's a local character-reveal
-// effect, not a network-streaming one), so the interaction itself is
-// faithful to the design even though the content behind it is a stub.
+// 34). 2026-08-24: wired to the real Gemini-backed POST
+// /ai/explain-asset/:ticker (Kudimata-Securities-Backend's
+// AiComprehensionService) — direct product instruction ("that entry point
+// is good... let's implement please we would use gemini api"). No more
+// canned per-ticker strings; KGeneratingText's "writing" animation now
+// plays while the real network call is in flight, not as a fixed 500ms
+// timer.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/ai_repository.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/trade/trade_flows.dart';
@@ -18,21 +20,12 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 
 const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 
-/// Canned explanations keyed by topic (an asset ticker today; any string the
-/// caller wants to explain more generally tomorrow). Falls back to a generic
-/// explainer when the topic isn't one of the specific cases below.
-String _canned(String topic) {
-  const known = <String, String>{
-    'MTNN':
-        'An MTN Nigeria share is a small piece of the company. You make money two ways: the price goes up, or MTN shares its profit with you as a dividend.',
-    'GTCO':
-        'A GTCO share is a small piece of Guaranty Trust Holding Company. You make money two ways: the price goes up, or GTCO pays part of its profit to shareholders as a dividend.',
-    'DANGCEM':
-        'A Dangote Cement share is a small piece of the company. You make money two ways: the price goes up, or Dangote Cement shares its profit with you as a dividend.',
-  };
-  return known[topic.toUpperCase()] ??
-      'A share in $topic is a small piece of that company. You make money two ways: the price goes up, or the company shares its profit with you as a dividend.';
-}
+/// Free-trial grant — mirrors the backend's User.aiCreditsRemaining
+/// `@default(3)` (Kudimata-Securities-Backend prisma/schema.prisma) — used
+/// only to size the KCreditMeter's "total" when the investor has no active
+/// plan (the backend tracks a plain balance + ledger, not a fixed
+/// per-period total, so this screen derives one for display).
+const _freeTrialCredits = 3;
 
 class ExplainScreen extends StatefulWidget {
   const ExplainScreen({super.key, required this.topic});
@@ -46,19 +39,52 @@ class ExplainScreen extends StatefulWidget {
 class _ExplainScreenState extends State<ExplainScreen> {
   static const _followUps = ['What is a dividend?', 'Why T+3?', 'Explain in Pidgin'];
 
-  late String _answer = _canned(widget.topic);
+  late final _aiRepo = AiRepository(AppScope.read(context).apiClient);
+
+  String _answer = '';
   KGeneratingState _state = KGeneratingState.thinking;
   bool _launchingBuy = false;
+  int? _creditsRemaining;
+  String? _plan;
+  String? _error;
+  bool _insufficientCredits = false;
 
   @override
   void initState() {
     super.initState();
-    // A brief "thinking" beat before the canned answer starts writing —
-    // matches the spec's "thinking -> writing -> done" loop even though
-    // there's no real network round-trip behind it.
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) setState(() => _state = KGeneratingState.writing);
+    _explain();
+  }
+
+  Future<void> _explain() async {
+    setState(() {
+      _state = KGeneratingState.thinking;
+      _error = null;
+      _insufficientCredits = false;
     });
+    try {
+      // Plan is fetched alongside the explain call (not returned by it) —
+      // only used to size the KCreditMeter's "total" (trial vs plan
+      // grant); reads current state at call time, not after the spend
+      // below, so a boundary case (e.g. exactly out of credits) never
+      // shows a mismatched plan/count pairing.
+      final statusFuture = _aiRepo.credits();
+      final result = await _aiRepo.explainAsset(widget.topic);
+      final status = await statusFuture;
+      if (!mounted) return;
+      setState(() {
+        _answer = result.text;
+        _creditsRemaining = result.creditsRemaining;
+        _plan = status.plan;
+        _state = KGeneratingState.writing;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _insufficientCredits = e.code == 'INSUFFICIENT_CREDITS';
+        _error = e.message;
+        _state = KGeneratingState.done;
+      });
+    }
   }
 
   void _ask(String followUp) {
@@ -89,6 +115,9 @@ class _ExplainScreenState extends State<ExplainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final total = _plan == null ? _freeTrialCredits : null;
+    final used = _creditsRemaining != null && total != null ? (total - _creditsRemaining!).clamp(0, total) : 0;
+
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
@@ -102,9 +131,13 @@ class _ExplainScreenState extends State<ExplainScreen> {
                   KIconButton(icon: 'close', semanticLabel: 'Close', onPressed: () => context.pop()),
                   const SizedBox(width: 10),
                   Expanded(child: Text('Explain ${widget.topic}', style: KType.section())),
-                  // Spec: "CreditMeter (compact, in header; full below)",
-                  // both reading "7 of 10 left".
-                  const KCreditMeter(compact: true, used: 7, total: 10, kind: 'trial'),
+                  if (_creditsRemaining != null)
+                    KCreditMeter(
+                      compact: true,
+                      used: used,
+                      total: total ?? (used + _creditsRemaining!),
+                      kind: _plan == null ? 'trial' : 'plan',
+                    ),
                 ],
               ),
             ),
@@ -114,41 +147,54 @@ class _ExplainScreenState extends State<ExplainScreen> {
                 children: [
                   Padding(
                     padding: _gut,
-                    child: KExplainPanel(
-                      title: 'What am I buying?',
-                      bodyWidget: KGeneratingText(key: ValueKey(_answer), text: _answer, state: _state),
-                    ),
+                    child: _error != null
+                        ? KExplainPanel(
+                            title: 'What am I buying?',
+                            body: _error,
+                            actions: _insufficientCredits
+                                ? [
+                                    KButton(
+                                      label: 'See plans and credits',
+                                      variant: KButtonVariant.secondary,
+                                      onPressed: () => context.push(Routes.acctPlans),
+                                    ),
+                                  ]
+                                : [
+                                    KButton(
+                                      label: 'Try again',
+                                      variant: KButtonVariant.secondary,
+                                      onPressed: _explain,
+                                    ),
+                                  ],
+                          )
+                        : KExplainPanel(
+                            title: 'What am I buying?',
+                            bodyWidget: KGeneratingText(key: ValueKey(_answer), text: _answer, state: _state),
+                          ),
                   ),
                   const SizedBox(height: 10),
-                  // 2026-08-24 removed: canvas s34's "While it thinks ·
-                  // before any text exists" card is a static design-system
-                  // documentation panel (a frozen reference showing what the
-                  // thinking state looks like, for the designer's benefit),
-                  // not real product UI — it has no dynamic behavior and
-                  // sat there permanently, including after the real answer
-                  // above had already finished loading, which is exactly
-                  // what the user reported as confusing ("why is the
-                  // placeholder or example showing... while it thinks
-                  // before any text exists?"). The real thinking state
-                  // already plays out in the ExplainPanel above via
-                  // KGeneratingText/_state — that's the one that matters.
-                  Padding(
-                    padding: _gut,
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final f in _followUps) KPillChip(label: f, onTap: () => _ask(f)),
-                      ],
+                  if (_error == null) ...[
+                    Padding(
+                      padding: _gut,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final f in _followUps) KPillChip(label: f, onTap: () => _ask(f)),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Full (non-compact) card, per spec's "full below" — the
-                  // header above carries the compact one.
-                  const Padding(
-                    padding: _gut,
-                    child: KCreditMeter(used: 7, total: 10, kind: 'trial'),
-                  ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (_creditsRemaining != null)
+                    Padding(
+                      padding: _gut,
+                      child: KCreditMeter(
+                        used: used,
+                        total: total ?? (used + _creditsRemaining!),
+                        kind: _plan == null ? 'trial' : 'plan',
+                      ),
+                    ),
                 ],
               ),
             ),

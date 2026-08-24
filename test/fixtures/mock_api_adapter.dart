@@ -591,8 +591,55 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path == '/notification-preferences/me') {
       return {'orderUpdates': true, 'security': true, 'marketing': false};
     }
+    if (path == '/ai/credits') return _aiCreditStatus();
+    if (path == '/ai/plans') return _aiPlans;
+    if (path == '/ai/plans/subscribe') {
+      return _aiCreditStatus(creditsRemaining: 60, plan: 'plus');
+    }
+    if (path == '/ai/plans/cancel') return _aiCreditStatus();
+    if (path.startsWith('/ai/explain-asset/')) {
+      final ticker = path.split('/').last;
+      return {
+        'text':
+            'A share of $ticker is a small piece of that company. You make money two ways: the price goes up, or the company shares its profit with you as a dividend.',
+        'creditsRemaining': 2,
+      };
+    }
+    if (path == '/ai/portfolio-digest') {
+      return {
+        'text':
+            'Guaranty Trust Holding carried your portfolio this week, +4.10% since your last check-in. Nothing here needs a decision from you today.',
+        'creditsRemaining': 2,
+        'cached': false,
+        'generatedAt': '2026-08-24T08:00:00.000Z',
+      };
+    }
     return _fallback(path);
   }
+
+  Map<String, dynamic> _aiCreditStatus({int creditsRemaining = 3, String? plan}) => {
+        'creditsRemaining': creditsRemaining,
+        'plan': plan,
+        'planRenewsAt': plan == null ? null : '2026-09-23T08:00:00.000Z',
+        'recentLedger': const [],
+      };
+
+  static const _aiPlans = [
+    {
+      'key': 'plus',
+      'name': 'Plus',
+      'priceKobo': 50000,
+      'credits': 60,
+      'features': ['Weekly portfolio digest', 'Pidgin and English'],
+    },
+    {
+      'key': 'pro',
+      'name': 'Pro',
+      'priceKobo': 200000,
+      'credits': 250,
+      'features': ['Summaries for every company filing', 'Priority support'],
+    },
+  ];
 
   /// Any endpoint not modelled above. A bare `{}` satisfies every
   /// object-shaped consumer (every field read is `as T? ?? default`, per

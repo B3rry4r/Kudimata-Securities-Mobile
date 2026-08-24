@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/repositories/ai_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -62,11 +63,21 @@ List<(String title, String route, String? trailing)> _menuRows() {
 }
 
 // Plans & credits sits as its own row above the menu group, alongside a
-// compact credit meter — screen 45. used=7/total=10 mirrors the canvas's own
-// example values exactly; no real AI-credit metering backend exists yet
-// (docs/redesign/PLAN.md), so these stay static.
-const int _exampleCreditsUsed = 7;
-const int _exampleCreditsTotal = 10;
+// compact credit meter — screen 45. 2026-08-24: real balance from
+// AiCreditStatus instead of the canvas's static "7 of 10" example — the
+// backend tracks a plain balance + ledger, not a fixed per-period total, so
+// "total" is derived here for display: the free trial grant when the
+// investor has no active plan, or that plan's per-cycle credit grant.
+const int _freeTrialCredits = 3;
+
+int _creditsTotal(AiCreditStatus credits) => switch (credits.plan) {
+      'plus' => 60,
+      'pro' => 250,
+      _ => _freeTrialCredits,
+    };
+
+int _creditsUsed(AiCreditStatus credits) =>
+    (_creditsTotal(credits) - credits.creditsRemaining).clamp(0, _creditsTotal(credits));
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -77,12 +88,21 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
-  late Future<PersonalInfo> _future = _userRepo.personalInfo();
+  late final _aiRepo = AiRepository(AppScope.read(context).apiClient);
+  late Future<(PersonalInfo, AiCreditStatus)> _future = _load();
 
   // Local-only — no app-wide language/locale persistence exists anywhere in
   // this app yet, same as onboarding/welcome_slider_screen.dart's and
   // document_summary_screen.dart's own KLanguageSwitch usage.
   String _lang = 'en';
+
+  Future<(PersonalInfo, AiCreditStatus)> _load() async {
+    final infoFuture = _userRepo.personalInfo();
+    final creditsFuture = _aiRepo.credits();
+    return (await infoFuture, await creditsFuture);
+  }
+
+  void _reload() => setState(() => _future = _load());
 
   @override
   Widget build(BuildContext context) {
@@ -91,24 +111,30 @@ class _AccountScreenState extends State<AccountScreen> {
       backgroundColor: KColor.bg,
       body: SafeArea(
         bottom: false,
-        child: FutureBuilder<PersonalInfo>(
+        child: FutureBuilder<(PersonalInfo, AiCreditStatus)>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const KLoadingView();
             }
             if (snapshot.hasError) {
-              return KErrorView(
-                onPrimary: () => setState(() => _future = _userRepo.personalInfo()),
-              );
+              return KErrorView(onPrimary: _reload);
             }
+            final (info, credits) = snapshot.data!;
             return _AccountBody(
-              info: snapshot.data!,
+              info: info,
+              credits: credits,
               verified: kycApproved,
               lang: _lang,
               onLangChanged: (v) => setState(() => _lang = v),
-              onReturnFromPersonalInfo: () =>
-                  setState(() => _future = _userRepo.personalInfo()),
+              // Personal info can change name/avatar (this screen's own
+              // header); Plans & credits can change the balance shown here
+              // (the compact meter + the menu row both push there) — both
+              // refetch this screen's data on return, same "persistent tab,
+              // never disposed, so nothing refreshes without this" fix as
+              // account_screen.dart's earlier stale-data bug.
+              onReturnFromPersonalInfo: _reload,
+              onReturnFromPlans: _reload,
             );
           },
         ),
@@ -120,13 +146,16 @@ class _AccountScreenState extends State<AccountScreen> {
 class _AccountBody extends StatelessWidget {
   const _AccountBody({
     required this.info,
+    required this.credits,
     required this.verified,
     required this.lang,
     required this.onLangChanged,
     required this.onReturnFromPersonalInfo,
+    required this.onReturnFromPlans,
   });
 
   final PersonalInfo info;
+  final AiCreditStatus credits;
   final bool verified;
   final String lang;
   final ValueChanged<String> onLangChanged;
@@ -141,6 +170,10 @@ class _AccountBody extends StatelessWidget {
   /// on return — every other row's target doesn't affect this screen's own
   /// data, so they stay a plain push.
   final VoidCallback onReturnFromPersonalInfo;
+
+  /// Same reasoning as [onReturnFromPersonalInfo] — Plans & credits is the
+  /// one destination that can change [credits] (subscribe/cancel).
+  final VoidCallback onReturnFromPlans;
 
   @override
   Widget build(BuildContext context) {
@@ -202,16 +235,22 @@ class _AccountBody extends StatelessWidget {
           // Plans & credits sits as its own compact row above the menu
           // group in the mockup (CreditMeter + a link) — link colour is the
           // design's default bare-`<a>` accent (var(--indicator)), not ink.
+          // 2026-08-24: real balance (AiCreditStatus) instead of a hardcoded
+          // 7-of-10 literal — see AiCreditsService on the backend.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: GestureDetector(
-              onTap: () => context.push(Routes.acctPlans),
+              onTap: () async {
+                await context.push(Routes.acctPlans);
+                onReturnFromPlans();
+              },
               behavior: HitTestBehavior.opaque,
               child: Row(
                 children: [
-                  const KCreditMeter(
-                    used: _exampleCreditsUsed,
-                    total: _exampleCreditsTotal,
+                  KCreditMeter(
+                    used: _creditsUsed(credits),
+                    total: _creditsTotal(credits),
+                    kind: credits.plan == null ? 'trial' : 'plan',
                     compact: true,
                   ),
                   const SizedBox(width: 10),

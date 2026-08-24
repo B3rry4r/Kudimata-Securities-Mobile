@@ -32,6 +32,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/models.dart';
+import 'package:kudimata_invest/data/repositories/ai_repository.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
@@ -65,16 +66,6 @@ String _timeGreeting() {
 Asset _biggestMover(List<Asset> assets) {
   double pct(Asset a) => double.tryParse(a.change.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
   return assets.reduce((a, b) => pct(a) >= pct(b) ? a : b);
-}
-
-/// A generated portfolio narrative — one plain sentence about the holding
-/// that moved most this week. No real AI backend exists yet for this (see
-/// docs/redesign/BACKEND_GAPS.md); the number is real, the template isn't.
-String _weeklyDigest(List<Asset> holdings) {
-  final top = _biggestMover(holdings);
-  final verb = top.trend == Trend.gain ? 'carried' : 'weighed on';
-  return '${top.name} $verb your portfolio this week, ${top.change} since your last check-in. '
-      'Nothing here needs a decision from you today.';
 }
 
 /// Combined payload for the single screen-level FutureBuilder.
@@ -140,6 +131,32 @@ class _HomeScreenState extends State<HomeScreen> {
   /// reload (manual retry) so THAT still shows the loading state, same as
   /// before — only the silent background poll skips it.
   _HomeData? _data;
+
+  // "Your week in the market" digest — 2026-08-24: replaced with a real
+  // Gemini call (AiRepository.portfolioDigest, cached 24h server-side)
+  // instead of a client-side string template. Fetched EXACTLY ONCE per
+  // screen lifetime (`_digestRequested` guard), the moment holdings are
+  // first known non-empty — deliberately NOT part of `_load()`/the 8s
+  // silent-poll cycle above: that poll fires every 8 seconds, and this
+  // call costs a real AI credit, so wiring it into the poll would silently
+  // burn credits in the background. The 24h server-side cache is a second,
+  // independent safety net for the same concern (a cache hit costs
+  // nothing), but this screen doesn't rely on that alone.
+  String? _digestText;
+  bool _digestRequested = false;
+
+  void _maybeFetchDigest(List<Asset> holdings) {
+    if (_digestRequested || holdings.isEmpty) return;
+    _digestRequested = true;
+    AiRepository(AppScope.read(context).apiClient).portfolioDigest().then((result) {
+      if (!mounted) return;
+      setState(() => _digestText = result.text);
+    }).catchError((_) {
+      // Best-effort — the digest card just doesn't render on failure (see
+      // _VerifiedContent's gating), same as this screen's other real-but-
+      // optional sections (Trending, Watchlist).
+    });
+  }
 
   // POLLING (2026-08-20, "poll the KYC endpoint... so we can see changes
   // instantly without refreshing since no realtime yet"). A staff decision
@@ -276,7 +293,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
             }
-            return _HomeBody(data: effective!);
+            _maybeFetchDigest(effective!.holdings);
+            return _HomeBody(data: effective, digestText: _digestText);
           },
         ),
       ),
@@ -287,8 +305,9 @@ class _HomeScreenState extends State<HomeScreen> {
 /// The loaded-state widget tree — routes to the structurally distinct
 /// verified/not-verified bodies per canvas s29/s30 (see file header).
 class _HomeBody extends StatelessWidget {
-  const _HomeBody({required this.data});
+  const _HomeBody({required this.data, required this.digestText});
   final _HomeData data;
+  final String? digestText;
 
   @override
   Widget build(BuildContext context) {
@@ -343,7 +362,10 @@ class _HomeBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        if (notVerified) ..._NotVerifiedContent(data: data).build(context) else ..._VerifiedContent(data: data).build(context),
+        if (notVerified)
+          ..._NotVerifiedContent(data: data).build(context)
+        else
+          ..._VerifiedContent(data: data, digestText: digestText).build(context),
       ],
     );
   }
@@ -352,8 +374,9 @@ class _HomeBody extends StatelessWidget {
 /// Canvas s29 — "Home · verified": BalancePanel → 3 quick actions →
 /// DigestCard → "Your holdings" list. No Watchlist/Trending/Orders sections.
 class _VerifiedContent {
-  const _VerifiedContent({required this.data});
+  const _VerifiedContent({required this.data, required this.digestText});
   final _HomeData data;
+  final String? digestText;
 
   List<Widget> build(BuildContext context) => [
         // feature panel — the one ink surface
@@ -415,14 +438,17 @@ class _VerifiedContent {
         ),
         const SizedBox(height: 20),
 
-        // "Your week on the NGX" — a generated portfolio narrative (canvas
-        // s29's DigestCard). Only real holdings drive the number.
-        if (data.holdings.isNotEmpty) ...[
+        // "Your week in the market" (canvas s29's DigestCard) — 2026-08-24:
+        // a real Gemini call (see _maybeFetchDigest's doc comment), not a
+        // client-side template. Renders nothing while the first fetch is
+        // still in flight (no fake placeholder text) rather than blocking
+        // the rest of Home on it.
+        if (digestText != null) ...[
           Padding(
             padding: _gut,
             child: KDigestCard(
               title: 'Your week in the market',
-              body: _weeklyDigest(data.holdings),
+              body: digestText!,
             ),
           ),
           const SizedBox(height: 16),
