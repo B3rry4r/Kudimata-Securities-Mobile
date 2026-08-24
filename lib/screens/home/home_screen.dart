@@ -473,6 +473,60 @@ class _VerifiedContent {
             ),
           ),
           const SizedBox(height: 16),
+        ] else ...[
+          // Placeholder while no digest exists yet (2026-08-24, reported:
+          // "when its not there users should see maybe an illustration and
+          // a writing telling them about it"). Previously this whole
+          // section simply rendered NOTHING when `digestText` was null —
+          // an investor had no way to know the feature existed, was
+          // coming, or had failed. Renders on a brand-new portfolio (the
+          // backend refuses a digest with no holdings — NO_HOLDINGS), and
+          // in the gap between Home painting and the digest call
+          // returning.
+          Padding(
+            padding: _gut,
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: KColor.indicatorTint,
+                borderRadius: KRadii.featureR,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Bounded width: KIllustration's plate Container sizes
+                  // itself from its incoming constraints, and a Row hands
+                  // its non-flex children an infinite-width constraint —
+                  // which throws "BoxConstraints forces an infinite width"
+                  // at layout. Caught by rendering shots_flowd.dart, not by
+                  // analyze.
+                  const SizedBox(
+                    width: 88,
+                    child: KIllustration('digest', role: KIlloRole.small),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Your week in the market', style: KType.cardTitle()),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Once you hold something, we write you a short plain-English '
+                          'note on how it moved — refreshed once a day. Nothing here '
+                          'needs a decision from you; it is just so you always know '
+                          'where you stand.',
+                          style: KType.body(color: KColor.ink2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
 
         // "Your holdings" — no "See all" affordance in canvas s29.

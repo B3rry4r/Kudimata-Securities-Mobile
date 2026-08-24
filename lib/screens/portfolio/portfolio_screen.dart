@@ -9,6 +9,8 @@
 // /portfolio-summary) replace MockData.portfolioHoldings and the formerly
 // hardcoded BalancePanel/allocation-donut literals (STUB-portfolio-1/2 in
 // .pipeline/fragments/portfolio.json).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,6 +32,48 @@ class PortfolioScreen extends StatefulWidget {
 class _PortfolioScreenState extends State<PortfolioScreen> {
   late final _repo = HoldingsRepository(AppScope.read(context).apiClient);
   late Future<(PortfolioSummary, List<Holding>)> _future = _load();
+
+  // Silent refresh (2026-08-24). Reported live: "I just bought a share and
+  // the assets screen did not change" — the Holding row existed in the
+  // database immediately, but this screen kept showing pre-purchase data
+  // until a full app reload.
+  //
+  // Root cause: the tabs live in a StatefulNavigationShell, which by design
+  // NEVER disposes a branch when you switch away from it. `_future` above
+  // is a `late` field, so it resolves exactly once — the first time the
+  // Portfolio tab is built — and every later visit re-renders that same
+  // completed future. Buying on the Trade tab therefore could not change
+  // anything here, no matter how correct the backend was.
+  //
+  // home_screen.dart already hit this and solved it with a poll timer
+  // (_portfolioPollInterval, 8s); this mirrors that rather than inventing a
+  // second mechanism. Silent by design: `_future` is only swapped once the
+  // new data has ARRIVED, so the FutureBuilder never flips back to its
+  // loading spinner underneath someone who is reading the screen.
+  static const _pollInterval = Duration(seconds: 8);
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _silentRefresh());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final data = await _load();
+      if (!mounted) return;
+      setState(() => _future = Future.value(data));
+    } catch (_) {
+      // Best-effort: a failed poll leaves whatever is already on screen.
+    }
+  }
 
   Future<(PortfolioSummary, List<Holding>)> _load() async {
     // Record `.wait`, not fire-then-sequential-await: if summary() rejects
