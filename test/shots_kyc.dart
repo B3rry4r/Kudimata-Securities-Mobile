@@ -45,6 +45,7 @@ const _routes = <String, (String, bool, bool, bool)>{
   '26_outcome_not_approved': (Routes.kycOutcome, true, false, false),
   '27_questionnaire': (Routes.questionnaire, true, true, false),
   '28_suitability_result': (Routes.suitabilityResult, true, true, false),
+  '29_risk_disclaimer': (Routes.riskDisclaimer, true, true, true),
 };
 
 Future<void> _loadFonts() async {

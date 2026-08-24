@@ -30,4 +30,19 @@ class ComplianceRepository {
   Future<void> acknowledge({required String kind}) async {
     await _client.post('/compliance-acknowledgements', data: {'kind': kind});
   }
+
+  /// GET /compliance-acknowledgements/me — not a registry.json endpoint
+  /// (see Kudimata-Securities-Backend's
+  /// ComplianceAcknowledgementsService.findAllForUser doc comment), added
+  /// 2026-08-24 so app_state.dart can hydrate whether a RETURNING investor
+  /// already accepted the risk disclosure in a past session — without
+  /// this, the mandatory once-per-investor risk-disclaimer gate would
+  /// re-block every returning investor on every fresh app boot (in-memory
+  /// AppState flags reset to their defaults on every launch). Returns just
+  /// the set of acknowledged kinds — no caller needs the full record shape.
+  Future<Set<String>> myAcknowledgedKinds() async {
+    final response = await _client.get('/compliance-acknowledgements/me');
+    final items = (response.data as List<dynamic>).cast<Map<String, dynamic>>();
+    return items.map((j) => j['kind'] as String).toSet();
+  }
 }

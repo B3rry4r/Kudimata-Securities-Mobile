@@ -65,11 +65,13 @@ class Routes {
 
   // ── Suitability ──────────────────────────────────────────────────────────
   static const String questionnaire = '/suitability';
-  // Last gated screen — Continue here completes onboarding straight to
-  // Home (2026-08-20: all four legal documents are now accepted upfront,
-  // via termsOfService above, so there's no separate legal step left after
-  // suitability; see suitability_result_screen.dart).
   static const String suitabilityResult = '/suitability/result';
+  // Last gated screen — Accept & Proceed here completes onboarding to Home.
+  // Restored 2026-08-24 (direct product instruction, real SEC compliance
+  // intake): the risk disclaimer moved back to running immediately after
+  // suitability instead of bundled into termsOfService at signup — see
+  // risk_disclaimer_screen.dart's header comment.
+  static const String riskDisclaimer = '/suitability/risk-disclaimer';
 
   // ── Tab roots (StatefulShellRoute / indexedStack) ────────────────────────
   static const String home = '/home';

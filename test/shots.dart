@@ -72,7 +72,8 @@ Future<void> _loadFonts() async {
 
 Future<void> _capture(WidgetTester tester, GlobalKey key, String path) async {
   await tester.runAsync(() async {
-    final boundary = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final boundary =
+        key.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final image = await boundary.toImage(pixelRatio: 1.5);
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     File(path).writeAsBytesSync(bytes!.buffer.asUint8List());
@@ -85,7 +86,8 @@ Future<void> _capture(WidgetTester tester, GlobalKey key, String path) async {
 /// messages name (PasscodeStore.hasPasscode() on /login,
 /// search_screen.dart's recents on /search).
 void _mockPlatformChannels() {
-  final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   messenger.setMockMethodCallHandler(
     const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
     (call) async {
@@ -138,21 +140,24 @@ Future<_Mounted> _mount(WidgetTester tester) async {
     ..kycSubmitted = true
     ..kycApproved = true
     ..suitabilityComplete = true
+    ..riskDisclosureAccepted = true
     ..apiClient = apiClient;
   final router = buildRouter(state);
   final key = GlobalKey();
 
-  await tester.pumpWidget(RepaintBoundary(
-    key: key,
-    child: AppScope(
-      state: state,
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        theme: KTheme.light(),
-        routerConfig: router,
+  await tester.pumpWidget(
+    RepaintBoundary(
+      key: key,
+      child: AppScope(
+        state: state,
+        child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          theme: KTheme.light(),
+          routerConfig: router,
+        ),
       ),
     ),
-  ));
+  );
   await tester.pump();
   return (state: state, router: router, key: key);
 }
@@ -209,7 +214,9 @@ void main() {
         await _capture(tester, key, '/tmp/shots/${entry.key}.png');
       } on Object catch (e) {
         // ignore: avoid_print
-        print('shots: ${entry.key} raised $e — capturing whatever rendered anyway');
+        print(
+          'shots: ${entry.key} raised $e — capturing whatever rendered anyway',
+        );
         await _capture(tester, key, '/tmp/shots/${entry.key}.png');
       }
     }

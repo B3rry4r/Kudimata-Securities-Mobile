@@ -105,21 +105,15 @@ class _ApprovedScreenState extends State<ApprovedScreen> {
 
   Widget _buildForStatus(String status) {
     if (status == 'approved') {
-      // Goes straight to Home, not the suitability questionnaire
-      // (2026-08-20 fix — the questionnaire is no longer part of the
-      // mandatory post-KYC flow at all: "make the assessment optional or
-      // hide it for now — the one that comes after KYC". Removing it from
-      // tradingEligibilityGap alone wasn't enough — this screen's single
-      // button was still the only way forward, and it went straight to
-      // the questionnaire regardless). The questionnaire screen itself is
-      // unchanged and still reachable for anyone who wants to complete it
-      // voluntarily.
+      // RESTORED 2026-08-24 (direct product instruction, real SEC
+      // compliance intake — "please make the suitability mandatory"): back
+      // to the questionnaire, not straight to Home. The 2026-08-20 "make
+      // it optional" directive that had this routing straight to Home is
+      // superseded, same as AppState.tradingEligibilityGap's own restored
+      // block.
       // KMilestoneSheet, not KStatusView — a once-per-investor celebration
       // moment (2026-08-22 "Soft Landing", screen 25), sun-tinted rather
-      // than the routine pending/error status views below. Same
-      // "Start investing" -> Home behaviour as before (2026-08-20 fix: the
-      // questionnaire is no longer mandatory post-KYC — do not point this
-      // at Routes.questionnaire again).
+      // than the routine pending/error status views below.
       return KMilestoneSheet(
         illustrationName: 'kyc-approved',
         eyebrow: 'Verification complete',
@@ -132,7 +126,7 @@ class _ApprovedScreenState extends State<ApprovedScreen> {
         primary: KButton(
           label: 'Start investing',
           fullWidth: false,
-          onPressed: () => context.go(Routes.home),
+          onPressed: () => context.go(Routes.questionnaire),
         ),
       );
     }

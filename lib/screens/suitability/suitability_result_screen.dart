@@ -18,6 +18,7 @@ import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
+import 'risk_disclaimer_screen.dart' show RiskDisclaimerArgs;
 import 'package:kudimata_invest/data/repositories/suitability_repository.dart';
 
 class SuitabilityResultScreen extends StatefulWidget {
@@ -156,21 +157,22 @@ class _SuitabilityResultBody extends StatelessWidget {
             child: Column(
               children: [
                 KButton(
-                  label: 'Go to my home',
-                  // All four legal documents (terms of service, privacy
-                  // policy, risk disclosure, client agreement) are accepted
-                  // upfront, right after OTP verification (see
-                  // terms_and_privacy_screen.dart) — 2026-08-20, "move
-                  // client agreement to the beginning, let users accept it
-                  // all in the terms and disclosures". This is now the LAST
-                  // step of onboarding: complete suitability, sign in, go
-                  // straight to Home.
+                  label: 'Continue',
+                  // 2026-08-24: routes to the Statutory Risk Disclaimer
+                  // instead of straight to Home — restored per direct
+                  // product instruction (real SEC compliance intake, "My
+                  // observations on KSL papers.docx"): the disclaimer must
+                  // appear immediately after suitability and show this
+                  // computed profile dynamically. setSignedIn(true) moved
+                  // to that screen's own Accept & Proceed action — this is
+                  // no longer the last gated step of onboarding.
                   fullWidth: true,
                   onPressed: () {
-                    final app = AppScope.read(context);
-                    app.setSuitabilityComplete(true);
-                    app.setSignedIn(true);
-                    context.go(Routes.home);
+                    AppScope.read(context).setSuitabilityComplete(true);
+                    context.push(
+                      Routes.riskDisclaimer,
+                      extra: RiskDisclaimerArgs(profile: result.profile),
+                    );
                   },
                 ),
                 const SizedBox(height: 12),

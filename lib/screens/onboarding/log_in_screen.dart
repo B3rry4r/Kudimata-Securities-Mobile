@@ -52,6 +52,7 @@ import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/api/auth_token_store.dart';
 import 'package:kudimata_invest/data/api/passcode_store.dart';
 import 'package:kudimata_invest/data/repositories/auth_repository.dart';
+import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/data/repositories/suitability_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
@@ -706,9 +707,27 @@ Future<void> refreshKycGatingState(BuildContext context) async {
       }
     }
 
+    // Added 2026-08-24 alongside the restored mandatory suitability gate
+    // (see AppState.tradingEligibilityGap) — without this, a returning
+    // investor who already accepted the risk disclaimer in a past session
+    // would be wrongly re-gated on every fresh app boot (AppState.
+    // riskDisclosureAccepted is in-memory only). Only worth checking once
+    // suitability is genuinely complete — the gate gets to that check
+    // second anyway.
+    var riskDisclosureAccepted = false;
+    if (suitabilityComplete) {
+      try {
+        final kinds = await ComplianceRepository(app.apiClient).myAcknowledgedKinds();
+        riskDisclosureAccepted = kinds.contains('risk_disclosure');
+      } on ApiException {
+        riskDisclosureAccepted = false;
+      }
+    }
+
     app.setKycSubmitted(kycSubmitted);
     app.setKycApproved(kycApproved);
     app.setSuitabilityComplete(suitabilityComplete);
+    app.setRiskDisclosureAccepted(riskDisclosureAccepted);
     app.setKycDraftProgress(kyc?.isDraft == true ? kyc!.currentStep : null, kyc?.isDraft == true ? kyc!.totalSteps : null);
     // See AppState.kycOutcomeStatus's doc comment — a genuine hard
     // rejected/flagged/expired outcome must not collapse into the same

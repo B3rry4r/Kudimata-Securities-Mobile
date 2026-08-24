@@ -23,6 +23,7 @@ void main() {
       ..kycSubmitted = true
       ..kycApproved = true
       ..suitabilityComplete = true
+      ..riskDisclosureAccepted = true
       ..signedIn = true
       // Several tab screens (Home, Markets, Wallet, Account, ...) read
       // AppScope.read(context).apiClient in repo field initializers — unset
@@ -56,16 +57,27 @@ void main() {
       // pushed static
       '/notifications', '/search', '/orders', '/watchlist',
       // pushed dynamic
-      '/asset/MTNN', '/asset/AAPL', '/portfolio/holding/MTNN', '/wallet/txn/TX1042',
+      '/asset/MTNN',
+      '/asset/AAPL',
+      '/portfolio/holding/MTNN',
+      '/wallet/txn/TX1042',
       // account subs
       '/account/personal', '/account/banks', '/account/refer', '/account/help',
-      '/account/security', '/account/notifications', '/account/legal', '/account/statements',
+      '/account/security',
+      '/account/notifications',
+      '/account/legal',
+      '/account/statements',
       // gated
       '/signup', '/otp', '/passcode/create', '/passcode/confirm', '/biometric',
       '/onboarding/personal', '/login', '/reset',
       // kyc (2026-08-24: re-sequenced to 8 real steps — chn, bank-dcs,
       // declarations, review are new)
-      '/kyc', '/kyc/bvn', '/kyc/chn', '/kyc/id', '/kyc/liveness', '/kyc/utility-bill',
+      '/kyc',
+      '/kyc/bvn',
+      '/kyc/chn',
+      '/kyc/id',
+      '/kyc/liveness',
+      '/kyc/utility-bill',
       '/kyc/bank-dcs', '/kyc/declarations', '/kyc/next-of-kin', '/kyc/review',
       '/kyc/submitted', '/kyc/approved',
       // suitability
@@ -82,7 +94,10 @@ void main() {
       '/corporate-actions', '/corporate-actions/rights-issue',
       '/corporate-actions/agm', '/corporate-actions/dividends',
       '/account/help/complaint',
-      '/account/dormant', '/account/close', '/account/data-privacy', '/locked-out',
+      '/account/dormant',
+      '/account/close',
+      '/account/data-privacy',
+      '/locked-out',
       '/account/legal/partner-disclosures', '/account/legal/referral-terms',
       '/account/legal/data-notice', '/account/legal/closure-terms',
     ];

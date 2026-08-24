@@ -560,8 +560,12 @@ class MockApiAdapter implements HttpClientAdapter {
       // parsed to '' and the result screen rendered with no profile title
       // at all (found while shot-testing this audit's suitability_result
       // screen).
+      // 'Moderate' — 2026-08-24: the real 3-tier scale (Conservative/
+      // Moderate/Aggressive) per the firm's real SEC compliance intake,
+      // superseding the earlier invented 4-tier scale this mock used to
+      // return 'Balanced' from.
       return {
-        'profile': 'Balanced',
+        'profile': 'Moderate',
         'rationale': "You'll take some ups and downs for better long-term "
             "returns, but not wild swings.",
         'completedAt': '2025-11-02T00:00:00.000Z',
@@ -590,6 +594,29 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path == '/banks/resolve-account-name') return {'accountName': 'ADEBAYO OKONKWO'};
     if (path == '/notification-preferences/me') {
       return {'orderUpdates': true, 'security': true, 'marketing': false};
+    }
+    // Plain list, not the paginated shape _fallback would otherwise
+    // synthesize for a path this short — matches the real
+    // GET /compliance-acknowledgements/me response shape. Every kind
+    // acknowledged — this mock represents a fully-onboarded investor (see
+    // AppState defaults set by every test harness's own state fixture:
+    // kycApproved/suitabilityComplete/riskDisclosureAccepted all true), so
+    // an empty list here would wrongly re-trigger the risk-disclaimer gate
+    // the moment any screen calls refreshKycGatingState (e.g. Home's
+    // mandatory first-load re-check — see home_screen.dart's
+    // _initialLoad).
+    if (path == '/compliance-acknowledgements/me') {
+      return [
+        for (final kind in ['terms_of_service', 'privacy_policy', 'risk_disclosure', 'client_agreement'])
+          {
+            'id': 'ack-$kind',
+            'userId': 'user-1',
+            'kind': kind,
+            'documentVersion': '1.0',
+            'legalDocumentId': 'doc-$kind',
+            'acknowledgedAt': '2026-08-01T09:00:00.000Z',
+          },
+      ];
     }
     if (path == '/ai/credits') return _aiCreditStatus();
     if (path == '/ai/plans') return _aiPlans;

@@ -87,6 +87,16 @@ class AppState extends ChangeNotifier {
   bool kycApproved = false;
   bool suitabilityComplete = false;
 
+  /// Whether this investor has accepted the Statutory Risk Disclaimer
+  /// (Rule 76 compliance — risk_disclaimer_screen.dart), added 2026-08-24
+  /// per the firm's real SEC-facing compliance intake. In-memory only, same
+  /// as every other gate flag here — hydrated for a RETURNING investor by
+  /// refreshKycGatingState (log_in_screen.dart) via GET
+  /// /compliance-acknowledgements/me, same "don't re-block someone who
+  /// already cleared this in a past session" reasoning kycApproved/
+  /// suitabilityComplete already handle.
+  bool riskDisclosureAccepted = false;
+
   /// Which of the 5 phased-KYC steps (2026-08-20) an in-progress draft is
   /// resuming at, and the fixed total — both null when there's no known
   /// in-progress draft (never started, or already finalized/decided).
@@ -223,6 +233,11 @@ class AppState extends ChangeNotifier {
 
   void setSuitabilityComplete(bool v) {
     suitabilityComplete = v;
+    notifyListeners();
+  }
+
+  void setRiskDisclosureAccepted(bool v) {
+    riskDisclosureAccepted = v;
     notifyListeners();
   }
 
@@ -455,15 +470,28 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
       route: Routes.kycSubmitted,
     );
   }
-  // Suitability is no longer a hard gate on trading/funding (2026-08-20
-  // directive: "make the assessment optional or hide it for now — the one
-  // that comes after KYC"). KYC approval alone is now enough to reach
-  // Buy/Sell/Add money/Withdraw — the questionnaire itself, and
-  // kyc-approved's "Start investing" entry into it, are UNCHANGED and
-  // still reachable for anyone who wants to complete it voluntarily; this
-  // just stops it from blocking anyone who doesn't. Not deleted, matching
-  // this codebase's "supersede, don't remove" convention — restore this
-  // block to re-enable the hard gate later.
+  // RESTORED 2026-08-24 (direct product instruction, after the firm's real
+  // SEC-facing compliance intake made it mandatory: "please make the
+  // suitability mandatory"). This block had been off since 2026-08-20
+  // ("make the assessment optional or hide it for now") — that directive
+  // is superseded, not this one silently reversing it. A returning
+  // investor who was already fully onboarded under the old optional regime
+  // (kycApproved=true, but never took the questionnaire) is exactly who
+  // this now correctly re-gates.
+  if (!app.suitabilityComplete) {
+    return const TradingEligibilityGap(
+      title: 'Complete your investor profile',
+      message: 'A quick suitability assessment is required before you can invest',
+      route: Routes.questionnaire,
+    );
+  }
+  if (!app.riskDisclosureAccepted) {
+    return const TradingEligibilityGap(
+      title: 'Accept the risk disclosure',
+      message: 'Please review and accept the statutory risk notice',
+      route: Routes.riskDisclaimer,
+    );
+  }
   return null;
 }
 

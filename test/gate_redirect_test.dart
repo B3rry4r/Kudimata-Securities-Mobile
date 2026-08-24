@@ -23,6 +23,7 @@ void main() {
       ..kycSubmitted = true
       ..kycApproved = true
       ..suitabilityComplete = true
+      ..riskDisclosureAccepted = true
       ..signedIn = true;
     final router = buildRouter(state);
     await tester.pumpWidget(
@@ -37,35 +38,49 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
   }
 
-  testWidgets('signed-in + /signup redirects to Home, never renders SignUpScreen', (tester) async {
-    await pumpAt(tester, Routes.signup);
-    expect(find.byType(SignUpScreen), findsNothing);
-    expect(find.byType(HomeScreen), findsOneWidget);
-  });
+  testWidgets(
+    'signed-in + /signup redirects to Home, never renders SignUpScreen',
+    (tester) async {
+      await pumpAt(tester, Routes.signup);
+      expect(find.byType(SignUpScreen), findsNothing);
+      expect(find.byType(HomeScreen), findsOneWidget);
+    },
+  );
 
-  testWidgets('signed-in + /otp redirects to Home, never renders OtpScreen', (tester) async {
+  testWidgets('signed-in + /otp redirects to Home, never renders OtpScreen', (
+    tester,
+  ) async {
     await pumpAt(tester, Routes.otp);
     expect(find.byType(OtpScreen), findsNothing);
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 
-  testWidgets('signed-in + /splash redirects to Home, never renders SplashScreen', (tester) async {
-    await pumpAt(tester, Routes.splash);
-    expect(find.byType(SplashScreen), findsNothing);
-    expect(find.byType(HomeScreen), findsOneWidget);
-  });
+  testWidgets(
+    'signed-in + /splash redirects to Home, never renders SplashScreen',
+    (tester) async {
+      await pumpAt(tester, Routes.splash);
+      expect(find.byType(SplashScreen), findsNothing);
+      expect(find.byType(HomeScreen), findsOneWidget);
+    },
+  );
 
-  testWidgets('signed-in + /reset redirects to Home, never renders ResetPasscodeScreen', (tester) async {
-    await pumpAt(tester, Routes.reset);
-    expect(find.byType(ResetPasscodeScreen), findsNothing);
-    expect(find.byType(HomeScreen), findsOneWidget);
-  });
+  testWidgets(
+    'signed-in + /reset redirects to Home, never renders ResetPasscodeScreen',
+    (tester) async {
+      await pumpAt(tester, Routes.reset);
+      expect(find.byType(ResetPasscodeScreen), findsNothing);
+      expect(find.byType(HomeScreen), findsOneWidget);
+    },
+  );
 
-  testWidgets('signed-in + /login is NOT blocked — LogInScreen (local unlock mode) still renders', (tester) async {
-    // Routes.login is deliberately dual-purpose (see app_router.dart's
-    // _gateRedirect header comment) — a signed-in investor legitimately
-    // lands here for the passcode-unlock screen, so this must NOT redirect.
-    await pumpAt(tester, Routes.login);
-    expect(find.byType(LogInScreen), findsOneWidget);
-  });
+  testWidgets(
+    'signed-in + /login is NOT blocked — LogInScreen (local unlock mode) still renders',
+    (tester) async {
+      // Routes.login is deliberately dual-purpose (see app_router.dart's
+      // _gateRedirect header comment) — a signed-in investor legitimately
+      // lands here for the passcode-unlock screen, so this must NOT redirect.
+      await pumpAt(tester, Routes.login);
+      expect(find.byType(LogInScreen), findsOneWidget);
+    },
+  );
 }

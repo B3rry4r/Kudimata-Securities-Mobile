@@ -46,6 +46,7 @@ import '../screens/kyc/outcome_not_approved.dart';
 
 // Suitability & agreements.
 import '../screens/suitability/questionnaire_screen.dart';
+import '../screens/suitability/risk_disclaimer_screen.dart';
 import '../screens/suitability/suitability_result_screen.dart';
 import '../screens/suitability/terms_and_privacy_screen.dart';
 
@@ -229,6 +230,21 @@ GoRouter buildRouter(AppState state) {
       // ── Suitability & agreements ───────────────────────────────────────--
       GoRoute(path: Routes.questionnaire, builder: (_, _) => themed(() => QuestionnaireScreen())),
       GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themed(() => SuitabilityResultScreen())),
+      GoRoute(
+        path: Routes.riskDisclaimer,
+        // Pushed from suitability_result_screen.dart with a
+        // RiskDisclaimerArgs `extra` (profile already known there), or from
+        // AppState.tradingEligibilityGap's prompt (home_screen.dart) with
+        // no `extra` at all for a returning investor re-gated here
+        // directly — RiskDisclaimerScreen fetches the real profile itself
+        // in that case (see its own header comment).
+        builder: (_, st) {
+          final args = st.extra;
+          return themed(() => RiskDisclaimerScreen(
+                profile: args is RiskDisclaimerArgs ? args.profile : null,
+              ));
+        },
+      ),
       GoRoute(
         path: Routes.termsOfService,
         // `extra` is the account email, threaded from otp_screen.dart's
@@ -422,7 +438,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill,
     Routes.kycBankDcs, Routes.kycDeclarations, Routes.kycNextOfKin, Routes.kycReview,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
-    Routes.questionnaire, Routes.suitabilityResult,
+    Routes.questionnaire, Routes.suitabilityResult, Routes.riskDisclaimer,
     Routes.termsOfService,
   };
 

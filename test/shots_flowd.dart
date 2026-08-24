@@ -44,7 +44,8 @@ Future<void> _loadFonts() async {
 
 Future<void> _capture(WidgetTester tester, GlobalKey key, String path) async {
   await tester.runAsync(() async {
-    final boundary = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final boundary =
+        key.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final image = await boundary.toImage(pixelRatio: 1.5);
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     File(path).writeAsBytesSync(bytes!.buffer.asUint8List());
@@ -52,7 +53,8 @@ Future<void> _capture(WidgetTester tester, GlobalKey key, String path) async {
 }
 
 void _mockPlatformChannels() {
-  final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   messenger.setMockMethodCallHandler(
     const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
     (call) async {
@@ -77,7 +79,11 @@ void _mockPlatformChannels() {
   );
 }
 
-Future<GlobalKey> _mountAt(WidgetTester tester, String route, {required bool kycApproved}) async {
+Future<GlobalKey> _mountAt(
+  WidgetTester tester,
+  String route, {
+  required bool kycApproved,
+}) async {
   // screen-specs.md: 390×880 phone frames — flutter_test's ~800×600 default
   // desktop-shaped surface misrepresents anything sized relative to width.
   tester.view.physicalSize = const Size(1170, 2640); // 390×880 @ 3x
@@ -94,20 +100,23 @@ Future<GlobalKey> _mountAt(WidgetTester tester, String route, {required bool kyc
     ..kycSubmitted = true
     ..kycApproved = kycApproved
     ..suitabilityComplete = true
+    ..riskDisclosureAccepted = true
     ..apiClient = apiClient;
   final router = buildRouter(state);
   final key = GlobalKey();
-  await tester.pumpWidget(RepaintBoundary(
-    key: key,
-    child: AppScope(
-      state: state,
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        theme: KTheme.light(),
-        routerConfig: router,
+  await tester.pumpWidget(
+    RepaintBoundary(
+      key: key,
+      child: AppScope(
+        state: state,
+        child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          theme: KTheme.light(),
+          routerConfig: router,
+        ),
       ),
     ),
-  ));
+  );
   await tester.pump();
   router.go(route);
   for (var i = 0; i < 6; i++) {
@@ -131,9 +140,14 @@ void main() {
   testWidgets('capture 35_36_37 buy flow', (tester) async {
     _mockPlatformChannels();
     Directory('/tmp/shots_flowd').createSync(recursive: true);
-    final key = await _mountAt(tester, Routes.assetDetail('MTNN'), kycApproved: true);
+    final key = await _mountAt(
+      tester,
+      Routes.assetDetail('MTNN'),
+      kycApproved: true,
+    );
 
-    final buyButton = find.widgetWithText(GestureDetector, 'Buy').evaluate().isNotEmpty
+    final buyButton =
+        find.widgetWithText(GestureDetector, 'Buy').evaluate().isNotEmpty
         ? find.widgetWithText(GestureDetector, 'Buy')
         : find.text('Buy');
     expect(buyButton, findsWidgets);
@@ -146,7 +160,9 @@ void main() {
     final reviewButton = find.text('Review order');
     if (reviewButton.evaluate().isEmpty) {
       // ignore: avoid_print
-      print('35_36_37: "Review order" button not found after opening Buy sheet — screens 36/37 not captured.');
+      print(
+        '35_36_37: "Review order" button not found after opening Buy sheet — screens 36/37 not captured.',
+      );
       return;
     }
     await tester.tap(reviewButton.first);
@@ -158,7 +174,9 @@ void main() {
     final placeButton = find.text('Place order');
     if (placeButton.evaluate().isEmpty) {
       // ignore: avoid_print
-      print('35_36_37: "Place order" button not found after review sheet — screen 37 not captured.');
+      print(
+        '35_36_37: "Place order" button not found after review sheet — screen 37 not captured.',
+      );
       return;
     }
     await tester.tap(placeButton.first);

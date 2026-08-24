@@ -26,65 +26,50 @@ class QuestionnaireScreen extends StatefulWidget {
 }
 
 class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
-  // 7 questions → the canvas mockup's #s27 block is explicitly labelled
-  // "Question 3 of 7" with a 7-segment progress bar (3 filled, 4 track) —
-  // this screen previously hardcoded only 5, so "of 5" never matched the
-  // design at all. Question index 2 (the 3rd question) is the ONE the
-  // canvas gives verbatim — exact prompt, exact 3 options (not 4), exact
-  // default selection (see _answers below) — every other question's copy
-  // has no canvas ground truth (the canvas only shows this one frame of
-  // the flow), so it's kept close to this screen's pre-existing content.
+  // 2026-08-24 rewrite — the previous 7-question set (invented, no canvas
+  // ground truth beyond one frame) is replaced with the exact 4-question
+  // Client Suitability Assessment from the firm's real SEC-facing
+  // compliance intake ("My observations on KSL papers.docx"): Investment
+  // Experience, Investment Objective, Investment Horizon, Risk Tolerance —
+  // each a single-select radio with exactly 3 options, wording verbatim
+  // from that document. Every question orders index 0 = LEAST risk-oriented
+  // option -> index 2 = MOST risk-oriented option (ascending) — matching
+  // the backend's real scoring.ts, which no longer needs an inversion step
+  // (see that file's own header comment for the bug history this avoids
+  // repeating). The Risk Tolerance question's own options are the
+  // document's literal (Conservative)/(Moderate)/(Aggressive) labels — the
+  // same 3 values the computed profile can come out as.
   static const List<_Question> _questions = [
-    _Question('What are you investing for?', [
-      'Growth over many years',
-      'A goal in 3–5 years',
-      'Income now',
-      "I'm just exploring",
+    _Question('Investment Experience', [
+      'No experience (Beginner)',
+      'Limited experience (Have bought basic stocks/mutual funds)',
+      'Extensive experience (Active trader, familiar with derivatives/leverage)',
     ]),
-    _Question('How long until you need this money?', [
-      'More than 10 years',
-      '5 to 10 years',
-      '2 to 5 years',
-      'Within 2 years',
+    _Question('Investment Objective', [
+      'Capital Preservation (Low risk, safety of principal)',
+      'Balanced Growth (Medium risk, capital growth + income)',
+      'Aggressive Growth (High risk, maximum capital appreciation)',
     ]),
-    // Verbatim from the canvas (#s27) — prompt, option copy and count (3,
-    // not 4) are all exact.
-    _Question('Your shares drop 20% in a month. What do you do?', [
-      "Sell everything — I can't watch that",
-      'Hold and wait it out',
-      'Buy more at the lower price',
+    _Question('Investment Horizon', [
+      'Short-term (Less than 1 year)',
+      'Medium-term (1 to 3 years)',
+      'Long-term (More than 3 years)',
     ]),
-    _Question('How much investing experience do you have?', [
-      'I invest regularly',
-      'I’ve invested a few times',
-      'A little, mostly savings',
-      'None yet',
-    ]),
-    _Question('What matters most to you?', [
-      'Highest possible growth',
-      'A balance of growth and safety',
-      'Protecting what I have',
-      'Steady income',
-    ]),
-    _Question('How would you describe your income?', [
-      'Steady and predictable',
-      'Variable, but manageable',
-      'Irregular right now',
-      'No income right now',
-    ]),
-    _Question('How comfortable are you with financial risk in general?', [
-      'Very comfortable',
-      'Somewhat comfortable',
-      'Not very comfortable',
-      'Not at all comfortable',
-    ]),
+    _Question(
+      'If my investment portfolio drops by 20% in a month, I will:',
+      [
+        'Panic and liquidate all assets immediately (Conservative)',
+        'Do nothing and wait for recovery (Moderate)',
+        'View it as a buying opportunity and invest more (Aggressive)',
+      ],
+    ),
   ];
 
   int _index = 0;
-  // Selected option index per question — defaults to the first option,
-  // EXCEPT question index 2 (the 20%-drop question), which the canvas shows
-  // with its second option ("Hold and wait it out") pre-checked.
-  final List<int> _answers = [0, 0, 1, 0, 0, 0, 0];
+  // Selected option index per question — no pre-checked default; every
+  // question starts unanswered so an investor can't submit a real
+  // regulatory intake on values they never actually chose. -1 = unanswered.
+  final List<int> _answers = List<int>.filled(4, -1);
 
   late final _repo = SuitabilityRepository(AppScope.read(context).apiClient);
   bool _submitting = false;
@@ -260,7 +245,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                           child: KButton(
                             label: 'Next question',
                             loading: _submitting,
-                            onPressed: _submitting ? null : _next,
+                            // A mandatory regulatory intake must reflect an
+                            // answer the investor actually chose — disabled
+                            // until this question has one (see _answers'
+                            // doc comment: -1 = unanswered, no more
+                            // pre-selected defaults).
+                            onPressed: _submitting || _answers[_index] == -1 ? null : _next,
                           ),
                         ),
                       ],
