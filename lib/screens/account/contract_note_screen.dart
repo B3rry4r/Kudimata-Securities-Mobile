@@ -116,6 +116,17 @@ class _ContractNoteScreenState extends State<ContractNoteScreen> {
   }
 }
 
+/// Executing-broker logos, keyed by the broker name the backend returns.
+///
+/// Mirrors ContractNotePdfService.BROKER_LOGOS on the server so the app
+/// screen and the downloaded PDF show the same mark. A map, not a hardcoded
+/// image, because the sponsoring-broker arrangement is expected to change
+/// and grow — the design canvas's own note on screen 66 says "a second
+/// broker just adds a logo".
+const Map<String, String> _kBrokerLogos = {
+  'Blue Marina Securities Limited': 'assets/partners/blue-marina.png',
+};
+
 class _NoteBody extends StatelessWidget {
   const _NoteBody({required this.note, required this.onDownload});
   final ContractNote note;
@@ -171,11 +182,27 @@ class _NoteBody extends StatelessWidget {
                   children: [
                     Text('Executed through'.upper, style: KType.micro(color: KColor.ink3)),
                     const SizedBox(width: 12),
+                    // The executing broker's LOGO, matching the rendered PDF
+                    // and design 66 — 2026-08-24: this row showed the broker
+                    // as plain text while the PDF carried the mark, so the
+                    // same document looked different in the app and in the
+                    // downloaded file. Falls back to the name when a broker
+                    // has no logo shipped, so adding one is a file plus a
+                    // map entry and nothing else changes.
                     Expanded(
-                      child: Text(
-                        note.executingBroker,
-                        style: KType.data(color: KColor.ink),
-                        textAlign: TextAlign.right,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: _kBrokerLogos.containsKey(note.executingBroker)
+                            ? Image.asset(
+                                _kBrokerLogos[note.executingBroker]!,
+                                height: 16,
+                                fit: BoxFit.contain,
+                              )
+                            : Text(
+                                note.executingBroker,
+                                style: KType.data(color: KColor.ink),
+                                textAlign: TextAlign.right,
+                              ),
                       ),
                     ),
                   ],
