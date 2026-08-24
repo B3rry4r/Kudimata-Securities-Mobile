@@ -133,6 +133,10 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.signup, builder: (_, _) => themed(() => SignUpScreen())),
       GoRoute(path: Routes.otp, builder: (_, _) => themed(() => OtpScreen())),
       GoRoute(
+        path: Routes.legalBundlePreview,
+        builder: (_, _) => themed(() => LegalBundlePreviewScreen()),
+      ),
+      GoRoute(
         path: Routes.legalPreviewPath,
         builder: (_, st) =>
             themed(() => LegalPreviewScreen(kind: st.pathParameters['kind']!)),
@@ -430,8 +434,10 @@ String? _gateRedirect(AppState state, GoRouterState st) {
   }
   if (gated.contains(loc)) return null;     // gated flow always allowed
   // Legal-document preview is reachable pre-signup (sign_up_screen.dart's
-  // "By continuing..." links) — a parameterized route, so a prefix check
-  // rather than the `gated` set's exact-string membership.
+  // "By continuing..." link) — both the bundle list (exact match) and each
+  // individual document (a parameterized route, so a prefix check rather
+  // than the `gated` set's exact-string membership).
+  if (loc == Routes.legalBundlePreview) return null;
   if (loc.startsWith('/legal-preview/')) return null;
   return Routes.splash;                      // any deep link into the app → splash
 }

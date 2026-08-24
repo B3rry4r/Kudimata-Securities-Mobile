@@ -238,8 +238,8 @@ class _ReviewSubmitScreenState extends State<ReviewSubmitScreen> {
   String _idSummary(KycSubmissionStatus? draft) {
     if (draft == null || draft.documentType == null) return 'Not uploaded yet';
     const labels = {
-      'nin': 'NIN slip',
-      'passport': 'Passport',
+      'nin': 'NIN',
+      'passport': 'International passport',
       'drivers_licence': "Driver's licence",
       'voters_card': "Voter's card",
     };

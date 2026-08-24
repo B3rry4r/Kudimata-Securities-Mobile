@@ -34,15 +34,21 @@ class IdUploadScreen extends StatefulWidget {
 }
 
 class _IdUploadScreenState extends State<IdUploadScreen> {
-  // Order and labels match the canvas mockup's ID-type chips exactly
-  // (screen 16: Driver's licence, Passport, Voter's card, NIN slip) — only
-  // the on-screen affordance changed (a picker sheet, not a chip row; see
-  // _pickType's doc comment), not the set/order/wording of choices.
+  // Order matches the canvas mockup's ID-type chips (screen 16: Driver's
+  // licence, Passport, Voter's card, NIN slip) — only the on-screen
+  // affordance changed (a picker sheet, not a chip row; see _pickType's
+  // doc comment). Two labels corrected 2026-08-24 per direct product
+  // feedback ("NIN not NIN slip", "ID type is International passport"):
+  // canvas literally says "Passport"/"NIN slip", but "International
+  // Passport" is the correct official document name (distinct from a
+  // domestic-only ID), and "NIN slip" specifically means the printed slip
+  // — the KYC check itself verifies the NIN number, not that particular
+  // physical document, so the plainer "NIN" is the accurate label.
   static const _types = [
     _IdType('licence', "Driver's licence"),
-    _IdType('passport', 'Passport'),
+    _IdType('passport', 'International passport'),
     _IdType('voters_card', "Voter's card"),
-    _IdType('nin', 'NIN slip'),
+    _IdType('nin', 'NIN'),
   ];
 
   String _type = 'licence';
@@ -253,8 +259,8 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
   }
 
   String _documentName(String kind) => switch (kind) {
-        'nin' => 'NIN slip',
-        'passport' => 'Passport',
+        'nin' => 'NIN',
+        'passport' => 'International passport',
         'drivers_licence' => "Driver's licence",
         'voters_card' => "Voter's card",
         _ => kind,

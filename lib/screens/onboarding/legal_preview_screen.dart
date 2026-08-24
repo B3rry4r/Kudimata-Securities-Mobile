@@ -12,11 +12,13 @@
 // acknowledgement to belong to. Real acceptance happens moments later, on
 // the dedicated screens right after OTP verification.
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'document_summary_screen.dart';
 
@@ -142,6 +144,126 @@ class _LegalPreviewScreenState extends State<LegalPreviewScreen> {
           original: original.toString().trim(),
         );
       },
+    );
+  }
+}
+
+/// "Terms & disclosures" — one scrollable screen listing all 4 real legal
+/// documents, reachable pre-signup (no account/token yet, same
+/// GET /public/legal-documents/content/:kind LegalPreviewScreen already
+/// uses). 2026-08-24, replacing sign_up_screen.dart's 4 separate inline
+/// hyperlinks: direct feedback wanted "the old structure... all in one
+/// screen where they scroll see all and click" instead of naming each
+/// document individually in a sentence. Each row still opens the same
+/// LegalPreviewScreen detail — only the entry point changed.
+const List<String> _kAllLegalKinds = [
+  'terms_of_service',
+  'privacy_policy',
+  'risk_disclosure',
+  'client_agreement',
+];
+
+class LegalBundlePreviewScreen extends StatefulWidget {
+  const LegalBundlePreviewScreen({super.key});
+
+  @override
+  State<LegalBundlePreviewScreen> createState() => _LegalBundlePreviewScreenState();
+}
+
+class _LegalBundlePreviewScreenState extends State<LegalBundlePreviewScreen> {
+  late final _repo = LegalDocumentsRepository(AppScope.read(context).apiClient);
+  late Future<List<LegalDocument>> _future = _load();
+
+  Future<List<LegalDocument>> _load() =>
+      Future.wait(_kAllLegalKinds.map(_repo.getPublicContent));
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: KColor.bg,
+      appBar: const KDetailHeader(title: 'Terms & disclosures'),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: FutureBuilder<List<LegalDocument>>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const KLoadingView();
+              }
+              if (snapshot.hasError) {
+                return KErrorView(onPrimary: () => setState(() => _future = _load()));
+              }
+              final docs = snapshot.data!;
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Four documents, one agreement. Each one has a plain-English summary — tap any row to read it.',
+                      style: KType.body(color: KColor.ink2),
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: KColor.paper,
+                        border: Border.all(color: KColor.hairline),
+                        borderRadius: KRadii.cardR,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < docs.length; i++)
+                            _LegalBundleRow(
+                              doc: docs[i],
+                              showDivider: i != docs.length - 1,
+                              onTap: () => context.push(Routes.legalPreview(docs[i].kind)),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LegalBundleRow extends StatelessWidget {
+  const _LegalBundleRow({required this.doc, required this.showDivider, required this.onTap});
+  final LegalDocument doc;
+  final bool showDivider;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          border: showDivider
+              ? Border(bottom: BorderSide(color: KColor.hairline, width: 1))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                LegalPreviewScreen._titles[doc.kind] ?? doc.title,
+                style: KType.cardTitle(),
+              ),
+            ),
+            KIcon('chevronRight', size: 18, color: KColor.ink3),
+          ],
+        ),
+      ),
     );
   }
 }

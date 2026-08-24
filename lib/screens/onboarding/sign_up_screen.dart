@@ -49,25 +49,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _confirmPassword.text.trim().isNotEmpty &&
       _confirmPassword.text.trim() == _password.text.trim();
 
-  // Tap targets for the "By continuing..." line below — pushes a read-only
-  // preview (legal_preview_screen.dart) via GET /public/legal-documents/
-  // content/:kind, the one legal-documents route with no auth requirement,
-  // since there's no account/token yet on this screen.
-  late final _termsTap = TapGestureRecognizer()
-    ..onTap = () => context.push(Routes.legalPreview('terms_of_service'));
-  late final _privacyTap = TapGestureRecognizer()
-    ..onTap = () => context.push(Routes.legalPreview('privacy_policy'));
-  late final _riskTap = TapGestureRecognizer()
-    ..onTap = () => context.push(Routes.legalPreview('risk_disclosure'));
-  // 2026-08-24: the line used to name only 3 of the 4 real documents an
-  // investor must actually agree to (Client Agreement was missing) —
-  // direct product feedback: "by continuing you agree to our... should
-  // agree to terms and disclosures meaning all our legal". Added for real,
-  // not just in copy — legal_preview_screen.dart's kind-keyed maps needed
-  // a client_agreement entry too (a genuine, separately-confirmed small
-  // gap: it only covered terms_of_service/privacy_policy/risk_disclosure).
-  late final _agreementTap = TapGestureRecognizer()
-    ..onTap = () => context.push(Routes.legalPreview('client_agreement'));
+  // Tap target for the "By continuing..." line below — pushes ONE
+  // scrollable list of all 4 real documents (legal_preview_screen.dart's
+  // LegalBundlePreviewScreen), each fetched via the unauthenticated
+  // GET /public/legal-documents/content/:kind mirror (no account/token yet
+  // on this screen). 2026-08-24: replaced 4 separate inline hyperlinks
+  // (which also used to name only 3 of the 4 real documents — Client
+  // Agreement was missing) — direct feedback wanted one link opening "all
+  // in one screen where they scroll see all and click", not a sentence
+  // naming each document.
+  late final _legalTap = TapGestureRecognizer()
+    ..onTap = () => context.push(Routes.legalBundlePreview);
 
   @override
   void dispose() {
@@ -77,10 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _email.dispose();
     _password.dispose();
     _confirmPassword.dispose();
-    _termsTap.dispose();
-    _privacyTap.dispose();
-    _riskTap.dispose();
-    _agreementTap.dispose();
+    _legalTap.dispose();
     super.dispose();
   }
 
@@ -206,31 +195,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 children: [
                   const TextSpan(text: 'By continuing you agree to our '),
                   TextSpan(
-                    text: 'Terms of Service',
+                    text: 'Terms & disclosures',
                     style: KType.data(color: KColor.ink2)
                         .copyWith(decoration: TextDecoration.underline),
-                    recognizer: _termsTap,
-                  ),
-                  const TextSpan(text: ', '),
-                  TextSpan(
-                    text: 'Privacy Policy',
-                    style: KType.data(color: KColor.ink2)
-                        .copyWith(decoration: TextDecoration.underline),
-                    recognizer: _privacyTap,
-                  ),
-                  const TextSpan(text: ', '),
-                  TextSpan(
-                    text: 'Risk Disclosure',
-                    style: KType.data(color: KColor.ink2)
-                        .copyWith(decoration: TextDecoration.underline),
-                    recognizer: _riskTap,
-                  ),
-                  const TextSpan(text: ' and '),
-                  TextSpan(
-                    text: 'Client Agreement',
-                    style: KType.data(color: KColor.ink2)
-                        .copyWith(decoration: TextDecoration.underline),
-                    recognizer: _agreementTap,
+                    recognizer: _legalTap,
                   ),
                   const TextSpan(text: '.'),
                 ],

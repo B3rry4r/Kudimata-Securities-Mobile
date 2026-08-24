@@ -220,11 +220,21 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                               ),
                             ),
                             const SizedBox(height: 18),
+                            // 2026-08-24: canvas's own literal copy here was
+                            // a blunt "You can lose money" warning with no
+                            // context — direct feedback: "a better glossary
+                            // than you can loose money... that is wrong
+                            // UX". Reframed in the app's own explain-first
+                            // voice (same as ExplainTrigger/GlossaryTerm
+                            // elsewhere) — still states the real risk (a
+                            // genuine regulatory disclosure, not removable),
+                            // just explains WHY prices move instead of
+                            // stopping at the warning.
                             const KNudgeCard(
                               tone: KNudgeTone.grape,
-                              title: 'You can lose money',
+                              title: 'Why share prices move',
                               body:
-                                  "Share prices fall as well as rise. Only invest money you won't need for the next few years.",
+                                  "A share's price follows how the company is doing and what other investors think it's worth — it can rise or fall on any given day. That's true of every stock here, which is why we show you the risk label and explain each one before you buy.",
                             ),
                             const SizedBox(height: 18),
                             if (_error != null) ...[

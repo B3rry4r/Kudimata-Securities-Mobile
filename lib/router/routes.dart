@@ -98,6 +98,14 @@ class Routes {
   // it also needs an entry in app_router.dart's `_gateRedirect`.
   static String legalPreview(String kind) => '/legal-preview/$kind';
 
+  // 2026-08-24: sign-up's "By continuing..." line used to be 4 separate
+  // inline links, each pushing legalPreview directly — direct feedback
+  // wanted "the old structure... all in one screen where they scroll see
+  // all and click" instead. One scrollable row-list of all 4 documents;
+  // each row still opens the same legalPreview detail. Reachable
+  // pre-signup, same as legalPreview — also needs a _gateRedirect entry.
+  static const String legalBundlePreview = '/legal-preview';
+
   // Path patterns for GoRoute registration (the router agent uses these).
   static const String assetDetailPath = '/asset/:ticker';
   static const String holdingDetailPath = '/portfolio/holding/:ticker';
