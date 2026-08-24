@@ -4,10 +4,11 @@
 // shell owns KBottomNav). Mirrors `Profile` in settings-screens.jsx.
 //
 // Wired to GET /users/me (personalInfo — cscsNumber/accountStatus/fullName)
-// and GET /bank-accounts (primary bank's masked number for the "Bank
-// accounts & DCS" row) per lib/data/api/README.md's FutureBuilder
-// convention. "Legal" no longer fetches/shows a document count (2026-08-24,
-// direct product instruction — see _menuRows). "Verified" comes from
+// per lib/data/api/README.md's FutureBuilder convention. Neither "Bank
+// accounts & DCS" nor "Legal" fetch/show trailing meta text anymore
+// (2026-08-24, direct product instruction — see _menuRows: the bank
+// name/masked number crowded that row, and the document count was
+// dropped separately). "Verified" comes from
 // AppState.kycApproved — already refreshed at login (see
 // refreshKycGatingState), so no extra fetch is needed for it. "Log out" was
 // removed from this screen (2026-08-23 exactness pass): the canvas's #s45
@@ -16,7 +17,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
-import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -35,14 +35,16 @@ import 'account_widgets.dart';
 /// on other screens are non-exhaustive entry-point hints, not an override).
 /// "Notifications" stays correctly dropped — not a row on this screen in
 /// the mockup (reachable from Home's bell icon instead, screen 29).
-List<(String title, String route, String? trailing)> _menuRows({
-  required BankAccountSummary? primaryBank,
-}) {
-  final bankTrailing =
-      primaryBank == null ? null : '${primaryBank.bankName} ${primaryBank.accountNumberMasked}';
+List<(String title, String route, String? trailing)> _menuRows() {
   return [
     ('Personal info', Routes.acctPersonal, null),
-    ('Bank accounts & DCS', Routes.acctBanks, bankTrailing),
+    // 2026-08-24: trailing bank name/masked number removed per direct
+    // product instruction ("You tab should not show the user bank account
+    // and number... so that the bank account and DCS can sit properly") —
+    // canvas s45 does show it ("GTB ••••6789"), but a long bank name
+    // crowded this row; the full detail is one tap away on the Bank
+    // accounts & DCS screen itself.
+    ('Bank accounts & DCS', Routes.acctBanks, null),
     ('Plans & credits', Routes.acctPlans, null),
     ('Statements & documents', Routes.acctStatements, null),
     ('Security', Routes.acctSecurity, null),
@@ -75,42 +77,12 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
-  late final _banksRepo = BankAccountsRepository(AppScope.read(context).apiClient);
-  late Future<(PersonalInfo, BankAccountSummary?)> _future = _load();
+  late Future<PersonalInfo> _future = _userRepo.personalInfo();
 
   // Local-only — no app-wide language/locale persistence exists anywhere in
   // this app yet, same as onboarding/welcome_slider_screen.dart's and
   // document_summary_screen.dart's own KLanguageSwitch usage.
   String _lang = 'en';
-
-  Future<(PersonalInfo, BankAccountSummary?)> _load() async {
-    final infoFuture = _userRepo.personalInfo();
-    final bankFuture = _fetchPrimaryBank();
-    final info = await infoFuture;
-    final bank = await bankFuture;
-    return (info, bank);
-  }
-
-  /// A 404/empty list just means no bank account is linked yet — a normal
-  /// state (see bank_accounts_screen.dart's own empty state), not a reason
-  /// to fail this whole screen. Same "optional secondary fetch" pattern as
-  /// personal_info_screen.dart's `_fetchBvn`. Catches broadly (not just
-  /// [ApiException]): the trailing meta text on this row is purely
-  /// cosmetic, so any failure to fetch it — including a malformed response
-  /// — should degrade to "no trailing text", never take down the whole
-  /// Account hub.
-  Future<BankAccountSummary?> _fetchPrimaryBank() async {
-    try {
-      final accounts = await _banksRepo.list();
-      if (accounts.isEmpty) return null;
-      for (final a in accounts) {
-        if (a.primary) return a;
-      }
-      return accounts.first;
-    } catch (_) {
-      return null;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +91,7 @@ class _AccountScreenState extends State<AccountScreen> {
       backgroundColor: KColor.bg,
       body: SafeArea(
         bottom: false,
-        child: FutureBuilder<(PersonalInfo, BankAccountSummary?)>(
+        child: FutureBuilder<PersonalInfo>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -127,13 +99,11 @@ class _AccountScreenState extends State<AccountScreen> {
             }
             if (snapshot.hasError) {
               return KErrorView(
-                onPrimary: () => setState(() => _future = _load()),
+                onPrimary: () => setState(() => _future = _userRepo.personalInfo()),
               );
             }
-            final (info, primaryBank) = snapshot.data!;
             return _AccountBody(
-              info: info,
-              primaryBank: primaryBank,
+              info: snapshot.data!,
               verified: kycApproved,
               lang: _lang,
               onLangChanged: (v) => setState(() => _lang = v),
@@ -148,14 +118,12 @@ class _AccountScreenState extends State<AccountScreen> {
 class _AccountBody extends StatelessWidget {
   const _AccountBody({
     required this.info,
-    required this.primaryBank,
     required this.verified,
     required this.lang,
     required this.onLangChanged,
   });
 
   final PersonalInfo info;
-  final BankAccountSummary? primaryBank;
   final bool verified;
   final String lang;
   final ValueChanged<String> onLangChanged;
@@ -173,7 +141,7 @@ class _AccountBody extends StatelessWidget {
         : '${info.accountStatus[0].toUpperCase()}${info.accountStatus.substring(1)} account';
     final subtitle = hasChn ? 'CHN ${info.cscsNumber} · $statusText' : statusText;
 
-    final rows = _menuRows(primaryBank: primaryBank);
+    final rows = _menuRows();
 
     return SingleChildScrollView(
       // Root tab: clear the floating KBottomNav (~70px + margin + safe area)

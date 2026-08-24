@@ -413,41 +413,87 @@ class _VerifiedContent {
         // "Your holdings" — no "See all" affordance in canvas s29.
         Padding(padding: _gut, child: const KEyebrow('Your holdings')),
         const SizedBox(height: 8),
-        data.holdings.isEmpty
-            ? Padding(
-                padding: _gut,
-                child: _HoldingsEmptyCard(onTap: () => context.go(Routes.markets)),
-              )
-            : Padding(
-                padding: _gut,
-                child: KCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < data.holdings.length; i++)
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: i == 0
-                                  ? BorderSide.none
-                                  : BorderSide(color: KColor.hairline, width: 1),
-                            ),
-                          ),
-                          child: KAssetRow(
-                            name: data.holdings[i].name,
-                            ticker: data.holdings[i].ticker,
-                            price: data.holdings[i].price,
-                            change: data.holdings[i].change,
-                            trend: _kTrend(data.holdings[i].trend),
-                            logoColor: data.holdings[i].logoColor ?? KColor.ink,
-                            onTap: () =>
-                                context.push(Routes.assetDetail(data.holdings[i].ticker)),
-                          ),
+        if (data.holdings.isEmpty)
+          Padding(
+            padding: _gut,
+            child: _HoldingsEmptyCard(onTap: () => context.go(Routes.markets)),
+          )
+        else
+          Padding(
+            padding: _gut,
+            child: KCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Column(
+                children: [
+                  for (var i = 0; i < data.holdings.length; i++)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: i == 0
+                              ? BorderSide.none
+                              : BorderSide(color: KColor.hairline, width: 1),
                         ),
-                    ],
-                  ),
-                ),
+                      ),
+                      child: KAssetRow(
+                        name: data.holdings[i].name,
+                        ticker: data.holdings[i].ticker,
+                        price: data.holdings[i].price,
+                        change: data.holdings[i].change,
+                        trend: _kTrend(data.holdings[i].trend),
+                        logoColor: data.holdings[i].logoColor ?? KColor.ink,
+                        onTap: () =>
+                            context.push(Routes.assetDetail(data.holdings[i].ticker)),
+                      ),
+                    ),
+                ],
               ),
+            ),
+          ),
+
+        // 2026-08-24: a verified investor with zero holdings previously saw
+        // a near-dead screen below the quick actions (no DigestCard —
+        // that's gated on real holdings — just one bare empty-state card).
+        // Direct feedback: "home not showing any market cards". Not a
+        // canvas element (s29 assumes an investor who already holds
+        // MTNN/GTCO) — but real trending data was ALREADY fetched for the
+        // not-verified body's "Biggest mover" row, so reusing it here is
+        // honest, not fabricated: real quotes, just surfaced in a state
+        // canvas doesn't cover.
+        if (data.holdings.isEmpty && data.trending.isNotEmpty) ...[
+          const SizedBox(height: 28),
+          Padding(padding: _gut, child: const KEyebrow('Trending on the NGX')),
+          const SizedBox(height: 8),
+          Padding(
+            padding: _gut,
+            child: KCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Column(
+                children: [
+                  for (var i = 0; i < data.trending.length; i++)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: i == 0
+                              ? BorderSide.none
+                              : BorderSide(color: KColor.hairline, width: 1),
+                        ),
+                      ),
+                      child: KAssetRow(
+                        name: data.trending[i].name,
+                        ticker: data.trending[i].ticker,
+                        price: data.trending[i].price,
+                        change: data.trending[i].change,
+                        trend: _kTrend(data.trending[i].trend),
+                        logoColor: data.trending[i].logoColor ?? KColor.ink,
+                        onTap: () =>
+                            context.push(Routes.assetDetail(data.trending[i].ticker)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ];
 }
 
