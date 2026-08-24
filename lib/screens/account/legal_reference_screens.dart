@@ -368,9 +368,9 @@ class _DataNoticeScreenState extends State<DataNoticeScreen> {
   late final Future<String?> _original = _fetchOriginal(context, 'privacy_policy');
 
   static const _points = [
-    'Identity, BVN, NIN and documents: kept 6 years after your account closes, as the SEC '
+    'Identity, BVN, NIN and documents: kept 12 years after your account closes, as the SEC '
         'requires.',
-    'Trading records and contract notes: kept 6 years; you can download them any time.',
+    'Trading records and contract notes: kept 12 years; you can download them any time.',
     'Optional analytics and product email: your choice, changeable in Data & privacy.',
     'We never sell your data, and we never share holdings with anyone but the CSCS and '
         'your broker.',
@@ -413,7 +413,7 @@ class _AccountClosureTermsScreenState extends State<AccountClosureTermsScreen> {
   static const _points = [
     'Sell your shares, or instruct the CSCS to move them to another broker.',
     'Your wallet balance is paid to the DCS account in your name.',
-    'Documents stay downloadable for 6 years, so tax filings are not affected.',
+    'Documents stay downloadable for 12 years, so tax filings are not affected.',
     'Your CHN belongs to you for life — closing here does not close it at the CSCS.',
   ];
 

@@ -159,7 +159,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
           children: [
             KAccountRow(
               title: 'How long we keep things',
-              sub: 'Trading records 6 years, as the SEC requires',
+              sub: 'Trading records 12 years, as the SEC requires',
               right: const KRowChevron(),
               first: true,
               onTap: _openDataNotice,

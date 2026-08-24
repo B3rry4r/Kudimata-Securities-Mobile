@@ -169,7 +169,7 @@ class _CloseAccountScreenState extends State<CloseAccountScreen> {
                   'Your shares must be sold or moved to another broker first — we cannot '
                       'close an account holding stock.',
                   'Wallet money is paid to ${summary?.payoutAccountLabel ?? 'your DCS account'}.',
-                  'Statements, contract notes and tax documents stay downloadable for 6 years, '
+                  'Statements, contract notes and tax documents stay downloadable for 12 years, '
                       'as the SEC requires.',
                   'Your CHN stays yours for life; closing here does not close it at the CSCS.',
                 ],
