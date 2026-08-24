@@ -116,7 +116,7 @@ class _ChnScreenState extends State<ChnScreen> {
                     const KScreenHead(
                       title: 'Do you have a CHN?',
                       body:
-                          "Only if you've invested on the NGX before. If not, we'll get one for you — nothing to do here.",
+                          "Only if you've invested before. If not, we'll get one for you — nothing to do here.",
                     ),
                     const SizedBox(height: 20),
                     _ChoiceRow(

@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import 'app/app_state.dart';
 import 'data/api/api_client.dart';
 import 'data/api/auth_token_store.dart';
+import 'data/repositories/market_status_repository.dart';
 import 'data/repositories/watchlist_repository.dart';
 import 'router/app_router.dart';
 import 'screens/kyc/kyc_form_state.dart';
@@ -59,6 +60,7 @@ class _KudimataAppState extends State<KudimataApp> {
     _state.ready.then((_) {
       if (_state.signedIn) {
         _state.hydrateWatchlist(WatchlistRepository(_state.apiClient));
+        _state.startMarketStatusPolling(MarketStatusRepository(_state.apiClient));
       }
     });
   }

@@ -56,6 +56,7 @@ import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
+import 'market_hours.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -234,6 +235,7 @@ class _AssetDetailBody extends StatelessWidget {
     // local first restores that promotion.
     final holding = this.holding;
     final series = asset.ticker == 'MTNN' ? MockData.mtnnSeries : asset.sparkline;
+    final marketOpen = AppScope.of(context).marketOpen;
 
     return Column(
       children: [
@@ -241,6 +243,17 @@ class _AssetDetailBody extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(top: 8, bottom: 24),
             children: [
+              // 2026-08-24: this screen never showed any closed-market
+              // indication at all (reported live as "markets dont show
+              // closed too") — same banner markets_screen.dart shows. The
+              // chart/price below stay as-is (last close, same as any
+              // broker app shows outside trading hours) — only the small
+              // live-look sparkline on the Markets LIST gets hidden when
+              // closed, not this screen's real historical range chart.
+              if (!marketOpen) ...[
+                const Padding(padding: _gut, child: KMarketClosedBanner()),
+                const SizedBox(height: 16),
+              ],
               // price header — screen 33 is a hero price + change line
               // directly on the page background (no purple/ink feature
               // panel here; that treatment is reserved for wallet/portfolio

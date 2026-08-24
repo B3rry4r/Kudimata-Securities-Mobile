@@ -131,7 +131,7 @@ class StatementDetailScreen extends StatelessWidget {
                     // doesn't describe the per-broker page structure this
                     // build doesn't have yet (see header comment).
                     Text(
-                      'Valuations are NGX closing prices. Dividends are net of '
+                      'Valuations are market closing prices. Dividends are net of '
                       'withholding tax.',
                       style: KType.micro(color: KColor.ink3).copyWith(letterSpacing: 0, height: 1.6),
                     ),

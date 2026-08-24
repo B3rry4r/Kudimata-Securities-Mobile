@@ -16,7 +16,6 @@ import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/orders_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
-import 'package:kudimata_invest/screens/markets/market_hours.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -66,7 +65,7 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final marketOpen = isNgxOpenNow();
+    final marketOpen = AppScope.of(context).marketOpen;
     return Scaffold(
       backgroundColor: KColor.bg,
       appBar: const KDetailHeader(title: 'Orders'),

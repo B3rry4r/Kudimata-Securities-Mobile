@@ -56,7 +56,7 @@ class PlansScreen extends StatelessWidget {
             price: '₦2,000',
             credits: '250',
             featured: true,
-            features: const ['Summaries for every NGX filing', 'Priority support'],
+            features: const ['Summaries for every company filing', 'Priority support'],
             action: KButton(
               label: 'Choose Pro',
               variant: KButtonVariant.warm,

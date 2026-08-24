@@ -175,7 +175,7 @@ class MockData {
     AppNotification(title: 'Price alert', body: 'GTCO is up 2.20% today, now at ₦48.20.', time: '5h ago', icon: 'markets', unread: true),
     AppNotification(title: 'Wallet funded', body: 'We received ₦50,000.00 via bank transfer.', time: '1d ago', icon: 'wallet'),
     AppNotification(title: 'Withdrawal pending', body: 'Your ₦25,000.00 withdrawal is being processed.', time: '2d ago', icon: 'transfer'),
-    AppNotification(title: 'Welcome to Kudimata', body: 'Your account is verified. Start investing in NGX stocks.', time: '5d ago', icon: 'bell'),
+    AppNotification(title: 'Welcome to Kudimata', body: 'Your account is verified. Start investing.', time: '5d ago', icon: 'bell'),
   ];
 
   // ── Demo user ────────────────────────────────────────────────────────────

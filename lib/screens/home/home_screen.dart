@@ -403,7 +403,7 @@ class _VerifiedContent {
           Padding(
             padding: _gut,
             child: KDigestCard(
-              title: 'Your week on the NGX',
+              title: 'Your week in the market',
               body: _weeklyDigest(data.holdings),
             ),
           ),
@@ -461,7 +461,7 @@ class _VerifiedContent {
         // canvas doesn't cover.
         if (data.holdings.isEmpty && data.trending.isNotEmpty) ...[
           const SizedBox(height: 28),
-          Padding(padding: _gut, child: const KEyebrow('Trending on the NGX')),
+          Padding(padding: _gut, child: const KEyebrow('Trending now')),
           const SizedBox(height: 8),
           Padding(
             padding: _gut,
@@ -567,7 +567,7 @@ class _NotVerifiedContent {
       const SizedBox(height: 20),
 
       if (mover != null) ...[
-        Padding(padding: _gut, child: const KEyebrow('Biggest mover today · NGX')),
+        Padding(padding: _gut, child: const KEyebrow('Biggest mover today')),
         const SizedBox(height: 8),
         Padding(
           padding: _gut,
@@ -590,7 +590,7 @@ class _NotVerifiedContent {
       Padding(
         padding: _gut,
         child: Text(
-          'You can follow prices and read explanations while you verify — orders open when the NGX confirms your account.',
+          'You can follow prices and read explanations while you verify — orders open once your account is confirmed.',
           style: KType.data(color: KColor.ink3),
         ),
       ),

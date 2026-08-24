@@ -15,6 +15,7 @@ import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
+import 'market_hours.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -94,9 +95,17 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   }
 
   Widget _list(BuildContext context, List<Asset> items) {
+    final marketOpen = AppScope.of(context).marketOpen;
     return ListView(
       padding: const EdgeInsets.only(top: 16, bottom: 24),
       children: [
+        // 2026-08-24: this screen never showed any closed-market
+        // indication at all (reported live as "markets dont show closed
+        // too") — added the same banner markets_screen.dart shows.
+        if (!marketOpen) ...[
+          const Padding(padding: _gut, child: KMarketClosedBanner()),
+          const SizedBox(height: 16),
+        ],
         Padding(
           padding: _gut,
           child: KCard(
@@ -185,7 +194,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
         Padding(
           padding: _gut,
           child: KButton(
-            label: 'Find more on the NGX',
+            label: 'Find shares to watch',
             onPressed: () => context.go(Routes.markets),
           ),
         ),

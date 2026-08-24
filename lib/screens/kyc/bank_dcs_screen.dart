@@ -344,7 +344,7 @@ class _DcsPanel extends StatelessWidget {
                 child: Text('Direct Cash Settlement',
                     style: KType.cardTitle(color: KColor.indicatorPress)),
               ),
-              Text('REQUIRED BY THE NGX', style: KType.micro(color: KColor.ink3)),
+              Text('REQUIRED FOR TRADING', style: KType.micro(color: KColor.ink3)),
             ],
           ),
           const SizedBox(height: 10),

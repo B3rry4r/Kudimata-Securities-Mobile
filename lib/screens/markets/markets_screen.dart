@@ -65,11 +65,11 @@ class _MarketsScreenState extends State<MarketsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Flow G, spec screen 60 — "Markets · closed". A client-side heuristic
-    // (see market_hours.dart's header comment); computed once per build,
-    // not polled, since a stale-by-a-few-minutes open/closed banner is
-    // harmless and this screen already rebuilds on every navigation to it.
-    final marketOpen = isNgxOpenNow();
+    // Flow G, spec screen 60 — "Markets · closed". AppState.marketOpen
+    // (2026-08-24) is backend-driven (GET /market-status, polled every 30s)
+    // so a staff override set from the admin dashboard's Settings screen is
+    // reflected here — see app_state.dart's doc comment.
+    final marketOpen = AppScope.of(context).marketOpen;
 
     return Scaffold(
       backgroundColor: KColor.bg,
@@ -95,32 +95,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
             const SizedBox(height: 12),
 
             if (!marketOpen) ...[
-              Padding(
-                padding: _gut,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(color: KColor.track, borderRadius: KRadii.cardR),
-                  child: Row(
-                    children: [
-                      KIcon('clock', size: 18, color: KColor.ink2),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('The NGX is closed', style: KType.cardTitle()),
-                            const SizedBox(height: 2),
-                            Text(
-                              "Opens tomorrow at 10:00 · prices below are Friday's close",
-                              style: KType.data(color: KColor.ink2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const Padding(padding: _gut, child: KMarketClosedBanner()),
               const SizedBox(height: 12),
             ],
 
@@ -182,7 +157,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                   tone: KNudgeTone.grape,
                   title: 'You can still place an order',
                   body:
-                      'It queues for 10:00 tomorrow and fills at the opening price, which may differ from what you see now.',
+                      'It queues for 10:00 ${marketNextOpenLabel()} and fills at the opening price, which may differ from what you see now.',
                 ),
               ),
             ],

@@ -111,7 +111,12 @@ class _SuitabilityResultBody extends StatelessWidget {
                     children: [
                       Text('What this unlocks', style: KType.cardTitle()),
                       const SizedBox(height: 12),
-                      _UnlockRow(icon: 'check', color: KColor.gain, label: 'NGX shares and ETFs'),
+                      // 2026-08-24: dropped "and ETFs" — this product
+                      // carries no ETFs at all (Markets is NGX ordinary
+                      // shares only, see markets_screen.dart's own header
+                      // comment), same "don't promise a product this app
+                      // has never offered" reasoning as the row below.
+                      _UnlockRow(icon: 'check', color: KColor.gain, label: 'Nigerian shares'),
                       const SizedBox(height: 12),
                       // Canvas #s28's second row literally says "NGX-listed
                       // ETFs and bonds" — dropped here, not ported verbatim:
@@ -126,7 +131,7 @@ class _SuitabilityResultBody extends StatelessWidget {
                       _UnlockRow(
                         icon: 'alert',
                         color: KColor.ink3,
-                        label: 'Only NGX-listed instruments for now — no foreign stocks',
+                        label: 'Only Nigerian shares for now — no foreign stocks',
                       ),
                     ],
                   ),

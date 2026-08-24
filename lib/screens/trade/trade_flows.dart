@@ -55,7 +55,6 @@ import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart'
     show BankAccountSummary;
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/router/routes.dart';
-import 'package:kudimata_invest/screens/markets/market_hours.dart';
 import 'package:kudimata_invest/screens/wallet/wallet_flows.dart' show showAddMoneyFlow;
 import 'package:go_router/go_router.dart';
 
@@ -103,7 +102,7 @@ Future<void> _runTradeFlow(BuildContext context, Asset asset, {required _Side si
   // of going through the normal amount/review/confirm chain (spec 61's own
   // nav note: "Queue -> 62", a LATER/separate screen, not this flow's
   // success step).
-  if (side == _Side.buy && !isNgxOpenNow()) {
+  if (side == _Side.buy && !AppScope.read(context).marketOpen) {
     await _showMarketClosedBuySheet(context, asset);
     return;
   }
@@ -739,7 +738,7 @@ class _AmountSheetState extends State<_AmountSheet> {
         if (!isSell) ...[
           const SizedBox(height: 12),
           Text(
-            'The NGX closes at 14:30. Orders placed after that queue for the next trading day.',
+            'The market closes at 14:30. Orders placed after that queue for the next trading day.',
             style: KType.data(color: KColor.ink3),
           ),
         ],
@@ -1122,7 +1121,7 @@ class _OrderPlacedScreen extends StatelessWidget {
                             message: isSell
                                 ? 'You sold $amountStr of ${asset.ticker}. Proceeds settle T+3.'
                                 : '${input.units.floor()} ${asset.ticker} shares for '
-                                    '${_formatNaira(total)}. It fills while the NGX is open '
+                                    '${_formatNaira(total)}. It fills while the market is open '
                                     'and settles on $settleLabel.',
                           ),
                         ),

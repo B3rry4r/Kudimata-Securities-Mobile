@@ -171,7 +171,7 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
                       const KScreenHead(
                         title: 'Verify to start investing',
                         body:
-                            'The NGX requires this before your CSCS account can open. Eight steps, about six minutes.',
+                            'This is required before your CSCS account can open. Eight steps, about six minutes.',
                       ),
                       const SizedBox(height: 28),
                       KCard(
@@ -221,7 +221,7 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Then we provision your NGX account — that part is on us, and takes up to one business day.',
+                        'Then we provision your trading account — that part is on us, and takes up to one business day.',
                         style: KType.body(color: KColor.ink3),
                       ),
                     ],

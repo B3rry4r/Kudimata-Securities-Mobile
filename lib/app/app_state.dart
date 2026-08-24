@@ -6,14 +6,21 @@
 // — the secure store this comment used to say "plugs in later". See
 // _hydrateSignedIn() and forceSignOut() below. Every other flag here is still
 // in-memory only.
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import '../data/api/api_client.dart';
 import '../data/api/auth_token_store.dart';
 import '../data/api/passcode_store.dart';
+import '../data/repositories/market_status_repository.dart';
 import '../data/repositories/watchlist_repository.dart';
 import '../router/routes.dart';
 import '../screens/kyc/kyc_form_state.dart';
+// isNgxOpenNow() is the local-clock fallback for [marketOpen] below — kept
+// in the markets screen's own file (its original home, still imported
+// directly by several screens) rather than duplicated here.
+import '../screens/markets/market_hours.dart';
 
 class AppState extends ChangeNotifier {
   AppState({
@@ -151,6 +158,47 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       // best-effort — see doc comment above.
     }
+  }
+
+  /// null until the first successful [refreshMarketStatus] — [marketOpen]
+  /// falls back to the local WAT-clock calc (isNgxOpenNow()) until then, or
+  /// forever if the backend is unreachable.
+  bool? _marketOpenFromBackend;
+  Timer? _marketStatusTimer;
+
+  /// Whether the app should show the NGX market as open right now. Backed
+  /// by GET /market-status (2026-08-24) so a staff override set from the
+  /// admin dashboard's Settings screen — "force open"/"force closed", for
+  /// testing document/statement/receipt flows without waiting for the real
+  /// 10:00-14:30 WAT window — is reflected everywhere in the app that used
+  /// to call isNgxOpenNow() directly. Falls back to that same local clock
+  /// calc if the backend hasn't answered yet (or is unreachable), so the
+  /// app still shows a sensible open/closed state offline.
+  bool get marketOpen => _marketOpenFromBackend ?? isNgxOpenNow();
+
+  Future<void> refreshMarketStatus(MarketStatusRepository repo) async {
+    try {
+      final status = await repo.fetch();
+      _marketOpenFromBackend = status.open;
+      notifyListeners();
+    } catch (_) {
+      // best-effort — marketOpen falls back to the local clock calc above.
+    }
+  }
+
+  /// Starts polling GET /market-status every 30s so a mid-session staff
+  /// override is picked up without an app restart. Call once after sign-in
+  /// (see main.dart); [dispose] cancels the timer.
+  void startMarketStatusPolling(MarketStatusRepository repo) {
+    _marketStatusTimer?.cancel();
+    unawaited(refreshMarketStatus(repo));
+    _marketStatusTimer = Timer.periodic(const Duration(seconds: 30), (_) => refreshMarketStatus(repo));
+  }
+
+  @override
+  void dispose() {
+    _marketStatusTimer?.cancel();
+    super.dispose();
   }
 
   void setPasscode(bool v) {

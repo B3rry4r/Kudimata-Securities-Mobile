@@ -137,7 +137,7 @@ class _AccountBody extends StatelessWidget {
     final hasChn = info.cscsNumber != '—' && info.cscsNumber.isNotEmpty;
     final statusLower = info.accountStatus.trim().toLowerCase();
     final statusText = statusLower.isEmpty || statusLower == 'active'
-        ? 'NGX account live'
+        ? 'Account live'
         : '${info.accountStatus[0].toUpperCase()}${info.accountStatus.substring(1)} account';
     final subtitle = hasChn ? 'CHN ${info.cscsNumber} · $statusText' : statusText;
 

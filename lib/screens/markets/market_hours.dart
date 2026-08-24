@@ -13,7 +13,9 @@
 // wrong banner) for most real users. WAT is a fixed UTC+1 offset (Nigeria
 // observes no daylight saving), so it's computed from UTC directly instead —
 // correct regardless of the device's own timezone setting.
-library;
+import 'package:flutter/widgets.dart';
+import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
 bool isNgxOpenNow() {
   final wat = DateTime.now().toUtc().add(const Duration(hours: 1));
@@ -22,4 +24,105 @@ bool isNgxOpenNow() {
   }
   final minutesSinceMidnight = wat.hour * 60 + wat.minute;
   return minutesSinceMidnight >= (10 * 60) && minutesSinceMidnight < (14 * 60 + 30);
+}
+
+const _weekdayNames = <int, String>{
+  DateTime.monday: 'Monday',
+  DateTime.tuesday: 'Tuesday',
+  DateTime.wednesday: 'Wednesday',
+  DateTime.thursday: 'Thursday',
+  DateTime.friday: 'Friday',
+  DateTime.saturday: 'Saturday',
+  DateTime.sunday: 'Sunday',
+};
+
+DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// The most recent weekday strictly before [from] (skips weekends) — used
+/// below to name whose closing prices are on screen.
+DateTime _previousTradingDay(DateTime from) {
+  var d = from.subtract(const Duration(days: 1));
+  while (d.weekday == DateTime.saturday || d.weekday == DateTime.sunday) {
+    d = d.subtract(const Duration(days: 1));
+  }
+  return d;
+}
+
+/// The next weekday strictly after [from] (skips weekends) — used below to
+/// say when the market reopens.
+DateTime _nextTradingDay(DateTime from) {
+  var d = from.add(const Duration(days: 1));
+  while (d.weekday == DateTime.saturday || d.weekday == DateTime.sunday) {
+    d = d.add(const Duration(days: 1));
+  }
+  return d;
+}
+
+/// "today" / "tomorrow" / a weekday name — when the market next opens,
+/// relative to right now. Shared by [marketClosedBannerSubtitle] and
+/// markets_screen.dart's "You can still place an order" nudge, which used
+/// to hardcode "queues for 10:00 tomorrow" regardless of the actual day —
+/// same class of bug as the banner subtitle below, found the same pass.
+String marketNextOpenLabel() {
+  final wat = DateTime.now().toUtc().add(const Duration(hours: 1));
+  final today = _dateOnly(wat);
+  final isWeekday = wat.weekday != DateTime.saturday && wat.weekday != DateTime.sunday;
+  final minutesSinceMidnight = wat.hour * 60 + wat.minute;
+  if (isWeekday && minutesSinceMidnight < 10 * 60) return 'today';
+  final nextOpen = _nextTradingDay(today);
+  final daysUntilOpen = nextOpen.difference(today).inDays;
+  return daysUntilOpen <= 1 ? 'tomorrow' : _weekdayNames[nextOpen.weekday]!;
+}
+
+/// Copy for the "market is closed" banner (markets_screen.dart and
+/// wherever else shows it), e.g. "Opens today at 10:00 · prices below are
+/// Friday's close" — computed from the real WAT clock so it's correct on
+/// any day, not just Mon-after-Fri. 2026-08-24 fix: this used to be a
+/// single hardcoded string that always said "Opens tomorrow at 10:00 ·
+/// prices below are Friday's close" regardless of the actual day — reported
+/// live as "looks like a hard code" (it was).
+String marketClosedBannerSubtitle() {
+  final wat = DateTime.now().toUtc().add(const Duration(hours: 1));
+  final today = _dateOnly(wat);
+  final isWeekday = wat.weekday != DateTime.saturday && wat.weekday != DateTime.sunday;
+  final minutesSinceMidnight = wat.hour * 60 + wat.minute;
+  final beforeOpenToday = isWeekday && minutesSinceMidnight < 10 * 60;
+  final lastCloseDay = beforeOpenToday
+      ? _previousTradingDay(today)
+      : (isWeekday ? today : _previousTradingDay(today));
+
+  return "Opens ${marketNextOpenLabel()} at 10:00 · prices below are ${_weekdayNames[lastCloseDay.weekday]}'s close";
+}
+
+/// The "market is closed" banner — extracted 2026-08-24 from
+/// markets_screen.dart (its original, only home) so it can also appear on
+/// watchlist_screen.dart and asset_detail_screen.dart, neither of which
+/// showed any closed-market indication at all before this (reported live
+/// as "markets dont show closed too").
+class KMarketClosedBanner extends StatelessWidget {
+  const KMarketClosedBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(color: KColor.track, borderRadius: KRadii.cardR),
+      child: Row(
+        children: [
+          KIcon('clock', size: 18, color: KColor.ink2),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('The market is closed', style: KType.cardTitle()),
+                const SizedBox(height: 2),
+                Text(marketClosedBannerSubtitle(), style: KType.data(color: KColor.ink2)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

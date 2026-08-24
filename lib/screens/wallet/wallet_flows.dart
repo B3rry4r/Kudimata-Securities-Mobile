@@ -655,7 +655,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
             const SizedBox(height: 12),
             Text(
               "Money sent from an account that isn't yours is returned — the "
-              'NGX requires the names to match.',
+              'names must match.',
               style: KType.body(color: KColor.ink3),
             ),
             const SizedBox(height: 16),

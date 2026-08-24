@@ -124,7 +124,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: KSearchPill(
-                      placeholder: 'Search NGX companies',
+                      placeholder: 'Search companies',
                       controller: _controller,
                       onChanged: (v) => setState(() => _query = v),
                     ),
@@ -199,7 +199,7 @@ class _SearchScreenState extends State<SearchScreen> {
           child: KNudgeCard(
             tone: KNudgeTone.grape,
             title: 'Not sure what to search for?',
-            body: "Try a sector — banking, telecoms, cement — and we'll show the NGX-listed companies in it.",
+            body: "Try a sector — banking, telecoms, cement — and we'll show the companies in it.",
           ),
         ),
       ],

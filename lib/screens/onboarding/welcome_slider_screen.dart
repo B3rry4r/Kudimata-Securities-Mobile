@@ -32,7 +32,7 @@ const _slides = [
   _Slide(
     'onboarding-investing',
     'Verified once, invested for good',
-    'A phased verification gets you a real NGX trading account — then buying and selling takes seconds.',
+    'A phased verification gets you a real trading account — then buying and selling takes seconds.',
   ),
 ];
 

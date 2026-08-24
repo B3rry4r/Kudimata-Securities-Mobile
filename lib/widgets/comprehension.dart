@@ -520,7 +520,7 @@ class _KDocumentSummaryState extends State<KDocumentSummary> {
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text(_showOriginal ? 'Hide the original document' : 'Read the original document',
                   style: KType.cardTitle()),
-              Text((_showOriginal ? 'Close' : 'NGX filing').upper, style: KType.micro()),
+              Text((_showOriginal ? 'Close' : 'Original filing').upper, style: KType.micro()),
             ]),
           ),
         ),
