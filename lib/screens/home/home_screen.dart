@@ -346,11 +346,13 @@ class _VerifiedContent {
             balance: data.summary.totalValue,
             change: data.summary.change,
             changeTone: _kTrend(data.summary.changeTrend),
-            chart: KLineChart(
-              data: data.summary.chartSeries,
-              onDark: true,
-              height: 120,
-            ),
+            // 2026-08-24: canvas s29's own BalancePanel import has no
+            // `chart` prop at all — confirmed against the real
+            // BalancePanel.jsx source (chart is optional, `chart ? ... :
+            // null`), not just the shorthand markup. Direct product
+            // feedback: "that stock line is not meant to be there again".
+            // Portfolio's own BalancePanel (screen 38) has no chart prop
+            // either — see portfolio_screen.dart's matching fix.
             // 2026-08-20 directive: "can we see amount in funded wallet
             // too on the home screen somewhere please... or in the
             // portfolio card" — a compact row inside the SAME ink panel,

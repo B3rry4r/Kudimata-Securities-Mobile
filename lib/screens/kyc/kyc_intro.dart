@@ -112,7 +112,15 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
     setState(() => _busy = true);
     final app = AppScope.read(context);
     try {
-      if (!await _personalDetailsComplete(app)) {
+      // Never send an ALREADY-APPROVED investor to "a few more details" —
+      // reported: "why has a user who has approved KYC still showing same
+      // thing with the a few more details?". An approved account with
+      // genuinely missing dob/residentialAddress/phone is a real, historical
+      // data gap (most likely from before this prerequisite existed, or an
+      // account provisioned some other way) — that's a data-repair
+      // question, not something re-entering this flow should ever demand
+      // from someone the NGX has already approved.
+      if (!app.kycApproved && !await _personalDetailsComplete(app)) {
         if (!mounted) return;
         context.go(Routes.onboardingPersonal);
         return;
