@@ -182,11 +182,9 @@ GoRouter buildRouter(AppState state) {
           final args = st.extra;
           final a = args is DocumentSummaryArgs
               ? args
-              : const DocumentSummaryArgs(docTitle: 'Document', summary: '');
+              : const DocumentSummaryArgs(docTitle: 'Document');
           return themed(() => DocumentSummaryScreen(
                 docTitle: a.docTitle,
-                summary: a.summary,
-                points: a.points,
                 original: a.original,
               ));
         },

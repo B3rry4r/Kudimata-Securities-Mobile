@@ -36,52 +36,7 @@ class LegalPreviewScreen extends StatefulWidget {
     'client_agreement': 'Client Agreement',
   };
 
-  // Plain-English summaries (2026-08-22 "Soft Landing" redesign, screen 06):
-  // static per-document copy, not generated — see docs/redesign/PLAN.md and
-  // document_summary_screen.dart's header comment for why. `original` (the
-  // full document) still comes from the real GET /public/legal-documents
-  // fetch below — only the summary/points on top of it are static.
-  //
-  // 'client_agreement' added 2026-08-24 (was missing — sign_up_screen.dart's
-  // "By continuing..." line only named 3 of the 4 real documents an
-  // investor must agree to). Summary matches
-  // legal_acceptance_screen.dart's own `_kPlainEnglishSummary` entry for
-  // this kind; points are the same real, LEGAL.zip-grounded facts
-  // legal_reference_screens.dart's Partner disclosures screen already uses
-  // (Blue Marina's role, CHN, DCS) — not invented for this screen.
-  static const _summaries = {
-    'terms_of_service':
-        'This is the agreement between you and Kudimata Securities Ltd for using the app — what we do, what you\'re responsible for, and how either side can end it.',
-    'privacy_policy':
-        'What information we collect about you, why we collect it, and who we share it with (mainly regulators and the partners that make trading and payments work).',
-    'risk_disclosure':
-        'Trading shares can lose you money, and Kudimata cannot promise any return. You are the one deciding what to buy.',
-    'client_agreement':
-        'The formal terms of your relationship with Kudimata as your broker — how your orders are handled, how your money and shares are held, and what happens if something goes wrong.',
-  };
 
-  static const _points = {
-    'terms_of_service': [
-      'You must be 18+ and provide accurate KYC information to use the app.',
-      'Kudimata can suspend an account that breaks these terms or looks fraudulent.',
-      'Fees for trades and transfers are disclosed before you confirm an order.',
-    ],
-    'privacy_policy': [
-      'We share what NIBSS/NIMC require to verify your identity (BVN, NIN).',
-      'We never sell your personal data to advertisers.',
-      'You can request a copy or deletion of your data through support.',
-    ],
-    'risk_disclosure': [
-      'Share prices fall as well as rise — you can lose some or all of what you invest.',
-      'Past performance of a stock is not a promise of future performance.',
-      'Only invest money you won\'t need for the next few years.',
-    ],
-    'client_agreement': [
-      'Blue Marina Securities is a dealing member of the NGX and executes your orders; Kudimata places them.',
-      'Your shares are registered to your own CHN at the CSCS, in your name — not pooled with other investors.',
-      'Money from a sale or a dividend moves from the CSCS to your bank under your DCS mandate.',
-    ],
-  };
 
   String get title => _titles[kind] ?? 'Legal document';
 
@@ -138,9 +93,6 @@ class _LegalPreviewScreenState extends State<LegalPreviewScreen> {
         }
         return DocumentSummaryScreen(
           docTitle: widget.title,
-          summary: LegalPreviewScreen._summaries[widget.kind] ??
-              'A plain-English summary isn\'t available for this document yet — read the original below.',
-          points: LegalPreviewScreen._points[widget.kind] ?? const [],
           original: original.toString().trim(),
         );
       },
@@ -201,7 +153,7 @@ class _LegalBundlePreviewScreenState extends State<LegalBundlePreviewScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Four documents, one agreement. Each one has a plain-English summary — tap any row to read it.',
+                      'Four documents, one agreement. Tap any row to read it in full.',
                       style: KType.body(color: KColor.ink2),
                     ),
                     const SizedBox(height: 18),
