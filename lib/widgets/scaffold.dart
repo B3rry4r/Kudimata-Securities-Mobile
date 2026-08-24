@@ -93,7 +93,21 @@ class KDetailHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Expanded(child: Text(title, style: KType.section())),
+              // maxLines/ellipsis + a real gap before `trailing`
+              // (2026-08-24): the title had neither, so a long one ran
+              // straight into the trailing control with no space between
+              // them, and wrapped to a second line inside a fixed-height
+              // header. Reported on "Statement — February 2026", which sits
+              // beside a download button.
+              Expanded(
+                child: Text(
+                  title,
+                  style: KType.section(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (trailing != null) const SizedBox(width: 8),
               ?trailing,
             ],
           ),

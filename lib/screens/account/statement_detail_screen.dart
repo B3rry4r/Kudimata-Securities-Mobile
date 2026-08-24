@@ -131,9 +131,16 @@ class StatementDetailScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Divider(height: 1, color: KColor.hairline),
                     const SizedBox(height: 16),
-                    // Honest stand-in for the per-broker balances/holdings/
-                    // movements breakdown — see this file's header comment
-                    // for the two confirmed backend gaps behind it.
+                    // 2026-08-24: this used to say the per-broker breakdown
+                    // "isn't available yet". That was true when nothing
+                    // generated statements; it is now false. The PDF this
+                    // screen downloads carries the full thing — consolidated
+                    // opening/closing, then a section per executing broker
+                    // with its own account, holdings, movements and
+                    // subtotal (design screen 76). Rendering that breakdown
+                    // inline as well is a separate piece of work; what this
+                    // must not do is tell an investor a document they can
+                    // download right now does not exist.
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -142,9 +149,9 @@ class StatementDetailScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        "The full breakdown — balances, holdings and movements by "
-                        "executing broker — isn't available yet. We'll let you know "
-                        "when it's ready.",
+                        'The full breakdown is in the PDF — your opening and closing '
+                        'balances, then every holding, movement and subtotal for each '
+                        'broker that executed for you.',
                         style: KType.body(color: KColor.ink2),
                       ),
                     ),
