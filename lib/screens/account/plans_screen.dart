@@ -1,11 +1,15 @@
 // Plans & credits (screen 53, 2026-08-22 "Soft Landing"). 2026-08-24: real
-// subscribe/cancel flow — direct product instruction ("please also set up
-// points subscriptions... its a dud"). Subscribing debits the investor's
-// own wallet balance (see Kudimata-Securities-Backend's AiCreditsService
-// header comment for why plans renew against the wallet rather than a new
-// card-based recurring-billing integration) and grants real AI credits;
-// an insufficient wallet balance surfaces plainly with a link to Add money,
-// not a generic error.
+// credits/cancel flow — direct product instruction ("please also set up
+// points subscriptions... its a dud"). Buying MORE credits is currently
+// disabled server-side (AiCreditsService.subscribe throws
+// PURCHASES_NOT_AVAILABLE) — wallet-debit billing for a digital
+// subscription was a real App Store/Play Store compliance violation,
+// caught and reverted 2026-08-24; the real fix is native platform IAP,
+// not yet integrated. The plan cards and their prices stay visible (real
+// catalog data) so the UI isn't lying about what plans exist, but tapping
+// "Choose" surfaces that plain "not available yet" message rather than a
+// generic error. Free signup credits, the ledger and every real AI call
+// site (explain/digest/glossary) are unaffected.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -196,7 +200,8 @@ class _PlansBody extends StatelessWidget {
         ],
         const SizedBox(height: 12),
         Text(
-          'Prices, fees, risk labels, the glossary and Pidgin re-reads stay free on every plan — what happens when I run out.',
+          "Prices, fees and risk labels stay free. Reading a glossary term's definition is free too — "
+              '"Explain further", asset explanations and portfolio digests use a credit.',
           style: KType.data(color: KColor.ink3),
         ),
       ],

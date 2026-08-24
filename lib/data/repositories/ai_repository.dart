@@ -112,14 +112,24 @@ class AiRepository {
     );
   }
 
-  /// POST /ai/explain-term — not credit-metered (see backend
-  /// AiComprehensionService.explainTerm's doc comment: plans_screen.dart
-  /// already advertises "the glossary... stay free"). Backs
-  /// KGlossaryTerm's onTap (comprehension.dart) wherever it's used.
-  Future<String> explainTerm(String term) async {
-    final response = await _client.post('/ai/explain-term', data: {'term': term});
+  /// POST /ai/explain-term — the glossary's "Explain further" AI
+  /// follow-up. Real credit spend (2026-08-24 direct correction: "glossary
+  /// is not free... they take a cost so it should still count on the
+  /// credits"), unlike reading the static definition itself (free —
+  /// lib/data/glossary.dart), which never calls this. [readContext] is
+  /// that static definition, passed through so Gemini elaborates on it
+  /// instead of repeating it back. Backs
+  /// lib/screens/shared/glossary_sheet.dart.
+  Future<ExplainAssetResult> explainTermFurther(String term, {String? readContext}) async {
+    final response = await _client.post('/ai/explain-term', data: {
+      'term': term,
+      'readContext': ?readContext,
+    });
     final json = response.data as Map<String, dynamic>;
-    return json['text'] as String;
+    return ExplainAssetResult(
+      text: json['text'] as String,
+      creditsRemaining: json['creditsRemaining'] as int,
+    );
   }
 
   Future<PortfolioDigestResult> portfolioDigest() async {

@@ -58,6 +58,7 @@ import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
 import 'market_hours.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/shared/glossary_sheet.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -302,6 +303,7 @@ class _AssetDetailBody extends StatelessWidget {
                   liquidity: 'Daily · T+3',
                   minimum: '₦5,000',
                   onExplain: () => context.push(Routes.explainThis(asset.ticker)),
+                  onTapStat: (label) => showGlossaryExplainSheet(context, label),
                 ),
               ),
               const SizedBox(height: 16),

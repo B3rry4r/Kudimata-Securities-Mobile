@@ -233,6 +233,7 @@ class KProductCard extends StatelessWidget {
     this.spot,
     this.onExplain,
     this.action,
+    this.onTapStat,
   });
 
   final String name;
@@ -246,6 +247,16 @@ class KProductCard extends StatelessWidget {
   final Widget? spot;
   final VoidCallback? onExplain;
   final Widget? action;
+
+  /// Makes the Risk/Fees/Liquidity/Minimum labels tappable glossary terms
+  /// when provided (2026-08-24, direct product instruction — "liquidity
+  /// this t+3 this and that... all bigterms explain them properly").
+  /// Called with the cell's own label ('Risk'/'Fees'/'Liquidity'/
+  /// 'Minimum'). Kept as a callback rather than this widget calling
+  /// showGlossaryExplainSheet directly — lib/widgets/ stays presentational,
+  /// never importing a screen/repository (see lib/data/api/README.md's
+  /// layering convention).
+  final ValueChanged<String>? onTapStat;
 
   bool get _up => change == null || !(change!.trim().startsWith('-') || change!.trim().startsWith('−'));
 
@@ -262,12 +273,19 @@ class KProductCard extends StatelessWidget {
       };
 
   Widget _cell(String label, String? value, {Color? color}) {
+    final labelText = Text(label.upper, style: KType.micro(color: KColor.ink3));
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label.upper, style: KType.micro(color: KColor.ink3)),
+          onTapStat == null
+              ? labelText
+              : GestureDetector(
+                  onTap: () => onTapStat!(label),
+                  behavior: HitTestBehavior.opaque,
+                  child: labelText,
+                ),
           const SizedBox(height: 4),
           Text(value ?? '—',
               style: KType.data(color: color ?? KColor.ink, w: KWeight.semibold).tnum),

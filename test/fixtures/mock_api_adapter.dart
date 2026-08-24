@@ -642,7 +642,7 @@ class MockApiAdapter implements HttpClientAdapter {
       };
     }
     if (path == '/ai/explain-term') {
-      return {'text': 'A plain-English explanation of this term.'};
+      return {'text': 'A plain-English explanation of this term.', 'creditsRemaining': 2};
     }
     return _fallback(path);
   }
