@@ -418,7 +418,22 @@ class _VerifiedContent {
         if (data.holdings.isEmpty)
           Padding(
             padding: _gut,
-            child: _HoldingsEmptyCard(onTap: () => context.go(Routes.markets)),
+            // 2026-08-24, direct product instruction ("add an illustration
+            // on home") — 'empty-portfolio' is the same illustration the
+            // Portfolio tab's own real empty state already uses
+            // (state_views.dart's KEmptyView.holdings) for this exact
+            // concept, reused honestly here rather than picking a mismatched
+            // one. Only shown for a first-time investor with zero holdings —
+            // a populated dashboard stays illustration-free, matching this
+            // app's established pattern of illustrations belonging to
+            // empty/state moments, not data-dense screens.
+            child: Column(
+              children: [
+                const KIllustration('empty-portfolio', role: KIlloRole.small),
+                const SizedBox(height: 12),
+                _HoldingsEmptyCard(onTap: () => context.go(Routes.markets)),
+              ],
+            ),
           )
         else
           Padding(
