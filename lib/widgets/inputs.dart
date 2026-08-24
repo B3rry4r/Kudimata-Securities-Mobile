@@ -351,12 +351,25 @@ class KSegmentedControl extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: opt.value == value ? KColor.paper : const Color(0x00000000),
-          borderRadius: BorderRadius.circular(7),
+          // Radius 10, not 7 (2026-08-24): the track outside this is
+          // KRadii.input (14) with 4px padding, so the inner curve it has
+          // to sit inside is 14 - 4 = 10. At 7 the pill's corners bulged
+          // past the track's rounder corners and read as a doubled,
+          // mis-clipped edge — most visible on the selected segment, where
+          // the pill also carries a border and shadow.
+          borderRadius: BorderRadius.circular(KRadii.input - 4),
           border: Border.all(
             color: opt.value == value ? KColor.hairline : const Color(0x00000000),
             width: 1,
           ),
-          boxShadow: opt.value == value ? KShadow.float : null,
+          // knob, not float (2026-08-24): float is offset(0,8)/blur 24 —
+          // a shadow sized for a whole card lifting off the page. On a 38px
+          // pill inside a track with 4px padding it spills far outside the
+          // track's rounded bounds and reads as a smudged, clipped
+          // rendering fault. knob (offset(0,2)/blur 6) is the token meant
+          // for exactly this: a small element floating just above its own
+          // track.
+          boxShadow: opt.value == value ? KShadow.knob : null,
         ),
         child: _segmentContent(opt),
       ),

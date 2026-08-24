@@ -644,6 +644,41 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path == '/ai/explain-term') {
       return {'text': 'A plain-English explanation of this term.', 'creditsRemaining': 2};
     }
+    // GET /statements?kind=... — a PLAIN array, matching the real
+    // controller (its own contract test asserts "no pagination envelope").
+    // Was missing entirely, so every statements screenshot rendered
+    // "Couldn't load" instead of the screen: the repository casts the body
+    // to List and _fallback returns a Map, which throws.
+    if (path == '/statements') {
+      final kind = query['kind'] as String?;
+      if (kind == 'contract_note') {
+        return [
+          {
+            'id': 'ST-CN-1',
+            'kind': 'contract_note',
+            'title': 'Contract note — Bought MTNN',
+            'periodOrTradeRef': 'KDM-CN-4471',
+            'fileSizeBytes': 71693,
+            'generatedAt': '2026-03-14T09:41:00.000Z',
+            'fileObjectKey': 'statements/contract-notes/u/KDM-CN-4471.pdf',
+          },
+        ];
+      }
+      return [
+        {
+          'id': 'ST-M-1',
+          'kind': 'monthly',
+          'title': 'Statement — February 2026',
+          'periodOrTradeRef': '2026-02',
+          'fileSizeBytes': 18842,
+          'generatedAt': '2026-03-01T02:00:00.000Z',
+          'fileObjectKey': 'statements/monthly/u/2026-02.pdf',
+        },
+      ];
+    }
+    if (path.endsWith('/download-url')) {
+      return {'url': 'https://example.test/doc.pdf'};
+    }
     if (path.startsWith('/orders/contract-note/')) {
       return {
         'contractNoteRef': path.split('/').last,

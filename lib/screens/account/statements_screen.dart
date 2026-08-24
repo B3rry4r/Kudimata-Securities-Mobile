@@ -219,19 +219,17 @@ class _StatementsBody extends StatelessWidget {
               'The receipt for one trade — what you bought, at what price, and every fee inside it. Free to read in plain English.',
         ),
         const SizedBox(height: 16),
-        // Mockup's "Email me a statement" action — same honest-gap pattern
-        // as the old per-row download button: no email-dispatch endpoint
-        // exists yet, so this tells the investor rather than silently
-        // failing (2026-08-23 exactness pass).
-        KButton(
-          label: 'Email me a statement',
-          variant: KButtonVariant.secondary,
-          iconLeft: 'mail',
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Emailing statements isn\'t available yet — check back soon.')),
-            );
-          },
+        // The mockup's "Email me a statement" button is removed (2026-08-24)
+        // rather than kept as a snackbar saying it isn't available. There is
+        // no email-dispatch endpoint for statements and none is planned —
+        // unlike a contract note, which IS emailed automatically on every
+        // fill. Tapping a row downloads the real PDF, so nothing is lost by
+        // dropping a control that could only ever apologise. Matches the
+        // same call on statement_detail_screen.dart.
+        Text(
+          'Tap a document to open it. Statements are not emailed — download keeps a copy '
+          'on your device.',
+          style: KType.data(color: KColor.ink3),
         ),
       ],
     );
