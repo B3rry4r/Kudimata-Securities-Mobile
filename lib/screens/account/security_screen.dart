@@ -112,34 +112,53 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 first: true,
                 onTap: _changePasscode,
               ),
-              if (!kIsWeb) ...[
-                Divider(height: 1, color: KColor.hairline),
-                // screen-specs.md spec 50 literally says "Face ID" — kept
-                // as the cross-platform "Biometric unlock" instead
-                // (2026-08-23 exactness pass: deliberate deviation, not an
-                // oversight). "Face ID" is an Apple-specific term; this
-                // toggle also drives Android fingerprint/face unlock, so
-                // the mockup's iOS-only copy would be wrong on Android.
-                KSwitch(
-                  label: 'Biometric unlock',
-                  description: 'Unlock with your face or fingerprint',
-                  checked: app.biometricEnabled,
-                  // SEAM: real biometric enrolment plugs in here.
-                  onChanged: (v) => app.setBiometric(v),
+              // 2026-08-24 fix — reported live, same flaw as
+              // notifications_settings_screen.dart had: a bare KSwitch
+              // separated only by a plain Divider has no vertical padding
+              // of its own, so the label sits cramped against the divider
+              // and the knob reads as vertically misaligned against its
+              // two-line label. data_privacy_screen.dart/
+              // price_alerts_screen.dart already wrap each KSwitch in a
+              // padded, top-bordered Container instead — matching that
+              // here rather than the bare-Divider shape this screen had.
+              if (!kIsWeb)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
+                  ),
+                  // screen-specs.md spec 50 literally says "Face ID" — kept
+                  // as the cross-platform "Biometric unlock" instead
+                  // (2026-08-23 exactness pass: deliberate deviation, not an
+                  // oversight). "Face ID" is an Apple-specific term; this
+                  // toggle also drives Android fingerprint/face unlock, so
+                  // the mockup's iOS-only copy would be wrong on Android.
+                  child: KSwitch(
+                    label: 'Biometric unlock',
+                    description: 'Unlock with your face or fingerprint',
+                    checked: app.biometricEnabled,
+                    // SEAM: real biometric enrolment plugs in here.
+                    onChanged: (v) => app.setBiometric(v),
+                  ),
                 ),
-              ],
-              Divider(height: 1, color: KColor.hairline),
-              // Real, existing behaviour, not a new toggle — the withdraw
-              // sheet already always asks for passcode confirmation before
-              // money leaves (see wallet_flows.dart's withdraw footnote:
-              // "Your passcode confirms this withdrawal."). Shown here as
-              // disabled/always-on per spec 50, matching what the app
-              // actually does rather than adding an unwired setting.
-              const KSwitch(
-                label: 'Passcode for withdrawals',
-                description: 'Always ask before money leaves',
-                checked: true,
-                disabled: true,
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
+                ),
+                // Real, existing behaviour, not a new toggle — the withdraw
+                // sheet already always asks for passcode confirmation
+                // before money leaves (see wallet_flows.dart's withdraw
+                // footnote: "Your passcode confirms this withdrawal.").
+                // Shown here as disabled/always-on per spec 50, matching
+                // what the app actually does rather than adding an unwired
+                // setting.
+                child: const KSwitch(
+                  label: 'Passcode for withdrawals',
+                  description: 'Always ask before money leaves',
+                  checked: true,
+                  disabled: true,
+                ),
               ),
             ],
           ),
