@@ -58,6 +58,53 @@
 //     your account at any time"). Kept as plausible product policy, but
 //     unverified against a reviewed legal source — flagged here for
 //     legal/compliance to confirm before treating as authoritative.
+//
+// 2026-08-24 (second pass) — each screen was expanded from a 2-sentence
+// intro + 4 bullets into a real headed document body (`_PlainLegalCard.
+// sections`), on direct product instruction ("generate properly for the new
+// ones not those short things... legal would give the main things"). Every
+// clause is drafted from the REAL signed pack where the pack covers the
+// topic, so these read as extracts of Kudimata's own executed documents
+// rather than newly invented policy:
+//   - #94: Blue Marina's full registered identity (CAC 746044, SEC file
+//     1507, 10 Keffi Street S.W. Ikoyi Lagos), the sub-broker/sponsoring-
+//     broker split, the no-delegation-without-SEC-approval clause, the
+//     third-party provider list and the liability carve-outs all come
+//     verbatim-in-substance from Client Agreement §§ "Who We Are", "Our Role
+//     and Blue Marina's Role", "Liability".
+//   - #96: every clause maps to a Privacy Policy section (DPO under NDPA
+//     s.32, the collection list, the on-device-only biometric-unlock
+//     carve-out, legal bases, the six named processors, Nigeria hosting +
+//     ss.41-43 transfers, the four retention periods, TLS 1.3/AES-256/field-
+//     level encryption, the six NDPA rights + 30-day response, and the s.40
+//     72-hour breach notification).
+//   - #97: retention, suspension grounds and the complaints SLA come from
+//     Client Agreement §§ "Statements and Records", "Account Restrictions or
+//     Suspension", "Complaints"; the CHN-is-yours-for-life and DCS-payout
+//     points are the app's own real mechanics.
+//   - #95 remains the ONE screen with no backing document to draw on (see
+//     above) — its 10 clauses are drafted from what the shipped referral
+//     mechanic actually does (ReferralRepository/refer_earn_screen.dart),
+//     NOT from any reviewed source. It needs real legal drafting most.
+//
+// TWO REAL CONFLICTS FOUND while grounding this pass, both now resolved in
+// favour of the signed document, and both worth legal confirming:
+//   1. #94 used to say your shares sit "not with us and not with them" —
+//      the Client Agreement says plainly "Blue Marina holds client assets
+//      and handles trade settlement". Both are true in NGX market structure
+//      (registered under your own CHN at the CSCS, held through the dealing
+//      member) but the old phrasing flatly contradicted the executed
+//      agreement, so it now states both facts instead of denying one.
+//   2. #96 used to say "we never share holdings with anyone but the CSCS
+//      and your broker" — the real Privacy Policy names six processors
+//      (LumiID/Smile Identity, Flutterwave, AWS SNS, Blue Marina, FiberOps
+//      Tech, Cloudflare). The old line was simply untrue and is replaced by
+//      the real list.
+// A third, INTERNAL to the signed pack and NOT fixable here: Client
+// Agreement lists SendGrid as the email provider while Privacy Policy names
+// AWS SNS for transactional email and lists SendGrid only under
+// processed-outside-Nigeria. This screen follows the Privacy Policy (it is
+// the data-protection document) — legal should reconcile the two.
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
@@ -138,12 +185,23 @@ class _PlainLegalCard extends StatefulWidget {
     required this.title,
     required this.intro,
     this.points = const [],
+    this.sections = const [],
     this.original,
   });
 
   final String title;
   final String intro;
   final List<String> points;
+
+  /// The document body proper — real headed clauses, rendered below the
+  /// intro/key-points summary (2026-08-24, direct product instruction:
+  /// "generate properly for the new ones not those short things"). These
+  /// four screens previously stopped at a 2-sentence intro plus 4 bullets,
+  /// which reads as a summary of a document that doesn't exist rather than
+  /// as the document itself. Grounded clause-by-clause in the real signed
+  /// pack (LEGAL.zip) wherever the pack covers the topic — see this file's
+  /// CONTENT SOURCING header for what is corroborated and what is not.
+  final List<(String heading, String body)> sections;
 
   /// The real backing document's full text, or null when none exists (see
   /// this file's per-screen CONTENT SOURCING notes) — the reveal row below
@@ -190,6 +248,16 @@ class _PlainLegalCardState extends State<_PlainLegalCard> {
                       ],
                     ),
                   ),
+              ],
+              if (widget.sections.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(height: 1, color: KColor.hairline),
+                for (final (heading, body) in widget.sections) ...[
+                  const SizedBox(height: 16),
+                  Text(heading, style: KType.cardTitle(w: KWeight.semibold)),
+                  const SizedBox(height: 6),
+                  Text(body, style: KType.body(color: KColor.ink2)),
+                ],
               ],
             ],
           ),
@@ -248,11 +316,80 @@ class _PartnerDisclosuresScreenState extends State<PartnerDisclosuresScreen> {
   late final Future<String?> _original = _fetchOriginal(context, 'client_agreement');
 
   static const _points = [
-    'Blue Marina Securities is a dealing member of the NGX and executes your orders.',
-    'Your shares are registered to your own CHN at the CSCS, in your name.',
-    'Money from a sale or a dividend moves from the CSCS to your bank under your DCS mandate.',
-    'If we add another executing broker, it appears on your receipts and as its own '
-        'statement section.',
+    'Kudimata Securities Ltd is a sub-broker. We operate the app, hold your wallet and route '
+        'your orders — we do not execute trades on the exchange ourselves.',
+    'Blue Marina Securities Limited is our sponsoring broker. It executes your orders on the '
+        'NGX, holds client assets and handles settlement.',
+    'Your shares are registered under your own Clearing House Number (CHN) at the CSCS.',
+    'Money from a sale or a dividend reaches your own bank account under your Direct Cash '
+        'Settlement (DCS) mandate.',
+  ];
+
+  static const _sections = [
+    (
+      '1. Who we are',
+      'Kudimata Securities Ltd is a Nigerian company registered with the Corporate Affairs '
+          'Commission. We operate the digital investment app called Kudimata Invest. We act as '
+          'a sub-broker.',
+    ),
+    (
+      '2. Who executes your trades',
+      'Our sponsoring broker is Blue Marina Securities Limited (CAC 746044, SEC file 1507, '
+          '10 Keffi Street, S.W., Ikoyi, Lagos). Blue Marina is a licensed broker-dealer '
+          'registered with the Securities and Exchange Commission of Nigeria and a dealing '
+          'member of the Nigerian Exchange Group (NGX). We route all trade orders through Blue '
+          'Marina for execution.',
+    ),
+    (
+      '3. What each of us does',
+      'Kudimata operates the app, manages your account, verifies your identity, handles your '
+          'wallet and routes your orders. We do not execute trades directly on the exchange. '
+          'Blue Marina receives your orders from us, executes them on the NGX and returns the '
+          'results. Blue Marina holds client assets and handles trade settlement.',
+    ),
+    (
+      '4. How your shares and money are held',
+      'Shares you buy are registered under your own Clearing House Number (CHN) at the Central '
+          'Securities Clearing System (CSCS). Your CHN belongs to you, not to Kudimata and not '
+          'to Blue Marina — closing your Kudimata account does not close your CHN. Proceeds '
+          'from a sale, and any dividend, reach the bank account in your own name under your '
+          'Direct Cash Settlement (DCS) mandate.',
+    ),
+    (
+      '5. Execution-only service',
+      'This platform provides execution-only services through our sponsoring broker. We do not '
+          'provide personal investment advice unless expressly stated in writing. Any '
+          'automated portfolios, market insights, explanations or data visualisations shown in '
+          'this app are for information only and are not personalised financial, tax or legal '
+          'advice.',
+    ),
+    (
+      '6. Delegation and change of partner',
+      'We do not delegate our registered functions to any third party without the prior '
+          'approval of the Securities and Exchange Commission. If we add or change an executing '
+          'broker, that broker is named on your contract notes and appears as its own section '
+          'in your statements, and this disclosure is republished with a new version number.',
+    ),
+    (
+      '7. Other providers involved in your account',
+      'Running your account also involves: LumiID (and Smile Identity as an alternate) for '
+          'identity verification, Flutterwave for wallet funding and withdrawals, FiberOps Tech '
+          'for data hosting in Nigeria, and Cloudflare for security and delivery. What each one '
+          'receives is set out in the Privacy Policy.',
+    ),
+    (
+      '8. Limits of our responsibility',
+      'We are not liable for losses caused by outages or failures at third-party providers, '
+          'including Blue Marina, the NGX, Flutterwave, LumiID or our hosting and network '
+          'providers, nor for market movements or the performance of any investment. This does '
+          'not limit any liability that cannot be excluded under Nigerian law.',
+    ),
+    (
+      '9. Questions and complaints',
+      'Contact us at support@kudimata.securities. We acknowledge complaints within 1 business '
+          'day and give a substantive response within 10 business days. If you are not '
+          'satisfied, you may escalate to the Securities and Exchange Commission of Nigeria.',
+    ),
   ];
 
   @override
@@ -276,10 +413,11 @@ class _PartnerDisclosuresScreenState extends State<PartnerDisclosuresScreen> {
             future: _original,
             builder: (context, snapshot) => _PlainLegalCard(
               title: 'Kudimata places the order, a licensed broker executes it',
-              intro: 'Kudimata Invest is the app. Your order reaches the NGX through a '
-                  'dealing-member broker, and your shares sit in your own name at the CSCS — '
-                  'not with us and not with them.',
+              intro: 'Kudimata Invest is the app. Your order reaches the NGX through Blue '
+                  'Marina Securities Limited, our sponsoring broker, and your shares are '
+                  'registered under your own CHN at the CSCS.',
               points: _points,
+              sections: _sections,
               original: snapshot.data,
             ),
           ),
@@ -333,6 +471,75 @@ class ReferralTermsScreen extends StatelessWidget {
     'Self-referral, one person with several accounts, or bought codes forfeit the reward.',
   ];
 
+  static const _sections = [
+    (
+      '1. Who can take part',
+      'The programme is open to Kudimata Invest account holders whose identity verification '
+          '(KYC) has been approved and whose account is not suspended or restricted. You must '
+          'be at least 18 years old and resident in Nigeria, on the same terms as account '
+          'opening under the Client Agreement.',
+    ),
+    (
+      '2. How a referral is counted',
+      'Each account has one referral code. A referral is counted when a new investor enters '
+          'your code during sign-up, before their account is created. A code cannot be applied '
+          'to an account that already exists, and only one code can be applied per account.',
+    ),
+    (
+      '3. When the reward is earned',
+      'The reward is earned once the referred investor has completed identity verification '
+          'and placed their first order. Both conditions must be met. Until then the referral '
+          'shows as pending in Refer & earn, and a pending referral carries no entitlement.',
+    ),
+    (
+      '4. What the reward is',
+      'You and the referred investor each receive ₦1,000, credited to your Kudimata wallet. '
+          'The reward is a fixed cash amount. It does not vary with how much either of you '
+          'deposits or trades beyond that first order, and it is not a share of any fee or '
+          'commission.',
+    ),
+    (
+      '5. Using and withdrawing the reward',
+      'A credited reward is ordinary wallet balance. You can invest it or withdraw it to your '
+          'own bank account under your DCS mandate, on the same terms as any other wallet '
+          'funds. No minimum number of referrals is required before you can withdraw.',
+    ),
+    (
+      '6. Conduct that forfeits a reward',
+      'No reward is payable, and a credited reward may be reversed, where we reasonably '
+          'determine that a referral involved: referring yourself; opening or controlling more '
+          'than one account to claim rewards; buying, selling or publicly advertising codes; '
+          'entering a code on behalf of someone else; or any use of the programme that is '
+          'fraudulent, automated or misrepresents Kudimata. Where we reverse a reward we will '
+          'tell you the reason.',
+    ),
+    (
+      '7. Tax',
+      'You are responsible for any tax that applies to you on a reward you receive. We do not '
+          'give tax advice.',
+    ),
+    (
+      '8. Changing or ending the programme',
+      'We may change or end this programme, or change the reward amount, on 14 days\' notice '
+          'given in the app. Rewards already earned before the change takes effect remain '
+          'yours. Referrals that are still pending when the programme ends are honoured if '
+          'their conditions are met within 30 days of the end date.',
+    ),
+    (
+      '9. Relationship to your other agreements',
+      'These terms sit alongside the Client Agreement, the Terms of Service and the Privacy '
+          'Policy. Where they conflict on anything other than the referral programme itself, '
+          'those documents take precedence. Nigerian law governs these terms.',
+    ),
+    (
+      '10. Questions and disputes about a referral',
+      'Contact us at support@kudimata.securities. Referral disputes follow the same complaints '
+          'route as everything else: acknowledgement within 1 business day, a substantive '
+          'response within 10 business days, and escalation to the Securities and Exchange '
+          'Commission of Nigeria if you are not satisfied.',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return _LegalDocScaffold(
@@ -347,6 +554,7 @@ class ReferralTermsScreen extends StatelessWidget {
             'place a first order. Rewards are real cash paid into your wallet, never tied '
             'to how much anyone trades.',
         points: _points,
+        sections: _sections,
         // No `original` — see file header: no referral-terms LegalDocument
         // exists anywhere (LEGAL.zip or the backend), so there is nothing
         // real to link to.
@@ -368,12 +576,95 @@ class _DataNoticeScreenState extends State<DataNoticeScreen> {
   late final Future<String?> _original = _fetchOriginal(context, 'privacy_policy');
 
   static const _points = [
-    'Identity, BVN, NIN and documents: kept 12 years after your account closes, as the SEC '
-        'requires.',
-    'Trading records and contract notes: kept 12 years; you can download them any time.',
+    'Trade orders and transactions: kept 12 years. Audit trail: 12 years. Client '
+        'communications: 7 years. KYC records: the life of the account plus the period SEC '
+        'rules require.',
+    'Your face or fingerprint for unlocking the app never leaves your phone — we never '
+        'receive it.',
     'Optional analytics and product email: your choice, changeable in Data & privacy.',
-    'We never sell your data, and we never share holdings with anyone but the CSCS and '
-        'your broker.',
+    'We never sell your data. We share it only with the providers that run the platform, and '
+        'with regulators where the law requires.',
+  ];
+
+  static const _sections = [
+    (
+      '1. Who is responsible for your data',
+      'Kudimata Securities Ltd operates the Kudimata Invest app and is responsible for looking '
+          'after your personal data. We have appointed a Data Protection Officer under Section '
+          '32 of the Nigeria Data Protection Act 2023 (NDPA). You can reach the Data Protection '
+          'Officer at support@kudimata.securities.',
+    ),
+    (
+      '2. What we collect',
+      'Identity data (name, email, phone, BVN, and government ID details — NIN, international '
+          'passport or driver\'s licence). Biometric and liveness data (a live selfie taken in '
+          'the app, used only for identity verification). Financial data (your bank account '
+          'details for withdrawals, and your transaction history). Transaction data (orders, '
+          'fills, cancellations, wallet funding and withdrawals). Device data (device type, app '
+          'version, IP address and usage logs).',
+    ),
+    (
+      '3. Face ID and fingerprint',
+      'If you turn on biometric unlock, your face or fingerprint data is stored only on your '
+          'device by the operating system. We never receive, access or store it. It never '
+          'leaves your phone.',
+    ),
+    (
+      '4. Why we collect it, and on what legal basis',
+      'To verify your identity as law and SEC rules require; to open and manage your account; '
+          'to process wallet funding and withdrawals; to route your orders to our sponsoring '
+          'broker; to send trade confirmations and service notifications; to meet SEC '
+          'record-keeping rules; and to keep the app secure. Our legal bases under the NDPA are '
+          'contract, legal obligation, and — for anything optional — your consent, which you '
+          'can withdraw at any time.',
+    ),
+    (
+      '5. Who we share it with',
+      'LumiID (and Smile Identity as an alternate) receives your BVN, NIN, ID document images '
+          'and liveness selfie for verification. Flutterwave receives your payment details for '
+          'funding and withdrawals. Blue Marina Securities Limited receives your order details '
+          'to execute trades on the NGX. AWS SNS receives your email address to send '
+          'transactional email. FiberOps Tech hosts your data and does not access it directly. '
+          'Cloudflare provides security and delivery and may see your IP address. We never sell '
+          'your personal data, and we share it with regulators only where the law requires.',
+    ),
+    (
+      '6. Where your data is held',
+      'All your primary data is hosted within Nigeria, in FiberOps Tech data centres in Lagos '
+          '(primary) and Abuja (disaster recovery). Some providers may process data outside '
+          'Nigeria as part of their service; where that happens we hold written agreements '
+          'containing data-protection clauses that follow sections 41 to 43 of the NDPA, and we '
+          'have carried out a transfer impact assessment for each provider.',
+    ),
+    (
+      '7. How long we keep it',
+      'Trade orders and transactions: 12 years. Audit trail: 12 years. Client communications: '
+          '7 years. KYC records: for the life of the account plus the period required by SEC '
+          'rules. When a retention period ends, the data is securely deleted or anonymised.',
+    ),
+    (
+      '8. How it is protected',
+      'Data is encrypted in transit (TLS 1.3) and at rest (AES-256). The most sensitive fields '
+          '— BVN, NIN, date of birth and bank account numbers — carry an additional layer of '
+          'encryption, so that even our database administrators cannot read them. Personally '
+          'identifiable information is stripped from logs before storage. Access is restricted '
+          'to authorised staff, and every staff action is written to an audit trail that cannot '
+          'be edited or deleted.',
+    ),
+    (
+      '9. Your rights under the NDPA',
+      'You have the right to access your data, to have it corrected, to have it erased '
+          '(subject to our legal obligation to keep records), to receive a portable copy, to '
+          'object to certain processing, and to withdraw consent. Contact '
+          'support@kudimata.securities and we will respond within 30 days. You can also file a '
+          'complaint with the Nigeria Data Protection Commission.',
+    ),
+    (
+      '10. If something goes wrong',
+      'If a data breach is likely to harm you, we will notify the Nigeria Data Protection '
+          'Commission within 72 hours, as Section 40 of the NDPA requires, and we will tell you '
+          'directly where the breach is likely to affect your rights or freedoms.',
+    ),
   ];
 
   @override
@@ -391,6 +682,7 @@ class _DataNoticeScreenState extends State<DataNoticeScreen> {
           intro: 'We hold what the SEC requires us to hold, and nothing more. You can see '
               'it, correct it, export it, and delete whatever the law lets us delete.',
           points: _points,
+          sections: _sections,
           original: snapshot.data,
         ),
       ),
@@ -417,6 +709,77 @@ class _AccountClosureTermsScreenState extends State<AccountClosureTermsScreen> {
     'Your CHN belongs to you for life — closing here does not close it at the CSCS.',
   ];
 
+  static const _sections = [
+    (
+      '1. You can close at any time',
+      'You can ask us to close your Kudimata Invest account at any time, from Account → Data & '
+          'privacy → Close my account, or by contacting support@kudimata.securities. You do not '
+          'have to give a reason.',
+    ),
+    (
+      '2. Your shares must be dealt with first',
+      'We cannot close an account that still holds stock. Before closure you must either sell '
+          'your holdings through the app, or instruct the CSCS to transfer them to another '
+          'dealing-member broker. Your shares are registered under your own CHN, so a transfer '
+          'moves the broker relationship, not the ownership.',
+    ),
+    (
+      '3. Your CHN stays yours',
+      'Your Clearing House Number belongs to you for life. Closing your Kudimata account does '
+          'not close your CHN at the CSCS, and does not affect any holding you move to another '
+          'broker.',
+    ),
+    (
+      '4. Your money',
+      'Any remaining wallet balance is paid out to the bank account in your own name under '
+          'your Direct Cash Settlement mandate. We cannot pay a closing balance to a third '
+          'party\'s account. If a deposit, withdrawal or trade is still settling, closure '
+          'completes after it settles.',
+    ),
+    (
+      '5. What we must keep, and for how long',
+      'Closing your account does not delete everything, because SEC rules require us to retain '
+          'records. Trade orders and transactions are kept 12 years, the audit trail 12 years, '
+          'client communications 7 years, and KYC records for the life of the account plus the '
+          'period SEC rules require. Anything we are not required to keep is securely deleted '
+          'or anonymised when its retention period ends. This is the same retention set out in '
+          'the Privacy Policy and is a legal obligation, not a choice.',
+    ),
+    (
+      '6. Your documents stay available',
+      'Statements, contract notes and tax documents remain downloadable for the 12-year '
+          'retention period, so closing your account does not affect your ability to file tax '
+          'returns or evidence past trades. Download anything you want to keep locally before '
+          'you close, so you are not relying on regaining access.',
+    ),
+    (
+      '7. Your data rights still apply',
+      'After closure you keep your NDPA rights over the data we still hold — access, '
+          'rectification, erasure of anything not subject to a retention obligation, '
+          'portability, objection and withdrawal of consent. Contact '
+          'support@kudimata.securities; we respond within 30 days.',
+    ),
+    (
+      '8. Reopening',
+      'Closure is not reversible. If you want to invest with us again later you will need to '
+          'open a new account and complete identity verification again. Your CHN can be reused.',
+    ),
+    (
+      '9. If we close or restrict an account',
+      'Separately from closure you request, we may suspend or restrict an account where we '
+          'suspect fraudulent or unauthorised activity, where the law or a regulator requires '
+          'it, where you breach the Client Agreement or Terms of Service, or where we need to '
+          'verify information. We will tell you the reason, and our staff must record that '
+          'reason permanently in the audit trail.',
+    ),
+    (
+      '10. Questions and complaints about a closure',
+      'Contact support@kudimata.securities. We acknowledge within 1 business day and give a '
+          'substantive response within 10 business days. If you are not satisfied you may '
+          'escalate to the Securities and Exchange Commission of Nigeria.',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return _LegalDocScaffold(
@@ -433,6 +796,7 @@ class _AccountClosureTermsScreenState extends State<AccountClosureTermsScreen> {
               'another broker first, your wallet is paid to your DCS account, and your CHN '
               'stays yours for life.',
           points: _points,
+          sections: _sections,
           original: snapshot.data,
         ),
       ),

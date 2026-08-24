@@ -113,6 +113,23 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
   bool _submitting = false;
   String? _error;
 
+  /// Which document kinds the investor has actually opened. The agree
+  /// checkbox stays disabled until this covers every kind (2026-08-24).
+  ///
+  /// WHY, since the SEC intake doc only mandates scroll-gating for the
+  /// statutory Risk Disclaimer (risk_disclaimer_screen.dart, which does
+  /// implement a real scroll-to-bottom gate): the checkbox here says "I
+  /// have read and agree", and until now it was live on first paint — an
+  /// investor could accept three executed agreements without opening one
+  /// of them. Scroll-to-bottom is not the right gate on THIS screen, since
+  /// the documents deliberately aren't inline (it's a row-list that links
+  /// out — see the header comment); scrolling past four rows would prove
+  /// nothing. Opening each document is the honest equivalent, and it makes
+  /// the recorded acknowledgement defensible rather than decorative.
+  final Set<String> _opened = <String>{};
+
+  bool get _allOpened => _opened.length >= widget.kinds.length;
+
   Future<List<LegalDocument>> _load() async {
     // Independent GETs, fetched concurrently rather than sequentially so a
     // slow document doesn't delay the rest.
@@ -142,6 +159,7 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
   }
 
   void _openDoc(LegalDocument doc) {
+    setState(() => _opened.add(doc.kind));
     context.push(
       Routes.documentSummary,
       extra: DocumentSummaryArgs(
@@ -214,6 +232,7 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                                     _DocRow(
                                       doc: docs[i],
                                       showDivider: i != docs.length - 1,
+                                      opened: _opened.contains(docs[i].kind),
                                       onTap: () => _openDoc(docs[i]),
                                     ),
                                 ],
@@ -241,12 +260,28 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                               Text(_error!, style: KType.body(color: KColor.loss)),
                               const SizedBox(height: 12),
                             ],
-                            KCheckbox(
-                              checked: _agreed,
-                              onChanged: (v) => setState(() => _agreed = v),
-                              label: widget.checkboxLabel,
-                              description: widget.checkboxDescription,
+                            Opacity(
+                              opacity: _allOpened ? 1 : 0.45,
+                              child: IgnorePointer(
+                                ignoring: !_allOpened,
+                                child: KCheckbox(
+                                  checked: _agreed,
+                                  onChanged: (v) => setState(() => _agreed = v),
+                                  label: widget.checkboxLabel,
+                                  description: widget.checkboxDescription,
+                                ),
+                              ),
                             ),
+                            if (!_allOpened) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                docs.length - _opened.length == 1
+                                    ? 'Open the remaining document to continue.'
+                                    : 'Open all ${docs.length} documents to continue '
+                                        '— ${docs.length - _opened.length} left.',
+                                style: KType.data(color: KColor.ink3),
+                              ),
+                            ],
                           ],
                         );
                       },
@@ -274,9 +309,19 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
 /// [LegalDocument.versionLabel], not a placeholder), tap → the document's
 /// plain-English preview.
 class _DocRow extends StatelessWidget {
-  const _DocRow({required this.doc, required this.showDivider, required this.onTap});
+  const _DocRow({
+    required this.doc,
+    required this.showDivider,
+    required this.opened,
+    required this.onTap,
+  });
   final LegalDocument doc;
   final bool showDivider;
+
+  /// Already opened once — the row's trailing badge switches from
+  /// "v1.0 · READ" (an instruction) to "v1.0 · OPENED" (a receipt), so the
+  /// investor can see which of the three still gates the checkbox.
+  final bool opened;
   final VoidCallback onTap;
 
   @override
@@ -299,7 +344,10 @@ class _DocRow extends StatelessWidget {
                 style: KType.cardTitle(),
               ),
             ),
-            Text('v${doc.versionLabel} · Read'.upper, style: KType.micro(color: KColor.ink3)),
+            Text(
+              'v${doc.versionLabel} · ${opened ? 'Opened' : 'Read'}'.upper,
+              style: KType.micro(color: opened ? KColor.gain : KColor.ink3),
+            ),
           ],
         ),
       ),
