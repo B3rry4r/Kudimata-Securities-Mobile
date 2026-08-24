@@ -51,6 +51,7 @@ import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/api/auth_token_store.dart';
 import 'package:kudimata_invest/data/api/passcode_store.dart';
+import 'package:kudimata_invest/data/biometric_auth.dart';
 import 'package:kudimata_invest/data/repositories/auth_repository.dart';
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
@@ -112,6 +113,22 @@ class _LogInScreenState extends State<LogInScreen> {
   void initState() {
     super.initState();
     _decideMode();
+    _checkBiometricAvailability();
+  }
+
+  /// Whether this device can actually run a biometric check. The keypad's
+  /// fingerprint key is gated on this AS WELL AS AppState.biometricEnabled
+  /// (2026-08-24): the stored flag only records that the investor once
+  /// chose biometrics, and it survives wiping every fingerprint from the
+  /// phone, reinstalling on a device without a sensor, or running as the
+  /// web build. Showing a key that cannot possibly succeed is how the
+  /// original hole hid in plain sight — it looked like it worked.
+  bool _biometricAvailable = false;
+
+  Future<void> _checkBiometricAvailability() async {
+    final available = await BiometricAuth.isAvailable();
+    if (!mounted) return;
+    setState(() => _biometricAvailable = available);
   }
 
   @override
@@ -208,7 +225,29 @@ class _LogInScreenState extends State<LogInScreen> {
 
     setState(() => _verifying = true);
 
-    if (!viaBiometric) {
+    if (viaBiometric) {
+      // CRITICAL FIX (2026-08-24). This branch used to be the `if
+      // (!viaBiometric)` guard around the passcode check below — meaning
+      // the biometric path verified NOTHING and unlocked the account
+      // outright, with local_auth not even installed. Anyone holding an
+      // unlocked-to-home-screen phone could tap the fingerprint key and be
+      // inside a funded brokerage account. See lib/data/biometric_auth.dart
+      // for the full write-up.
+      //
+      // Now a real system biometric prompt, and a failed/cancelled/
+      // unavailable check falls back to the passcode keypad rather than
+      // unlocking. BiometricAuth.authenticate() returns false on every
+      // error path, so there is no way for a fault to read as success.
+      final ok = await BiometricAuth.authenticate();
+      if (!ok) {
+        if (!mounted) return;
+        setState(() {
+          _verifying = false;
+          _code = '';
+        });
+        return;
+      }
+    } else {
       final hasPasscode = await _passcodeStore.hasPasscode();
       if (hasPasscode) {
         final localMatch = await _passcodeStore.verifyPasscode(_code);
@@ -407,11 +446,12 @@ class _LogInScreenState extends State<LogInScreen> {
                   constraints: const BoxConstraints(maxWidth: 300),
                   child: KKeypad(
                     onKey: _onKey,
-                    leftAction: app.biometricEnabled
+                    leftAction: app.biometricEnabled && _biometricAvailable
                         ? KFingerprint(size: 26, stroke: 1.6, color: KColor.ink)
                         : null,
-                    onLeftAction:
-                        app.biometricEnabled ? () => _unlock(viaBiometric: true) : null,
+                    onLeftAction: app.biometricEnabled && _biometricAvailable
+                        ? () => _unlock(viaBiometric: true)
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 8),

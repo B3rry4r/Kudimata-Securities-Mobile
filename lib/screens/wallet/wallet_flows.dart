@@ -53,6 +53,8 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/screens/shared/confirm_passcode_sheet.dart';
+import 'package:kudimata_invest/data/api/passcode_store.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart'
     show BankAccountSummary;
@@ -837,14 +839,14 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
               ),
             ),
             const SizedBox(height: 12),
-            // "Your passcode confirms this withdrawal" (spec 42's footnote)
-            // — dropped: there is no passcode-reentry step anywhere in this
-            // flow (see _WithdrawReview._confirm below), so that clause is a
-            // false security claim, not just an inexact one. Was kept here
-            // verbatim even though the identical claim was already found and
-            // dropped from _WithdrawReview's own footnote.
+            // Spec 42's "Your passcode confirms this withdrawal" is
+            // RESTORED (2026-08-24): it was previously dropped as a false
+            // security claim because no passcode step existed, and it is
+            // now true — _confirm() requires confirmPasscode() before any
+            // withdraw call.
             Text(
-              'Money from a sale is available after it settles on T+3.',
+              'Your passcode confirms this withdrawal. Money from a sale is '
+              'available after it settles on T+3.',
               style: KType.body(color: KColor.ink3),
             ),
             const SizedBox(height: 16),
@@ -922,13 +924,12 @@ class _WithdrawReviewState extends State<_WithdrawReview> {
         _SummaryRow(label: 'Arrives', value: 'Within 1 business day'),
         _SummaryRow(label: 'You receive', value: '₦${widget.amount}'),
         const SizedBox(height: 18),
-        // Spec 42's exact footnote also claims "Your passcode confirms this
-        // withdrawal" — dropped: there is no passcode-reentry step anywhere
-        // in this flow (see _confirm() below), so that clause describes a
-        // control this build doesn't actually have. Copying it verbatim
-        // would be a false security claim, not just an inexact one.
+        // Spec 42's "Your passcode confirms this withdrawal" is RESTORED
+        // (2026-08-24) — see the matching note on the amount step. It is
+        // now a true statement: _confirm() below gates on confirmPasscode().
         Text(
-          'Money from a sale is available after it settles on T+3.',
+          'Your passcode confirms this withdrawal. Money from a sale is '
+          'available after it settles on T+3.',
           style: KType.body(color: KColor.ink3),
         ),
         const SizedBox(height: 22),
@@ -942,6 +943,32 @@ class _WithdrawReviewState extends State<_WithdrawReview> {
   }
 
   Future<void> _confirm() async {
+    // Passcode re-authentication before money leaves the account
+    // (2026-08-24). The design (spec 42) always specified "Your passcode
+    // confirms this withdrawal", but no passcode step existed anywhere in
+    // this flow — the footnote had been dropped as unimplementable, and
+    // security_screen.dart meanwhile displayed an always-on "Passcode for
+    // withdrawals" row describing behaviour the app did not have. Anyone
+    // who reached an unlocked session could move funds out with no
+    // re-authentication at all.
+    //
+    // Placed BEFORE `_busy` is set so a dismissed sheet leaves the button
+    // live rather than stuck in a spinner. Non-blocking on devices that
+    // never set a local passcode (hasPasscode() false) — there is nothing
+    // to verify against there, and hard-failing would strand those
+    // investors with no way to withdraw at all.
+    final store = PasscodeStore();
+    if (await store.hasPasscode()) {
+      if (!mounted) return;
+      final confirmed = await confirmPasscode(
+        context,
+        store: store,
+        title: 'Confirm this withdrawal',
+        message: 'Enter your passcode to move money out of your wallet.',
+      );
+      if (!confirmed) return;
+    }
+    if (!mounted) return;
     setState(() => _busy = true);
     final repo = WalletRepository(AppScope.read(context).apiClient);
     try {
@@ -1051,6 +1078,32 @@ class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> 
   }
 
   Future<void> _confirm(BankAccountSummary account) async {
+    // Passcode re-authentication before money leaves the account
+    // (2026-08-24). The design (spec 42) always specified "Your passcode
+    // confirms this withdrawal", but no passcode step existed anywhere in
+    // this flow — the footnote had been dropped as unimplementable, and
+    // security_screen.dart meanwhile displayed an always-on "Passcode for
+    // withdrawals" row describing behaviour the app did not have. Anyone
+    // who reached an unlocked session could move funds out with no
+    // re-authentication at all.
+    //
+    // Placed BEFORE `_busy` is set so a dismissed sheet leaves the button
+    // live rather than stuck in a spinner. Non-blocking on devices that
+    // never set a local passcode (hasPasscode() false) — there is nothing
+    // to verify against there, and hard-failing would strand those
+    // investors with no way to withdraw at all.
+    final store = PasscodeStore();
+    if (await store.hasPasscode()) {
+      if (!mounted) return;
+      final confirmed = await confirmPasscode(
+        context,
+        store: store,
+        title: 'Confirm this withdrawal',
+        message: 'Enter your passcode to move money out of your wallet.',
+      );
+      if (!confirmed) return;
+    }
+    if (!mounted) return;
     setState(() {
       _busy = true;
       _error = null;

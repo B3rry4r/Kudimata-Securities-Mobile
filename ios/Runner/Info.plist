@@ -76,6 +76,8 @@
 	<string>Kudimata Invest needs permission to save images to your photo library.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Kudimata Invest requires location access to verify regional compliance and security requirements.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Kudimata uses Face ID to unlock your investment account on this device.</string>
 </dict>
 </plist>
 

@@ -15,6 +15,7 @@
 // Ported from screens.jsx Biometric. Mid-flow gated screen, no tab bar.
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/biometric_auth.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'log_in_screen.dart' show hydrateGatingStateAndRoute;
@@ -55,9 +56,22 @@ class BiometricScreen extends StatelessWidget {
                   KButton(
                     label: 'Turn on Face ID',
                     iconLeft: 'fingerprint',
-                    // SEAM: real biometric enrolment (local_auth) plugs in here.
+                    // 2026-08-24: this used to flip the flag with no check
+                    // at all ("SEAM: real biometric enrolment plugs in
+                    // here"), which is half of what let the lock screen's
+                    // fingerprint key unlock the account without
+                    // authenticating anyone — see lib/data/biometric_auth.dart.
+                    // Enrolment now has to actually succeed on this device
+                    // before the flag is set; if it doesn't, we simply carry
+                    // on without biometrics rather than promising one that
+                    // cannot work.
                     onPressed: () async {
-                      AppScope.read(context).setBiometric(true);
+                      final ok = await BiometricAuth.isAvailable() &&
+                          await BiometricAuth.authenticate(
+                            reason: 'Confirm it is you to turn on biometric unlock',
+                          );
+                      if (!context.mounted) return;
+                      if (ok) AppScope.read(context).setBiometric(true);
                       await hydrateGatingStateAndRoute(context);
                     },
                   ),

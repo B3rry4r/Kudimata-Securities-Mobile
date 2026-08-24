@@ -27,8 +27,9 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/api/passcode_store.dart';
+import 'package:kudimata_invest/data/biometric_auth.dart';
+import 'package:kudimata_invest/screens/shared/confirm_passcode_sheet.dart';
 import 'package:kudimata_invest/router/routes.dart';
-import 'package:kudimata_invest/screens/onboarding/onboarding_scaffold.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
@@ -58,7 +59,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: KColor.bg,
-      builder: (_) => _ConfirmCurrentPasscodeSheet(store: _passcodeStore),
+      builder: (_) => ConfirmPasscodeSheet(store: _passcodeStore),
     );
     if (!mounted || confirmed != true) return;
     context.push(Routes.createPasscode, extra: true);
@@ -68,6 +69,34 @@ class _SecurityScreenState extends State<SecurityScreen> {
   /// pass — the canvas's #s45 Account hub has no sign-out affordance at
   /// all; it's #s50 Security that carries the "Log out" ghost button, right
   /// below "Freeze my account").
+  /// Enabling requires a real biometric check on this device; disabling
+  /// never does. A silent failure here would leave the switch reading "on"
+  /// while nothing could actually authenticate, so an unavailable or failed
+  /// check says so plainly instead.
+  Future<void> _setBiometric(AppState app, bool value) async {
+    if (!value) {
+      app.setBiometric(false);
+      return;
+    }
+    if (!await BiometricAuth.isAvailable()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No face or fingerprint is set up on this device yet. Add one in your '
+            'phone settings, then turn this on.',
+          ),
+        ),
+      );
+      return;
+    }
+    final ok = await BiometricAuth.authenticate(
+      reason: 'Confirm it is you to turn on biometric unlock',
+    );
+    if (!mounted) return;
+    if (ok) app.setBiometric(true);
+  }
+
   Future<void> _signOut(BuildContext context) async {
     final app = AppScope.read(context);
     try {
@@ -137,8 +166,17 @@ class _SecurityScreenState extends State<SecurityScreen> {
                     label: 'Biometric unlock',
                     description: 'Unlock with your face or fingerprint',
                     checked: app.biometricEnabled,
-                    // SEAM: real biometric enrolment plugs in here.
-                    onChanged: (v) => app.setBiometric(v),
+                    // 2026-08-24: was `onChanged: (v) => app.setBiometric(v)`
+                    // with the comment "SEAM: real biometric enrolment plugs
+                    // in here" — it flipped a client-local bool and nothing
+                    // else, which is half of what let the lock screen's
+                    // fingerprint key unlock the account without
+                    // authenticating anyone (see lib/data/biometric_auth.dart).
+                    // Turning it ON now requires passing a real biometric
+                    // check on this device. Turning it OFF never does — you
+                    // must always be able to disable a security feature you
+                    // can no longer satisfy, e.g. after wiping your prints.
+                    onChanged: (v) => _setBiometric(app, v),
                   ),
                 ),
               Container(
@@ -147,9 +185,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
                 ),
                 // Real, existing behaviour, not a new toggle — the withdraw
-                // sheet already always asks for passcode confirmation
-                // before money leaves (see wallet_flows.dart's withdraw
-                // footnote: "Your passcode confirms this withdrawal.").
+                // flow requires passcode confirmation before money leaves
+                // (wallet_flows.dart's _confirm() gates on
+                // confirmPasscode()). NOTE: this row previously made that
+                // claim while it was FALSE — no passcode step existed
+                // anywhere in the withdraw flow until 2026-08-24. It is
+                // accurate now; do not let the two drift apart again.
                 // Shown here as disabled/always-on per spec 50, matching
                 // what the app actually does rather than adding an unwired
                 // setting.
@@ -220,80 +261,3 @@ class _SecurityScreenState extends State<SecurityScreen> {
 /// onboarding_scaffold.dart) but checks the entry against the locally
 /// stored hash via [PasscodeStore.verifyPasscode] instead of advancing a
 /// flow. Pops `true` once verified, `false`/null if dismissed.
-class _ConfirmCurrentPasscodeSheet extends StatefulWidget {
-  const _ConfirmCurrentPasscodeSheet({required this.store});
-  final PasscodeStore store;
-
-  @override
-  State<_ConfirmCurrentPasscodeSheet> createState() =>
-      _ConfirmCurrentPasscodeSheetState();
-}
-
-class _ConfirmCurrentPasscodeSheetState
-    extends State<_ConfirmCurrentPasscodeSheet> {
-  String _code = '';
-  bool _error = false;
-  bool _checking = false;
-
-  Future<void> _onKey(String k) async {
-    if (_checking) return;
-    setState(() {
-      if (k == 'del') {
-        if (_code.isNotEmpty) _code = _code.substring(0, _code.length - 1);
-        _error = false;
-      } else if (_code.length < 6) {
-        _code += k;
-        _error = false;
-      }
-    });
-    if (_code.length == 6) {
-      setState(() => _checking = true);
-      final ok = await widget.store.verifyPasscode(_code);
-      if (!mounted) return;
-      if (ok) {
-        Navigator.of(context).pop(true);
-      } else {
-        setState(() {
-          _error = true;
-          _checking = false;
-          _code = '';
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text('Confirm your current passcode', style: KType.section()),
-            const SizedBox(height: 8),
-            Text(
-              'Enter your current passcode to continue.',
-              textAlign: TextAlign.center,
-              style: KType.body(color: KColor.ink3),
-            ),
-            const SizedBox(height: 28),
-            KPasscodeDots(filled: _code.length, error: _error),
-            const SizedBox(height: 14),
-            if (_error)
-              Text(
-                'Incorrect passcode',
-                style: KType.body(color: KColor.loss, w: KWeight.medium),
-              ),
-            const SizedBox(height: 16),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 300),
-              child: KKeypad(onKey: _onKey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
