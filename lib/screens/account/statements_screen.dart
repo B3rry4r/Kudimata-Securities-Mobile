@@ -160,6 +160,8 @@ class _StatementsScreenState extends State<StatementsScreen> {
             onOpenStatement: (statement) =>
                 context.push(Routes.acctStatementDetail, extra: statement),
             onOpenNote: (statement) => context.push(Routes.contractNote, extra: statement),
+            generating: _generating,
+            onGenerate: _generateThisMonth,
           );
         },
       ),
@@ -175,6 +177,8 @@ class _StatementsBody extends StatelessWidget {
     required this.onTabChanged,
     required this.onOpenStatement,
     required this.onOpenNote,
+    required this.generating,
+    required this.onGenerate,
   });
 
   final List<Statement> statements;
@@ -183,6 +187,15 @@ class _StatementsBody extends StatelessWidget {
   final ValueChanged<String> onTabChanged;
   final void Function(Statement statement) onOpenStatement;
   final void Function(Statement statement) onOpenNote;
+  final bool generating;
+
+  /// Pulls the current month on demand. 2026-08-24: this action only
+  /// existed in the whole-screen EMPTY state, so as soon as an investor had
+  /// a single contract note the screen was no longer empty and the button
+  /// vanished — leaving no way to request a statement at all. Reported as
+  /// "I can't request new statements????". It now lives on the Statements
+  /// tab itself, where it belongs.
+  final VoidCallback onGenerate;
 
   @override
   Widget build(BuildContext context) {
@@ -226,9 +239,21 @@ class _StatementsBody extends StatelessWidget {
         // fill. Tapping a row downloads the real PDF, so nothing is lost by
         // dropping a control that could only ever apologise. Matches the
         // same call on statement_detail_screen.dart.
+        if (!showingNotes) ...[
+          KButton(
+            label: generating ? 'Preparing…' : "Prepare this month's statement",
+            variant: KButtonVariant.secondary,
+            iconLeft: 'download',
+            loading: generating,
+            onPressed: generating ? null : onGenerate,
+          ),
+          const SizedBox(height: 10),
+        ],
         Text(
-          'Tap a document to open it. Statements are not emailed — download keeps a copy '
-          'on your device.',
+          showingNotes
+              ? 'Tap a note to open it. A copy is emailed to you whenever an order fills.'
+              : 'Statements are prepared at the start of each month — or pull the current '
+                  'month above. They are not emailed; download keeps a copy on your device.',
           style: KType.data(color: KColor.ink3),
         ),
       ],
