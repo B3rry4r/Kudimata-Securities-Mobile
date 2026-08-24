@@ -160,7 +160,6 @@ class _StatementsScreenState extends State<StatementsScreen> {
             onOpenStatement: (statement) =>
                 context.push(Routes.acctStatementDetail, extra: statement),
             onOpenNote: (statement) => context.push(Routes.contractNote, extra: statement),
-            onOpenTax: () => context.push(Routes.acctTax),
           );
         },
       ),
@@ -176,7 +175,6 @@ class _StatementsBody extends StatelessWidget {
     required this.onTabChanged,
     required this.onOpenStatement,
     required this.onOpenNote,
-    required this.onOpenTax,
   });
 
   final List<Statement> statements;
@@ -185,7 +183,6 @@ class _StatementsBody extends StatelessWidget {
   final ValueChanged<String> onTabChanged;
   final void Function(Statement statement) onOpenStatement;
   final void Function(Statement statement) onOpenNote;
-  final VoidCallback onOpenTax;
 
   @override
   Widget build(BuildContext context) {
@@ -203,17 +200,13 @@ class _StatementsBody extends StatelessWidget {
         // (screen 85) instead of swapping the list.
         KSegmentedControl(
           value: tab,
-          onChanged: (v) {
-            if (v == 'tax') {
-              onOpenTax();
-              return;
-            }
-            onTabChanged(v);
-          },
+          onChanged: onTabChanged,
           options: const [
             KSegmentOption(value: 'statements', label: 'Statements'),
             KSegmentOption(value: 'notes', label: 'Contract notes'),
-            KSegmentOption(value: 'tax', label: 'Tax'),
+            // 'tax' segment removed 2026-08-24 — see account_screen.dart's
+            // matching note. It navigated to a screen that only ever showed
+            // "not available yet".
           ],
         ),
         const SizedBox(height: 16),

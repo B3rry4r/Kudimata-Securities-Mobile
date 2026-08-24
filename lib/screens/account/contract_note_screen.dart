@@ -89,6 +89,24 @@ class _ContractNoteScreenState extends State<ContractNoteScreen> {
             return const KLoadingView();
           }
           if (snapshot.hasError) {
+            // A 404 is NOT a transient failure and must not offer a retry
+            // that can never succeed — reported live as "the receipt screen
+            // doesn't stay open, it always falls back into a broken retry
+            // screen". Contract notes filed before 2026-08-24 stored a
+            // transaction id in `periodOrTradeRef` rather than a KDM-CN
+            // reference, so they resolve to no order and 404 every time.
+            final err = snapshot.error;
+            final isMissing = err is ApiException && err.statusCode == 404;
+            if (isMissing) {
+              return const KEmptyView(
+                icon: 'card',
+                title: 'Itemised note not available',
+                message: 'This note was filed before we started recording the fee '
+                    'breakdown, so there is nothing itemised to show. Notes from new '
+                    'orders include the full breakdown and a downloadable PDF.',
+                illustrationName: 'empty-statements',
+              );
+            }
             return KErrorView(onPrimary: () => setState(() => _future = _load()));
           }
           return _NoteBody(note: snapshot.data!, onDownload: _download);

@@ -52,7 +52,12 @@ List<(String title, String route, String? trailing)> _menuRows() {
     ('Security', Routes.acctSecurity, null),
     ('Refer & earn', Routes.acctRefer, null),
     ('Corporate actions', Routes.corpActions, null),
-    ('Tax documents', Routes.acctTax, null),
+    // Tax documents hidden 2026-08-24 (direct instruction: "please hide
+    // everything on tax"). The backend now really generates annual
+    // withholding-tax summaries, but the screen behind this row still shows
+    // static "not available" copy — the mobile StatementKind enum has no
+    // tax kinds, so it cannot list them. Hidden rather than left pointing
+    // at a dead end; restore this row once the enum and screen are wired.
     ('Data & privacy', Routes.acctDataPrivacy, null),
     ('Help & support', Routes.acctHelp, null),
     // 2026-08-24: trailing document count removed per direct product
