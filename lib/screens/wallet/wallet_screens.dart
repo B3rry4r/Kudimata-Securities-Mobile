@@ -161,8 +161,14 @@ class _WalletBody extends StatelessWidget {
   });
   final String balance;
 
-  /// "₦X held for a pending order" (spec 40, loss-toned) — null when there's
-  /// nothing held, in which case KBalancePanel shows no change line at all.
+  /// "₦X held for a pending order" (spec 40, loss-toned) — real data
+  /// (backend pendingBalanceKobo), but 2026-08-24 direct feedback: "showing
+  /// wallet funding activity for an account that hasn't been credited is
+  /// just confusing... not everyone is going to understand ₦20,000 held for
+  /// a pending order". No longer rendered on the panel itself — kept on
+  /// [_WalletData] since order_status_screen.dart's own per-order detail is
+  /// still the right, unambiguous place to show a hold tied to a specific
+  /// order, rather than a summary line here with no order context at all.
   final String? pending;
   final List<Txn> txns;
 
@@ -179,8 +185,6 @@ class _WalletBody extends StatelessWidget {
         KBalancePanel(
           label: 'Available to invest',
           balance: balance,
-          change: pending != null ? '$pending held for a pending order' : null,
-          changeTone: KTrend.loss,
         ),
         // mockup-raw/s40.html line 9: padding-top 14, not 12.
         const SizedBox(height: 14),
