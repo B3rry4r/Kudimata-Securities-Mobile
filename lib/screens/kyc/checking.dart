@@ -90,6 +90,16 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           const SizedBox(height: 22),
                           Text('Checking your face liveness…',
                               textAlign: TextAlign.center, style: KType.section()),
+                          // 2026-08-24 fix: this file's own header comment
+                          // has always claimed "a centred spinner while the
+                          // REAL liveness check runs server-side" — it was
+                          // never actually in the widget tree, just the
+                          // static illustration above. A static image gives
+                          // no sense that anything is actively happening —
+                          // direct feedback: "checking your face liveness
+                          // has to also show a loader".
+                          const SizedBox(height: 18),
+                          const KSpinner(size: 28),
                         ],
                 ),
               ),
