@@ -116,7 +116,28 @@ class _HomeScreenState extends State<HomeScreen> {
   late final _assetRepo = AssetRepository(AppScope.read(context).apiClient);
   late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
   late final _watchlistRepo = WatchlistRepository(AppScope.read(context).apiClient);
-  late Future<_HomeData> _future = _load();
+  // 2026-08-24 fix — reported live: "for a couple of seconds I still see
+  // the not verified state" before it flips to the real verified body.
+  // Root cause: AppState.kycApproved is in-memory only and only ever gets
+  // hydrated by hydrateGatingStateAndRoute/refreshKycGatingState, which
+  // normally runs before Home is ever navigated to — EXCEPT on a plain
+  // page reload (this is a web build): app_router.dart's _gateRedirect
+  // free-roams straight to whatever location the URL already had once
+  // AppState.signedIn restores from secure storage, with no login/unlock
+  // step in between to trigger that hydration. Home then built immediately
+  // with kycApproved still at its false default, correctly computed
+  // tradingEligibilityGap() as "not verified" from that stale flag, and
+  // only self-corrected once _kycPollTimer's first 8s tick landed. The
+  // FIRST load now always awaits a fresh gating check before Home decides
+  // which body to show — _load() itself (used by every later reload/silent
+  // refresh) is untouched, so this doesn't repeat the check on every 8s
+  // portfolio poll tick.
+  late Future<_HomeData> _future = _initialLoad();
+
+  Future<_HomeData> _initialLoad() async {
+    await refreshKycGatingState(context);
+    return _load();
+  }
 
   /// The data actually rendered — set once the FIRST silent poll succeeds,
   /// and from then on preferred over the FutureBuilder's own snapshot (see

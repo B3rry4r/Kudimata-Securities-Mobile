@@ -115,41 +115,63 @@ class _NotificationsSettingsScreenState
                 style: KType.body(color: KColor.ink2),
               ),
               const SizedBox(height: 20),
+              // 2026-08-24 fix — reported live: the switch rows had no
+              // vertical padding at all (a bare KSwitch directly inside
+              // KAccountCard, separated only by a plain Divider), so every
+              // label sat cramped flush against its neighbours' dividers
+              // and the switch knob read as vertically misaligned against
+              // its own two-line label/description block. Every other
+              // KSwitch consumer in this app (security_screen.dart,
+              // data_privacy_screen.dart, price_alerts_screen.dart) wraps
+              // each row in `Container(padding: vertical 13, border: top
+              // hairline)` instead of a bare Divider — matching that
+              // established convention here instead of inventing a new one.
               KAccountCard(
                 children: [
-                  KSwitch(
-                    label: 'Order updates',
-                    description: 'Filled, part-filled, cancelled',
-                    checked: prefs.ordersEmail,
-                    onChanged: (v) => _toggleOrders(prefs, v),
-                  ),
-                  Divider(height: 1, color: KColor.hairline),
-                  // Canvas order (screen 48): Order updates, Money in and
-                  // out, Price alerts, Weekly digest, Security — this row
-                  // sits second, matching the "Money in and out" slot it's
-                  // merged onto (see this file's header comment for why it
-                  // also carries "Security").
-                  KSwitch(
-                    label: 'Money in and out, and security',
-                    description:
-                        'Deposits, withdrawals, dividends, sign-ins and account changes',
-                    checked: prefs.accountEmail,
-                    onChanged: (v) => _toggleAccount(prefs, v),
-                  ),
-                  Divider(height: 1, color: KColor.hairline),
-                  KSwitch(
-                    label: 'Price alerts',
-                    description: 'Only names on your watchlist, over 5% in a day',
-                    checked: prefs.priceAlertsEmail,
-                    onChanged: (v) => _togglePriceAlerts(prefs, v),
-                  ),
-                  Divider(height: 1, color: KColor.hairline),
-                  KSwitch(
-                    label: 'Weekly digest',
-                    description: 'One written summary of your portfolio, on Sundays',
-                    checked: _weeklyDigest,
-                    onChanged: (v) => setState(() => _weeklyDigest = v),
-                  ),
+                  for (var i = 0; i < 4; i++)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: i == 0
+                              ? BorderSide.none
+                              : BorderSide(color: KColor.hairline, width: 1),
+                        ),
+                      ),
+                      child: switch (i) {
+                        0 => KSwitch(
+                            label: 'Order updates',
+                            description: 'Filled, part-filled, cancelled',
+                            checked: prefs.ordersEmail,
+                            onChanged: (v) => _toggleOrders(prefs, v),
+                          ),
+                        // Canvas order (screen 48): Order updates, Money in
+                        // and out, Price alerts, Weekly digest, Security —
+                        // this row sits second, matching the "Money in and
+                        // out" slot it's merged onto (see this file's
+                        // header comment for why it also carries
+                        // "Security").
+                        1 => KSwitch(
+                            label: 'Money in and out, and security',
+                            description:
+                                'Deposits, withdrawals, dividends, sign-ins and account changes',
+                            checked: prefs.accountEmail,
+                            onChanged: (v) => _toggleAccount(prefs, v),
+                          ),
+                        2 => KSwitch(
+                            label: 'Price alerts',
+                            description: 'Only names on your watchlist, over 5% in a day',
+                            checked: prefs.priceAlertsEmail,
+                            onChanged: (v) => _togglePriceAlerts(prefs, v),
+                          ),
+                        _ => KSwitch(
+                            label: 'Weekly digest',
+                            description: 'One written summary of your portfolio, on Sundays',
+                            checked: _weeklyDigest,
+                            onChanged: (v) => setState(() => _weeklyDigest = v),
+                          ),
+                      },
+                    ),
                 ],
               ),
             ],
