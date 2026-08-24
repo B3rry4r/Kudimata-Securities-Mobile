@@ -644,6 +644,28 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path == '/ai/explain-term') {
       return {'text': 'A plain-English explanation of this term.', 'creditsRemaining': 2};
     }
+    if (path.startsWith('/orders/contract-note/')) {
+      return {
+        'contractNoteRef': path.split('/').last,
+        'clientName': 'Adebayo Okonkwo',
+        'chn': '1234567890',
+        'tradeDate': '2026-03-14T09:41:00.000Z',
+        'settlesOn': '2026-03-19T09:41:00.000Z',
+        'side': 'buy',
+        'ticker': 'MTNN',
+        'assetName': 'MTN Nigeria',
+        'units': '186.000000',
+        'fillPriceKobo': 26840,
+        'considerationKobo': 4992240,
+        'commissionKobo': 44930,
+        'exchangeFeesKobo': 22465,
+        'vatKobo': 5055,
+        'totalKobo': 5064690,
+        'executingBroker': 'Blue Marina Securities Limited',
+        'downloadUrl': 'https://example.test/note.pdf',
+      };
+    }
+    if (path == '/statements/generate-monthly') return <String, dynamic>{};
     return _fallback(path);
   }
 

@@ -1,215 +1,338 @@
-// Contract note document (screen 66, 2026-08-23 "Soft Landing" exactness
-// pass — Flow G was entirely unbuilt until now).
+// Contract note document (design screen 66).
 //
-// Real backend limitation, flagged rather than faked — precise version,
-// corrected 2026-08-24 (the previous comment here overstated the gap): a
-// real Order DOES carry units/price/value/reference/createdAt (real trade
-// figures — see Kudimata-Securities-Backend's src/common/types/order.types.ts),
-// so client name/date/shares/price/consideration are NOT fundamentally
-// unavailable data. The actual gap is a data-model link: this screen only
-// ever receives a `Statement` (statements_repository.dart:
-// {id, kind, title, periodOrTradeRef, fileSizeBytes, generatedAt,
-// fileObjectKey}), and for a contract-note Statement, `periodOrTradeRef` is
-// set server-side to a Transaction id (src/statements/statements.service.ts
-// `generateContractNote`), NOT an Order id/reference — and Transaction has
-// no `orderId` foreign key back to the Order it originated from (confirmed
-// against prisma/schema.prisma's own Transaction.orderId comment and
-// order_status_screen.dart's identical finding). So there is no reliable
-// way, client-side, to resolve a given contract-note Statement back to the
-// specific Order whose real figures it should show — matching by any
-// available id doesn't work, the id spaces are unrelated. Closing this for
-// real needs backend work: either an `orderId` FK added to Transaction, or
-// `generateContractNote()` embedding the real order's figures into the
-// Statement/document at generation time — not a frontend wiring fix. The
-// fee/commission/NGX·SEC·CSCS/VAT breakdown is a SEPARATE, deeper gap even
-// once that's fixed: Order itself has no persisted fee breakdown fields at
-// all (the "1.35%"/"commission, NGX, SEC, CSCS" figures shown at order
-// placement in trade_flows.dart are computed client-side at that moment and
-// never saved with the order) — so a true itemised breakdown needs new
-// persisted fields on Order, not just a link. Until both are closed, this
-// screen shows the real document metadata it DOES have (title, date, size)
-// and an honest "not available yet" state for the rest — same pattern
-// statements_screen.dart's own download button already uses.
+// 2026-08-24 REWRITE — reported live: "CONTRACT NOTE NOT SHOWING INSTEAD
+// SHOWING ME LOGOS AND DOCUMENT SIZE... DOWNLOAD NOT WORKING".
 //
-// Also genuinely missing (canvas's own footer note on #s66): entry points
-// from Orders (#s44) and Holding detail (#s39) — canvas says a filled order
-// should open this screen from either of those, but the only real route
-// today is from Statements (#s52). Adding those needs
-// order_status_screen.dart / holding_detail_screen.dart changes, which are
-// outside this file's scope.
+// Both complaints were accurate. This screen only ever received a
+// `Statement` ({id, kind, title, periodOrTradeRef, fileSizeBytes,
+// generatedAt, fileObjectKey}), and nothing linked that back to the Order
+// whose figures the note represents — so it rendered the only real data it
+// had (a title, a date, a file size) beside the partner logos, and its
+// Download / Email buttons were honest-but-inert snackbars.
+//
+// Both blockers are now closed server-side:
+//   - Order persists its own commission / exchange-fee / VAT / total /
+//     settlement-date / contractNoteRef (see the backend's
+//     src/orders/fees.ts and the Order model), so the itemised breakdown is
+//     real stored data rather than a client-side guess at order time.
+//   - `Statement.periodOrTradeRef` now carries that same KDM-CN-xxxx
+//     reference, so a note resolves 1:1 to its order via
+//     GET /orders/contract-note/:ref.
+//   - The PDF is really rendered and stored, so the download is a real
+//     presigned URL rather than a promise.
+//
+// Layout follows design 66: issuer + reference, executed-through, client /
+// trade dates, the itemised money rows, the emphasised total, the footer
+// disclosure, and the fee-explainer line beneath the card.
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/statements_repository.dart';
-import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
-class ContractNoteScreen extends StatelessWidget {
+class ContractNoteScreen extends StatefulWidget {
   const ContractNoteScreen({super.key, required this.statement});
   final Statement statement;
+
+  @override
+  State<ContractNoteScreen> createState() => _ContractNoteScreenState();
+}
+
+class _ContractNoteScreenState extends State<ContractNoteScreen> {
+  late final _repo = StatementsRepository(AppScope.read(context).apiClient);
+  late Future<ContractNote> _future = _load();
+
+  Future<ContractNote> _load() {
+    final ref = widget.statement.periodOrTradeRef;
+    if (ref == null || ref.isEmpty) {
+      // Older contract notes were filed before references existed; there is
+      // nothing to resolve them to, and saying so beats a spinner forever.
+      return Future.error(
+        ApiException(
+          code: 'NOT_FOUND',
+          message: 'This note has no reference to look up.',
+          statusCode: 404,
+        ),
+      );
+    }
+    return _repo.contractNote(ref);
+  }
+
+  Future<void> _download(ContractNote note) async {
+    final url = note.downloadUrl;
+    if (url == null) {
+      _snack("This note's PDF isn't available to download yet.");
+      return;
+    }
+    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    if (!ok) _snack("Couldn't open the download. Try again.");
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Contract note',
-      // Canvas #66's header carries a trailing download icon-button
-      // (mockup wires it to `nav.s52`, but that's the prototype's stand-in
-      // for a real download it can't perform either — literally navigating
-      // this app to Statements on tap would be actively misleading, so this
-      // uses the SAME honest "not available yet" treatment as the footer
-      // Download PDF button below, not a fake navigation).
-      headerTrailing: KIconButton(
-        icon: 'download',
-        semanticLabel: 'Download',
-        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Downloads are not available yet — check back soon.'),
-          ),
-        ),
+      child: FutureBuilder<ContractNote>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const KLoadingView();
+          }
+          if (snapshot.hasError) {
+            return KErrorView(onPrimary: () => setState(() => _future = _load()));
+          }
+          return _NoteBody(note: snapshot.data!, onDownload: _download);
+        },
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Canvas #66 builds this as distinct full-bleed bands (each its
-          // own padding/background, some `--paper`, some `--bg`, divided by
-          // hairlines) rather than one uniformly-padded column — restructured
-          // 2026-08-24 to match that exactly (was previously a single
-          // padding:20 Column with Dividers, which couldn't show a band with
-          // a different background reaching the card's own edges).
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: KColor.paper,
-                border: Border.all(color: KColor.hairline, width: 1),
-                boxShadow: KShadow.card,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const KMark(size: 30),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('Kudimata Securities Ltd', style: KType.cardTitle()),
-                              Text(statement.title.upper, style: KType.micro(color: KColor.ink3)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // "Executed through" band — canvas #66's real, confirmed
-                  // fact (not mockup placeholder): Blue Marina Securities is
-                  // Kudimata's actual sponsoring/executing broker per the
-                  // real Client Agreement (see legal_reference_screens.dart's
-                  // PartnerDisclosuresScreen, which cites the same document)
-                  // — every trade on this single-broker platform executes
-                  // through them, so this is unconditional, not per-trade
-                  // data. Reuses the same real asset legal_reference_screens.dart
-                  // already established (assets/partners/blue-marina.png) —
-                  // a smaller inline treatment here since canvas #66's row is
-                  // a compact band inside the document, not #94's own
-                  // dedicated bordered card.
-                  GestureDetector(
-                    onTap: () => context.push(Routes.acctLegalPartnerDisclosures),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-                      decoration: BoxDecoration(
-                        color: KColor.bg,
-                        border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
-                      ),
-                      child: Row(
+    );
+  }
+}
+
+class _NoteBody extends StatelessWidget {
+  const _NoteBody({required this.note, required this.onDownload});
+  final ContractNote note;
+  final Future<void> Function(ContractNote) onDownload;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBuy = note.side == 'buy';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: KColor.paper,
+            border: Border.all(color: KColor.hairline),
+            borderRadius: KRadii.cardR,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Issuer + reference
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const KMark(size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Executed through'.upper, style: KType.micro(color: KColor.ink3)),
-                          const SizedBox(width: 10),
-                          Image.asset('assets/partners/blue-marina.png', height: 16, fit: BoxFit.contain),
+                          Text('Kudimata Securities Ltd', style: KType.cardTitle()),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Contract note · ${note.contractNoteRef}'.upper,
+                            style: KType.micro(color: KColor.ink3),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
-                    ),
-                    child: Text(statement.sub, style: KType.data(color: KColor.ink2).tnum),
-                  ),
-                  // Honest stand-in for the line-item breakdown — see this
-                  // file's header comment for why the real figures can't be
-                  // shown yet.
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
-                    ),
-                    child: Text(
-                      "The itemised breakdown isn't available yet — check back soon or ask support for a copy.",
-                      style: KType.body(color: KColor.ink2),
-                    ),
-                  ),
-                  // Static compliance copy from #s66's legal footer band —
-                  // not backend-dependent (unlike the line-item breakdown
-                  // above), so shown verbatim rather than omitted.
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-                    color: KColor.bg,
-                    child: Text(
-                      'Kudimata Securities Ltd, SEC-registered · shares registered to your CHN at the '
-                      'CSCS on settlement · this is a record of an executed order, not advice · fees '
-                      'comprise broker commission plus NGX, SEC and CSCS charges and VAT.',
-                      // #s66 explicitly overrides the micro role's usual
-                      // tracked-uppercase treatment for this block:
-                      // letter-spacing:0;text-transform:none — plain sentence
-                      // case, not a label.
-                      style: KType.micro(color: KColor.ink3).copyWith(letterSpacing: 0, height: 1.6),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // #s66: buttons stack full-width (not a 2-up row); Download PDF is
-          // the primary action with a download icon, Email is ghost.
-          KButton(
-            label: 'Download PDF',
-            iconLeft: 'download',
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Downloads are not available yet — check back soon.'),
+              _hair(),
+              // Executed through
+              Container(
+                width: double.infinity,
+                color: KColor.bg,
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+                child: Row(
+                  children: [
+                    Text('Executed through'.upper, style: KType.micro(color: KColor.ink3)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        note.executingBroker,
+                        style: KType.data(color: KColor.ink),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          KButton(
-            label: 'Email me this receipt',
-            variant: KButtonVariant.ghost,
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Receipts are not available yet — check back soon.'),
+              _hair(),
+              // Client / trade dates
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _Field(
+                        label: 'Client',
+                        value: note.clientName,
+                        sub: note.chn == null ? null : 'CHN ${note.chn}',
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _Field(
+                        label: 'Trade date',
+                        value: _dateTime(note.tradeDate),
+                        sub: note.settlesOn == null
+                            ? null
+                            : 'Settles ${_shortDate(note.settlesOn!)} · T+3',
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              _hair(),
+              // Itemised money rows
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Column(
+                  children: [
+                    _Row(isBuy ? 'Bought' : 'Sold', '${note.assetName} · ${note.ticker}'),
+                    _Row('Shares · price',
+                        '${_trimUnits(note.units)} · ${_naira(note.fillPriceKobo)}'),
+                    _Row('Consideration', _naira(note.considerationKobo)),
+                    _Row('Broker commission', _naira(note.commissionKobo)),
+                    _Row('NGX · SEC · CSCS fees', _naira(note.exchangeFeesKobo)),
+                    _Row('VAT on fees', _naira(note.vatKobo), last: true),
+                  ],
+                ),
+              ),
+              _hair(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(isBuy ? 'Total paid' : 'Total received',
+                          style: KType.cardTitle()),
+                    ),
+                    Text(_naira(note.totalKobo), style: KType.cardTitle()),
+                  ],
+                ),
+              ),
+              _hair(),
+              Container(
+                width: double.infinity,
+                color: KColor.bg,
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
+                child: Text(
+                  'Kudimata Securities Ltd, SEC-registered · shares registered to your CHN at '
+                  'the CSCS on settlement · this is a record of an executed order, not advice · '
+                  'fees comprise broker commission plus NGX, SEC and CSCS charges and VAT.',
+                  style: KType.micro(color: KColor.ink3),
+                ),
+              ),
+            ],
           ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '${_naira(note.totalFeesKobo)} of the total is fees. Commission is ours; the rest '
+          'belongs to the exchange and the regulator.',
+          style: KType.data(color: KColor.ink3),
+        ),
+        const SizedBox(height: 20),
+        KButton(
+          label: 'Download PDF',
+          iconLeft: 'download',
+          fullWidth: true,
+          onPressed: () => onDownload(note),
+        ),
+        const SizedBox(height: 10),
+        // The canvas's "Email me this receipt" is deliberately NOT rendered:
+        // the contract note is ALREADY emailed automatically the moment an
+        // order fills, with this same PDF attached (design screen 69). A
+        // second button that re-sends it needs a real re-send endpoint,
+        // which doesn't exist — and the previous build's version of this
+        // button was an inert snackbar, which is what "the email button runs
+        // into couldn't load" was about.
+        Text(
+          'A copy of this note was emailed to you when the order filled.',
+          style: KType.data(color: KColor.ink3),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _hair() => Container(height: 1, color: KColor.hairline);
+}
+
+class _Field extends StatelessWidget {
+  const _Field({required this.label, required this.value, this.sub});
+  final String label;
+  final String value;
+  final String? sub;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label.upper, style: KType.micro(color: KColor.ink3)),
+        const SizedBox(height: 2),
+        Text(value, style: KType.data(color: KColor.ink)),
+        if (sub != null) Text(sub!, style: KType.data(color: KColor.ink2)),
+      ],
+    );
+  }
+}
+
+class _Row extends StatelessWidget {
+  const _Row(this.label, this.value, {this.last = false});
+  final String label;
+  final String value;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      decoration: last
+          ? null
+          : BoxDecoration(
+              border: Border(bottom: BorderSide(color: KColor.hairline, width: 1)),
+            ),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: KType.data(color: KColor.ink2))),
+          Text(value, style: KType.data(color: KColor.ink)),
         ],
       ),
     );
   }
+}
+
+String _naira(int kobo) {
+  final v = (kobo / 100).toStringAsFixed(2);
+  final parts = v.split('.');
+  final whole = parts[0].replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  return '₦$whole.${parts[1]}';
+}
+
+String _trimUnits(String units) =>
+    units.contains('.') ? units.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '') : units;
+
+const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+String _dateTime(DateTime d) {
+  final l = d.toLocal();
+  final hh = l.hour.toString().padLeft(2, '0');
+  final mm = l.minute.toString().padLeft(2, '0');
+  return '${l.day} ${_months[l.month - 1]} ${l.year} · $hh:$mm';
+}
+
+String _shortDate(DateTime d) {
+  final l = d.toLocal();
+  return '${l.day} ${_months[l.month - 1]}';
 }

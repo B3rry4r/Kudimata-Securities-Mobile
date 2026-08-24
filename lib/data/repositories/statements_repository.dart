@@ -127,4 +127,92 @@ class StatementsRepository {
       fileObjectKey: json['fileObjectKey'] as String? ?? '',
     );
   }
+
+  /// Generates (or returns) THIS month's statement for the caller.
+  ///
+  /// Statements are otherwise produced by a monthly job on the 1st, so a
+  /// newly-active investor would see nothing at all until a month closed
+  /// (2026-08-24: "how are statements generated... it is just contract
+  /// notes I am seeing"). Idempotent server-side — calling it twice in a
+  /// month costs nothing and produces no duplicate.
+  Future<void> generateThisMonth() =>
+      _client.post('/statements/generate-monthly', data: {});
+
+  /// The real itemised note behind a `contract_note` Statement. [ref] is
+  /// the Statement's own `periodOrTradeRef` (a KDM-CN-xxxx reference).
+  Future<ContractNote> contractNote(String ref) async {
+    final res = await _client.get('/orders/contract-note/$ref');
+    return ContractNote.fromJson(res.data as Map<String, dynamic>);
+  }
+}
+
+/// One real, itemised contract note — GET /orders/contract-note/:ref
+/// (2026-08-24). Before this endpoint existed the contract note screen
+/// could only show a Statement's metadata (title, size, date), because
+/// nothing linked a note back to the order whose figures it represents —
+/// which is why it rendered logos and a file size instead of a document.
+class ContractNote {
+  const ContractNote({
+    required this.contractNoteRef,
+    required this.clientName,
+    required this.chn,
+    required this.tradeDate,
+    required this.settlesOn,
+    required this.side,
+    required this.ticker,
+    required this.assetName,
+    required this.units,
+    required this.fillPriceKobo,
+    required this.considerationKobo,
+    required this.commissionKobo,
+    required this.exchangeFeesKobo,
+    required this.vatKobo,
+    required this.totalKobo,
+    required this.executingBroker,
+    required this.downloadUrl,
+  });
+
+  final String contractNoteRef;
+  final String clientName;
+  final String? chn;
+  final DateTime tradeDate;
+  final DateTime? settlesOn;
+  final String side;
+  final String ticker;
+  final String assetName;
+  final String units;
+  final int fillPriceKobo;
+  final int considerationKobo;
+  final int commissionKobo;
+  final int exchangeFeesKobo;
+  final int vatKobo;
+  final int totalKobo;
+  final String executingBroker;
+
+  /// Short-lived presigned GET for the stored PDF. Null when the note's
+  /// render or upload failed at fill time — the screen must then say so
+  /// rather than offer a download button that leads nowhere.
+  final String? downloadUrl;
+
+  int get totalFeesKobo => commissionKobo + exchangeFeesKobo + vatKobo;
+
+  static ContractNote fromJson(Map<String, dynamic> j) => ContractNote(
+        contractNoteRef: j['contractNoteRef'] as String,
+        clientName: j['clientName'] as String? ?? '',
+        chn: j['chn'] as String?,
+        tradeDate: DateTime.parse(j['tradeDate'] as String),
+        settlesOn: j['settlesOn'] == null ? null : DateTime.tryParse(j['settlesOn'] as String),
+        side: j['side'] as String,
+        ticker: j['ticker'] as String,
+        assetName: j['assetName'] as String? ?? '',
+        units: j['units']?.toString() ?? '0',
+        fillPriceKobo: (j['fillPriceKobo'] as num?)?.toInt() ?? 0,
+        considerationKobo: (j['considerationKobo'] as num?)?.toInt() ?? 0,
+        commissionKobo: (j['commissionKobo'] as num?)?.toInt() ?? 0,
+        exchangeFeesKobo: (j['exchangeFeesKobo'] as num?)?.toInt() ?? 0,
+        vatKobo: (j['vatKobo'] as num?)?.toInt() ?? 0,
+        totalKobo: (j['totalKobo'] as num?)?.toInt() ?? 0,
+        executingBroker: j['executingBroker'] as String? ?? '',
+        downloadUrl: j['downloadUrl'] as String?,
+      );
 }
