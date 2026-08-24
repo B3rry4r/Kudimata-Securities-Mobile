@@ -644,6 +644,45 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path == '/ai/explain-term') {
       return {'text': 'A plain-English explanation of this term.', 'creditsRemaining': 2};
     }
+    // GET /orders — PaginatedList<Order>. Was missing entirely, so the
+    // Orders screen rendered its empty state in every screenshot and the
+    // per-order Cancel affordance was never once visible for review (same
+    // gap /statements had).
+    if (path == '/orders') {
+      return _paginated([
+        {
+          'id': 'ORD-1',
+          'ticker': 'MTNN',
+          'side': 'buy',
+          'units': 20,
+          'orderType': 'market',
+          'status': 'pending',
+          'createdAt': '2026-03-14T09:41:00.000Z',
+          'amountKobo': 539000,
+          'limitPrice': null,
+          'price': null,
+          'value': 539000,
+          'reference': 'KDM-BY-83AQ',
+          'destinationBankAccountId': null,
+        },
+        {
+          'id': 'ORD-2',
+          'ticker': 'GTCO',
+          'side': 'buy',
+          'units': 400,
+          'orderType': 'market',
+          'status': 'approved',
+          'createdAt': '2026-03-13T10:15:00.000Z',
+          'amountKobo': 1926000,
+          'limitPrice': null,
+          'price': 4815,
+          'value': 1926000,
+          'reference': 'KDM-BY-11XZ',
+          'destinationBankAccountId': null,
+        },
+      ]);
+    }
+
     // GET /statements?kind=... — a PLAIN array, matching the real
     // controller (its own contract test asserts "no pagination envelope").
     // Was missing entirely, so every statements screenshot rendered

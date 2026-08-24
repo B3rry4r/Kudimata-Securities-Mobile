@@ -118,6 +118,7 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
                           marketOpen: marketOpen,
                           cancellableOrder: toCancel,
                           onCancel: () => _cancel(context, toCancel!),
+                          onCancelOrder: (o) => _cancel(context, o),
                         ),
                 ),
               ],
@@ -137,11 +138,15 @@ class _OrderList extends StatelessWidget {
     required this.marketOpen,
     required this.cancellableOrder,
     required this.onCancel,
+    required this.onCancelOrder,
   });
   final List<Order> orders;
   final bool marketOpen;
   final Order? cancellableOrder;
   final VoidCallback onCancel;
+
+  /// Cancels one specific order — see _OrderRow.onCancel.
+  final void Function(Order) onCancelOrder;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +168,13 @@ class _OrderList extends StatelessWidget {
                         ? null
                         : Border(top: BorderSide(color: KColor.hairline, width: 1)),
                   ),
-                  child: _OrderRow(order: orders[i], marketOpen: marketOpen),
+                  child: _OrderRow(
+                    order: orders[i],
+                    marketOpen: marketOpen,
+                    onCancel: orders[i].status == 'pending'
+                        ? () => onCancelOrder(orders[i])
+                        : null,
+                  ),
                 ),
             ],
           ),
@@ -210,9 +221,17 @@ class _OrderList extends StatelessWidget {
 /// One order row — title + units/price subtitle, StatusPill inline to the
 /// right. mockup-raw/s44.html: `[title+subtitle flex:1] [StatusPill]`.
 class _OrderRow extends StatelessWidget {
-  const _OrderRow({required this.order, required this.marketOpen});
+  const _OrderRow({required this.order, required this.marketOpen, this.onCancel});
   final Order order;
   final bool marketOpen;
+
+  /// Cancels THIS order. Null when the order isn't cancellable (anything
+  /// past 'pending'). 2026-08-24: cancellation used to live in a single
+  /// button BELOW the whole list that always targeted the OLDEST pending
+  /// order — so with more than one queued you could not cancel the one you
+  /// were looking at, and with a long list you could not find it at all.
+  /// Reported as "where is cancelation????".
+  final VoidCallback? onCancel;
 
   String get _title {
     final verb = order.side == 'sell' ? 'Sell' : 'Buy';
@@ -258,6 +277,23 @@ class _OrderRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           _StatusBadge(status: order.status, marketOpen: marketOpen),
+          if (onCancel != null) ...[
+            const SizedBox(width: 8),
+            // Text, not an icon: "cancel an order" is destructive and
+            // irreversible, and an unlabelled glyph beside a status pill is
+            // exactly the kind of thing people tap by accident.
+            GestureDetector(
+              onTap: onCancel,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Text(
+                  'Cancel',
+                  style: KType.micro(color: KColor.loss, w: KWeight.semibold),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
