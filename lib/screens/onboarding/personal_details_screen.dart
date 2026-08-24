@@ -1,11 +1,14 @@
-// Onboarding — personal details. Runs right after biometric.dart, before the
-// investor lands on Home, for every fresh sign-up. DOB / residential address
-// / city / state / phone — NOT a KYC step (KYC starts from BVN — see
-// kyc/kyc_intro.dart). This is what used to be collected mid-KYC on
-// kyc/personal_details.dart; it moved here 2026-08-07 so "personal details"
-// (basic onboarding) and "KYC" (identity verification: BVN, ID, liveness)
-// are no longer conflated — see the KYC flow's own header comments for the
-// other half of this change.
+// "A few more details" — DOB / residential address / city / state / phone.
+// 2026-08-24: this used to run right after biometric.dart, gating Home for
+// every fresh sign-up — direct product feedback: "a few more details should
+// be part of the KYC and not a separate step after login". Now reached ONLY
+// from kyc_intro.dart's `_start()`, the moment an investor actually begins
+// verification (checked there, not on the Home path at all) — Continue
+// below routes back into kyc_intro, which re-runs its own resume-or-fresh-
+// start logic now that this prerequisite is satisfied. Still PATCH
+// /users/me, still not a numbered KYC step itself (KYC's own 8 steps still
+// start from BVN — see kyc/kyc_intro.dart) — just reached from within that
+// flow instead of blocking Home beforehand.
 //
 // Full name is no longer collected here — sign_up_screen.dart now asks for
 // it directly at signup, which is also what fixed Home's "Hi {email}"
@@ -145,7 +148,11 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
       return;
     }
     if (!mounted) return;
-    context.go(Routes.home);
+    // Back into kyc_intro, not Home — see file header. Re-running its
+    // `_start()` logic (rather than duplicating the draft-resume routing
+    // here) is what actually advances into KYC now that this prerequisite
+    // is satisfied.
+    context.go(Routes.kycIntro);
   }
 
   @override

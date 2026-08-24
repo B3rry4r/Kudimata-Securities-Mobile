@@ -3,10 +3,11 @@
 // LanguageSwitch. Root tab: builds a Scaffold body WITHOUT a bottom nav (the
 // shell owns KBottomNav). Mirrors `Profile` in settings-screens.jsx.
 //
-// Wired to GET /users/me (personalInfo — cscsNumber/accountStatus/fullName),
-// GET /bank-accounts (primary bank's masked number for the "Bank accounts &
-// DCS" row) and GET /legal-documents (row count for "Legal") per
-// lib/data/api/README.md's FutureBuilder convention. "Verified" comes from
+// Wired to GET /users/me (personalInfo — cscsNumber/accountStatus/fullName)
+// and GET /bank-accounts (primary bank's masked number for the "Bank
+// accounts & DCS" row) per lib/data/api/README.md's FutureBuilder
+// convention. "Legal" no longer fetches/shows a document count (2026-08-24,
+// direct product instruction — see _menuRows). "Verified" comes from
 // AppState.kycApproved — already refreshed at login (see
 // refreshKycGatingState), so no extra fetch is needed for it. "Log out" was
 // removed from this screen (2026-08-23 exactness pass): the canvas's #s45
@@ -16,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart';
-import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -37,13 +37,9 @@ import 'account_widgets.dart';
 /// the mockup (reachable from Home's bell icon instead, screen 29).
 List<(String title, String route, String? trailing)> _menuRows({
   required BankAccountSummary? primaryBank,
-  required int? legalDocCount,
 }) {
   final bankTrailing =
       primaryBank == null ? null : '${primaryBank.bankName} ${primaryBank.accountNumberMasked}';
-  final legalTrailing = (legalDocCount == null || legalDocCount == 0)
-      ? null
-      : '$legalDocCount document${legalDocCount == 1 ? '' : 's'}';
   return [
     ('Personal info', Routes.acctPersonal, null),
     ('Bank accounts & DCS', Routes.acctBanks, bankTrailing),
@@ -55,7 +51,11 @@ List<(String title, String route, String? trailing)> _menuRows({
     ('Tax documents', Routes.acctTax, null),
     ('Data & privacy', Routes.acctDataPrivacy, null),
     ('Help & support', Routes.acctHelp, null),
-    ('Legal', Routes.acctLegal, legalTrailing),
+    // 2026-08-24: trailing document count removed per direct product
+    // instruction — canvas s45 literally shows "8 documents" here, but the
+    // real count is arguably churn-prone/uninteresting to an investor, and
+    // was explicitly asked to be dropped.
+    ('Legal', Routes.acctLegal, null),
   ];
 }
 
@@ -76,22 +76,19 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late final _banksRepo = BankAccountsRepository(AppScope.read(context).apiClient);
-  late final _legalRepo = LegalDocumentsRepository(AppScope.read(context).apiClient);
-  late Future<(PersonalInfo, BankAccountSummary?, int?)> _future = _load();
+  late Future<(PersonalInfo, BankAccountSummary?)> _future = _load();
 
   // Local-only — no app-wide language/locale persistence exists anywhere in
   // this app yet, same as onboarding/welcome_slider_screen.dart's and
   // document_summary_screen.dart's own KLanguageSwitch usage.
   String _lang = 'en';
 
-  Future<(PersonalInfo, BankAccountSummary?, int?)> _load() async {
+  Future<(PersonalInfo, BankAccountSummary?)> _load() async {
     final infoFuture = _userRepo.personalInfo();
     final bankFuture = _fetchPrimaryBank();
-    final legalFuture = _fetchLegalCount();
     final info = await infoFuture;
     final bank = await bankFuture;
-    final legalCount = await legalFuture;
-    return (info, bank, legalCount);
+    return (info, bank);
   }
 
   /// A 404/empty list just means no bank account is linked yet — a normal
@@ -115,17 +112,6 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  /// Same "cosmetic trailing text, never worth failing the screen over"
-  /// reasoning as [_fetchPrimaryBank].
-  Future<int?> _fetchLegalCount() async {
-    try {
-      final docs = await _legalRepo.list();
-      return docs.length;
-    } catch (_) {
-      return null;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final kycApproved = AppScope.of(context).kycApproved;
@@ -133,7 +119,7 @@ class _AccountScreenState extends State<AccountScreen> {
       backgroundColor: KColor.bg,
       body: SafeArea(
         bottom: false,
-        child: FutureBuilder<(PersonalInfo, BankAccountSummary?, int?)>(
+        child: FutureBuilder<(PersonalInfo, BankAccountSummary?)>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -144,11 +130,10 @@ class _AccountScreenState extends State<AccountScreen> {
                 onPrimary: () => setState(() => _future = _load()),
               );
             }
-            final (info, primaryBank, legalCount) = snapshot.data!;
+            final (info, primaryBank) = snapshot.data!;
             return _AccountBody(
               info: info,
               primaryBank: primaryBank,
-              legalCount: legalCount,
               verified: kycApproved,
               lang: _lang,
               onLangChanged: (v) => setState(() => _lang = v),
@@ -164,7 +149,6 @@ class _AccountBody extends StatelessWidget {
   const _AccountBody({
     required this.info,
     required this.primaryBank,
-    required this.legalCount,
     required this.verified,
     required this.lang,
     required this.onLangChanged,
@@ -172,7 +156,6 @@ class _AccountBody extends StatelessWidget {
 
   final PersonalInfo info;
   final BankAccountSummary? primaryBank;
-  final int? legalCount;
   final bool verified;
   final String lang;
   final ValueChanged<String> onLangChanged;
@@ -190,7 +173,7 @@ class _AccountBody extends StatelessWidget {
         : '${info.accountStatus[0].toUpperCase()}${info.accountStatus.substring(1)} account';
     final subtitle = hasChn ? 'CHN ${info.cscsNumber} · $statusText' : statusText;
 
-    final rows = _menuRows(primaryBank: primaryBank, legalDocCount: legalCount);
+    final rows = _menuRows(primaryBank: primaryBank);
 
     return SingleChildScrollView(
       // Root tab: clear the floating KBottomNav (~70px + margin + safe area)

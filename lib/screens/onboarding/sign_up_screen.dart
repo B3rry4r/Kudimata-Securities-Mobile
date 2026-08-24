@@ -59,6 +59,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ..onTap = () => context.push(Routes.legalPreview('privacy_policy'));
   late final _riskTap = TapGestureRecognizer()
     ..onTap = () => context.push(Routes.legalPreview('risk_disclosure'));
+  // 2026-08-24: the line used to name only 3 of the 4 real documents an
+  // investor must actually agree to (Client Agreement was missing) —
+  // direct product feedback: "by continuing you agree to our... should
+  // agree to terms and disclosures meaning all our legal". Added for real,
+  // not just in copy — legal_preview_screen.dart's kind-keyed maps needed
+  // a client_agreement entry too (a genuine, separately-confirmed small
+  // gap: it only covered terms_of_service/privacy_policy/risk_disclosure).
+  late final _agreementTap = TapGestureRecognizer()
+    ..onTap = () => context.push(Routes.legalPreview('client_agreement'));
 
   @override
   void dispose() {
@@ -71,6 +80,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _termsTap.dispose();
     _privacyTap.dispose();
     _riskTap.dispose();
+    _agreementTap.dispose();
     super.dispose();
   }
 
@@ -208,12 +218,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         .copyWith(decoration: TextDecoration.underline),
                     recognizer: _privacyTap,
                   ),
-                  const TextSpan(text: ' and '),
+                  const TextSpan(text: ', '),
                   TextSpan(
                     text: 'Risk Disclosure',
                     style: KType.data(color: KColor.ink2)
                         .copyWith(decoration: TextDecoration.underline),
                     recognizer: _riskTap,
+                  ),
+                  const TextSpan(text: ' and '),
+                  TextSpan(
+                    text: 'Client Agreement',
+                    style: KType.data(color: KColor.ink2)
+                        .copyWith(decoration: TextDecoration.underline),
+                    recognizer: _agreementTap,
                   ),
                   const TextSpan(text: '.'),
                 ],

@@ -45,15 +45,29 @@ class KIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 2026-08-24 fix: `alignment: Alignment.center` on a Container with an
+    // explicit `width: double.infinity` but no explicit height — under an
+    // UNBOUNDED height constraint (e.g. inside a SingleChildScrollView,
+    // as the welcome slider's KOnboardingSlideContent has), Container's
+    // "has alignment, tries to be as big as possible" sizing rule made
+    // this plate balloon far past its intended ~200-256px height, pushing
+    // the title/body text below the scrollable fold entirely. `Center`
+    // as the child (instead of `alignment` on the Container itself)
+    // shrink-wraps to the SvgPicture's real size in a loose/unbounded
+    // context, while still centering it when the incoming constraint IS
+    // bounded/tight — same fix as KPillChip's identical bug.
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(padding ?? KIllo.platePad),
       decoration: BoxDecoration(color: _plate, borderRadius: KRadii.illoR),
-      alignment: Alignment.center,
-      child: SvgPicture.asset(
-        'assets/illustrations/$name.svg',
-        height: _height,
-        fit: BoxFit.contain,
+      child: Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: SvgPicture.asset(
+          'assets/illustrations/$name.svg',
+          height: _height,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

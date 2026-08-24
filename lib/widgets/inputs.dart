@@ -393,6 +393,16 @@ class KPillChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 2026-08-24 fix: every Wrap of these across the app ("pills are
+    // vertical") — `Wrap` gives each child a BOUNDED maxWidth (the wrap's
+    // own full width), not an unbounded one. A `Container` with `alignment`
+    // set but no explicit width, given bounded constraints, tries to be "as
+    // big as possible" before centering its child — so this pill stretched
+    // to the wrap's full width every time, one per row, instead of hugging
+    // its own text. Fixed by centering via `Center(widthFactor: 1,
+    // heightFactor: 1, ...)` instead of `Container.alignment` — that shrinks
+    // the centering box to its child's own size rather than expanding to
+    // fill.
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -400,16 +410,19 @@ class KPillChip extends StatelessWidget {
         curve: KMotion.easeSoft,
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? KColor.indicator : KColor.paper,
           borderRadius: BorderRadius.circular(KRadii.pill),
           border: Border.all(color: selected ? KColor.indicator : KColor.hairline, width: 1),
         ),
-        child: Text(
-          label,
-          style: KType.label(color: selected ? KColor.featureInk : KColor.ink2)
-              .copyWith(letterSpacing: 0.01 * 11, height: 1.0),
+        child: Center(
+          widthFactor: 1,
+          heightFactor: 1,
+          child: Text(
+            label,
+            style: KType.label(color: selected ? KColor.featureInk : KColor.ink2)
+                .copyWith(letterSpacing: 0.01 * 11, height: 1.0),
+          ),
         ),
       ),
     );

@@ -13,12 +13,19 @@ class KNavItem {
   final String label;
 }
 
+// Labels confirmed 2026-08-24 against the canvas's own real `navItems` data
+// (Kudimata Invest App.dc.html's own script block — not a screen-title
+// guess): { home: 'Home', portfolio: 'Assets', markets: 'Markets',
+// wallet: 'Wallet', account: 'You' }. Two of these were wrong — 'Portfolio'
+// and 'Account' — carried over from this tab's SCREEN title (canvas screen
+// 38 is titled "Portfolio"), which isn't the same thing as its nav-bar
+// label. `id`s stay as they were (internal routing keys, never shown).
 const List<KNavItem> kDefaultNavItems = [
   KNavItem(id: 'home', icon: 'home', label: 'Home'),
-  KNavItem(id: 'portfolio', icon: 'portfolio', label: 'Portfolio'),
+  KNavItem(id: 'portfolio', icon: 'portfolio', label: 'Assets'),
   KNavItem(id: 'markets', icon: 'markets', label: 'Markets'),
   KNavItem(id: 'wallet', icon: 'wallet', label: 'Wallet'),
-  KNavItem(id: 'profile', icon: 'profile', label: 'Account'),
+  KNavItem(id: 'profile', icon: 'profile', label: 'You'),
 ];
 
 class KBottomNav extends StatelessWidget {

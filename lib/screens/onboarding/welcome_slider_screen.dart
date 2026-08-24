@@ -82,7 +82,36 @@ class _WelcomeSliderScreenState extends State<WelcomeSliderScreen> {
               // KOnboardingSlideFrame/KOnboardingSlideContent's doc
               // comments (lib/widgets/mobile.dart) for why this is split
               // this way, not one widget per PageView page.
-              Expanded(
+              //
+              // Capped near canvas's own intended height (s02's
+              // `hint-size="100%,470px"`, given headroom below — see the
+              // 520 note) via a plain `ConstrainedBox`, NOT wrapped in a
+              // `Flexible`/`Expanded`. Two bugs already happened here:
+              // (1) a bare `Expanded` card stretched to fill ALL remaining
+              // space between the header and the buttons — usually well
+              // over 470px — leaving a dead gap between the body text and
+              // the dot row ("the onboarding slider container has a full
+              // height??? what is that"). (2) Wrapping the fix in
+              // `Flexible` instead just moved the bug: a `Flexible` shares
+              // the Column's remaining space with the `Spacer` below by
+              // flex weight (1 each = 50/50), which squeezed the actual
+              // card down to ~340px regardless of this maxHeight, cutting
+              // off the title/body entirely. A plain `ConstrainedBox`
+              // isn't a flex participant — Column gives it the standard
+              // (0, unbounded) constraint, ConstrainedBox intersects that
+              // with its own maxHeight, and the result is a clean, real
+              // (0, 520) bound with nothing competing for space.
+              //
+              // 520, not the canvas's literal 470: at 470 the illustration
+              // (200 + 2*28 plate padding) plus this app's real 2-3 line
+              // title/body copy comes within single-digit pixels of the
+              // available height on the LONGEST slide, so ordinary font-
+              // metric rounding pushed the text below the scrollable
+              // fold — invisible on first render, not just "needs a
+              // scroll", since a slider's content is meant to be seen
+              // without interaction. 520 gives real headroom.
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 520),
                 child: KOnboardingSlideFrame(
                   index: _index,
                   count: _slides.length,
@@ -101,6 +130,7 @@ class _WelcomeSliderScreenState extends State<WelcomeSliderScreen> {
                   ),
                 ),
               ),
+              const Spacer(),
               Column(
                 children: [
                   KButton(

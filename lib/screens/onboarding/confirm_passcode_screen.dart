@@ -147,37 +147,16 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
         await hydrateGatingStateAndRoute(context);
       } else if (kIsWeb) {
         // No local_auth backing store on web — skip straight past biometric
-        // enrolment, same as BiometricScreen's own "Maybe later" path.
-        app.setSignedIn(true);
-        // Skip "a few more details" entirely when this account already has
-        // it all on file (2026-08-20 fix — reported: "few more details
-        // that has been collected before??"). This branch used to assume
-        // reaching passcode-confirm via the signup path meant "must be a
-        // first-timer", unconditionally forcing onboardingPersonal — but
-        // ANY scenario that forces a fresh local passcode lands here too
-        // (a new device, cleared browser storage, or the concurrent-
-        // refresh bug just fixed in api_client.dart's force-sign-out
-        // path), even for an already-fully-onboarded returning investor,
-        // and used to make them re-enter DOB/address/city/state/phone
-        // that's already saved server-side.
-        var alreadyComplete = false;
-        try {
-          final info = await UserRepository(app.apiClient).personalInfo();
-          alreadyComplete = info.dob != '—' &&
-              info.residentialAddress != '—' &&
-              info.city != '—' &&
-              info.state != '—' &&
-              info.phone.isNotEmpty;
-        } on ApiException {
-          // Best-effort — a failed check just falls through to asking
-          // again, same as this screen's behavior before this fix existed.
-        }
-        if (!mounted) return;
-        if (alreadyComplete) {
-          await hydrateGatingStateAndRoute(context);
-        } else {
-          context.go(Routes.onboardingPersonal);
-        }
+        // enrolment, same as BiometricScreen's own "Maybe later" path,
+        // straight to Home. 2026-08-24: this used to detour through
+        // "a few more details" (personal_details_screen.dart) first, with
+        // an `alreadyComplete` check to skip it for a returning investor
+        // whose device just needed a fresh local passcode. That whole
+        // detour is gone now — DOB/address/city/state/phone are collected
+        // as part of starting KYC instead (kyc_intro.dart's `_start()`),
+        // not as a gate on reaching Home at all — so there's nothing left
+        // to conditionally skip here.
+        await hydrateGatingStateAndRoute(context);
       } else {
         context.go(Routes.biometric);
       }
