@@ -554,8 +554,14 @@ class _NotVerifiedContent {
 
 // ── Local bits ───────────────────────────────────────────────────────────────
 
-/// Compact "Wallet balance · ₦X" row inside the portfolio panel's own
-/// `action` slot — see the balance panel's own comment above for why.
+/// "Wallet balance · ₦X" row inside the portfolio panel's own `action` slot
+/// — see the balance panel's own comment above for why (2026-08-20
+/// directive, additive to canvas, not a canvas element itself). 2026-08-24
+/// redesign: was a bare label/value text row; direct feedback wanted "a
+/// better design". Given an icon bubble (matching the small `_Bubble`
+/// treatment already used elsewhere on this screen, tinted for the dark
+/// feature surface instead of the light page background) so it reads as
+/// its own small stat, not just a second line of text.
 class _WalletBalanceRow extends StatelessWidget {
   const _WalletBalanceRow({required this.balance});
   final String balance;
@@ -568,10 +574,22 @@ class _WalletBalanceRow extends StatelessWidget {
         border: Border(top: BorderSide(color: KColor.featureInk2.withValues(alpha: 0.16), width: 1)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Wallet balance', style: KType.label(color: KColor.featureInk2)),
-          Text(balance, style: KType.body(color: KColor.featureInk, w: KWeight.semibold).tnum),
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: KColor.featureInk2.withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+            ),
+            child: KIcon('wallet', size: 16, color: KColor.featureInk),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text('Wallet balance'.upper, style: KType.micro(color: KColor.featureInk2)),
+          ),
+          Text(balance, style: KType.cardTitle(color: KColor.featureInk, w: KWeight.bold).tnum),
         ],
       ),
     );
