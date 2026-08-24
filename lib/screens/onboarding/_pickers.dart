@@ -21,6 +21,7 @@
 // locally (e.g. the legal document titles) instead of standing up a backend
 // endpoint for something that essentially never changes.
 import 'package:flutter/material.dart';
+import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
@@ -483,6 +484,90 @@ class _PickerRow extends StatelessWidget {
             if (selected) const KIcon('check', size: 18),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Opens a [showKSheet] listing UserRepository.avatarKeys as a tappable
+/// grid, plus a "No avatar" option — added 2026-08-24 (direct product
+/// instruction: avatars used to be auto-assigned by hashing the investor's
+/// email, with no user choice at all). Used both by the onboarding step
+/// right after sign-up and by personal_info_screen.dart's "Avatar" row, so
+/// the choice is available both at signup and to change later. Returns the
+/// tapped avatar key, the literal 'none' for "no avatar, just my name", or
+/// null if the sheet is dismissed without a choice.
+Future<String?> showAvatarPicker(BuildContext context, {String? selected}) {
+  return showKSheet<String>(
+    context,
+    title: 'Choose an avatar',
+    child: _AvatarPickerSheet(selected: selected),
+  );
+}
+
+class _AvatarPickerSheet extends StatelessWidget {
+  const _AvatarPickerSheet({this.selected});
+  final String? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          "Pick a character to represent you across the app, or skip and we'll just show your name.",
+          style: KType.body(color: KColor.ink3),
+        ),
+        const SizedBox(height: 20),
+        Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            for (final key in UserRepository.avatarKeys)
+              _AvatarChoice(
+                avatarKey: key,
+                selected: selected == key,
+                onTap: () => Navigator.of(context).pop(key),
+              ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        KCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _PickerRow(
+            label: 'No avatar — just my name',
+            selected: selected == null || selected == 'none',
+            first: true,
+            onTap: () => Navigator.of(context).pop('none'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AvatarChoice extends StatelessWidget {
+  const _AvatarChoice({required this.avatarKey, required this.selected, required this.onTap});
+  final String avatarKey;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected ? KColor.indicator : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: KAvatar(avatarKey: avatarKey, size: 64),
       ),
     );
   }

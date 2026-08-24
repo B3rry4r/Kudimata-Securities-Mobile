@@ -295,7 +295,9 @@ class _HomeBody extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 child: Row(
                   children: [
-                    _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
+                    data.user.avatarKey != null
+                        ? KAvatar(avatarKey: data.user.avatarKey!, size: 38)
+                        : _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

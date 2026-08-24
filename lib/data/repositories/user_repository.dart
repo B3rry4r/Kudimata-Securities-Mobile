@@ -27,6 +27,7 @@ class UserRepository {
       phone: json['phone'] as String? ?? '',
       tier: json['tier'] as String? ?? '',
       memberSince: json['memberSince'] as String? ?? '',
+      avatarKey: json['avatarKey'] as String?,
     );
   }
 
@@ -53,6 +54,7 @@ class UserRepository {
       state: json['state'] as String? ?? '—',
       cscsNumber: json['cscsNumber'] as String? ?? '—',
       accountStatus: json['accountStatus'] as String? ?? 'active',
+      avatarKey: json['avatarKey'] as String?,
     );
   }
 
@@ -76,6 +78,7 @@ class UserRepository {
     String? dob,
     String? city,
     String? state,
+    String? avatarKey,
   }) async {
     final body = <String, dynamic>{};
     if (firstName != null) body['firstName'] = firstName;
@@ -86,8 +89,27 @@ class UserRepository {
     if (dob != null) body['dob'] = dob;
     if (city != null) body['city'] = city;
     if (state != null) body['state'] = state;
+    // avatarKey is unlike every other field above: the backend distinguishes
+    // "not sent" (leave untouched) from the literal string "none" (clear
+    // back to text-only), so callers pass "none" explicitly to clear — see
+    // Kudimata-Securities-Backend's UpdateMeDto.avatarKey.
+    if (avatarKey != null) body['avatarKey'] = avatarKey;
     await _client.patch('/users/me', data: body);
   }
+
+  /// The 8 selectable named characters — mirrors
+  /// assets/illustrations/avatars/ (excluding "guide", the fixed AI-mark
+  /// mascot) and the backend's AVATAR_KEYS.
+  static const avatarKeys = [
+    'adebayo',
+    'bisi',
+    'chiamaka',
+    'emeka',
+    'folake',
+    'kudi',
+    'ngozi',
+    'tunde',
+  ];
 
   /// POST /users/me/freeze — self-service account freeze (2026-08-22 "Soft
   /// Landing" redesign, audit P0). No request body; the backend blocks new
@@ -140,6 +162,7 @@ class PersonalInfo {
     required this.state,
     required this.cscsNumber,
     required this.accountStatus,
+    this.avatarKey,
   });
 
   final String firstName;
@@ -151,6 +174,12 @@ class PersonalInfo {
   final String residentialAddress; // or "—" if none on file
   final String city; // or "—" if none on file
   final String state; // or "—" if none on file
+  // One of the 8 named characters in assets/illustrations/avatars/, or null
+  // if this investor hasn't chosen one (or explicitly cleared it) — see
+  // KAvatar's doc comment. 2026-08-24, direct product instruction: this
+  // used to be nonexistent (KAvatar hashed `email` to auto-pick one with no
+  // real user choice at all).
+  final String? avatarKey;
   // CHN (the mockup's term for the CSCS clearing house number) — added
   // 2026-08-23 exactness pass (screen-specs.md spec 49 shows a real "CHN"
   // row). `User.cscsNumber` already exists on the backend (per the

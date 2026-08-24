@@ -148,11 +148,10 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
       return;
     }
     if (!mounted) return;
-    // Back into kyc_intro, not Home — see file header. Re-running its
-    // `_start()` logic (rather than duplicating the draft-resume routing
-    // here) is what actually advances into KYC now that this prerequisite
-    // is satisfied.
-    context.go(Routes.kycIntro);
+    // Onward to the (optional) avatar choice, not straight back into
+    // kyc_intro — see avatar_screen.dart's header comment for why that
+    // screen is chained here rather than forced right after login.
+    context.go(Routes.onboardingAvatar);
   }
 
   @override

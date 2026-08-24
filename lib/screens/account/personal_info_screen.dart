@@ -338,6 +338,42 @@ class _PersonalInfoBodyState extends State<_PersonalInfoBody> {
         const SizedBox(height: 14),
         Text('You can change these'.upper, style: KType.label()),
         const SizedBox(height: 14),
+        // Avatar — added 2026-08-24, direct product instruction ("on
+        // personal info they can choose avatars too"). Not part of the
+        // canvas's own s49 body (avatars weren't a real, user-chosen field
+        // when that screen was drawn) — a same-shape addition to the "You
+        // can change these" section rather than a new screen.
+        KCard(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              if (info.avatarKey != null) ...[
+                KAvatar(avatarKey: info.avatarKey!, size: 40),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Text(
+                  info.avatarKey != null ? 'Avatar' : 'No avatar chosen',
+                  style: KType.cardTitle(),
+                ),
+              ),
+              GestureDetector(
+                onTap: () async {
+                  final picked = await showAvatarPicker(context, selected: info.avatarKey);
+                  if (picked == null) return;
+                  await widget.repo.updateProfile(avatarKey: picked);
+                  widget.onSaved();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Text(
+                  info.avatarKey != null ? 'Change' : 'Choose',
+                  style: KType.data(color: KColor.indicator),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
         // Editable fields per the canvas: Phone number, Residential
         // address. "Employment status" (canvas's third field, a Select) is
         // skipped — no such field exists anywhere in the backend's User

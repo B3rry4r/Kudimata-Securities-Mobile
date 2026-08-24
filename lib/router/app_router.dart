@@ -22,6 +22,7 @@ import '../screens/onboarding/otp_screen.dart';
 import '../screens/onboarding/create_passcode_screen.dart';
 import '../screens/onboarding/confirm_passcode_screen.dart';
 import '../screens/onboarding/biometric_screen.dart';
+import '../screens/onboarding/avatar_screen.dart';
 import '../screens/onboarding/personal_details_screen.dart';
 import '../screens/onboarding/log_in_screen.dart';
 import '../screens/onboarding/reset_passcode_screen.dart';
@@ -201,6 +202,10 @@ GoRouter buildRouter(AppState state) {
       GoRoute(
         path: Routes.onboardingPersonal,
         builder: (_, _) => themed(() => OnboardingPersonalDetailsScreen()),
+      ),
+      GoRoute(
+        path: Routes.onboardingAvatar,
+        builder: (_, _) => themed(() => OnboardingAvatarScreen()),
       ),
       GoRoute(path: Routes.login, builder: (_, _) => themed(() => LogInScreen())),
       GoRoute(path: Routes.reset, builder: (_, _) => themed(() => ResetPasscodeScreen())),

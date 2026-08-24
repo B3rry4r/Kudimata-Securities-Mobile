@@ -27,6 +27,7 @@ class Routes {
   static const String confirmPasscode = '/passcode/confirm';
   static const String biometric = '/biometric';
   static const String onboardingPersonal = '/onboarding/personal';
+  static const String onboardingAvatar = '/onboarding/avatar';
   static const String login = '/login';
   static const String reset = '/reset';
 

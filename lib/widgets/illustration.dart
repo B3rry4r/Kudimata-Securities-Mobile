@@ -73,48 +73,40 @@ class KIllustration extends StatelessWidget {
   }
 }
 
-/// A generated Adventurer-style character (CC BY 4.0), seeded per user id —
-/// see readme.md's "Characters are generated, not drawn" note. `seed` picks
-/// a stable avatar from the pre-generated set in
-/// assets/illustrations/avatars/ by hashing to one of the named characters;
-/// `guide` always renders the pinned guide character (the face of the
-/// comprehension layer and the AI mark) regardless of seed.
+/// A generated Adventurer-style character (CC BY 4.0) — see readme.md's
+/// "Characters are generated, not drawn" note. `avatarKey` renders one of
+/// the 8 named characters in assets/illustrations/avatars/ (one of
+/// UserRepository.avatarKeys); `guide` always renders the pinned guide
+/// character (the face of the comprehension layer and the AI mark)
+/// regardless of `avatarKey`.
+///
+/// 2026-08-24, direct product instruction: this used to hash a `seed`
+/// string (usually the investor's email) to auto-pick a character with no
+/// real user choice at all. Avatars are now a real, user-chosen field
+/// (PersonalInfo.avatarKey / UserProfile.avatarKey) — an investor who
+/// hasn't picked one gets no avatar at all ("only their name text"), so
+/// this widget requires a non-null `avatarKey` for its plain constructor;
+/// callers with a possibly-null avatarKey branch on it themselves (see
+/// account_screen.dart / home_screen.dart) rather than this widget silently
+/// falling back to a generated one.
 class KAvatar extends StatelessWidget {
-  const KAvatar({super.key, required this.seed, this.size = KIllo.avatarSm})
+  const KAvatar({super.key, required this.avatarKey, this.size = KIllo.avatarSm})
       : guide = false;
 
   const KAvatar.guide({super.key, this.size = KIllo.avatarSm})
-      : seed = '',
+      : avatarKey = 'guide',
         guide = true;
 
-  final String seed;
+  final String avatarKey;
   final bool guide;
   final double size;
-
-  static const _named = [
-    'adebayo',
-    'bisi',
-    'chiamaka',
-    'emeka',
-    'folake',
-    'kudi',
-    'ngozi',
-    'tunde',
-  ];
-
-  String get _file {
-    if (guide) return 'guide';
-    if (seed.isEmpty) return 'kudi';
-    final hash = seed.codeUnits.fold<int>(0, (acc, c) => acc + c);
-    return _named[hash % _named.length];
-  }
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(size / 2),
       child: SvgPicture.asset(
-        'assets/illustrations/avatars/$_file.svg',
+        'assets/illustrations/avatars/$avatarKey.svg',
         width: size,
         height: size,
         fit: BoxFit.cover,

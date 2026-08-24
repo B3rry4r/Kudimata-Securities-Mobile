@@ -201,6 +201,7 @@ class UserProfile {
     required this.phone,
     required this.tier,
     required this.memberSince,
+    this.avatarKey,
   });
 
   final String firstName;
@@ -210,6 +211,9 @@ class UserProfile {
   final String phone;
   final String tier; // e.g. "Premium"
   final String memberSince; // e.g. "2023"
+  // See PersonalInfo.avatarKey (user_repository.dart) for the full doc —
+  // same field, same 8-character set, null when unset.
+  final String? avatarKey;
 
   /// Composed display string — split into firstName/middleName/lastName
   /// 2026-08-19 (BVN/NIN verification needs a real first/last to compare

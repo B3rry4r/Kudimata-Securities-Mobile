@@ -150,16 +150,20 @@ class _AccountBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile header — canvas mockup #s45 uses the illustrated Avatar
-          // (seeded per-user, per readme.md's "Characters are generated, not
-          // drawn"), a "CHN ... · NGX account live" subtitle, and a
-          // "Verified" StatusPill next to it.
+          // Profile header — canvas mockup #s45 uses the illustrated Avatar,
+          // a "CHN ... · Account live" subtitle, and a "Verified"
+          // StatusPill next to it. 2026-08-24: the avatar is now a real,
+          // user-chosen field (info.avatarKey) — an investor who hasn't
+          // picked one gets no avatar circle at all, just their name (see
+          // KAvatar's doc comment), not a generated placeholder.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: Row(
               children: [
-                KAvatar(seed: info.email, size: 56),
-                const SizedBox(width: 14),
+                if (info.avatarKey != null) ...[
+                  KAvatar(avatarKey: info.avatarKey!, size: 56),
+                  const SizedBox(width: 14),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

@@ -195,6 +195,7 @@ Map<String, dynamic> _user() => {
       'portfolioValue': 241865000,
       'returnPct': 1.43,
       'returnTrend': 'gain',
+      'avatarKey': 'adebayo',
     };
 
 Map<String, dynamic> _notification({
