@@ -53,6 +53,7 @@ import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart'
     show BankAccountSummary;
+import 'package:kudimata_invest/screens/shared/glossary_sheet.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/wallet/wallet_flows.dart' show showAddMoneyFlow;
@@ -891,13 +892,11 @@ class _ReviewSheetState extends State<_ReviewSheet> {
               _SummaryRow(
                 label: 'Settles',
                 // No glossary screen/route exists yet for "T+3" to open
-                // (spec's `nav.s56`) — same genuine gap as the sell flow's
-                // identical GlossaryTerm a few hundred lines down, so this
-                // mirrors that no-op rather than inventing a destination.
+                // (spec's `nav.s56`).
                 valueWidget: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    KGlossaryTerm(text: 'T+3', onTap: () {}),
+                    KGlossaryTerm(text: 'T+3', onTap: () => showGlossaryExplainSheet(context, 'T+3')),
                     Text(' · $settleDate', style: KType.body(color: KColor.ink, w: KWeight.medium)),
                   ],
                 ),
@@ -1389,10 +1388,7 @@ class _SellAmountSheetState extends State<_SellAmountSheet> {
                   const TextSpan(text: 'Proceeds settle '),
                   WidgetSpan(
                     alignment: PlaceholderAlignment.middle,
-                    // No glossary/explainer screen to link to yet — same
-                    // "shortcut affordance, no-op here" pattern as the
-                    // Amount sheet's ghost buttons above.
-                    child: KGlossaryTerm(text: 'T+3', onTap: () {}),
+                    child: KGlossaryTerm(text: 'T+3', onTap: () => showGlossaryExplainSheet(context, 'T+3')),
                   ),
                   const TextSpan(text: ' and land in your wallet. Nothing is available before then.'),
                 ],

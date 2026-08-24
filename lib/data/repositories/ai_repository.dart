@@ -112,6 +112,16 @@ class AiRepository {
     );
   }
 
+  /// POST /ai/explain-term — not credit-metered (see backend
+  /// AiComprehensionService.explainTerm's doc comment: plans_screen.dart
+  /// already advertises "the glossary... stay free"). Backs
+  /// KGlossaryTerm's onTap (comprehension.dart) wherever it's used.
+  Future<String> explainTerm(String term) async {
+    final response = await _client.post('/ai/explain-term', data: {'term': term});
+    final json = response.data as Map<String, dynamic>;
+    return json['text'] as String;
+  }
+
   Future<PortfolioDigestResult> portfolioDigest() async {
     final response = await _client.post('/ai/portfolio-digest', data: {});
     final json = response.data as Map<String, dynamic>;

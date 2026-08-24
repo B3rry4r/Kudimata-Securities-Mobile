@@ -641,6 +641,9 @@ class MockApiAdapter implements HttpClientAdapter {
         'generatedAt': '2026-08-24T08:00:00.000Z',
       };
     }
+    if (path == '/ai/explain-term') {
+      return {'text': 'A plain-English explanation of this term.'};
+    }
     return _fallback(path);
   }
 

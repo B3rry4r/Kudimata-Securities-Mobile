@@ -24,6 +24,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:kudimata_invest/screens/shared/glossary_sheet.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
@@ -157,7 +158,11 @@ class _SettlementArticleState extends State<_SettlementArticle> {
                 const TextSpan(text: 'Three business days after your sale fills. The NGX calls this '),
                 WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
-                  child: KGlossaryTerm(text: 'T+3', style: KType.body(color: KColor.ink2), onTap: () {}),
+                  child: KGlossaryTerm(
+                    text: 'T+3',
+                    style: KType.body(color: KColor.ink2),
+                    onTap: () => showGlossaryExplainSheet(context, 'T+3'),
+                  ),
                 ),
                 const TextSpan(
                   text: ' — trade day plus three. On that day the money moves from the CSCS to your '
@@ -168,7 +173,7 @@ class _SettlementArticleState extends State<_SettlementArticle> {
                   child: KGlossaryTerm(
                     text: 'Direct Cash Settlement',
                     style: KType.body(color: KColor.ink2),
-                    onTap: () {},
+                    onTap: () => showGlossaryExplainSheet(context, 'Direct Cash Settlement'),
                   ),
                 ),
                 const TextSpan(text: ', so it never sits with us.'),
