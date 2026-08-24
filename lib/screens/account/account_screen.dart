@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/ai_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
@@ -143,6 +144,23 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 }
 
+/// Voluntary sign-out. Mirrors security_screen.dart's `_signOut` exactly —
+/// same endpoint, same tolerance of a failed call, same `signOut()` (NOT
+/// `forceSignOut()`, which would wipe this device's passcode; see
+/// AppState.signOut()'s doc comment).
+Future<void> _signOut(BuildContext context) async {
+  final app = AppScope.read(context);
+  try {
+    await app.apiClient.post('/auth/logout');
+  } on ApiException {
+    // A network hiccup shouldn't trap someone signed in locally — fall
+    // through to local teardown either way.
+  }
+  await app.signOut();
+  if (!context.mounted) return;
+  context.go(Routes.login);
+}
+
 class _AccountBody extends StatelessWidget {
   const _AccountBody({
     required this.info,
@@ -193,7 +211,10 @@ class _AccountBody extends StatelessWidget {
     return SingleChildScrollView(
       // Root tab: clear the floating KBottomNav (~70px + margin + safe area)
       // so the menu's bottom row isn't hidden behind it.
-      padding: const EdgeInsets.only(top: 20, bottom: 100),
+      // bottom:160, not 100 — the floating bottom nav overlays this scroll
+      // view, and the Log out button added below the menu card (2026-08-24)
+      // sat underneath it at the old value, half-hidden.
+      padding: const EdgeInsets.only(top: 20, bottom: 160),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -291,6 +312,24 @@ class _AccountBody extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 20),
+          // Log out (2026-08-24, direct instruction: "logout should be on
+          // the account screen please... its too hard to see"). It lived
+          // ONLY on the Security screen — two taps deep behind a row whose
+          // label says nothing about signing out, which is where the
+          // canvas (#s50) put it, but which in practice meant nobody could
+          // find it. Security keeps its copy; this is an addition, not a
+          // move, so neither route regresses for anyone used to the other.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
+            child: KButton(
+              label: 'Log out',
+              variant: KButtonVariant.ghost,
+              fullWidth: true,
+              onPressed: () => _signOut(context),
+            ),
+          ),
+          const SizedBox(height: 8),
           // English/Pidgin switch temporarily hidden (2026-08-24, direct
           // product instruction) — no real Pidgin translation exists
           // anywhere in the app yet; showing the switch implied a feature
