@@ -438,6 +438,15 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     Routes.questionnaire, Routes.suitabilityResult, Routes.riskDisclaimer,
     Routes.termsOfService,
+    // 2026-08-24 bug fix, reported live: "the 3 legal docs on sign up when
+    // I click them they force open the login screen". The terms step runs
+    // BEFORE setSignedIn(true) (which now happens on the risk disclaimer),
+    // so signedIn is false there — and /document-summary was in neither
+    // `gated` nor the two legal-preview escapes below, so it fell through
+    // to `return Routes.splash` and bounced the investor to login. Reading
+    // a document you are being asked to accept must never require being
+    // signed in first.
+    Routes.documentSummary,
   };
 
   // Pre-auth-only screens — never legitimately reachable once fully signed

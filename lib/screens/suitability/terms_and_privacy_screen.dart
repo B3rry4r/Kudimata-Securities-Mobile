@@ -35,7 +35,7 @@ class TermsAndPrivacyScreen extends StatelessWidget {
     return LegalAcceptanceScreen(
       kinds: const ['terms_of_service', 'privacy_policy', 'client_agreement'],
       screenTitle: 'Terms & agreements',
-      screenBody: 'Three documents, one agreement. Open each one to read it, then accept.',
+      screenBody: 'Three documents, one agreement. Scroll through them, then accept.',
       // Canvas s05's own "Step 2 of 4" — same mid-flow indicator convention
       // otp_screen.dart (Step 1)/create_passcode_screen.dart (Step 3)/
       // biometric_screen.dart (Step 4) already use; this screen was

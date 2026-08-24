@@ -21,7 +21,6 @@ import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
-import 'package:kudimata_invest/data/repositories/suitability_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/onboarding/onboarding_scaffold.dart'
     show KOnboardTopBar;
@@ -57,16 +56,13 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
   late final _complianceRepo = ComplianceRepository(
     AppScope.read(context).apiClient,
   );
-  late final _suitabilityRepo = SuitabilityRepository(
-    AppScope.read(context).apiClient,
-  );
-  late Future<(LegalDocument, String)> _future = _load();
+  late Future<LegalDocument> _future = _load();
 
-  Future<(LegalDocument, String)> _load() async {
-    final docFuture = _legalRepo.getContent('risk_disclosure');
-    final profile = widget.profile ?? (await _suitabilityRepo.me()).profile;
-    return (await docFuture, profile);
-  }
+  /// Only the document now — the investor's computed profile was displayed
+  /// here until 2026-08-24 (see the removed callout below) and is no longer
+  /// read by this screen. `widget.profile` and RiskDisclaimerArgs are kept
+  /// so the caller and route contract are unchanged if it is restored.
+  Future<LegalDocument> _load() => _legalRepo.getContent('risk_disclosure');
 
   final _scrollController = ScrollController();
   bool _scrolledToBottom = false;
@@ -150,7 +146,7 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
               ),
             ),
             Expanded(
-              child: FutureBuilder<(LegalDocument, String)>(
+              child: FutureBuilder<LegalDocument>(
                 future: _future,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -161,7 +157,7 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
                       onPrimary: () => setState(() => _future = _load()),
                     );
                   }
-                  final (doc, profile) = snapshot.data!;
+                  final doc = snapshot.data!;
                   WidgetsBinding.instance.addPostFrameCallback(
                     (_) => _checkAlreadyAtBottom(),
                   );
@@ -177,36 +173,24 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
                               'Please read this disclosure carefully before activating your account.',
                         ),
                         const SizedBox(height: 16),
-                        // The dynamic "Suitability Acknowledgement" field
-                        // the compliance doc requires — kept as its own
-                        // clearly-labelled callout rather than spliced
-                        // into the legal team's own paragraph text (see
-                        // file header).
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: KColor.indicatorTint,
-                            borderRadius: KRadii.cardR,
-                            border: Border.all(color: KColor.indicator),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Your investor profile'.upper,
-                                style: KType.label(color: KColor.indicator),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(profile, style: KType.cardTitle()),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Investing in assets outside of your designated risk profile can lead to severe financial distress.',
-                                style: KType.body(color: KColor.ink2),
-                              ),
-                            ],
-                          ),
-                        ),
+                        // 2026-08-24, direct instruction: "There is still an
+                        // investor profile on the risk legal doc view on kyc
+                        // please remove that container". The removed block
+                        // was the SEC intake document's own dynamic
+                        // "Suitability Acknowledgement" field — "you have
+                        // been categorized as a [Conservative / Moderate /
+                        // Aggressive] investor. Investing in assets outside
+                        // of your designated risk profile can lead to severe
+                        // financial distress."
+                        //
+                        // FLAGGED, NOT SILENTLY DROPPED: that field is the
+                        // one element the compliance doc explicitly requires
+                        // ON THIS SCREEN. The profile is still computed and
+                        // persisted (SuitabilityResult), so restoring the
+                        // callout is re-adding this block — but as it stands
+                        // the app no longer shows the investor their
+                        // categorisation anywhere, which compliance should
+                        // sign off before go-live.
                         const SizedBox(height: 20),
                         for (final section in doc.sections) ...[
                           Text(section.heading, style: KType.cardTitle()),

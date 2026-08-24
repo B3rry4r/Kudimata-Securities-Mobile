@@ -62,6 +62,10 @@ import 'package:go_router/go_router.dart';
 // Mock daily order limit (₦). Amounts above this trip the over-limit state.
 const double _kDailyLimit = 500000;
 
+/// Smallest single buy order — mirrors the backend's MIN_ORDER_KOBO
+/// (src/common/minimums.ts), which is the authoritative check.
+const double _kMinOrderNaira = 5000;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Public flow launchers (cross-stage contract — see BUILD_CONTRACT.md §d).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -622,6 +626,17 @@ class _AmountSheetState extends State<_AmountSheet> {
 
   bool get _overLimit => !widget.side.isSell && _amountNaira > _kDailyLimit;
 
+  /// Below the ₦5,000 minimum order (buys only — the floor is on what you
+  /// put IN, not what you take out). 2026-08-24: this screen has displayed
+  /// "minimum ₦5,000" in its helper line since the redesign and the
+  /// glossary states it as a hard rule, but nothing stopped a ₦100 order —
+  /// the backend now rejects it with BELOW_MINIMUM_ORDER, and this mirrors
+  /// that rule client-side so the investor is told before they get to a
+  /// review screen. `> 0` so an empty field reads as "nothing entered
+  /// yet", not as an error.
+  bool get _belowMinimum =>
+      !widget.side.isSell && _amountNaira > 0 && _amountNaira < _kMinOrderNaira;
+
   @override
   Widget build(BuildContext context) {
     final isSell = widget.side.isSell;
@@ -685,7 +700,7 @@ class _AmountSheetState extends State<_AmountSheet> {
                   : '≈ ${_unit == 'naira' ? '${_units.floor()} shares at ${widget.asset.price}' : _formatNaira(_amountNaira)} · minimum ₦5,000 · wallet ${_balanceOrHolding ?? '…'}'),
           error: _overLimit
               ? 'This order exceeds your daily limit of ₦500,000.'
-              : null,
+              : (_belowMinimum ? 'The smallest order you can place is ₦5,000.' : null),
         ),
 
         // Quick-amount chips.
@@ -767,7 +782,9 @@ class _AmountSheetState extends State<_AmountSheet> {
                     )
                   : KButton(
                       label: 'Review order',
-                      onPressed: insufficientBalance
+                      onPressed: _belowMinimum
+                          ? null
+                          : insufficientBalance
                           ? () {
                               Navigator.of(context).pop();
                               showAddMoneyFlow(context);

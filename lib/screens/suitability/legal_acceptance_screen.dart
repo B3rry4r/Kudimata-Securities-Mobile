@@ -39,9 +39,6 @@ import 'package:kudimata_invest/data/repositories/legal_documents_repository.dar
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/screens/onboarding/onboarding_scaffold.dart' show KOnboardTopBar;
-import 'package:kudimata_invest/screens/onboarding/document_summary_screen.dart' show DocumentSummaryArgs;
-import 'package:kudimata_invest/router/routes.dart';
-import 'package:go_router/go_router.dart';
 
 /// Display titles per kind — canvas s05's document-list row labels.
 const Map<String, String> _kDocTitle = {
@@ -97,22 +94,50 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
   bool _submitting = false;
   String? _error;
 
-  /// Which document kinds the investor has actually opened. The agree
-  /// checkbox stays disabled until this covers every kind (2026-08-24).
+  /// Scroll-to-bottom gate. The checkbox says "I have read and agree", and
+  /// it used to be live on first paint — an investor could accept three
+  /// executed agreements without seeing a word of them.
   ///
-  /// WHY, since the SEC intake doc only mandates scroll-gating for the
-  /// statutory Risk Disclaimer (risk_disclaimer_screen.dart, which does
-  /// implement a real scroll-to-bottom gate): the checkbox here says "I
-  /// have read and agree", and until now it was live on first paint — an
-  /// investor could accept three executed agreements without opening one
-  /// of them. Scroll-to-bottom is not the right gate on THIS screen, since
-  /// the documents deliberately aren't inline (it's a row-list that links
-  /// out — see the header comment); scrolling past four rows would prove
-  /// nothing. Opening each document is the honest equivalent, and it makes
-  /// the recorded acknowledgement defensible rather than decorative.
-  final Set<String> _opened = <String>{};
+  /// Now that every document renders inline (2026-08-24), scroll-to-bottom
+  /// is the right gate and the same one the statutory Risk Disclaimer uses
+  /// (risk_disclaimer_screen.dart), which is what the firm's SEC intake doc
+  /// actually specifies. The previous open-each-document gate existed only
+  /// because the documents were behind links; with the text on the page,
+  /// reaching the end of it is the stronger and more honest signal.
+  final ScrollController _scroll = ScrollController();
+  bool _reachedEnd = false;
 
-  bool get _allOpened => _opened.length >= widget.kinds.length;
+  void _onScroll() {
+    if (_reachedEnd || !_scroll.hasClients) return;
+    // 24pt of slack: exact-equality never fires reliably across devices,
+    // and a hairline of remaining scroll shouldn't trap someone who has
+    // plainly reached the end.
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 24) {
+      setState(() => _reachedEnd = true);
+    }
+  }
+
+  /// Content shorter than the viewport can never scroll, so nothing would
+  /// ever satisfy the gate. Checked after each layout instead.
+  void _checkAlreadyAtEnd() {
+    if (_reachedEnd || !_scroll.hasClients) return;
+    if (_scroll.position.maxScrollExtent <= 0) {
+      setState(() => _reachedEnd = true);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_onScroll);
+    _scroll.dispose();
+    super.dispose();
+  }
 
   Future<List<LegalDocument>> _load() async {
     // Independent GETs, fetched concurrently rather than sequentially so a
@@ -142,16 +167,6 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
     }
   }
 
-  void _openDoc(LegalDocument doc) {
-    setState(() => _opened.add(doc.kind));
-    context.push(
-      Routes.documentSummary,
-      extra: DocumentSummaryArgs(
-        docTitle: doc.title,
-        original: doc.sections.map((s) => '${s.heading}\n${s.body}').join('\n\n'),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +183,7 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
               ),
             Expanded(
               child: SingleChildScrollView(
+                controller: _scroll,
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,40 +202,37 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                           );
                         }
                         final docs = snapshot.data!;
+                        // Runs after this frame lays out: if all three
+                        // documents happen to fit without scrolling, the
+                        // gate would otherwise never open.
+                        WidgetsBinding.instance
+                            .addPostFrameCallback((_) => _checkAlreadyAtEnd());
                         // Checkbox + accept button only render once EVERY
                         // document has actually loaded — agreeing to
                         // something you never saw isn't a real acceptance.
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Canvas s05: a compact row-list — each document
-                            // is a tappable row (name + real "vN · Read"
-                            // badge) that opens its OWN plain-English
-                            // preview screen; the full text does NOT render
-                            // inline here. Was previously showing every
-                            // section of every document inline on this one
-                            // screen — a structurally different, much
-                            // heavier screen than the canvas's quick
-                            // checklist-then-link pattern.
-                            Container(
-                              decoration: BoxDecoration(
-                                color: KColor.paper,
-                                border: Border.all(color: KColor.hairline),
-                                borderRadius: KRadii.cardR,
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Column(
-                                children: [
-                                  for (var i = 0; i < docs.length; i++)
-                                    _DocRow(
-                                      doc: docs[i],
-                                      showDivider: i != docs.length - 1,
-                                      opened: _opened.contains(docs[i].kind),
-                                      onTap: () => _openDoc(docs[i]),
-                                    ),
-                                ],
-                              ),
-                            ),
+                            // 2026-08-24, direct instruction: "instead of
+                            // doing it like that lay the 3 out please...
+                            // not to click and open, lay them out the way
+                            // it was before and they scroll down to be able
+                            // to click". Every document's full text renders
+                            // INLINE here, in order, so accepting is one
+                            // continuous read rather than three round trips
+                            // into a detail screen — which also matches the
+                            // original directive behind this screen ("stack
+                            // them in one screen so user just scrolls down
+                            // and accept one time not moving between
+                            // screens"). The tap-to-open row list this
+                            // replaces additionally hit a real bug: it
+                            // pushed /document-summary, which the router
+                            // bounced to login because this step runs
+                            // before sign-in completes.
+                            for (var i = 0; i < docs.length; i++) ...[
+                              if (i != 0) const SizedBox(height: 14),
+                              _InlineDocument(doc: docs[i]),
+                            ],
                             const SizedBox(height: 18),
                             // 2026-08-24: canvas's own literal copy here was
                             // a blunt "You can lose money" warning with no
@@ -243,9 +256,9 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                               const SizedBox(height: 12),
                             ],
                             Opacity(
-                              opacity: _allOpened ? 1 : 0.45,
+                              opacity: _reachedEnd ? 1 : 0.45,
                               child: IgnorePointer(
-                                ignoring: !_allOpened,
+                                ignoring: !_reachedEnd,
                                 child: KCheckbox(
                                   checked: _agreed,
                                   onChanged: (v) => setState(() => _agreed = v),
@@ -254,13 +267,10 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
                                 ),
                               ),
                             ),
-                            if (!_allOpened) ...[
+                            if (!_reachedEnd) ...[
                               const SizedBox(height: 10),
                               Text(
-                                docs.length - _opened.length == 1
-                                    ? 'Open the remaining document to continue.'
-                                    : 'Open all ${docs.length} documents to continue '
-                                        '— ${docs.length - _opened.length} left.',
+                                'Scroll to the end of the documents to continue.',
                                 style: KType.data(color: KColor.ink3),
                               ),
                             ],
@@ -287,51 +297,39 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
   }
 }
 
-/// One canvas s05 document row: name + "v{version} · Read" (real
-/// [LegalDocument.versionLabel], not a placeholder), tap → the document's
-/// plain-English preview.
-class _DocRow extends StatelessWidget {
-  const _DocRow({
-    required this.doc,
-    required this.showDivider,
-    required this.opened,
-    required this.onTap,
-  });
-  final LegalDocument doc;
-  final bool showDivider;
 
-  /// Already opened once — the row's trailing badge switches from
-  /// "v1.0 · READ" (an instruction) to "v1.0 · OPENED" (a receipt), so the
-  /// investor can see which of the three still gates the checkbox.
-  final bool opened;
-  final VoidCallback onTap;
+/// One legal document rendered in full, inline — title, version, then every
+/// section as a heading + body. Same plain KCard treatment
+/// legal_screen.dart's own viewer and legal_reference_screens.dart use, so a
+/// document reads identically wherever it appears (2026-08-24).
+class _InlineDocument extends StatelessWidget {
+  const _InlineDocument({required this.doc});
+  final LegalDocument doc;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(
-          border: showDivider
-              ? Border(bottom: BorderSide(color: KColor.hairline, width: 1))
-              : null,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                _kDocTitle[doc.kind] ?? doc.title,
-                style: KType.cardTitle(),
-              ),
-            ),
-            Text(
-              'v${doc.versionLabel} · ${opened ? 'Opened' : 'Read'}'.upper,
-              style: KType.micro(color: opened ? KColor.gain : KColor.ink3),
-            ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: KColor.paper,
+        border: Border.all(color: KColor.hairline),
+        borderRadius: KRadii.cardR,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(_kDocTitle[doc.kind] ?? doc.title, style: KType.cardTitle()),
+          const SizedBox(height: 4),
+          Text('v${doc.versionLabel}'.upper, style: KType.micro(color: KColor.ink3)),
+          for (final s in doc.sections) ...[
+            const SizedBox(height: 14),
+            Text(s.heading, style: KType.cardTitle(w: KWeight.semibold)),
+            const SizedBox(height: 5),
+            Text(s.body, style: KType.body(color: KColor.ink2)),
           ],
-        ),
+        ],
       ),
     );
   }
