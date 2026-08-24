@@ -494,17 +494,10 @@ class _VerifiedContent {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Bounded width: KIllustration's plate Container sizes
-                  // itself from its incoming constraints, and a Row hands
-                  // its non-flex children an infinite-width constraint —
-                  // which throws "BoxConstraints forces an infinite width"
-                  // at layout. Caught by rendering shots_flowd.dart, not by
-                  // analyze.
-                  const SizedBox(
-                    width: 88,
-                    child: KIllustration('digest', role: KIlloRole.small),
-                  ),
-                  const SizedBox(width: 14),
+                  // 2026-08-24: the illustration that sat here is removed —
+                  // it read as filler beside the copy rather than adding
+                  // anything. The explanation stays; that was the point of
+                  // the placeholder.
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,9 +507,7 @@ class _VerifiedContent {
                         const SizedBox(height: 6),
                         Text(
                           'Once you hold something, we write you a short plain-English '
-                          'note on how it moved — refreshed once a day. Nothing here '
-                          'needs a decision from you; it is just so you always know '
-                          'where you stand.',
+                          'note on how it moved — refreshed once a day.',
                           style: KType.body(color: KColor.ink2),
                         ),
                       ],
