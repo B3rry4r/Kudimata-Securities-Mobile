@@ -1,9 +1,12 @@
 // Stage 9 — Personal info (pushed). Read-only label:value rows (Full name /
 // Date of birth / BVN · NIN / CHN / Account status), then real editable
 // Phone number / Residential address fields inline on the page (matching
-// the canvas's #s49 body exactly — 2026-08-23 exactness pass), then the
-// Investor profile card, then a "Save changes" button. Mirrors `PersonalInfo`
-// in extra-screens.jsx.
+// the canvas's #s49 body exactly — 2026-08-23 exactness pass), then a
+// "Save changes" button. Mirrors `PersonalInfo` in extra-screens.jsx.
+// 2026-08-24: dropped the "Investor profile · {profile}" card + Retake
+// link (direct product instruction, "we don't need that anymore") — the
+// suitability questionnaire is still reachable from its own account row
+// and from Home's onboarding prompt, just not surfaced a second time here.
 //
 // Wired to GET /users/me (UserRepository.personalInfo — firstName/middleName/lastName/email/
 // phone/dob/residentialAddress) and GET /kyc-submissions/me
@@ -37,7 +40,6 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
-import 'package:kudimata_invest/data/repositories/suitability_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -96,17 +98,14 @@ class PersonalInfoScreen extends StatefulWidget {
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late final _kycRepo = KycRepository(AppScope.read(context).apiClient);
-  late final _suitabilityRepo = SuitabilityRepository(AppScope.read(context).apiClient);
-  late Future<(PersonalInfo, String, String?)> _future = _load();
+  late Future<(PersonalInfo, String)> _future = _load();
 
-  Future<(PersonalInfo, String, String?)> _load() async {
+  Future<(PersonalInfo, String)> _load() async {
     final infoFuture = _userRepo.personalInfo();
     final bvnFuture = _fetchBvn();
-    final profileFuture = _fetchSuitabilityProfile();
     final info = await infoFuture;
     final bvn = await bvnFuture;
-    final profile = await profileFuture;
-    return (info, bvn, profile);
+    return (info, bvn);
   }
 
   /// A 404 here just means this investor hasn't submitted KYC yet — a
@@ -125,26 +124,13 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     }
   }
 
-  /// Null means "hasn't taken the questionnaire yet" (also a normal state —
-  /// suitability is optional, see app_state.dart's tradingEligibilityGap),
-  /// same 404-is-not-an-error pattern as [_fetchBvn].
-  Future<String?> _fetchSuitabilityProfile() async {
-    try {
-      final result = await _suitabilityRepo.me();
-      return result.profile.isEmpty ? null : result.profile;
-    } on ApiException catch (e) {
-      if (e.statusCode == 404) return null;
-      rethrow;
-    }
-  }
-
   void _reload() => setState(() => _future = _load());
 
   @override
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Personal info',
-      child: FutureBuilder<(PersonalInfo, String, String?)>(
+      child: FutureBuilder<(PersonalInfo, String)>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -155,12 +141,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               onPrimary: _reload,
             );
           }
-          final (info, bvn, profile) = snapshot.data!;
+          final (info, bvn) = snapshot.data!;
           return _PersonalInfoBody(
             key: ValueKey(info.phone + info.residentialAddress + info.city + (info.state)),
             info: info,
             bvn: bvn,
-            profile: profile,
             repo: _userRepo,
             onSaved: _reload,
           );
@@ -175,14 +160,12 @@ class _PersonalInfoBody extends StatefulWidget {
     super.key,
     required this.info,
     required this.bvn,
-    required this.profile,
     required this.repo,
     required this.onSaved,
   });
 
   final PersonalInfo info;
   final String bvn;
-  final String? profile;
   final UserRepository repo;
   final VoidCallback onSaved;
 
@@ -245,7 +228,6 @@ class _PersonalInfoBodyState extends State<_PersonalInfoBody> {
   Widget build(BuildContext context) {
     final info = widget.info;
     final bvn = widget.bvn;
-    final profile = widget.profile;
 
     // Re-verified against the canvas's real s49.html (2026-08-23 exactness
     // pass): the read-only card's rows are Full name / Date of birth /
@@ -402,33 +384,6 @@ class _PersonalInfoBodyState extends State<_PersonalInfoBody> {
             child: Text('Add city & state', style: KType.data(color: KColor.indicator)),
           ),
         ],
-        const SizedBox(height: 14),
-        // "Investor profile · {profile}" flat card with a "Retake" link
-        // (canvas nav note: "Retake -> 27", the suitability questionnaire).
-        // The canvas's "Answered 14 Mar 2026" subtitle isn't shown: the real
-        // SuitabilityResult model (suitability_repository.dart) doesn't
-        // carry a computedAt/answered-date field to this client yet, and
-        // that repository is out of this screen's file scope this pass —
-        // fabricating a date would be worse than omitting it.
-        KCard(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Text(
-                  profile == null ? 'Investor profile' : 'Investor profile · $profile',
-                  style: KType.cardTitle(),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => context.push(Routes.questionnaire),
-                behavior: HitTestBehavior.opaque,
-                child: Text('Retake', style: KType.data(color: KColor.indicator)),
-              ),
-            ],
-          ),
-        ),
         const SizedBox(height: 16),
         if (_error != null) ...[
           Text(_error!, style: KType.micro(color: KColor.loss)),

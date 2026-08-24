@@ -88,14 +88,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
 
   void _emailUs() => _launch(Uri(scheme: 'mailto', path: _kSupportEmail));
 
-  void _startChat() {
-    // No live-chat infrastructure exists in this app (header comment: "no
-    // in-app chat") — honest fallback rather than a fake chat window.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Live chat isn't available yet — email us instead.")),
-    );
-  }
-
   // Screen 87 (2026-08-23 canvas exactness pass) — a real complaint form now
   // exists (complaint_screen.dart) so this no longer bounces straight out to
   // a bare mailto: link.
@@ -164,28 +156,18 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                       style: KType.body(color: KColor.ink2),
                     ),
                     const SizedBox(height: 14),
-                    Row(children: [
-                      // Mockup: "Email us" is secondary, "Start a chat" is
-                      // primary (the default variant) — both were secondary
-                      // before, and neither had its icon-left set
-                      // (2026-08-23 exactness pass).
-                      Expanded(
-                        child: KButton(
-                          label: 'Email us',
-                          variant: KButtonVariant.secondary,
-                          iconLeft: 'mail',
-                          onPressed: _emailUs,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: KButton(
-                          label: 'Start a chat',
-                          iconLeft: 'send',
-                          onPressed: _startChat,
-                        ),
-                      ),
-                    ]),
+                    // 2026-08-24: dropped "Start a chat" (direct product
+                    // instruction) — no live-chat infrastructure exists in
+                    // this app (see _startChat's old doc comment, removed
+                    // alongside it); the button only ever showed a "not
+                    // available yet" snackbar, which isn't a real feature to
+                    // offer. "Email us" is real (a plain mailto: link) and
+                    // is now the sole action here.
+                    KButton(
+                      label: 'Email us',
+                      iconLeft: 'mail',
+                      onPressed: _emailUs,
+                    ),
                   ],
                 ),
               ),

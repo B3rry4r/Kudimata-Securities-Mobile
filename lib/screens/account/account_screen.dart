@@ -107,6 +107,8 @@ class _AccountScreenState extends State<AccountScreen> {
               verified: kycApproved,
               lang: _lang,
               onLangChanged: (v) => setState(() => _lang = v),
+              onReturnFromPersonalInfo: () =>
+                  setState(() => _future = _userRepo.personalInfo()),
             );
           },
         ),
@@ -121,12 +123,24 @@ class _AccountBody extends StatelessWidget {
     required this.verified,
     required this.lang,
     required this.onLangChanged,
+    required this.onReturnFromPersonalInfo,
   });
 
   final PersonalInfo info;
   final bool verified;
   final String lang;
   final ValueChanged<String> onLangChanged;
+
+  /// This screen (a persistent tab under StatefulNavigationShell, never
+  /// disposed on tab switches) fetched [info] exactly once — reported live
+  /// as "it is a none update until you refresh bug": editing the avatar (or
+  /// name) on Personal info and coming back here kept showing the stale
+  /// pre-edit data, since nothing ever told this tab to re-fetch. Personal
+  /// info is the one row whose target screen can change what THIS screen
+  /// displays (name/avatar), so its push is awaited and triggers a refetch
+  /// on return — every other row's target doesn't affect this screen's own
+  /// data, so they stay a plain push.
+  final VoidCallback onReturnFromPersonalInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +232,12 @@ class _AccountBody extends StatelessWidget {
                   KAccountRow(
                     title: rows[i].$1,
                     first: i == 0,
-                    onTap: () => context.push(rows[i].$2),
+                    onTap: () async {
+                      await context.push(rows[i].$2);
+                      if (rows[i].$2 == Routes.acctPersonal) {
+                        onReturnFromPersonalInfo();
+                      }
+                    },
                     right: rows[i].$3 == null
                         ? const KRowChevron()
                         : Row(
