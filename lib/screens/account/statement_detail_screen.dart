@@ -39,6 +39,9 @@
 // instead of fabricating broker names, balances or holdings that would look
 // like real money but aren't.
 import 'package:flutter/material.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/data/repositories/statements_repository.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -47,6 +50,30 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 class StatementDetailScreen extends StatelessWidget {
   const StatementDetailScreen({super.key, required this.statement});
   final Statement statement;
+
+  /// Opens the statement's real stored PDF via a short-lived presigned URL
+  /// (GET /statements/:id/download-url). 2026-08-24: this button was an
+  /// inert snackbar because nothing generated a PDF — monthly statements
+  /// are now really rendered and uploaded (see the backend's
+  /// StatementGeneratorService), so the download works. A statement with
+  /// fileSizeBytes == 0 never got a file stored (its render or upload
+  /// failed), and says so rather than opening a broken link.
+  Future<void> _download(BuildContext context) async {
+    if (statement.fileSizeBytes == 0) {
+      _notAvailable(context, "This statement's PDF isn't available to download.");
+      return;
+    }
+    try {
+      final url = await StatementsRepository(AppScope.read(context).apiClient)
+          .downloadUrl(statement.id);
+      final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      if (!ok && context.mounted) {
+        _notAvailable(context, "Couldn't open the download. Try again.");
+      }
+    } on ApiException catch (e) {
+      if (context.mounted) _notAvailable(context, e.message);
+    }
+  }
 
   void _notAvailable(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -63,10 +90,7 @@ class StatementDetailScreen extends StatelessWidget {
         trailing: KIconButton(
           icon: 'download',
           semanticLabel: 'Download',
-          onPressed: () => _notAvailable(
-            context,
-            'Downloads are not available yet — check back soon.',
-          ),
+          onPressed: () => _download(context),
         ),
       ),
       body: SafeArea(
@@ -142,19 +166,18 @@ class StatementDetailScreen extends StatelessWidget {
               KButton(
                 label: 'Download PDF',
                 iconLeft: 'download',
-                onPressed: () => _notAvailable(
-                  context,
-                  'Downloads are not available yet — check back soon.',
-                ),
+                onPressed: () => _download(context),
               ),
               const SizedBox(height: 10),
-              KButton(
-                label: 'Email me this statement',
-                variant: KButtonVariant.ghost,
-                onPressed: () => _notAvailable(
-                  context,
-                  "Emailing statements isn't available yet — check back soon.",
-                ),
+              // Kept honest rather than removed: unlike a contract note
+              // (emailed automatically on every fill), statements are not
+              // dispatched by email anywhere — that needs a real send
+              // endpoint. Download works, so the investor is not stuck.
+              const SizedBox(height: 4),
+              Text(
+                'Statements are not emailed. Download keeps a copy on your device.',
+                style: KType.data(color: KColor.ink3),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
