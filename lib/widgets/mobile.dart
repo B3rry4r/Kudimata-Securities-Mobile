@@ -78,7 +78,13 @@ class KOnboardingSlideFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(26),
-      decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.sheetR),
+      // featureR (all four corners), NOT sheetR — sheetR is the bottom-sheet
+      // token and rounds ONLY the top two corners, because a real sheet sits
+      // flush against the bottom of the screen. This card floats mid-screen
+      // with the slider buttons below it, so its square bottom corners read
+      // as a rendering bug (2026-08-24, reported: "the bottom has no rounded
+      // corners").
+      decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.featureR),
       child: Column(
         mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -143,8 +149,18 @@ class KOnboardingSlideContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          KIllustration(illustrationName, role: KIlloRole.hero),
-          const SizedBox(height: 18),
+          // `state` (160), not `hero` (200) — at hero the drawing plus its
+          // plate padding claimed ~256pt of the card, forcing the frame to
+          // ~520pt tall to still fit a 2-line title and a 4-line body. That
+          // read as an oversized slab with dead space under it (2026-08-24:
+          // "its too tall nahh"). NOTE for anyone shrinking the frame
+          // further: this content sits in a SingleChildScrollView, so
+          // over-tightening does NOT throw a RenderFlex overflow — the body
+          // text just silently clips mid-sentence. Verify by rendering
+          // slide 0 (the longest copy) and reading it, not by trusting a
+          // green test run.
+          KIllustration(illustrationName, role: KIlloRole.state),
+          const SizedBox(height: 16),
           Text(title, textAlign: TextAlign.center, style: KType.title(color: KColor.indicatorPress)),
           const SizedBox(height: 8),
           Text(message, textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),

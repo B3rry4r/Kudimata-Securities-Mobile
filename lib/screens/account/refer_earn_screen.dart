@@ -22,10 +22,23 @@
 // card, and the two nav affordances. The canvas's own stats card shows
 // "Friends joined / Still verifying / Explanations earned" — this backend's
 // ReferralCode resource only carries `referredCount` and `earningsTotalKobo`
-// (registry.json; see referral_repository.dart), no "still verifying" split
-// and no AI-credit counter (this backend pays real naira, not credits), so
-// the stats card here shows only the two fields that are real rather than
+// (registry.json; see referral_repository.dart), with no "still verifying"
+// split, so the stats card here shows only what is real rather than
 // inventing the rest.
+//
+// REWARD IS AI CREDITS, NOT CASH (2026-08-24 product correction: "Referral
+// is not money but meant to be at least 1 ai point for referring a
+// friend"). `earningsTotalKobo` is vestigial — no backend code path
+// increments it (ReferralCodeService only generates and returns a code), so
+// it would render a permanent ₦0. Credits earned is derived from
+// referredCount instead, at one credit per verified friend.
+//
+// BACKEND GAP, not yet built: nothing attributes a signup to a referrer's
+// code, and nothing grants the credit. `referredCount` is created at 0 and
+// never incremented, so this screen currently shows a real code with real
+// (zero) counters. Granting requires: capturing the code at sign-up,
+// linking referee -> referrer, and calling the AI-credit grant when the
+// referee's first order fills.
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
@@ -51,8 +64,9 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
   late Future<ReferralAccount> _future = _repo.me();
 
   // Canvas footnote: "Rewards are credits, never cash. Referral terms." —
-  // the underlined inline link, same TapGestureRecognizer convention as
-  // sign_up_screen.dart's Terms/Privacy/Risk links.
+  // the underlined inline link to the real Referral terms document
+  // (legal_reference_screens.dart #95), same TapGestureRecognizer
+  // convention as sign_up_screen.dart's legal link.
   late final _termsTap = TapGestureRecognizer()
     ..onTap = () => context.push(Routes.acctLegalReferralTerms);
 
@@ -96,7 +110,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
     SharePlus.instance.share(
       ShareParams(
         text: "Join me on Kudimata Invest! Use my referral code "
-            "${account.code} when you sign up and we both earn ₦1,000.",
+            "${account.code} when you sign up and we both earn a free AI credit.",
         subject: 'My Kudimata Invest referral code',
       ),
     );
@@ -126,12 +140,16 @@ class _ReferEarnBody extends StatelessWidget {
         const SizedBox(height: 14),
         Text('Bring a friend in', style: KType.title()),
         const SizedBox(height: 6),
-        // screen-specs.md spec 55's body, adapted for real cash rewards —
-        // this backend's ReferralAccount.earningsTotal is genuine naira, not
-        // AI-explanation credits, so "20 free explanations" is replaced with
-        // the real reward (2026-08-23 exactness pass).
+        // 2026-08-24, direct product correction: "Referral is not money but
+        // meant to be at least 1 ai point for referring a friend". An
+        // earlier pass had read the backend's `earningsTotalKobo` field as
+        // proof the reward was naira and rewritten the canvas's own
+        // credits framing to match — backwards. Paying cash for referrals
+        // in a securities context is also the riskier of the two (it reads
+        // as an inducement to open a trading account); an AI credit does
+        // not. The reward is one AI credit each, per verified friend.
         Text(
-          'You both earn ₦1,000 when they finish verification and place their first order.',
+          'You both earn 1 AI credit when they finish verification and place their first order.',
           style: KType.body(color: KColor.ink2),
         ),
         const SizedBox(height: 14),
@@ -188,12 +206,10 @@ class _ReferEarnBody extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         // Stats card — canvas rows are "Friends joined / Still verifying /
-        // Explanations earned"; only the first has a real backend field
-        // (referredCount). "Still verifying" has no backend split and
-        // "Explanations earned" describes the AI-credit economy this
-        // backend doesn't run (it pays cash — earningsTotalKobo), so this
-        // shows "Friends joined" and the real cash total instead of
-        // inventing the other two (2026-08-23 exactness pass).
+        // Explanations earned". "Still verifying" has no backend field to
+        // back it, so it is omitted rather than invented; the other two are
+        // both derived from `referredCount` (one credit per verified
+        // friend).
         KCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -203,7 +219,16 @@ class _ReferEarnBody extends StatelessWidget {
                 value: '${account.referredCount}',
                 first: true,
               ),
-              KKeyValueRow(label: "You've earned", value: account.earningsTotal),
+              // Credits earned = one per verified friend, so this is
+              // derived from referredCount rather than from the backend's
+              // `earningsTotalKobo` (a naira field left over from the
+              // cash-reward reading — it is never incremented by any
+              // backend code path, see ReferralCodeService, so rendering it
+              // would show a permanent ₦0).
+              KKeyValueRow(
+                label: 'Credits earned',
+                value: '${account.referredCount}',
+              ),
             ],
           ),
         ),
@@ -212,8 +237,13 @@ class _ReferEarnBody extends StatelessWidget {
           text: TextSpan(
             style: KType.data(color: KColor.ink3),
             children: [
+              // Was "We never pay for orders placed — only for a friend who
+              // gets verified", which contradicted the line above it (and
+              // the Referral terms it sits next to): the reward needs BOTH
+              // verification AND a first order, not verification alone.
               const TextSpan(
-                text: 'We never pay for orders placed — only for a friend who gets verified. ',
+                text: 'Rewards are AI credits, never cash, and never tied to how much '
+                    'anyone trades. ',
               ),
               TextSpan(
                 text: 'Referral terms',

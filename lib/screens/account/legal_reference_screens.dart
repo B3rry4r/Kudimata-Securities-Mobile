@@ -42,16 +42,19 @@
 //     legal/product needs to draft and publish real referral terms. No
 //     `original` is offered here — showing a broken/empty reveal button
 //     would be worse than omitting it.
-//   - The referral copy below is ALSO corrected against the design canvas's
-//     own authored text: the canvas describes the reward as "20 free
-//     explanations" / "credits, never cash", but the shipped mechanic
-//     (`ReferralRepository`/`ReferralAccount`, see refer_earn_screen.dart)
-//     pays real cash — ₦1,000 per verified friend. Repeating "never cash"
-//     here would be actively false legal copy, not just unreviewed, so the
-//     wording is corrected to match what the product actually does. This
-//     copy is still NOT a reviewed legal document — it is this pass's
-//     best-effort, honest placeholder pending the real one product/legal
-//     needs to draft.
+//   - REWARD TYPE, corrected 2026-08-24 on direct product instruction
+//     ("Referral is not money but meant to be at least 1 ai point for
+//     referring a friend"): the reward is ONE AI CREDIT per verified
+//     friend, not cash. An earlier pass had gone the wrong way here — it
+//     saw `ReferralCode.earningsTotalKobo` in the backend, concluded the
+//     product paid naira, and rewrote the design canvas's own "credits,
+//     never cash" framing to match. The canvas was right; the kobo field is
+//     vestigial (no backend code path ever increments it — see
+//     ReferralCodeService). Cash-for-referral is also the riskier design in
+//     a securities context, reading as an inducement to open a trading
+//     account in a way an AI credit does not. This copy is still NOT a
+//     reviewed legal document — it is a best-effort draft pending the real
+//     one legal needs to write.
 //   - The 10-business-day closure SLA on #97 and the 14-day notice period
 //     on #95 are the design canvas's own figures; neither is corroborated
 //     anywhere in the real LEGAL.zip pack (which only says "you can close
@@ -465,9 +468,9 @@ class ReferralTermsScreen extends StatelessWidget {
   static const _points = [
     'Your friend enters your code at sign-up; the reward lands once they finish '
         'verification and place their first order.',
-    'You both earn ₦1,000, paid into your wallet — nothing depends on how much either of '
-        'you trades beyond that first order.',
-    'Rewards are real money, not credits — see your balance any time in Refer & earn.',
+    'You both earn 1 AI credit — nothing depends on how much either of you trades beyond '
+        'that first order.',
+    'Rewards are AI credits, never cash. They have no cash value and cannot be withdrawn.',
     'Self-referral, one person with several accounts, or bought codes forfeit the reward.',
   ];
 
@@ -493,16 +496,17 @@ class ReferralTermsScreen extends StatelessWidget {
     ),
     (
       '4. What the reward is',
-      'You and the referred investor each receive ₦1,000, credited to your Kudimata wallet. '
-          'The reward is a fixed cash amount. It does not vary with how much either of you '
-          'deposits or trades beyond that first order, and it is not a share of any fee or '
-          'commission.',
+      'You and the referred investor each receive 1 AI credit, added to your credit balance. '
+          'The reward is not cash, is not paid into your wallet, and is not withdrawable. It '
+          'does not vary with how much either of you deposits or trades beyond that first '
+          'order, and it is not a share of any fee, commission or spread on any trade.',
     ),
     (
-      '5. Using and withdrawing the reward',
-      'A credited reward is ordinary wallet balance. You can invest it or withdraw it to your '
-          'own bank account under your DCS mandate, on the same terms as any other wallet '
-          'funds. No minimum number of referrals is required before you can withdraw.',
+      '5. Using the reward',
+      'A referral credit is an ordinary AI credit and behaves exactly like the credits you '
+          'start with or buy: one credit funds one AI explanation, portfolio digest or '
+          'glossary "explain further" request. Credits have no cash value, cannot be '
+          'transferred between accounts, and cannot be exchanged for money.',
     ),
     (
       '6. Conduct that forfeits a reward',
@@ -550,9 +554,9 @@ class ReferralTermsScreen extends StatelessWidget {
           'notice. Rewards already earned stay yours.',
       summary: const _PlainLegalCard(
         title: "What you get, and what we won't do",
-        intro: 'You and your friend each earn ₦1,000 once they finish verification and '
-            'place a first order. Rewards are real cash paid into your wallet, never tied '
-            'to how much anyone trades.',
+        intro: 'You and your friend each earn 1 AI credit once they finish verification '
+            'and place a first order. Rewards are credits, never cash, and never tied to '
+            'how much anyone trades.',
         points: _points,
         sections: _sections,
         // No `original` — see file header: no referral-terms LegalDocument

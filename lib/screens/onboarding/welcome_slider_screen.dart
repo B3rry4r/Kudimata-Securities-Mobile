@@ -111,7 +111,7 @@ class _WelcomeSliderScreenState extends State<WelcomeSliderScreen> {
               // scroll", since a slider's content is meant to be seen
               // without interaction. 520 gives real headroom.
               ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 520),
+                constraints: const BoxConstraints(maxHeight: 480),
                 child: KOnboardingSlideFrame(
                   index: _index,
                   count: _slides.length,
