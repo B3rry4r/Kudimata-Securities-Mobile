@@ -1,11 +1,20 @@
 // Screens 94–97 — the legal-documents "one viewer pattern" cluster: Partner
 // disclosures, Referral terms, Data notice (NDPA), Account closure terms.
-// Each is a read-only `KDocumentSummary` — "plain English above the raw
-// filing, original always one tap away" (readme.md's own description of
-// this component, and the audit section it answers) — reachable both from
-// wherever it applies in the app and from Account → Legal, per the design
-// canvas's own framing: "one viewer pattern · each one opens where it
-// applies, and lives in Account → Legal."
+// Reachable both from wherever it applies in the app and from Account →
+// Legal, per the design canvas's own framing: "one viewer pattern · each one
+// opens where it applies, and lives in Account → Legal."
+//
+// 2026-08-24: was a read-only `KDocumentSummary` — canvas's own component
+// choice, but that's the AI/comprehension-layer treatment (purple tint,
+// AIMark "In plain English" badge — the same visual family as the Explain
+// screen), which reads as generated commentary, not a real legal document.
+// Direct product feedback: "the new legal docs [should be] written like the
+// others properly and not a shortcard looking like the ai explain." Rebuilt
+// with `_PlainLegalCard` — the same plain, neutral white-card treatment
+// `legal_screen.dart`'s own document viewer already uses for the other
+// four (Terms/Privacy/Risk/Client Agreement) — so all eight documents in
+// Account → Legal now look and read consistently, and none of them imply
+// AI-generated content.
 //
 // CONTENT SOURCING — read before touching the summary/points literals below:
 //   - #96 Data notice (NDPA) and #97 Account closure terms both wire a REAL
@@ -71,9 +80,8 @@ Future<String?> _fetchOriginal(BuildContext context, String kind) async {
   }
 }
 
-/// Shared layout for all four screens — back header (+ a display-only
-/// `KLanguageSwitch`), the `KDocumentSummary`, an optional footnote, and one
-/// secondary "Back to X" button.
+/// Shared layout for all four screens — back header, the document card, an
+/// optional footnote, and one secondary "Back to X" button.
 class _LegalDocScaffold extends StatelessWidget {
   const _LegalDocScaffold({
     required this.title,
@@ -93,19 +101,10 @@ class _LegalDocScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KColor.bg,
-      appBar: KDetailHeader(
-        title: title,
-        onBack: onBack,
-        // Display-only: the canvas shows a LanguageSwitch on every legal
-        // viewer (English/Pidgin), but readme.md is explicit that "legal
-        // text stays authoritative in English" — no Pidgin translation of
-        // any legal document exists anywhere in this app, so wiring this to
-        // actually switch the rendered language would mean fabricating a
-        // translated document that doesn't exist. Shown inert (no
-        // `onChanged`) so its presence still matches the canvas, rather than
-        // silently dropping it.
-        trailing: const KLanguageSwitch(),
-      ),
+      // English/Pidgin switch temporarily hidden (2026-08-24, direct
+      // product instruction) — no real Pidgin translation of any legal
+      // document exists anywhere in this app.
+      appBar: KDetailHeader(title: title, onBack: onBack),
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -124,6 +123,114 @@ class _LegalDocScaffold extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The plain, neutral document card these four screens now share with
+/// `legal_screen.dart`'s own document viewer (`_LegalDocumentViewerScreen`)
+/// — white `KCard`, a section title, an intro paragraph, plain bulleted key
+/// points, and (when a real backing document exists) a "Read the original
+/// document" reveal. No purple tint, no AIMark badge — see this file's
+/// header for why that AI-comprehension treatment was replaced.
+class _PlainLegalCard extends StatefulWidget {
+  const _PlainLegalCard({
+    required this.title,
+    required this.intro,
+    this.points = const [],
+    this.original,
+  });
+
+  final String title;
+  final String intro;
+  final List<String> points;
+
+  /// The real backing document's full text, or null when none exists (see
+  /// this file's per-screen CONTENT SOURCING notes) — the reveal row below
+  /// simply doesn't render when this is null, rather than showing a button
+  /// to nothing.
+  final String? original;
+
+  @override
+  State<_PlainLegalCard> createState() => _PlainLegalCardState();
+}
+
+class _PlainLegalCardState extends State<_PlainLegalCard> {
+  bool _showOriginal = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.title, style: KType.section()),
+              const SizedBox(height: 10),
+              Text(widget.intro, style: KType.body(color: KColor.ink2)),
+              if (widget.points.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                for (final p in widget.points)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 5,
+                          height: 5,
+                          margin: const EdgeInsets.only(top: 8, right: 10),
+                          decoration: BoxDecoration(color: KColor.ink3, shape: BoxShape.circle),
+                        ),
+                        Expanded(child: Text(p, style: KType.body(color: KColor.ink2))),
+                      ],
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+        if (widget.original != null) ...[
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => setState(() => _showOriginal = !_showOriginal),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                color: KColor.paper,
+                border: Border.all(color: KColor.hairline),
+                borderRadius: KRadii.cardR,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(_showOriginal ? 'Hide the original document' : 'Read the original document',
+                      style: KType.cardTitle(w: KWeight.semibold)),
+                  KIcon('chevronRight', size: 16, color: KColor.ink3),
+                ],
+              ),
+            ),
+          ),
+          if (_showOriginal) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: KColor.paper,
+                border: Border.all(color: KColor.hairline),
+                borderRadius: KRadii.cardR,
+              ),
+              child: Text(widget.original!, style: KType.body(color: KColor.ink2)),
+            ),
+          ],
+        ],
+      ],
     );
   }
 }
@@ -167,10 +274,9 @@ class _PartnerDisclosuresScreenState extends State<PartnerDisclosuresScreen> {
           const SizedBox(height: 12),
           FutureBuilder<String?>(
             future: _original,
-            builder: (context, snapshot) => KDocumentSummary(
-              kind: 'Third-party disclosure',
+            builder: (context, snapshot) => _PlainLegalCard(
               title: 'Kudimata places the order, a licensed broker executes it',
-              summary: 'Kudimata Invest is the app. Your order reaches the NGX through a '
+              intro: 'Kudimata Invest is the app. Your order reaches the NGX through a '
                   'dealing-member broker, and your shares sit in your own name at the CSCS — '
                   'not with us and not with them.',
               points: _points,
@@ -235,10 +341,9 @@ class ReferralTermsScreen extends StatelessWidget {
       onBack: () => Navigator.of(context).maybePop(),
       footnote: "Kudimata Securities Ltd may end or change the programme with 14 days' "
           'notice. Rewards already earned stay yours.',
-      summary: const KDocumentSummary(
-        kind: 'Referral terms',
+      summary: const _PlainLegalCard(
         title: "What you get, and what we won't do",
-        summary: 'You and your friend each earn ₦1,000 once they finish verification and '
+        intro: 'You and your friend each earn ₦1,000 once they finish verification and '
             'place a first order. Rewards are real cash paid into your wallet, never tied '
             'to how much anyone trades.',
         points: _points,
@@ -281,10 +386,9 @@ class _DataNoticeScreenState extends State<DataNoticeScreen> {
           'also go to the Nigeria Data Protection Commission.',
       summary: FutureBuilder<String?>(
         future: _original,
-        builder: (context, snapshot) => KDocumentSummary(
-          kind: 'Nigeria Data Protection Act',
+        builder: (context, snapshot) => _PlainLegalCard(
           title: 'What we keep, why, and for how long',
-          summary: 'We hold what the SEC requires us to hold, and nothing more. You can see '
+          intro: 'We hold what the SEC requires us to hold, and nothing more. You can see '
               'it, correct it, export it, and delete whatever the law lets us delete.',
           points: _points,
           original: snapshot.data,
@@ -323,10 +427,9 @@ class _AccountClosureTermsScreenState extends State<AccountClosureTermsScreen> {
           'can be escalated like any other complaint.',
       summary: FutureBuilder<String?>(
         future: _original,
-        builder: (context, snapshot) => KDocumentSummary(
-          kind: 'Account closure terms',
+        builder: (context, snapshot) => _PlainLegalCard(
           title: 'How closing works, step by step',
-          summary: 'You can leave whenever you like. Shares must be sold or moved to '
+          intro: 'You can leave whenever you like. Shares must be sold or moved to '
               'another broker first, your wallet is paid to your DCS account, and your CHN '
               'stays yours for life.',
           points: _points,

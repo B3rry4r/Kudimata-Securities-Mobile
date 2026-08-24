@@ -50,7 +50,7 @@ class DocumentSummaryScreen extends StatefulWidget {
 }
 
 class _DocumentSummaryScreenState extends State<DocumentSummaryScreen> {
-  String _lang = 'en';
+  // String _lang = 'en'; // unused while the language switch is hidden — see below
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +67,10 @@ class _DocumentSummaryScreenState extends State<DocumentSummaryScreen> {
                   KIconButton(icon: 'back', onPressed: () => context.pop()),
                   const SizedBox(width: 12),
                   Expanded(child: Text(widget.docTitle, style: KType.section())),
-                  KLanguageSwitch(value: _lang, onChanged: (v) => setState(() => _lang = v)),
+                  // English/Pidgin switch temporarily hidden (2026-08-24,
+                  // direct product instruction) — no real Pidgin
+                  // translation exists anywhere yet.
+                  // KLanguageSwitch(value: _lang, onChanged: (v) => setState(() => _lang = v)),
                 ],
               ),
               const SizedBox(height: 20),

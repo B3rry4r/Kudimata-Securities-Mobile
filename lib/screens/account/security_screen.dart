@@ -113,7 +113,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 onTap: _changePasscode,
               ),
               if (!kIsWeb) ...[
-                const Divider(height: 1),
+                Divider(height: 1, color: KColor.hairline),
                 // screen-specs.md spec 50 literally says "Face ID" — kept
                 // as the cross-platform "Biometric unlock" instead
                 // (2026-08-23 exactness pass: deliberate deviation, not an
@@ -128,7 +128,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   onChanged: (v) => app.setBiometric(v),
                 ),
               ],
-              const Divider(height: 1),
+              Divider(height: 1, color: KColor.hairline),
               // Real, existing behaviour, not a new toggle — the withdraw
               // sheet already always asks for passcode confirmation before
               // money leaves (see wallet_flows.dart's withdraw footnote:

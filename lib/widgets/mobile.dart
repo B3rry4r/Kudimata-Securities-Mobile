@@ -58,98 +58,99 @@ class KMilestoneSheet extends StatelessWidget {
   }
 }
 
-/// One slide of the pre-account welcome slider (screen 02) — scene above,
-/// copy below, dot progress under that.
-class KOnboardingSlide extends StatelessWidget {
-  const KOnboardingSlide({
+/// The pre-account welcome slider's persistent card FRAME (screen 02) — the
+/// tinted, rounded background + the dot row. Built ONCE by the caller and
+/// held fixed while [KOnboardingSlideContent] swaps inside it via a
+/// PageView — see that class's doc comment for why this split exists.
+class KOnboardingSlideFrame extends StatelessWidget {
+  const KOnboardingSlideFrame({
+    super.key,
+    required this.index,
+    required this.count,
+    required this.child,
+  });
+
+  final int index;
+  final int count;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(26),
+      decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.sheetR),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(child: child),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < count; i++) ...[
+                if (i > 0) const SizedBox(width: 6),
+                AnimatedContainer(
+                  duration: KMotion.base,
+                  curve: KMotion.easeSoft,
+                  height: 7,
+                  width: i == index ? 20 : 7,
+                  decoration: BoxDecoration(
+                    color: i == index ? KColor.indicator : KColor.ramp4,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One slide's scene + copy — illustration, title, body, optional action.
+/// No card, no dots: this is what goes INSIDE a PageView wrapped by
+/// [KOnboardingSlideFrame], not a whole slide by itself.
+///
+/// 2026-08-24 split from the old `KOnboardingSlide` (which bundled the card
+/// frame + dots + content into ONE widget instantiated fresh per PageView
+/// page) — direct product feedback: "why would I slide and I see containers
+/// sliding... instead of contents sliding". With the tinted card as the
+/// PageView's item, swiping visibly dragged the whole purple card off/on
+/// screen; the intended feel is a single stationary frame with only the
+/// scene/copy changing inside it. The frame (and its dot row) is now built
+/// ONCE by the caller and stays put; only this content widget lives inside
+/// the PageView.
+class KOnboardingSlideContent extends StatelessWidget {
+  const KOnboardingSlideContent({
     super.key,
     required this.illustrationName,
     required this.title,
     required this.message,
-    required this.index,
-    required this.count,
     this.action,
-    this.minHeight,
   });
 
   final String illustrationName;
   final String title;
   final String message;
-  final int index;
-  final int count;
   final Widget? action;
-
-  /// When set, the card is exactly this tall instead of shrink-wrapping its
-  /// own content — the caller passes the available space so every slide in
-  /// a PageView renders the same card size regardless of how long that
-  /// slide's title/body happen to be. The illustration/title/body group
-  /// stays top-anchored and scrolls internally if it's taller than the
-  /// space left after the dot row (which always stays pinned to the
-  /// bottom) — MUST be a finite value from a bounded ancestor (e.g. an
-  /// Expanded/SizedBox), not a value sourced from inside an unbounded
-  /// scroll axis, since fixing the height is what makes the internal
-  /// Expanded scroll region valid in the first place.
-  final double? minHeight;
 
   @override
   Widget build(BuildContext context) {
-    final dots = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < count; i++) ...[
-          if (i > 0) const SizedBox(width: 6),
-          AnimatedContainer(
-            duration: KMotion.base,
-            curve: KMotion.easeSoft,
-            height: 7,
-            width: i == index ? 20 : 7,
-            decoration: BoxDecoration(
-              color: i == index ? KColor.indicator : KColor.ramp4,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          KIllustration(illustrationName, role: KIlloRole.hero),
+          const SizedBox(height: 18),
+          Text(title, textAlign: TextAlign.center, style: KType.title(color: KColor.indicatorPress)),
+          const SizedBox(height: 8),
+          Text(message, textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),
+          if (action != null) ...[const SizedBox(height: 18), action!],
         ],
-      ],
+      ),
     );
-
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        KIllustration(illustrationName, role: KIlloRole.hero),
-        const SizedBox(height: 18),
-        Text(title, textAlign: TextAlign.center, style: KType.title(color: KColor.indicatorPress)),
-        const SizedBox(height: 8),
-        Text(message, textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),
-        if (action != null) ...[const SizedBox(height: 18), action!],
-      ],
-    );
-
-    final card = Container(
-      padding: const EdgeInsets.all(26),
-      decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.sheetR),
-      child: minHeight != null
-          // Fixed, finite height (from the caller) makes this Column's own
-          // height bounded, which is what lets Expanded below compute a
-          // real flex size — Spacer/Expanded can't do that under an
-          // unbounded constraint (e.g. straight inside a
-          // SingleChildScrollView), which is the bug this shape avoids.
-          ? Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(child: SingleChildScrollView(child: content)),
-                const SizedBox(height: 18),
-                dots,
-              ],
-            )
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [content, const SizedBox(height: 18), dots],
-            ),
-    );
-
-    return minHeight != null ? SizedBox(height: minHeight, child: card) : card;
   }
 }

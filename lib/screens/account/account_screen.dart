@@ -278,11 +278,15 @@ class _AccountBody extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
-            child: KLanguageSwitch(value: lang, onChanged: onLangChanged),
-          ),
+          // English/Pidgin switch temporarily hidden (2026-08-24, direct
+          // product instruction) — no real Pidgin translation exists
+          // anywhere in the app yet; showing the switch implied a feature
+          // that isn't there. `lang`/`onLangChanged` stay threaded through
+          // unchanged so this is a one-line restore once Pidgin is real.
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
+          //   child: KLanguageSwitch(value: lang, onChanged: onLangChanged),
+          // ),
         ],
       ),
     );

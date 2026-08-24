@@ -120,29 +120,18 @@ class _ExplainScreenState extends State<ExplainScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Screen 34: a standing "what thinking looks like" example
-                  // — a 2-line shimmer, labelled so it reads as a preview of
-                  // the state before any answer text exists, not as a second
-                  // live answer.
-                  Padding(
-                    padding: _gut,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.cardR),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('While it thinks · before any text exists'.upper,
-                              style: KType.micro(color: KColor.ink3)),
-                          const SizedBox(height: 8),
-                          const KGeneratingText(text: '', state: KGeneratingState.thinking, lines: 2),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
+                  // 2026-08-24 removed: canvas s34's "While it thinks ·
+                  // before any text exists" card is a static design-system
+                  // documentation panel (a frozen reference showing what the
+                  // thinking state looks like, for the designer's benefit),
+                  // not real product UI — it has no dynamic behavior and
+                  // sat there permanently, including after the real answer
+                  // above had already finished loading, which is exactly
+                  // what the user reported as confusing ("why is the
+                  // placeholder or example showing... while it thinks
+                  // before any text exists?"). The real thinking state
+                  // already plays out in the ExplainPanel above via
+                  // KGeneratingText/_state — that's the one that matters.
                   Padding(
                     padding: _gut,
                     child: Wrap(

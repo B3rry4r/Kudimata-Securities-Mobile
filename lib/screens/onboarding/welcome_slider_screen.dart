@@ -46,7 +46,6 @@ class WelcomeSliderScreen extends StatefulWidget {
 class _WelcomeSliderScreenState extends State<WelcomeSliderScreen> {
   final _controller = PageController();
   int _index = 0;
-  String _lang = 'en';
 
   @override
   void dispose() {
@@ -67,45 +66,39 @@ class _WelcomeSliderScreenState extends State<WelcomeSliderScreen> {
               Row(
                 children: [
                   const Expanded(child: KWordmark(size: 20)),
-                  KLanguageSwitch(
-                    value: _lang,
-                    onChanged: (v) => setState(() => _lang = v),
-                  ),
+                  // English/Pidgin switch temporarily hidden (2026-08-24,
+                  // direct product instruction) — no real Pidgin
+                  // translation exists anywhere in the app yet.
+                  // KLanguageSwitch(
+                  //   value: _lang,
+                  //   onChanged: (v) => setState(() => _lang = v),
+                  // ),
                 ],
               ),
               const SizedBox(height: 20),
+              // The tinted card FRAME and its dot row are built ONCE here
+              // and stay stationary — only the PageView inside it (the
+              // illustration/title/body) swipes. See
+              // KOnboardingSlideFrame/KOnboardingSlideContent's doc
+              // comments (lib/widgets/mobile.dart) for why this is split
+              // this way, not one widget per PageView page.
               Expanded(
-                child: PageView.builder(
-                  controller: _controller,
-                  itemCount: _slides.length,
-                  onPageChanged: (i) => setState(() => _index = i),
-                  itemBuilder: (context, i) {
-                    final s = _slides[i];
-                    // minHeight = the full available space, same finite
-                    // value for every slide (they all share this Expanded's
-                    // height budget) — KOnboardingSlide fills it exactly and
-                    // pins its dot row to the bottom instead of shrink-
-                    // wrapping to its own title/body length, which used to
-                    // make the card resize as you swiped between slides of
-                    // different text lengths. If a slide's illustration+text
-                    // is taller than the space left above the dots (e.g.
-                    // large accessibility text), KOnboardingSlide scrolls
-                    // just that inner region itself rather than overflowing
-                    // — found via test/shots_onboarding.dart, a signed-out
-                    // screenshot harness; this screen is unreachable by
-                    // route_walk_test.dart's signed-in-only overflow check,
-                    // so a real 25px overflow here went uncaught before.
-                    return LayoutBuilder(
-                      builder: (context, constraints) => KOnboardingSlide(
+                child: KOnboardingSlideFrame(
+                  index: _index,
+                  count: _slides.length,
+                  child: PageView.builder(
+                    controller: _controller,
+                    itemCount: _slides.length,
+                    onPageChanged: (i) => setState(() => _index = i),
+                    itemBuilder: (context, i) {
+                      final s = _slides[i];
+                      return KOnboardingSlideContent(
                         illustrationName: s.illustration,
                         title: s.title,
                         message: s.body,
-                        index: _index,
-                        count: _slides.length,
-                        minHeight: constraints.maxHeight,
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
               Column(

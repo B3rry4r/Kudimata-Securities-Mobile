@@ -105,7 +105,7 @@ class StatementDetailScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Divider(height: 1),
+                    Divider(height: 1, color: KColor.hairline),
                     const SizedBox(height: 16),
                     // Honest stand-in for the per-broker balances/holdings/
                     // movements breakdown — see this file's header comment
@@ -125,7 +125,7 @@ class StatementDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Divider(height: 1),
+                    Divider(height: 1, color: KColor.hairline),
                     const SizedBox(height: 16),
                     // #s76's static compliance copy — only the part that
                     // doesn't describe the per-broker page structure this

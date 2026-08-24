@@ -134,23 +134,17 @@ class _SettlementArticle extends StatefulWidget {
 }
 
 class _SettlementArticleState extends State<_SettlementArticle> {
-  // Canvas: both inline glossary-term taps and the LanguageSwitch on THIS
-  // screen have no further destination to jump to — their definitions are
-  // already shown directly below in the Glossary card on this same page.
-  // Same "shortcut affordance, no real target yet" pattern as trade_flows.dart's
-  // own T+3 glossary-term usage (onTap: () {}) — a no-op here, not a fake nav.
-  void _pidginNotReady(String lang) {
-    if (lang == 'en') return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Pidgin re-reads aren't available yet — check back soon.")),
-    );
-  }
+  // _pidginNotReady (the LanguageSwitch's onChanged) is unused while the
+  // switch itself is hidden — see the header-trailing comment below.
 
   @override
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Settlement',
-      headerTrailing: KLanguageSwitch(onChanged: _pidginNotReady),
+      // English/Pidgin switch temporarily hidden (2026-08-24, direct
+      // product instruction) — no real Pidgin translation exists anywhere
+      // in the app yet.
+      // headerTrailing: KLanguageSwitch(onChanged: _pidginNotReady),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

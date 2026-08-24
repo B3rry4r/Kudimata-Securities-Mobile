@@ -1,23 +1,23 @@
-// Markets tab root — title + search icon-button, SegmentedControl
-// (Shares/ETFs), sector PillChip row, one unified asset list. Ported from
-// canvas screen 32 ("Markets · NGX", open) / 60 ("Markets · closed"). Root
-// tab: Scaffold body WITHOUT a bottom nav — the shell owns it.
+// Markets tab root — title + search icon-button, sector PillChip row, one
+// unified asset list. Ported from canvas screen 32 ("Markets · NGX", open) /
+// 60 ("Markets · closed"). Root tab: Scaffold body WITHOUT a bottom nav —
+// the shell owns it.
 //
 // 2026-08-24 rebuild: the prior version (a search PILL, no segmented
 // control, no sector chips, a fabricated Trending/"All assets" split) was a
 // real, confirmed deviation from the canvas — not a defensible adaptation.
 // It's rebuilt here to match screens 32/60 structurally:
 //   header: "Markets" title (text-title) + search IconButton (not a pill)
-//   SegmentedControl: "Shares" (NGX ordinary shares) / "ETFs" — no "Bonds"
-//     segment, since this product carries no fixed income instruments at
-//     all (AssetClass is ngx/us/etf only; "us" isn't offered in this tab,
-//     see AssetRepository/asset seed — NGX-only per product direction).
 //   PillChip row: "All" + each distinct real `Asset.sector` value present
-//     in the loaded Shares list (Banking/Telecoms/Consumer Goods/etc. — a
-//     real backend column added 2026-08-24, not fabricated categories with
-//     nothing behind them). Sectors don't apply to ETFs, so the row only
-//     shows on the Shares segment.
-//   one unified AssetRow list, filtered by segment + selected sector.
+//     in the loaded list (Banking/Telecoms/Consumer Goods/etc. — a real
+//     backend column added 2026-08-24, not fabricated categories with
+//     nothing behind them).
+//   one unified AssetRow list, filtered by the selected sector.
+//
+// 2026-08-24, same day: ETFs (and the Shares/ETFs SegmentedControl that
+// switched between them) removed per direct product instruction — "remove
+// ETFs, just shares for now, so no need for the pill switch". NGX ordinary
+// shares only, `AssetClass.ngx` is the only universe this screen fetches.
 //
 // GENUINE GAP (kept, not silently dropped): canvas's "NGX All-Share
 // 104,562.18 · +0.84% today · Open · closes 14:30" index row is NOT built.
@@ -58,9 +58,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
   late final _repo = AssetRepository(AppScope.read(context).apiClient);
 
   late Future<List<Asset>> _sharesFuture = _repo.byClass(AssetClass.ngx);
-  late Future<List<Asset>> _etfsFuture = _repo.byClass(AssetClass.etf);
 
-  String _segment = 'Shares';
   String _sector = 'All';
 
   KTrend _k(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
@@ -126,78 +124,54 @@ class _MarketsScreenState extends State<MarketsScreen> {
               const SizedBox(height: 12),
             ],
 
-            Padding(
-              padding: _gut,
-              child: KSegmentedControl(
-                options: const [
-                  KSegmentOption(value: 'Shares', label: 'Shares'),
-                  KSegmentOption(value: 'ETFs', label: 'ETFs'),
-                ],
-                value: _segment,
-                onChanged: (v) => setState(() {
-                  _segment = v;
-                  _sector = 'All';
-                }),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            if (_segment == 'Shares')
-              FutureBuilder<List<Asset>>(
-                future: _sharesFuture,
-                builder: (context, snapshot) {
-                  final sectors = (snapshot.data ?? const <Asset>[])
-                      .map((a) => a.sector)
-                      .whereType<String>()
-                      .toSet()
-                      .toList()
-                    ..sort();
-                  if (sectors.isEmpty) return const SizedBox.shrink();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: _gut,
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
+            FutureBuilder<List<Asset>>(
+              future: _sharesFuture,
+              builder: (context, snapshot) {
+                final sectors = (snapshot.data ?? const <Asset>[])
+                    .map((a) => a.sector)
+                    .whereType<String>()
+                    .toSet()
+                    .toList()
+                  ..sort();
+                if (sectors.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: _gut,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          KPillChip(
+                            label: 'All',
+                            selected: _sector == 'All',
+                            onTap: () => setState(() => _sector = 'All'),
+                          ),
+                          for (final s in sectors)
                             KPillChip(
-                              label: 'All',
-                              selected: _sector == 'All',
-                              onTap: () => setState(() => _sector = 'All'),
+                              label: s,
+                              selected: _sector == s,
+                              onTap: () => setState(() => _sector = s),
                             ),
-                            for (final s in sectors)
-                              KPillChip(
-                                label: s,
-                                selected: _sector == s,
-                                onTap: () => setState(() => _sector = s),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                    ],
-                  );
-                },
-              ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                );
+              },
+            ),
 
             Padding(
               padding: _gut,
-              child: _segment == 'Shares'
-                  ? _asyncCard(
-                      _sharesFuture,
-                      onRetry: () =>
-                          setState(() => _sharesFuture = _repo.byClass(AssetClass.ngx)),
-                      marketOpen: marketOpen,
-                      sectorFilter: _sector == 'All' ? null : _sector,
-                    )
-                  : _asyncCard(
-                      _etfsFuture,
-                      onRetry: () => setState(() => _etfsFuture = _repo.byClass(AssetClass.etf)),
-                      marketOpen: marketOpen,
-                      sectorFilter: null,
-                    ),
+              child: _asyncCard(
+                _sharesFuture,
+                onRetry: () =>
+                    setState(() => _sharesFuture = _repo.byClass(AssetClass.ngx)),
+                marketOpen: marketOpen,
+                sectorFilter: _sector == 'All' ? null : _sector,
+              ),
             ),
 
             if (!marketOpen) ...[

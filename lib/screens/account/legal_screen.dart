@@ -68,49 +68,52 @@ class _LegalScreenState extends State<LegalScreen> {
               message: 'Legal documents will show here once published.',
             );
           }
+          // One unified list — real backend-fetched LegalDocument rows
+          // (terms_of_service/privacy_policy/risk_disclosure/
+          // client_agreement) followed by the 4 reference screens (94-97,
+          // 2026-08-23 canvas expansion), which per the canvas's own note
+          // "each open where it applies, AND live in Account → Legal" — so
+          // this hub is a real, intended second entry point for them, not
+          // a separate/lesser group. Was previously split into two visibly
+          // distinct cards under a "More" eyebrow ("4 and 4, separate") —
+          // there's no canvas spec for this unnumbered hub screen dictating
+          // that split, so merged into one list per direct product
+          // feedback.
           return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: KAccountCard(
               children: [
-                _LegalList(docs: docs, onTap: _open),
-                const SizedBox(height: 24),
-                // Screens 94-97 (2026-08-23 canvas expansion) — per the
-                // canvas's own note ("Flow L · one viewer pattern · each one
-                // opens where it applies, and lives in Account → Legal"),
-                // these are reference screens, not backend-fetched
-                // LegalDocument rows like the list above, so they're a
-                // separate static section rather than faking backend
-                // entries for documents that don't (all) exist yet.
-                const KEyebrow('More'),
-                const SizedBox(height: 10),
-                KAccountCard(
-                  children: [
-                    KAccountRow(
-                      icon: 'card',
-                      title: 'Partner disclosures',
-                      right: const KRowChevron(),
-                      first: true,
-                      onTap: () => context.push(Routes.acctLegalPartnerDisclosures),
-                    ),
-                    KAccountRow(
-                      icon: 'send',
-                      title: 'Referral terms',
-                      right: const KRowChevron(),
-                      onTap: () => context.push(Routes.acctLegalReferralTerms),
-                    ),
-                    KAccountRow(
-                      icon: 'shieldCheck',
-                      title: 'Data notice · NDPA',
-                      right: const KRowChevron(),
-                      onTap: () => context.push(Routes.acctLegalDataNotice),
-                    ),
-                    KAccountRow(
-                      icon: 'close',
-                      title: 'Account closure terms',
-                      right: const KRowChevron(),
-                      onTap: () => context.push(Routes.acctLegalClosureTerms),
-                    ),
-                  ],
+                for (var i = 0; i < docs.length; i++)
+                  KAccountRow(
+                    icon: 'card',
+                    title: docs[i].title,
+                    sub: docs[i].sub,
+                    right: const KRowChevron(),
+                    first: i == 0,
+                    onTap: () => _open(docs[i]),
+                  ),
+                KAccountRow(
+                  icon: 'card',
+                  title: 'Partner disclosures',
+                  right: const KRowChevron(),
+                  onTap: () => context.push(Routes.acctLegalPartnerDisclosures),
+                ),
+                KAccountRow(
+                  icon: 'send',
+                  title: 'Referral terms',
+                  right: const KRowChevron(),
+                  onTap: () => context.push(Routes.acctLegalReferralTerms),
+                ),
+                KAccountRow(
+                  icon: 'shieldCheck',
+                  title: 'Data notice · NDPA',
+                  right: const KRowChevron(),
+                  onTap: () => context.push(Routes.acctLegalDataNotice),
+                ),
+                KAccountRow(
+                  icon: 'close',
+                  title: 'Account closure terms',
+                  right: const KRowChevron(),
+                  onTap: () => context.push(Routes.acctLegalClosureTerms),
                 ),
               ],
             ),
@@ -121,29 +124,6 @@ class _LegalScreenState extends State<LegalScreen> {
   }
 }
 
-class _LegalList extends StatelessWidget {
-  const _LegalList({required this.docs, required this.onTap});
-
-  final List<LegalDocument> docs;
-  final void Function(LegalDocument doc) onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return KAccountCard(
-      children: [
-        for (var i = 0; i < docs.length; i++)
-          KAccountRow(
-            icon: 'card',
-            title: docs[i].title,
-            sub: docs[i].sub,
-            right: const KRowChevron(),
-            first: i == 0,
-            onTap: () => onTap(docs[i]),
-          ),
-      ],
-    );
-  }
-}
 
 /// Read-only in-app viewer for a single LegalDocument's sections — no
 /// checkbox/accept affordance (unlike LegalAcceptanceScreen, which this

@@ -580,6 +580,11 @@ class MockApiAdapter implements HttpClientAdapter {
         path.startsWith('/public/legal-documents/content/')) {
       return _legalDocument(path.split('/').last);
     }
+    if (path == '/legal-documents') {
+      return ['terms_of_service', 'privacy_policy', 'risk_disclosure', 'client_agreement']
+          .map(_legalDocument)
+          .toList();
+    }
     if (path == '/banks') return _banks;
     if (path == '/banks/resolve-account-name') return {'accountName': 'ADEBAYO OKONKWO'};
     if (path == '/notification-preferences/me') {

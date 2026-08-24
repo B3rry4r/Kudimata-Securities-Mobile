@@ -64,8 +64,13 @@ class PlansScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          // 2026-08-24: the "Top up any time: ₦300 for 30 answers" one-off
+          // credit purchase was removed per direct product instruction —
+          // there's no real metering/billing backend behind any of this
+          // preview screen yet (see file header), and a one-off top-up
+          // purchase isn't part of what's being previewed right now.
           Text(
-            'Top up any time: ₦300 for 30 answers. Prices, fees, risk labels, the glossary and Pidgin re-reads stay free on every plan — what happens when I run out.',
+            'Prices, fees, risk labels, the glossary and Pidgin re-reads stay free on every plan — what happens when I run out.',
             style: KType.data(color: KColor.ink3),
           ),
         ],

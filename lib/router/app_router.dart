@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../app/app_state.dart';
-import '../data/models.dart';
 import '../theme/tokens.dart';
 import '../widgets/widgets.dart';
 
@@ -61,7 +60,6 @@ import '../screens/home/notifications_screen.dart';
 import '../screens/home/search_screen.dart';
 
 // Markets pushed.
-import '../screens/markets/asset_list_screen.dart';
 import '../screens/markets/asset_detail_screen.dart';
 import '../screens/markets/watchlist_screen.dart';
 import '../screens/markets/explain_screen.dart';
@@ -240,11 +238,6 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.notifications, builder: (_, _) => themed(() => NotificationsScreen())),
       GoRoute(path: Routes.search, builder: (_, _) => themed(() => SearchScreen())),
       GoRoute(path: Routes.orderStatus, builder: (_, _) => themed(() => OrderStatusScreen())),
-      GoRoute(path: Routes.assetList, builder: (_, st) {
-        // Optional AssetClass passed via `extra` (defaults to NGX when absent).
-        final cls = st.extra is AssetClass ? st.extra as AssetClass : null;
-        return themed(() => AssetListScreen(assetClass: cls));
-      }),
       GoRoute(path: Routes.watchlist, builder: (_, _) => themed(() => WatchlistScreen())),
       GoRoute(
         path: Routes.assetDetailPath,

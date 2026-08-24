@@ -84,7 +84,6 @@ class Routes {
   static const String notifications = '/notifications';
   static const String search = '/search';
   static const String orderStatus = '/orders';
-  static const String assetList = '/assets';
   static const String watchlist = '/watchlist';
 
   // Dynamic pushed routes.

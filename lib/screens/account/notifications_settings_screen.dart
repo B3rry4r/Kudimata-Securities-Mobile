@@ -123,7 +123,7 @@ class _NotificationsSettingsScreenState
                     checked: prefs.ordersEmail,
                     onChanged: (v) => _toggleOrders(prefs, v),
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: KColor.hairline),
                   // Canvas order (screen 48): Order updates, Money in and
                   // out, Price alerts, Weekly digest, Security — this row
                   // sits second, matching the "Money in and out" slot it's
@@ -136,14 +136,14 @@ class _NotificationsSettingsScreenState
                     checked: prefs.accountEmail,
                     onChanged: (v) => _toggleAccount(prefs, v),
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: KColor.hairline),
                   KSwitch(
                     label: 'Price alerts',
                     description: 'Only names on your watchlist, over 5% in a day',
                     checked: prefs.priceAlertsEmail,
                     onChanged: (v) => _togglePriceAlerts(prefs, v),
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: KColor.hairline),
                   KSwitch(
                     label: 'Weekly digest',
                     description: 'One written summary of your portfolio, on Sundays',
