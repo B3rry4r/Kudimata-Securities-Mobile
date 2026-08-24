@@ -35,6 +35,7 @@ import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
+import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/screens/onboarding/log_in_screen.dart' show refreshKycGatingState;
@@ -84,12 +85,24 @@ class _HomeData {
     required this.holdings,
     required this.trending,
     required this.walletBalance,
+    required this.watchlist,
   });
 
   final UserProfile user;
   final PortfolioSummary summary;
   final List<Asset> holdings;
   final List<Asset> trending;
+
+  /// 2026-08-24, direct product instruction — reported live: "I just added
+  /// a stock to watchlist and went back home screen and I did not see it".
+  /// Not in canvas s29 (that screen was verified, and rebuilt earlier this
+  /// same session, to have no watchlist section at all) — a direct
+  /// override of that literal reading, same class of call as the earlier
+  /// Trending-fallback addition below. Rides the same 8s silent-poll cycle
+  /// as everything else on this screen (see _portfolioPollTimer), so a
+  /// watchlist add made elsewhere in the app shows up here without a
+  /// manual navigation round-trip.
+  final List<Asset> watchlist;
 
   /// Preformatted "₦10,000.00" (WalletRepository.balance()) — 2026-08-20
   /// directive: "can we see amount in funded wallet too on the home
@@ -111,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final _holdingsRepo = HoldingsRepository(AppScope.read(context).apiClient);
   late final _assetRepo = AssetRepository(AppScope.read(context).apiClient);
   late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
+  late final _watchlistRepo = WatchlistRepository(AppScope.read(context).apiClient);
   late Future<_HomeData> _future = _load();
 
   /// The data actually rendered — set once the FIRST silent poll succeeds,
@@ -217,12 +231,13 @@ class _HomeScreenState extends State<HomeScreen> {
     // that test started giving AppState a real (network-dead) apiClient).
     // `.wait` attaches a listener to every future up front, so none of them
     // can ever go unhandled, regardless of which one fails first.
-    final (user, summary, holdingsPage, trending, walletBalance) = await (
+    final (user, summary, holdingsPage, trending, walletBalance, watchlist) = await (
       _userRepo.me(),
       _holdingsRepo.summary(),
       _holdingsRepo.holdings(pageSize: 5),
       _assetRepo.trending(),
       _walletRepo.balance(),
+      _watchlistRepo.items(),
     ).wait;
 
     return _HomeData(
@@ -231,6 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
       holdings: holdingsPage.data.map((h) => h.asset).toList(),
       trending: trending,
       walletBalance: walletBalance,
+      watchlist: watchlist,
     );
   }
 
@@ -466,6 +482,45 @@ class _VerifiedContent {
               ),
             ),
           ),
+
+        // Watchlist — see _HomeData.watchlist's doc comment for why this
+        // exists despite not being in canvas s29. Same compact list shape
+        // as "Your holdings" above; only shown when non-empty.
+        if (data.watchlist.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Padding(padding: _gut, child: const KEyebrow('Watchlist')),
+          const SizedBox(height: 8),
+          Padding(
+            padding: _gut,
+            child: KCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Column(
+                children: [
+                  for (var i = 0; i < data.watchlist.length; i++)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: i == 0
+                              ? BorderSide.none
+                              : BorderSide(color: KColor.hairline, width: 1),
+                        ),
+                      ),
+                      child: KAssetRow(
+                        name: data.watchlist[i].name,
+                        ticker: data.watchlist[i].ticker,
+                        price: data.watchlist[i].price,
+                        change: data.watchlist[i].change,
+                        trend: _kTrend(data.watchlist[i].trend),
+                        logoColor: data.watchlist[i].logoColor ?? KColor.ink,
+                        onTap: () =>
+                            context.push(Routes.assetDetail(data.watchlist[i].ticker)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
 
         // 2026-08-24: a verified investor with zero holdings previously saw
         // a near-dead screen below the quick actions (no DigestCard —
