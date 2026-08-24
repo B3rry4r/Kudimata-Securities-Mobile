@@ -10,12 +10,21 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/suitability_repository.dart';
+import 'package:kudimata_invest/screens/shared/glossary_sheet.dart';
 
 /// One suitability question with its answer options.
 class _Question {
-  const _Question(this.prompt, this.options);
+  const _Question(this.prompt, this.options, {this.glossaryTerm});
   final String prompt;
   final List<String> options;
+
+  /// A term in [prompt] the investor may not know. Renders a tappable
+  /// "What does this mean?" affordance under the question, opening the
+  /// HAND-WRITTEN definition from lib/data/glossary.dart — never an AI
+  /// call (2026-08-24: "do that as a hand written glossary not an ai
+  /// call"). This is a mandatory regulatory question nobody can skip, so
+  /// understanding it must not cost a credit or need a network round-trip.
+  final String? glossaryTerm;
 }
 
 class QuestionnaireScreen extends StatefulWidget {
@@ -50,11 +59,17 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       'Balanced Growth (Medium risk, capital growth + income)',
       'Aggressive Growth (High risk, maximum capital appreciation)',
     ]),
-    _Question('Investment Horizon', [
-      'Short-term (Less than 1 year)',
-      'Medium-term (1 to 3 years)',
-      'Long-term (More than 3 years)',
-    ]),
+    _Question(
+      'Investment Horizon',
+      [
+        'Short-term (Less than 1 year)',
+        'Medium-term (1 to 3 years)',
+        'Long-term (More than 3 years)',
+      ],
+      // Reported 2026-08-24 ("what is this question for"): the term is
+      // jargon and the question's purpose isn't self-evident.
+      glossaryTerm: 'Investment Horizon',
+    ),
     _Question(
       'If my investment portfolio drops by 20% in a month, I will:',
       [
@@ -184,6 +199,22 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 child: Column(
                   children: [
                     Text(q.prompt, style: KType.title()),
+                    if (q.glossaryTerm != null) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => showGlossaryExplainSheet(
+                          context,
+                          q.glossaryTerm!,
+                          allowAiFollowUp: false,
+                        ),
+                        child: Text(
+                          'What does this mean?',
+                          style: KType.data(color: KColor.indicator)
+                              .copyWith(decoration: TextDecoration.underline),
+                        ),
+                      ),
+                    ],
                     // Canvas: the title/options-list/ExplainTrigger column
                     // uses a uniform gap:18px between all three children —
                     // was 16 then 14, matching neither.
@@ -196,31 +227,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                         onTap: () => setState(() => _answers[_index] = i),
                       ),
                     ],
-                    const SizedBox(height: 18),
-                    KExplainTrigger(
-                      label: 'What is this question for?',
-                      variant: KExplainTriggerVariant.inline,
-                      onTap: () => showModalBottomSheet<void>(
-                        context: context,
-                        backgroundColor: KColor.paper,
-                        shape: const RoundedRectangleBorder(borderRadius: KRadii.sheetR),
-                        builder: (context) => Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Why we ask this', style: KType.section()),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Your answers decide which products suit you — the SEC requires this before you can trade. There are no wrong answers.',
-                                style: KType.body(color: KColor.ink2),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    // 2026-08-24: a KExplainTrigger reading "What is this
+                    // question for?" used to sit here on EVERY question,
+                    // opening a hardcoded "Why we ask this" sheet. Removed
+                    // on direct instruction ("What is this question for is
+                    // not needed"). It also wore the AI-comprehension
+                    // styling (sparkle + dashed underline) despite calling
+                    // no AI at all, which is the same mislabelling that was
+                    // just taken off the legal documents. Only question 3
+                    // genuinely needed explaining, and it now carries a
+                    // hand-written glossary link under its title instead.
                     const Spacer(),
                     const SizedBox(height: 16),
                     Row(

@@ -23,19 +23,33 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
-void showGlossaryExplainSheet(BuildContext context, String term) {
+/// Opens the glossary sheet for [term].
+///
+/// [allowAiFollowUp] false hides the credit-metered "Explain further"
+/// button entirely, making this a purely static, free, offline lookup.
+/// Used where an AI call would be inappropriate rather than merely
+/// unnecessary — currently the suitability questionnaire (2026-08-24:
+/// "do that as a hand written glossary not an ai call"). Charging an
+/// investor a credit, or making a network call, to understand a MANDATORY
+/// regulatory question they cannot skip would be the wrong trade.
+void showGlossaryExplainSheet(
+  BuildContext context,
+  String term, {
+  bool allowAiFollowUp = true,
+}) {
   showKSheet<void>(
     context,
     title: term,
-    child: _GlossaryExplainBody(term: term),
+    child: _GlossaryExplainBody(term: term, allowAiFollowUp: allowAiFollowUp),
   );
 }
 
 enum _AiState { idle, loading, error }
 
 class _GlossaryExplainBody extends StatefulWidget {
-  const _GlossaryExplainBody({required this.term});
+  const _GlossaryExplainBody({required this.term, this.allowAiFollowUp = true});
   final String term;
+  final bool allowAiFollowUp;
 
   @override
   State<_GlossaryExplainBody> createState() => _GlossaryExplainBodyState();
@@ -109,7 +123,7 @@ class _GlossaryExplainBodyState extends State<_GlossaryExplainBody> {
               height: 48,
               child: Center(child: KSpinner(size: 24)),
             ),
-          ] else ...[
+          ] else if (widget.allowAiFollowUp) ...[
             if (_aiState == _AiState.error && _errorMessage != null) ...[
               Text(_errorMessage!, style: KType.body(color: KColor.loss)),
               const SizedBox(height: 10),

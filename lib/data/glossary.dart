@@ -24,6 +24,17 @@ const Map<String, String> kGlossary = {
       'How easily you can turn a holding back into cash. "Daily · T+3" means you can place a sell order any trading day, and the proceeds land in your wallet three business days after it fills.',
   'Minimum':
       'The smallest amount you can put into a single order — ₦5,000. Below that, the order can\'t be placed.',
+  // Added 2026-08-24: the suitability questionnaire's question 3 asks for
+  // an "Investment Horizon" without ever saying what one is, and the
+  // question's PURPOSE isn't obvious either — reported as "what is this
+  // question for". Explains both, and explicitly kills the most likely
+  // wrong assumption (that picking a horizon locks the money up).
+  'Investment Horizon':
+      'How long you expect to leave money invested before you need it back. It is not a '
+          'lock-in — you can sell at any time. It tells us how much day-to-day price movement '
+          'is reasonable for you: money you need within a year shouldn\'t sit somewhere it can '
+          'drop sharply in a month, while money you won\'t touch for years has time to recover '
+          'from a bad patch.',
 };
 
 /// Case-insensitive lookup — [term] is matched by lowercasing and trimming

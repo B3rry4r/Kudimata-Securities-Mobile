@@ -88,54 +88,26 @@ class _SuitabilityResultBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Your profile'.upper, style: KType.label(color: KColor.ink3)),
-                    const SizedBox(height: 4),
-                    Text(result.profile, style: KType.title()),
-                    const SizedBox(height: 6),
-                    Text(
-                      result.rationale ??
-                          'You can change your answers at any time, and your profile '
-                              'will update.',
-                      style: KType.body(color: KColor.ink2),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(color: KColor.paper, borderRadius: KRadii.cardR, border: Border.all(color: KColor.hairline)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('What this unlocks', style: KType.cardTitle()),
-                      const SizedBox(height: 12),
-                      // 2026-08-24: dropped "and ETFs" — this product
-                      // carries no ETFs at all (Markets is NGX ordinary
-                      // shares only, see markets_screen.dart's own header
-                      // comment), same "don't promise a product this app
-                      // has never offered" reasoning as the row below.
-                      _UnlockRow(icon: 'check', color: KColor.gain, label: 'Nigerian shares'),
-                      const SizedBox(height: 12),
-                      // Canvas #s28's second row literally says "NGX-listed
-                      // ETFs and bonds" — dropped here, not ported verbatim:
-                      // this product carries NO fixed-income instruments at
-                      // all (see lib/data/models.dart's AssetClass doc
-                      // comment, "No fixed income — by design"). Repeating
-                      // "bonds" would tell an investor they can buy a
-                      // product this app has never offered — a product
-                      // invariant overriding the canvas's literal copy, per
-                      // this codebase's own established rule (see the
-                      // referral-terms "never cash" correction elsewhere).
-                      _UnlockRow(
-                        icon: 'alert',
-                        color: KColor.ink3,
-                        label: 'Only Nigerian shares for now — no foreign stocks',
-                      ),
-                    ],
-                  ),
+                // 2026-08-24: this screen used to announce the computed
+                // profile ("YOUR PROFILE / Conservative" + rationale) and
+                // carry a "What this unlocks" card whose second row read
+                // "Only Nigerian shares for now — no foreign stocks".
+                // Both removed on direct product instruction ("WHY ARE WE
+                // STILL PROFILING???? AND WHY ARE WE SAYING ONLY NIGERIAN
+                // SHARES FOR NOW??? A SIMPLE COMPLETION OR SUCCESS SCREEN
+                // IS ENOUGH"). The unlock card framed the whole product as
+                // a limitation at the exact moment the investor finished
+                // onboarding, and naming the profile twice in a row is
+                // redundant — the statutory Risk Disclaimer on the very
+                // next screen is where the categorisation legally has to
+                // appear, and it still shows it (RiskDisclaimerArgs below
+                // carries `result.profile` through unchanged).
+                Text('Assessment complete', style: KType.title()),
+                const SizedBox(height: 6),
+                Text(
+                  'Thanks — that helps us keep what you see here suited to you. '
+                  "There's one short notice to read, then you're ready to invest.",
+                  style: KType.body(color: KColor.ink2),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -191,22 +163,3 @@ class _SuitabilityResultBody extends StatelessWidget {
   }
 }
 
-class _UnlockRow extends StatelessWidget {
-  const _UnlockRow({required this.icon, required this.color, required this.label});
-  final String icon;
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Canvas: Icon size="16".
-        KIcon(icon, size: 16, color: color),
-        const SizedBox(width: 10),
-        Expanded(child: Text(label, style: KType.body(color: KColor.ink2))),
-      ],
-    );
-  }
-}
