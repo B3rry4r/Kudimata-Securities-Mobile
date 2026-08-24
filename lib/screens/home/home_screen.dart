@@ -614,16 +614,21 @@ class _VerifiedContent {
           ),
         ],
 
-        // 2026-08-24: a verified investor with zero holdings previously saw
-        // a near-dead screen below the quick actions (no DigestCard —
-        // that's gated on real holdings — just one bare empty-state card).
-        // Direct feedback: "home not showing any market cards". Not a
-        // canvas element (s29 assumes an investor who already holds
-        // MTNN/GTCO) — but real trending data was ALREADY fetched for the
-        // not-verified body's "Biggest mover" row, so reusing it here is
-        // honest, not fabricated: real quotes, just surfaced in a state
-        // canvas doesn't cover.
-        if (data.holdings.isEmpty && data.trending.isNotEmpty) ...[
+        // Trending — a STANDING section, not an empty-state fallback.
+        //
+        // It was added (2026-08-24) to fill a near-dead screen for a
+        // verified investor with zero holdings, and gated on
+        // `holdings.isEmpty` for exactly that reason. That made it vanish
+        // the moment someone bought their first share — reported: "where is
+        // trending that is meant to be on home". This file's own header has
+        // always described Home as carrying "a Watchlist strip, a Trending
+        // section and an Orders/Activity link card", so the gate, not the
+        // expectation, was the mistake. What's trending is useful whether
+        // or not you already hold something.
+        //
+        // Still gated on the data actually being there: real quotes only,
+        // never an empty shell.
+        if (data.trending.isNotEmpty) ...[
           const SizedBox(height: 28),
           Padding(padding: _gut, child: const KEyebrow('Trending now')),
           const SizedBox(height: 8),
