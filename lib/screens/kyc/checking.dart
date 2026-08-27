@@ -89,8 +89,12 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       : [
                           const KIllustration('kyc-checking', role: KIlloRole.state),
                           const SizedBox(height: 22),
-                          Text('Checking your face liveness…',
+                          // s16's own title/body, verbatim.
+                          Text('Checking your selfie',
                               textAlign: TextAlign.center, style: KType.section()),
+                          const SizedBox(height: 10),
+                          Text('Done on the spot. If it fails, you just retake it.',
+                              textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),
                           // 2026-08-24 fix: this file's own header comment
                           // has always claimed "a centred spinner while the
                           // REAL liveness check runs server-side" — it was

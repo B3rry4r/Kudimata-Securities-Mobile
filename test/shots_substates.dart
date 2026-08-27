@@ -80,6 +80,8 @@ class SubStateSpec {
     this.portfolio = MockPortfolio.populated,
     this.market = MockMarket.open,
     this.network = MockNetwork.ok,
+    this.notifications = MockNotifications.populated,
+    this.priceAlerts = MockPriceAlerts.populated,
     this.extra,
     this.tapTexts = const [],
   });
@@ -101,6 +103,8 @@ class SubStateSpec {
   final MockPortfolio portfolio;
   final MockMarket market;
   final MockNetwork network;
+  final MockNotifications notifications;
+  final MockPriceAlerts priceAlerts;
   final Object? extra;
 
   /// Texts tapped in order, each followed by two 350ms pumps (matching
@@ -203,6 +207,60 @@ final List<SubStateSpec> _subStates = [
     route: Routes.wallet,
     dartFile: 'wallet/wallet_screens.dart',
     network: MockNetwork.error,
+  ),
+
+  // R-25 (notifications_screen.dart) — loading/error/empty. Empty is a
+  // real, reachable condition: an investor with no notification history
+  // yet (a brand-new account, or one that has never had an order fill,
+  // dividend, security event, or verification update).
+  SubStateSpec(
+    screen: 'notifications',
+    substate: 'loading',
+    route: Routes.notifications,
+    dartFile: 'home/notifications_screen.dart',
+    network: MockNetwork.slow,
+  ),
+  SubStateSpec(
+    screen: 'notifications',
+    substate: 'error',
+    route: Routes.notifications,
+    dartFile: 'home/notifications_screen.dart',
+    network: MockNetwork.error,
+  ),
+  SubStateSpec(
+    screen: 'notifications',
+    substate: 'empty',
+    route: Routes.notifications,
+    dartFile: 'home/notifications_screen.dart',
+    notifications: MockNotifications.empty,
+  ),
+
+  // s49/s50 (price_alerts_screen.dart) — loading/error/empty. Empty is a
+  // real, reachable condition: an investor who has never set a price
+  // alert on any asset — the default state for most accounts, since
+  // R-16 dropped the only other entry point (the watchlist screen) and
+  // this screen now starts empty until something is set from an asset
+  // page.
+  SubStateSpec(
+    screen: 'price_alerts',
+    substate: 'loading',
+    route: Routes.priceAlerts,
+    dartFile: 'markets/price_alerts_screen.dart',
+    network: MockNetwork.slow,
+  ),
+  SubStateSpec(
+    screen: 'price_alerts',
+    substate: 'error',
+    route: Routes.priceAlerts,
+    dartFile: 'markets/price_alerts_screen.dart',
+    network: MockNetwork.error,
+  ),
+  SubStateSpec(
+    screen: 'price_alerts',
+    substate: 'empty',
+    route: Routes.priceAlerts,
+    dartFile: 'markets/price_alerts_screen.dart',
+    priceAlerts: MockPriceAlerts.empty,
   ),
 
   // H-1 (SHARED-CHANGES.md) — outcome_not_approved.dart's three genuinely
@@ -308,6 +366,8 @@ Future<_Mounted> _mount(WidgetTester tester, SubStateSpec spec, ThemeMode mode) 
     portfolio: spec.portfolio,
     market: spec.market,
     network: spec.network,
+    notifications: spec.notifications,
+    priceAlerts: spec.priceAlerts,
   );
   final state = AppState()
     ..signedIn = spec.signedIn

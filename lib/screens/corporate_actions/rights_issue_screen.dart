@@ -1,5 +1,12 @@
-// Rights issue detail (screen 82, 2026-08-23 "Soft Landing"). Wired per
-// lib/data/api/README.md's FutureBuilder convention:
+// Rights issue detail — R-24 (docs/redesign/DECISIONS.md): kept and
+// restyled onto the new tokens; no artboard of its own (R-5 correction,
+// 2026-08-27 — this file used to cite a stale "screen 82" id from an
+// earlier, now-superseded pass; the task brief is the only valid source
+// for an artboard id and it names none for this screen). R-12 (partial
+// rights take-up) stays: the investor chooses how many entitled shares to
+// subscribe for below, never a binary take-all-or-skip.
+//
+// Wired per lib/data/api/README.md's FutureBuilder convention:
 // CorporateActionsRepository.rightsIssues() (GET /rights-issues) replaces
 // the static `RightsIssueFixture` this screen used to be pushed with, and
 // .electRightsIssue() (POST /rights-issues/:id/elect) replaces the
@@ -7,16 +14,16 @@
 //
 // NOTE — no `extra`/id argument: app_router.dart's GoRoute for
 // Routes.corpActionsRightsIssue constructs `RightsIssueScreen()` with no
-// forwarded `extra` (router files are out of scope for this pass — see
-// corporate_actions_screen.dart's header comment for the full reasoning),
-// so this screen can't be told WHICH rights issue to show via navigation.
-// It fetches the caller's own list instead and picks the most relevant
-// item itself: the first still-open one the caller hasn't elected on yet,
-// falling back to the most recent item overall (so a caller with only
-// closed/already-decided issues still sees their own history rather than
-// an empty screen). A real per-item detail route (GET /rights-issues/:id
-// doesn't even exist server-side yet) is a genuine follow-up, not
-// something this pass can wire.
+// forwarded `extra` (router files are a different agent's directory this
+// pass), so this screen can't be told WHICH rights issue to show via
+// navigation. It fetches the caller's own list instead and picks the most
+// relevant item itself: the first still-open one the caller hasn't
+// elected on yet, falling back to the most recent item overall (so a
+// caller with only closed/already-decided issues still sees their own
+// history rather than an empty screen). A real per-item detail route
+// (GET /rights-issues/:id doesn't exist server-side) would let a caller
+// deep-link to one specific issue among several open at once — filed in
+// BACKEND_GAPS.md.
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';

@@ -132,7 +132,10 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KColor.bg,
+      // s15's own panel is `var(--feature)` (full-bleed grape in light,
+      // flattened to the dark card colour in dark per R-26) — the one KYC
+      // screen the canvas puts on that surface rather than `--bg`.
+      backgroundColor: KColor.feature,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,8 +143,9 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
             KycTopBar(
               onBack: () => context.go(Routes.kycId),
               stepLabel: 'Verification · 4 of 7',
+              onFeature: true,
             ),
-            const KycStepProgress(total: 7, current: 4),
+            const KycStepProgress(total: 7, current: 4, onFeature: true),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -180,7 +184,12 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                           Positioned.fill(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: KColor.indicatorTint,
+                                // s15's frame sits on the feature/grape panel
+                                // with a translucent white wash
+                                // (`rgba(255,255,255,.08)`) — not
+                                // indicatorTint, a light-bg-card token that
+                                // renders as a mismatched lavender block here.
+                                color: KColor.featureInk.withValues(alpha: 0.08),
                                 shape: BoxShape.circle,
                               ),
                               alignment: Alignment.center,
@@ -201,7 +210,12 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                     const SizedBox(height: 28),
                     Text(_error ?? _cameraError ?? (kIsWeb ? 'Upload a face liveness photo' : 'Look straight ahead'),
                         textAlign: TextAlign.center,
-                        style: KType.title(color: (_error ?? _cameraError) != null ? KColor.loss : null)),
+                        // On the feature/grape panel: featureInk (white) by
+                        // default, lossOnInk (a light coral, legible on a
+                        // dark/grape surface — plain `KColor.loss` is a
+                        // saturated red tuned for a light card) for an error.
+                        style: KType.title(
+                            color: (_error ?? _cameraError) != null ? KColor.lossOnInk : KColor.featureInk)),
                     const SizedBox(height: 10),
                     Text(
                         _cameraError != null
@@ -214,13 +228,13 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                                         ? 'A clear, front-facing photo of yourself'
                                         : 'Good light, no hat, no glasses. Fill the frame with your face and take one photo.'),
                         textAlign: TextAlign.center,
-                        style: KType.body(color: KColor.ink2)),
+                        style: KType.body(color: KColor.featureInk2)),
                     if ((_error ?? _cameraError) == null && !_busy) ...[
                       const SizedBox(height: 20),
                       Text(
                         "We check the photo against your ID after you send it — that takes a few seconds, and you can retake it if it fails.",
                         textAlign: TextAlign.center,
-                        style: KType.data(color: KColor.ink3),
+                        style: KType.data(color: KColor.featureInk2),
                       ),
                     ],
                     const Spacer(),
@@ -238,26 +252,29 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                                   : _capture)),
                       behavior: HitTestBehavior.opaque,
                       child: Container(
-                        width: 72,
-                        height: 72,
+                        width: 74,
+                        height: 74,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: KColor.feature,
+                          // s15 draws a plain white shutter
+                          // (`background:#fff;border:5px solid
+                          // rgba(255,255,255,.35)`) sitting ON the grape
+                          // panel — a grape-filled circle (the old colours
+                          // here) would now be invisible against the
+                          // feature background this screen uses.
+                          color: KColor.featureInk,
                           shape: BoxShape.circle,
-                          border: Border.all(color: KColor.featureInk, width: 4),
-                          boxShadow: [
-                            BoxShadow(color: KColor.feature, blurRadius: 0, spreadRadius: 2),
-                          ],
+                          border: Border.all(color: KColor.featureInk.withValues(alpha: 0.35), width: 5),
                         ),
                         child: _busy
-                            ? KSpinner(size: 26, color: KColor.featureInk)
+                            ? KSpinner(size: 26, color: KColor.feature)
                             : KIcon(
                                 kIsWeb
                                     ? 'upload'
                                     : (_cameraError != null ? 'refresh' : 'camera'),
-                                size: 30,
+                                size: 28,
                                 stroke: 1.9,
-                                color: KColor.featureInk),
+                                color: KColor.feature),
                       ),
                     ),
                     // Canvas escape hatch (screen 17's ghost "My camera
@@ -269,11 +286,17 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                     // loop and no way forward.
                     if (!kIsWeb && _cameraError != null && !_busy) ...[
                       const SizedBox(height: 16),
-                      KButton(
-                        label: "My camera won't work",
-                        variant: KButtonVariant.ghost,
-                        fullWidth: false,
-                        onPressed: () => context.go(Routes.kycOutcome),
+                      // KButton's ghost variant's text is always KColor.ink —
+                      // invisible on this screen's feature/grape panel, and
+                      // lib/widgets/** is frozen for this wave (see this
+                      // file's SHARED-CHANGE note in the screen agent's
+                      // report). A screen-local text link, not a fork of
+                      // KButton, stands in until it gains an on-feature fg.
+                      GestureDetector(
+                        onTap: () => context.go(Routes.kycOutcome),
+                        behavior: HitTestBehavior.opaque,
+                        child: Text("My camera won't work",
+                            style: KType.cardTitle(color: KColor.featureInk)),
                       ),
                     ],
                   ],

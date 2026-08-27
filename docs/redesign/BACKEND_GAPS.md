@@ -473,6 +473,64 @@ button's leading icon and which `account_screen.dart`'s ghost-button Log
 out currently renders without) to `lib/widgets/k_icon.dart`'s glyph
 registry.
 
+## s55 — Corporate actions hub, rights issue and AGM detail
+
+**No per-item detail route for rights issues or AGM meetings.** `GET
+/rights-issues/:id` and `GET /agm-meetings/:id` don't exist — only the bare
+list endpoints do. `rights_issue_screen.dart` and `agm_vote_screen.dart` are
+each pushed with no `extra`/id (see both files' own header comments — the
+router doesn't forward one anyway, per the standing `extra`-drop bug below),
+so both screens pick their own "most relevant" item from the full list
+rather than being told which one to open. That degrades the moment an
+investor has **two** open rights issues (or two open AGMs) at once: the hub
+(`corporate_actions_screen.dart`) can point at either one via its "Also
+waiting" row, but tapping through always lands on the same
+most-urgent/most-recent item regardless of which row was tapped, since
+neither detail screen has anywhere to receive an id.
+
+Built: the hub surfaces every pending item, spotlighting the most urgent and
+listing any others as tappable rows, so nothing is invisible. Not built:
+routing a specific item id into either detail screen. Needs: `GET
+/rights-issues/:id` and `GET /agm-meetings/:id`, plus a real id-bearing route
+(path segment, not `extra` — see the `extra`-drop bug below) for each.
+
+**No notice-of-meeting email endpoint.** `agm_vote_screen.dart`'s "Email me
+the notice of meeting" button has nothing to call — grepped
+`Kudimata-Securities-Backend`'s corporate-actions module and found no
+document-email endpoint of any kind for AGM meetings. Built: the button,
+with an honest "isn't available yet" message on tap rather than pretending
+an email was sent. Needs: a real notice-of-meeting document + an
+email-dispatch endpoint before this can be wired.
+
+---
+
+## s19 — Declarations: broker/NGX-employment question has no backend field
+
+`s19`'s second question — "Do you work for a stockbroker or the NGX?" —
+is a real SEC-relevant declaration the canvas draws, same standing as the
+PEP question beside it. `UpdateKycDraftFieldsRequest`/`KycSubmission`
+(backend `common/types/kyc.types.ts`) only carry `pepSelfDeclared`; there is
+no field anywhere for this second question's answer.
+
+Built: the real Yes/No UI (`declarations_screen.dart`), held in
+`KycFormState.brokerOrNgxEmployed` for the current session only — the same
+treatment already established for the PEP question's own unbacked
+who/position follow-up fields. Not built: any server persistence. Two
+consequences worth flagging together:
+
+1. A "Yes" here is currently invisible to compliance review — nothing
+   downstream (a KYC submission review screen, an admin dashboard) can see
+   it, because nothing stores it.
+2. `kyc_checklist_screen.dart` (`s11`, the new checklist hub) can only infer
+   "Declarations done" from `pepSelfDeclared != null` for this reason — it
+   has no way to know, on a fresh session, whether this second question was
+   already answered. See that file's own header comment.
+
+Needs: a `brokerOrNgxEmployed` (or similarly named) boolean field on
+`KycSubmission`, plus an `UpdateKycDraftFieldsRequest` param the same shape
+as `pepSelfDeclared`, before this can be a real persisted declaration rather
+than a same-session-only echo.
+
 ---
 
 ## PRODUCTION BUG — navigation `extra` is silently dropped
@@ -507,3 +565,63 @@ which makes captures honest but does nothing for the app. The real fix is one of
 pass identifiers in the path and re-fetch, rather than passing objects via `extra`;
 or stop the gating refresh from touching the refresh listenable once its screen is
 off-stage. That is a router/state-architecture decision, not a screen change.
+
+## s49/s50 — Price alerts (`price_alerts_screen.dart`, rebuilt 2026-08-27)
+
+Rebuilt against s49 ("Set a price alert") / s50 ("My alerts"), replacing the
+old per-watchlist-row %-move editor with s49/s50's real model: a per-asset
+alert set from one asset's own page, plus a flat list of everything set.
+Three real gaps came out of reconciling the artboards against
+`PriceAlertRepository`/`Kudimata-Securities-Backend/src/price-alerts/`:
+
+**1. No alert direction.** s49 draws a "Rises above" / "Falls below"
+segmented toggle. `CreatePriceAlertRequest` has no direction field —
+`PriceAlertsService#isCrossed` always evaluates `thresholdPriceKobo` as
+"reached at least this price" (`quote.priceKobo >= thresholdPriceKobo`),
+regardless of which segment an investor would have tapped. A "Falls below"
+alert set below today's price would, once the scheduler exists (see gap 3),
+either never fire as intended or read as already-satisfied the moment it's
+saved — a promise the system does not keep (the same defect class as the
+s37 security-hold line). Built: the price-target field itself, fully real
+and functional. Not built: the direction toggle — `SetPriceAlertScreen`
+(`lib/screens/markets/price_alerts_screen.dart`) offers one labelled
+field ("Alert me when it reaches"), the one mode the backend actually
+implements. Needs: a `direction` column on `PriceAlert` (Prisma schema +
+`CreatePriceAlertRequest`) and a second branch in `#isCrossed` for
+"falls to at least."
+
+**2. No price-band figures.** s49 draws "Min ₦0.05 / Max ₦250.00" under the
+price field. No field anywhere on this backend (`Asset`, `Quote`, or
+otherwise — checked against `common/types/asset.types.ts`) carries a tick
+size or a daily price-limit band. R-34: omitted rather than invented — the
+price field above it ships without a fabricated bounds row. Needs: either
+a real tick-size/price-limit source from the exchange feed, or a product
+ruling that this row simply doesn't ship.
+
+**3. No triggered-alert visibility.** s50 draws a triggered-alert card at
+the top ("GTCO fell below ₦46.00 · Tap to buy, or leave it"). Two
+independent blockers: (a) `PriceAlertsService#checkAndNotify` — the
+comparison-and-notify logic — is deliberately not wired to any scheduler
+(no `@nestjs/schedule` `ScheduleModule` registered anywhere in this
+backend; see that method's own header comment), so no alert has ever
+actually fired server-side; and (b) even once it does,
+`PriceAlert.lastTriggeredAt` is never serialised onto the wire shape
+(`common/types/price-alert.types.ts` has no such field) — the app has no
+way to distinguish a "waiting" alert from a "fired" one even by asking.
+Built: the full "Waiting" list, real and reader-complete. Not built: the
+triggered card — every alert renders as waiting because none can honestly
+be anything else yet. Needs: the scheduler wired up, and
+`lastTriggeredAt` added to `PriceAlert`/`PriceAlertWithQuote`'s wire shape.
+
+**Not a backend gap, flagged for whoever owns the other files:**
+`SetPriceAlertScreen` (the s49 screen) has no go_router entry —
+`lib/router/routes.dart`/`app_router.dart` are off-limits to a screen
+agent mid-wave (rule 5). It's a real, working, public/ticker-parametrised
+widget, reached today only via this file's own "New alert" flow
+(`Navigator.push`, not go_router), and verified via a throwaway rendering
+test (deleted after use, per the Order Book precedent above) rather than
+`shots_all.dart`. SHARED-CHANGE REQUEST: add
+`Routes.setPriceAlert(String ticker) => '/asset/$ticker/alert'` + a
+matching `GoRoute`, after which `asset_detail_screen.dart` (out of this
+screen's scope) can wire s49's real "from the asset page" entry point via
+`context.push(Routes.setPriceAlert(asset.ticker))`.

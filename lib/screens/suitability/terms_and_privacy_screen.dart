@@ -1,21 +1,25 @@
-// Onboarding — THREE legal documents (terms of service, privacy policy,
-// client agreement) combined into one screen with one checkbox (2026-08-20
-// consolidation; see legal_acceptance_screen.dart for the general shape).
-// Sits right after OTP verification, before passcode/KYC/suitability.
+// Onboarding — the FOUR legal documents (terms of service, privacy policy,
+// risk disclosure, client agreement) combined into one screen with one
+// checkbox (2026-08-20 consolidation; see legal_acceptance_screen.dart for
+// the general shape).
 //
-// Risk Disclosure moved OUT of this bundle on 2026-08-24 (direct product
-// instruction, the firm's real SEC-facing compliance intake — "My
-// observations on KSL papers.docx"): the statutory risk disclaimer must
-// appear immediately after the suitability questionnaire, scroll-gated,
-// with the investor's own computed risk category shown dynamically — see
-// risk_disclaimer_screen.dart. It briefly lived here (2026-08-20: "the
-// privacy policy, terms of service and risk disclosure... stack them in
-// one screen") before Client Agreement joined the same day ("move client
-// agreement to the beginning, let users accept it all in the terms and
-// disclosures") — that history no longer applies to Risk Disclosure
-// specifically, which now runs as its own dedicated post-suitability step
-// again (client_agreement_screen.dart, its old pre-consolidation home,
-// stays gone — only Risk Disclosure needed its own screen back).
+// R-8 (DECISIONS.md, 2026-08-26): "Risk disclosure is one of the four,
+// presented at the start with the rest, not as its own gated screen (this
+// replaces R-1's expectation)." Risk Disclosure had been pulled out into
+// its own dedicated post-suitability screen on 2026-08-24
+// (risk_disclaimer_screen.dart) to satisfy an earlier reading of the firm's
+// SEC intake doc; R-8 supersedes that reading and puts it back here,
+// alongside the other three, as a document opened in the phone's native
+// viewer rather than scroll-gated in-app text (see
+// legal_acceptance_screen.dart's header for the acceptance-evidence
+// consequence of that change).
+//
+// R-1a also moves this screen's place in the flow — suitability now runs
+// BEFORE legal documents, not after — but this screen is still wired
+// straight off OTP verification in app_router.dart/otp_screen.dart, which
+// this directory's owner cannot edit (router is off-limits). Filed as a
+// SHARED-CHANGE REQUEST rather than worked around locally; see this
+// screen-pass's report.
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -33,16 +37,22 @@ class TermsAndPrivacyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LegalAcceptanceScreen(
-      kinds: const ['terms_of_service', 'privacy_policy', 'client_agreement'],
+      kinds: const [
+        'terms_of_service',
+        'privacy_policy',
+        'risk_disclosure',
+        'client_agreement',
+      ],
       screenTitle: 'Terms & agreements',
-      screenBody: 'Three documents, one agreement. Scroll through them, then accept.',
+      screenBody: 'Four documents, one agreement. Open each one, then accept.',
       // Canvas s05's own "Step 2 of 4" — same mid-flow indicator convention
       // otp_screen.dart (Step 1)/create_passcode_screen.dart (Step 3)/
       // biometric_screen.dart (Step 4) already use; this screen was
       // missing it entirely.
       stepLabel: 'Step 2 of 4',
-      checkboxLabel: 'I have read and agree to all three documents',
-      checkboxDescription: 'Terms of Service · Privacy Policy · Client Agreement',
+      checkboxLabel: 'I have read and agree to all four documents',
+      checkboxDescription:
+          'Terms of Service · Privacy Policy · Risk Disclosure · Client Agreement',
       buttonLabel: 'Accept and continue',
       onAccepted: (context) async => context.go(Routes.createPasscode, extra: email),
     );

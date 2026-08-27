@@ -37,6 +37,13 @@ enum MockMarket { open, closed }
 
 enum MockNetwork { ok, slow, error }
 
+// Redesign 2026-08, R-30: notifications_screen.dart and price_alerts_screen.dart
+// both need a real "no rows" fixture to render KEmptyView, same reasoning
+// as MockPortfolio.empty above.
+enum MockNotifications { populated, empty }
+
+enum MockPriceAlerts { populated, empty }
+
 Map<String, dynamic> _asset({
   required String ticker,
   required String name,
@@ -579,12 +586,16 @@ class MockApiAdapter implements HttpClientAdapter {
     this.portfolio = MockPortfolio.populated,
     this.market = MockMarket.open,
     this.network = MockNetwork.ok,
+    this.notifications = MockNotifications.populated,
+    this.priceAlerts = MockPriceAlerts.populated,
   });
 
   final MockKyc kyc;
   final MockPortfolio portfolio;
   final MockMarket market;
   final MockNetwork network;
+  final MockNotifications notifications;
+  final MockPriceAlerts priceAlerts;
 
   @override
   void close({bool force = false}) {}
@@ -655,13 +666,17 @@ class MockApiAdapter implements HttpClientAdapter {
       return _assets.where((a) => a['assetClass'] == assetClass).toList();
     }
     if (path == '/watchlist-items') return _assets.take(3).toList();
-    if (path == '/price-alerts') return _priceAlerts;
+    if (path == '/price-alerts') {
+      return priceAlerts == MockPriceAlerts.empty ? <Map<String, dynamic>>[] : _priceAlerts;
+    }
     if (path == '/bank-accounts') {
       return [
         {'id': 'BA1', 'bankName': 'GTBank', 'accountNumberMasked': '••••6789', 'primary': true},
       ];
     }
-    if (path == '/notifications') return _paginated(_notifications);
+    if (path == '/notifications') {
+      return _paginated(notifications == MockNotifications.empty ? const [] : _notifications);
+    }
     if (path == '/dividends') return _paginated(_dividends);
     if (path == '/dividends/summary') return _dividendSummary();
     if (path == '/e-dividend-mandate/sign') return _eDividendMandate(status: 'signed', signedAt: '2026-03-14T09:00:00.000Z');

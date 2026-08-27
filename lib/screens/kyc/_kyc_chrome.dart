@@ -13,7 +13,7 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 /// explicit `onBack: () => context.go(Routes.kycX)` pointing at the previous
 /// step (found live 2026-08-19: every back chevron in the KYC flow was dead).
 class KycTopBar extends StatelessWidget {
-  const KycTopBar({super.key, this.onBack, this.stepLabel});
+  const KycTopBar({super.key, this.onBack, this.stepLabel, this.onFeature = false});
   final VoidCallback? onBack;
 
   /// e.g. "Verification · 1 of 8" — sits beside the back button, same row.
@@ -23,8 +23,17 @@ class KycTopBar extends StatelessWidget {
   /// the bar instead (wrong position AND wrong copy pattern).
   final String? stepLabel;
 
+  /// True on a full-bleed `KColor.feature` (grape) screen — s15 "Selfie
+  /// check" is the one KYC screen the canvas puts on that panel instead of
+  /// `--bg`. The plain [KColor.ink]/[KColor.ink3] icon+label this bar
+  /// otherwise uses would be near-invisible on grape, so this swaps to
+  /// featureInk/featureInk2 instead of forking a second top-bar widget.
+  final bool onFeature;
+
   @override
   Widget build(BuildContext context) {
+    final iconColor = onFeature ? KColor.featureInk : KColor.ink;
+    final labelColor = onFeature ? KColor.featureInk2 : KColor.ink3;
     return SizedBox(
       height: 44,
       child: Padding(
@@ -37,7 +46,7 @@ class KycTopBar extends StatelessWidget {
               child: SizedBox(
                 width: 40,
                 height: 40,
-                child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
+                child: Center(child: KIcon('back', size: 22, color: iconColor)),
               ),
             ),
             if (stepLabel != null)
@@ -45,7 +54,7 @@ class KycTopBar extends StatelessWidget {
                 child: Text(
                   stepLabel!.toUpperCase(),
                   textAlign: TextAlign.center,
-                  style: KType.micro(color: KColor.ink3).copyWith(letterSpacing: 0.4),
+                  style: KType.micro(color: labelColor).copyWith(letterSpacing: 0.4),
                 ),
               ),
           ],
@@ -60,12 +69,20 @@ class KycTopBar extends StatelessWidget {
 /// segments with a 3px radius (a subtle rounded bar, not a full pill) and no
 /// caption underneath — the step label lives in [KycTopBar] instead.
 class KycStepProgress extends StatelessWidget {
-  const KycStepProgress({super.key, this.total = 4, required this.current});
+  const KycStepProgress({super.key, this.total = 4, required this.current, this.onFeature = false});
   final int total;
   final int current;
 
+  /// See [KycTopBar.onFeature] — [KColor.indicator] IS the light-theme
+  /// `--feature` grape, so a done/current segment in its usual colour would
+  /// be invisible on that same panel (s15). Swaps to featureInk/a translucent
+  /// featureInk instead.
+  final bool onFeature;
+
   @override
   Widget build(BuildContext context) {
+    final doneColor = onFeature ? KColor.featureInk : KColor.indicator;
+    final trackColor = onFeature ? KColor.featureInk.withValues(alpha: 0.25) : KColor.track;
     return Padding(
       padding: const EdgeInsets.fromLTRB(KSpace.gutter, 4, KSpace.gutter, 16),
       child: Row(
@@ -78,7 +95,7 @@ class KycStepProgress extends StatelessWidget {
                 curve: KMotion.easeSoft,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: i < current ? KColor.indicator : KColor.track,
+                  color: i < current ? doneColor : trackColor,
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),

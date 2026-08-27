@@ -83,13 +83,15 @@ class KycFormState extends ChangeNotifier {
   String? pepWho;
   String? pepPosition;
 
-  /// "I trade for myself, with my own money" (screen 20) — also has no
-  /// backend field; a pure client-side confirmation, defaults to true
-  /// (checked) matching the canvas's own default state.
-  bool tradeForSelf = true;
+  /// "Do you work for a stockbroker or the NGX?" (s19's real second
+  /// question — docs/design/redesign-2026-08/02 Verification.dc.html) —
+  /// also has no backend field (see declarations_screen.dart's header
+  /// comment); a pure client-side answer, defaults to false (No), matching
+  /// both this question's and the PEP question's default state on s19.
+  bool brokerOrNgxEmployed = false;
 
-  void setDeclarations({required bool tradeForSelf, String? pepWho, String? pepPosition}) {
-    this.tradeForSelf = tradeForSelf;
+  void setDeclarations({required bool brokerOrNgxEmployed, String? pepWho, String? pepPosition}) {
+    this.brokerOrNgxEmployed = brokerOrNgxEmployed;
     this.pepWho = pepWho;
     this.pepPosition = pepPosition;
     notifyListeners();
@@ -111,7 +113,7 @@ class KycFormState extends ChangeNotifier {
     selfieCapturedAt = null;
     pepWho = null;
     pepPosition = null;
-    tradeForSelf = true;
+    brokerOrNgxEmployed = false;
     notifyListeners();
   }
 }

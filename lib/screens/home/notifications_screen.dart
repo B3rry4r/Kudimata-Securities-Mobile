@@ -1,16 +1,28 @@
 // Notifications feed (pushed) — NotificationsRepository in a hairline card.
-// Ported from extra-screens.jsx `NotificationsFeed`. Pushed screen: own Scaffold
-// with KDetailHeader (back chevron, no tab bar).
+//
+// R-25 (docs/redesign/DECISIONS.md): "Kept, restyled." No artboard anywhere
+// in the redesign-2026-08 canvas covers this screen — R-5 correction
+// 2026-08-27: this file used to cite "#s47"/"#s48" for its row-tap and
+// settings-gear destinations, ids from the OLD 97-screen canvas that in the
+// current 56-artboard canvas point at unrelated screens (Buy/Sell). There is
+// no real replacement id, so those citations are removed rather than
+// re-pointed. Layout/structure below are this screen's own, restyled onto
+// the current tokens/component idiom (KDetailHeader, KEyebrow, KCard,
+// KIcon-badge rows) to match already-rebuilt screens
+// (account_screen.dart, statements_screen.dart) rather than inventing a
+// parallel interpretation.
+//
+// Pushed screen: own Scaffold with KDetailHeader (back chevron, no tab bar).
 //
 // Wired per lib/data/api/README.md's FutureBuilder convention. Tap a row to
 // mark it read (optimistic update, PATCH /notifications/:id/read) AND
-// navigate to whatever the row is about — the canvas (#s47) is explicit:
-// "every row opens the thing it is about · security items go straight to
-// 51". KDetailHeader DOES carry a trailing-action slot (added generically
-// for spec screen 80's status pill, see its own doc comment) — the header's
-// settings gear (nav to Account → Notifications) and the bottom "Choose
-// what we notify you about" ghost button both use it, wired to the same
-// Routes.acctNotifications destination the canvas points at (#s48).
+// navigate to whatever the row is about — every row opens the thing it is
+// about (security items go to the security-alert screen, markets items to
+// order status, wallet/dividend items to the tab they landed in, an
+// account-live check to Home). KDetailHeader's trailing-action slot carries
+// the header's settings gear (nav to Account → Notifications) and the
+// bottom "Choose what we notify you about" ghost button reuses the same
+// slot pattern, both wired to Routes.acctNotifications.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -46,11 +58,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  /// Canvas mapping (#s47): shield → security alert (51), markets (order
-  /// filled) → Orders, wallet/arrowDown (money in / dividend) → the tab it
-  /// landed in, check (account live) → Home. AppNotification carries no
-  /// ticker/order id to deep-link to the exact record, so this routes to
-  /// the screen the row is ABOUT, same as every other icon-typed row here.
+  /// Icon-to-destination mapping (R-25, no artboard): shield → security
+  /// alert, markets (order filled) → Orders, wallet/arrowDown (money in /
+  /// dividend) → the tab it landed in, check (account live) → Home.
+  /// AppNotification carries no ticker/order id to deep-link to the exact
+  /// record, so this routes to the screen the row is ABOUT, same as every
+  /// other icon-typed row here.
   void _open(String icon) {
     switch (icon) {
       case 'shield':
@@ -120,8 +133,8 @@ class _NotificationsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Canvas (#s47): two date-grouped sections, "Today" and "Earlier",
-    // each its own eyebrow + hairline card — not one undivided list.
+    // Two date-grouped sections, "Today" and "Earlier", each its own
+    // eyebrow + hairline card — not one undivided list.
     final now = DateTime.now();
     bool isToday(NotificationItem item) {
       final c = item.createdAt?.toLocal();
@@ -254,11 +267,11 @@ class _NotificationGroup extends StatelessWidget {
   }
 }
 
-/// Category-tinted 34px badge — screen-specs.md 47 / the canvas mockup's
-/// #s47 block colour each notification's icon by what it's about (security
-/// = loss-red, markets = indicator-grape, money-in/dividend = sun,
-/// verified/success = gain-green), not one flat neutral circle for every
-/// row (2026-08-23 exactness pass — the prior port dropped this).
+/// Category-tinted 34px badge — colours each notification's icon by what
+/// it's about (security = loss-red, markets = indicator-grape,
+/// money-in/dividend = sun, verified/success = gain-green), not one flat
+/// neutral circle for every row (2026-08-23 exactness pass — the prior port
+/// dropped this).
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.icon});
   final String icon;

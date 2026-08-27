@@ -1,6 +1,19 @@
-// 04 · Confirm your passcode — re-enter to confirm. Mismatch tints the dots loss
-// and shows the error line (the design's seeded state). On match we set
-// passcodeSet and advance to biometric. Ported from screens.jsx ConfirmPasscode.
+// No artboard of its own — R-11 (docs/redesign/DECISIONS.md) keeps the
+// create+confirm pair everywhere including login ("A typo with no confirm
+// step locks a user out of their own account"), while the current canvas
+// (`01 Getting In.dc.html`) draws only a single 4-digit passcode screen
+// (`s05`). This screen adopts `s05`'s look for the second, confirm-only
+// step create_passcode_screen.dart's own header explains — re-enter to
+// confirm. Mismatch tints the dots loss and shows the error line (the
+// design's seeded state). On match we set passcodeSet and advance to
+// biometric. Ported from screens.jsx ConfirmPasscode.
+//
+// 2026-08-27 (SCREEN-AGENT-BRIEF.md R-5 audit): dropped this file's own
+// "Step 3 of 4" KOnboardTopBar label and its stale "#s08" comment citation
+// (an id from the retired 97-screen canvas) — see
+// create_passcode_screen.dart's matching fix; this screen keeps the same
+// back-arrow-only chrome for visual consistency with the create step it
+// immediately follows.
 //
 // Re-entry (widget.reentry): when this flow is entered from Security's
 // "Change passcode" (an already-signed-in investor) rather than first-time
@@ -174,7 +187,8 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KOnboardTopBar(
-              stepLabel: widget.reentry ? null : 'Step 3 of 4',
+              // No step label — matches `s05`'s chrome; see file header.
+              stepLabel: null,
               onBack: () => widget.reentry
                   ? context.pop()
                   : context.go(Routes.createPasscode),
@@ -184,10 +198,9 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
                 paddingTop: 22,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Ported 1:1 from the canvas mockup's #s08 block — same
-                  // shape as create_passcode_screen.dart's #s07: centered
-                  // column, title then body then dots (dots get an extra
-                  // margin-top:18 on top of the 10px flex gap), keypad
+                  // Same shape as create_passcode_screen.dart's `s05` block —
+                  // centered column, title then body then dots (dots get an
+                  // extra margin-top:18 on top of the 10px flex gap), keypad
                   // pushed to the bottom by the Spacer (mockup's
                   // margin-top:auto) rather than the whole group centering.
                   Text(

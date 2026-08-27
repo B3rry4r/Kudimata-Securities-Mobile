@@ -1,5 +1,10 @@
-// AGM · vote your shares (screen 83, 2026-08-23 "Soft Landing"). Wired per
-// lib/data/api/README.md's FutureBuilder convention:
+// AGM · vote your shares — R-24 (docs/redesign/DECISIONS.md): kept and
+// restyled onto the new tokens; no artboard of its own (R-5 correction,
+// 2026-08-27 — this file used to cite a stale "screen 83" id from an
+// earlier, now-superseded pass; the task brief is the only valid source
+// for an artboard id and it names none for this screen).
+//
+// Wired per lib/data/api/README.md's FutureBuilder convention:
 // CorporateActionsRepository.agmMeetings() (GET /agm-meetings) replaces the
 // static `AgmFixture` (and its 3 fabricated placeholder resolutions — only
 // 2 ever had real canvas content) this screen used to be pushed with, and
@@ -10,11 +15,11 @@
 //
 // NOTE — no `extra`/id argument, same reasoning as rights_issue_screen.dart:
 // app_router.dart's GoRoute for Routes.corpActionsAgm constructs
-// `AgmVoteScreen()` with no forwarded `extra` (router files out of scope
-// for this pass), so this screen fetches the caller's own AGM list and
-// picks the most relevant meeting itself: the first still-open one with
-// voting not yet closed that the caller hasn't voted on, falling back to
-// the most recent meeting overall.
+// `AgmVoteScreen()` with no forwarded `extra` (router files are a
+// different agent's directory this pass), so this screen fetches the
+// caller's own AGM list and picks the most relevant meeting itself: the
+// first still-open one with voting not yet closed that the caller hasn't
+// voted on, falling back to the most recent meeting overall.
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
