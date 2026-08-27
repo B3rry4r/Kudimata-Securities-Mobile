@@ -673,3 +673,49 @@ again or fabricating rows. Needs: a caller for
 `generateTaxDocument('wht_credit_note', …)` — most naturally alongside the
 existing annual-summary cron, since a credit note is logically per-dividend
 or per-tax-year WHT proof, not a client-triggered action.
+
+---
+
+## Live gate — built, committed, NOT YET RUN
+
+*2026-08-27. Stated plainly, because an unrun gate reported as passing is the
+defect this whole process exists to prevent.*
+
+`integration_test/live_gate_test.dart`, `test_driver/integration_test.dart` and
+`scripts/live_gate.sh` are committed and re-runnable — unlike the 2026-08-07
+Phase 8 driver, which ran once from a scratchpad and no longer exists.
+
+**It has never completed a run.** This container cannot drive a browser:
+
+1. Flutter's Chrome device launches `/workspace/.relay/bin/relay-chrome`, a
+   sandbox wrapper. It dies with `SessionNotCreatedException: Unable to receive
+   message from renderer` — the containerised-Chrome signature.
+2. `--web-browser-flag=--no-sandbox` is **not forwarded** to that launcher; the
+   printed command line contains none of the flags.
+3. Overriding `CHROME_EXECUTABLE` with a shim appending
+   `--no-sandbox --disable-dev-shm-usage --headless=new` gets much further — the
+   app builds, the web server starts, the Dart VM service comes up — but Flutter
+   then falls back to the `web-server` device with no browser attached, so
+   nothing ever loads the page.
+4. A parallel attempt hit this container's cgroup PID ceiling.
+
+**To run it where a browser or device exists:**
+
+```bash
+scripts/live_gate.sh                              # the deployed alpha backend
+scripts/live_gate.sh https://another-backend      # any base URL
+```
+
+Needs Chrome plus a matching chromedriver on PATH, or an Android/iOS emulator
+(swap `-d chrome` for the device id — the `integration_test` package runs inside
+the app, so the assertions are device-agnostic).
+
+**Until it runs, every screen is at level 2 of `CLAUDE.md`'s definition of done**
+— verified only against `test/fixtures/mock_api_adapter.dart`, which answers
+whatever shape the calling code asks for. Twice this week it answered *plausibly
+wrong* for a shape it did not know, rendering a mislabeled row while every test
+passed. That is exactly what this gate exists to catch.
+
+The backend half IS proven: login, the order-book endpoint and seeded holdings
+were all exercised over real HTTPS against `alpha.kudimatasecurities.com`. It is
+the Flutter client that has never met it.

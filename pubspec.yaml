@@ -95,6 +95,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # Real-backend live gate (integration_test/live_gate_test.dart) — runs
+  # inside the app with real widget finders (not DOM selectors), driven via
+  # `flutter drive` against Chrome. See scripts/live_gate.sh.
+  integration_test:
+    sdk: flutter
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
