@@ -881,6 +881,27 @@ class MockApiAdapter implements HttpClientAdapter {
           },
         ];
       }
+      // wht_credit_note — deliberately empty. Nothing on the real backend
+      // generates this kind (StatementsService.generateTaxDocument() has
+      // no caller for it — see docs/redesign/BACKEND_GAPS.md), so the
+      // fixture matches that truth rather than inventing a row the real
+      // API can never actually return.
+      if (kind == 'wht_credit_note') return [];
+      // annual_tax_summary — real: StatementGeneratorService's
+      // 2-January cron produces exactly this shape.
+      if (kind == 'annual_tax_summary') {
+        return [
+          {
+            'id': 'ST-TAX-1',
+            'kind': 'annual_tax_summary',
+            'title': 'Annual tax summary — 2025',
+            'periodOrTradeRef': '2025',
+            'fileSizeBytes': 24310,
+            'generatedAt': '2026-01-02T02:30:00.000Z',
+            'fileObjectKey': 'statements/tax/u/2025.pdf',
+          },
+        ];
+      }
       return [
         {
           'id': 'ST-M-1',

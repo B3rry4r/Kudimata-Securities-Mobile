@@ -647,3 +647,29 @@ after `fund()` returns, via its `feeKobo`.
 Needs: a side-effect-free quote endpoint (e.g. `GET
 /transactions/deposit-fee?method=card`) if the card row is meant to show
 its fee before the investor commits to starting a payment.
+
+## Tax documents — WHT credit note has no producer (`tax_documents_screen.dart`, 2026-08-27)
+
+Restoring the Tax documents hub row required extending the mobile
+`StatementKind` enum (statements_repository.dart) to cover both tax kinds
+`GET /statements?kind=` already accepts: `wht_credit_note` and
+`annual_tax_summary`.
+
+`annual_tax_summary` is real end to end —
+`StatementGeneratorService.generateTaxSummariesForAll` runs on
+`@Cron('30 2 2 1 *')` and creates one Statement row per investor with a
+dividend that year. The screen lists these like any other statement.
+
+`wht_credit_note` is not. `StatementsService.generateTaxDocument()` accepts
+the kind as a parameter, but grepping the whole backend turns up no caller
+that ever passes `'wht_credit_note'` — no cron, no controller route, no
+other service. `GET /statements?kind=wht_credit_note` is a real, live call
+and will correctly return `[]` for every investor, forever, until a
+producer is wired.
+
+Built: the WHT credit notes section on the tax screen makes the real call
+and renders a plain empty-state explanation rather than hiding the section
+again or fabricating rows. Needs: a caller for
+`generateTaxDocument('wht_credit_note', …)` — most naturally alongside the
+existing annual-summary cron, since a credit note is logically per-dividend
+or per-tax-year WHT proof, not a client-triggered action.

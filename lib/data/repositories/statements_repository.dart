@@ -35,8 +35,13 @@
 import '../api/api_client.dart';
 
 /// Which Statement.kind to fetch — mirrors registry.json's
-/// `enum(monthly,contract_note)`.
-enum StatementKind { monthly, contractNote }
+/// `enum(monthly,contract_note,wht_credit_note,annual_tax_summary)`.
+///
+/// [whtCreditNote] and [annualTaxSummary] added 2026-08-27 to restore the
+/// Tax documents hub row (account_screen.dart) — see
+/// tax_documents_screen.dart's own header for which of the two kinds this
+/// backend actually generates today.
+enum StatementKind { monthly, contractNote, whtCreditNote, annualTaxSummary }
 
 /// A single statement/contract-note document (registry.json's Statement
 /// resource). Not in lib/data/models.dart — see file header.
@@ -111,10 +116,16 @@ class StatementsRepository {
   String _kindParam(StatementKind kind) => switch (kind) {
     StatementKind.monthly => 'monthly',
     StatementKind.contractNote => 'contract_note',
+    StatementKind.whtCreditNote => 'wht_credit_note',
+    StatementKind.annualTaxSummary => 'annual_tax_summary',
   };
 
-  StatementKind _kindFromJson(String? kind) =>
-      kind == 'contract_note' ? StatementKind.contractNote : StatementKind.monthly;
+  StatementKind _kindFromJson(String? kind) => switch (kind) {
+    'contract_note' => StatementKind.contractNote,
+    'wht_credit_note' => StatementKind.whtCreditNote,
+    'annual_tax_summary' => StatementKind.annualTaxSummary,
+    _ => StatementKind.monthly,
+  };
 
   Statement _fromJson(Map<String, dynamic> json) {
     return Statement(

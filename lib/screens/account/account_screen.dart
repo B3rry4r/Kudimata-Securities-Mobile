@@ -92,12 +92,19 @@ List<(String title, String route, String? icon, String? sub)> _menuRows(int pend
     // — its only other entry point — is gone. Keeps s50 reachable and gives
     // the saved-assets data (WatchlistRepository) a reader. Not an s51 row.
     ('My alerts', Routes.priceAlerts, 'bell', 'Price alerts on saved assets'),
-    // Tax documents hidden 2026-08-24 (direct instruction: "please hide
-    // everything on tax"). The backend now really generates annual
-    // withholding-tax summaries, but the screen behind this row still shows
-    // static "not available" copy — the mobile StatementKind enum has no
-    // tax kinds, so it cannot list them. Hidden rather than left pointing
-    // at a dead end; restore this row once the enum and screen are wired.
+    // Restored 2026-08-27: was hidden 2026-08-24 (direct instruction:
+    // "please hide everything on tax") because the mobile StatementKind
+    // enum had no tax kinds, so tax_documents_screen.dart could only show
+    // static "not available" copy. That's fixed — the enum now carries
+    // `whtCreditNote`/`annualTaxSummary` (statements_repository.dart) and
+    // the screen makes real `GET /statements?kind=` calls for both, so the
+    // row no longer points at a dead end.
+    (
+      'Tax documents',
+      Routes.acctTax,
+      'doc',
+      'Annual summary, WHT credit notes',
+    ),
     // s51: 'settings' · "Consents, export, deletion".
     ('Data & privacy', Routes.acctDataPrivacy, 'settings', 'Consents, export, deletion'),
     // Not an s51 row — kept, real, wired (FAQ + contact channels + file a
