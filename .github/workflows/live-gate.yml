@@ -45,6 +45,17 @@ concurrency:
   group: live-gate-${{ github.ref }}
   cancel-in-progress: false
 
+# Seeded demo accounts on the alpha test environment. Deliberately NOT secrets:
+# the seeder prints them, the environment is invited-testers-only, and the risk
+# disclosure it serves says in as many words that all market data and order fills
+# are simulated. Making them secrets would only obscure which account a failing
+# run used.
+env:
+  LIVE_GATE_EMAIL: demo.full-investor-seed@kudimatasecurities.com
+  LIVE_GATE_PASSWORD: 'DemoInvestor#2026'
+  LIVE_GATE_FRESH_EMAIL: demo.fresh-signup-seed@kudimatasecurities.com
+  LIVE_GATE_FRESH_PASSWORD: 'FreshSignup#2026'
+
 jobs:
   web:
     name: Live gate (Chrome)
@@ -98,10 +109,10 @@ jobs:
             --target=integration_test/live_gate_test.dart \
             -d chrome \
             --dart-define=API_BASE_URL="$BASE_URL" \
-            --dart-define=LIVE_GATE_EMAIL="${{ secrets.LIVE_GATE_EMAIL }}" \
-            --dart-define=LIVE_GATE_PASSWORD="${{ secrets.LIVE_GATE_PASSWORD }}" \
-            --dart-define=LIVE_GATE_FRESH_EMAIL="${{ secrets.LIVE_GATE_FRESH_EMAIL }}" \
-            --dart-define=LIVE_GATE_FRESH_PASSWORD="${{ secrets.LIVE_GATE_FRESH_PASSWORD }}"
+            --dart-define=LIVE_GATE_EMAIL="${{ env.LIVE_GATE_EMAIL }}" \
+            --dart-define=LIVE_GATE_PASSWORD="${{ env.LIVE_GATE_PASSWORD }}" \
+            --dart-define=LIVE_GATE_FRESH_EMAIL="${{ env.LIVE_GATE_FRESH_EMAIL }}" \
+            --dart-define=LIVE_GATE_FRESH_PASSWORD="${{ env.LIVE_GATE_FRESH_PASSWORD }}"
 
       - name: Upload screenshots
         if: always()
@@ -155,10 +166,10 @@ jobs:
               --driver=test_driver/integration_test.dart \
               --target=integration_test/live_gate_test.dart \
               --dart-define=API_BASE_URL="${{ inputs.base_url || 'https://alpha.kudimatasecurities.com' }}" \
-              --dart-define=LIVE_GATE_EMAIL="${{ secrets.LIVE_GATE_EMAIL }}" \
-              --dart-define=LIVE_GATE_PASSWORD="${{ secrets.LIVE_GATE_PASSWORD }}" \
-              --dart-define=LIVE_GATE_FRESH_EMAIL="${{ secrets.LIVE_GATE_FRESH_EMAIL }}" \
-              --dart-define=LIVE_GATE_FRESH_PASSWORD="${{ secrets.LIVE_GATE_FRESH_PASSWORD }}"
+              --dart-define=LIVE_GATE_EMAIL="${{ env.LIVE_GATE_EMAIL }}" \
+              --dart-define=LIVE_GATE_PASSWORD="${{ env.LIVE_GATE_PASSWORD }}" \
+              --dart-define=LIVE_GATE_FRESH_EMAIL="${{ env.LIVE_GATE_FRESH_EMAIL }}" \
+              --dart-define=LIVE_GATE_FRESH_PASSWORD="${{ env.LIVE_GATE_FRESH_PASSWORD }}"
 
       - name: Upload screenshots
         if: always()
