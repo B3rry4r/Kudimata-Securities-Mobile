@@ -759,3 +759,35 @@ a guarantee — the system wins and the gap gets written down.**
 
 Every ruling in this file has been an instance of it. It needed no separate
 decision; it needed a name.
+
+### R-41 — Real-time over WebSocket, not polling
+*Ruled by the product owner, 2026-08-27.*
+
+Five surfaces push instead of being polled:
+
+| surface | why it matters |
+|---|---|
+| **Live prices / quotes** | asset prices, movers, portfolio value. The simulator already drifts prices on a timer — this pushes what it already computes. |
+| **Order book depth** | derived from the same price drift, so it changes exactly when the price does. Rides the price stream at almost no extra cost. |
+| **Order status and fills** | the moment an investor most wants immediate feedback. Today they must leave and re-enter the screen. |
+| **Wallet balance / deposits landing** | a virtual-account transfer arrives asynchronously; today there is no way to know except refreshing repeatedly. |
+| **Notifications and KYC status** | a KYC decision updates the gate immediately rather than on next app launch. |
+
+**Transport:** socket.io — NestJS's default gateway, with a mature Flutter client
+that handles reconnection and backoff. Not a product decision; recorded so nobody
+relitigates it.
+
+**Non-negotiables:**
+
+- The socket authenticates with the **same JWT** as the REST API. An
+  unauthenticated socket that streams another investor's fills is a data breach,
+  not a bug.
+- A client subscribes only to **its own** account channels, plus public market
+  data. Server-side enforced, never client-asserted.
+- **Push is an optimisation, never the only path.** Every surface keeps working if
+  the socket is down — reconnect, refetch, and carry on. A screen that renders
+  only on a socket event shows nothing on a flaky Nigerian mobile connection,
+  which is most of them.
+- The stream carries **the same shapes the REST endpoints return.** A second
+  serialisation of the same entity is two truths that drift — the forked-widget
+  problem in a new place.

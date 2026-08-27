@@ -625,3 +625,25 @@ test (deleted after use, per the Order Book precedent above) rather than
 matching `GoRoute`, after which `asset_detail_screen.dart` (out of this
 screen's scope) can wire s49's real "from the asset page" entry point via
 `context.push(Routes.setPriceAlert(asset.ticker))`.
+
+## s36 — Add money, debit-card fee (`wallet_flows.dart`, R-37/BR-2, 2026-08-27)
+
+R-37/BR-2 landed a real deposit fee: `VirtualAccountDetails.feeKobo` and
+`FundResult.feeKobo`, backed by `transactions/deposit-fees.ts`. The
+bank-transfer method now shows its real fee everywhere s36 draws one — the
+method-choice row and the account plate's footnote both read
+`VirtualAccountDetails.feeKobo` (GET /transactions/virtual-account, known
+before the investor picks anything).
+
+The debit-card method row cannot do the same. Its only fee source,
+`FundResult.feeKobo`, comes back from `POST /transactions/fund` — and that
+call already creates a real pending `Transaction` server-side. There is no
+quote endpoint that returns `computeDepositFee('card')` without that side
+effect, so the card row states no ₦ figure at selection time ("Flutterwave
+· instant") rather than inventing one (R-34). The real ₦150 figure is
+surfaced as soon as it IS known: in the awaiting-payment sheet shown right
+after `fund()` returns, via its `feeKobo`.
+
+Needs: a side-effect-free quote endpoint (e.g. `GET
+/transactions/deposit-fee?method=card`) if the card row is meant to show
+its fee before the investor commits to starting a payment.

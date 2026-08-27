@@ -712,7 +712,12 @@ class MockApiAdapter implements HttpClientAdapter {
     // `as String? ?? ''`, so this renders a real screen with a blank account
     // number instead of crashing or erroring).
     if (path == '/transactions/virtual-account') {
-      return {'accountNumber': '9902447108', 'bankName': 'Providus Bank'};
+      // feeKobo: 10000 (₦100.00) — the real bank-transfer deposit fee
+      // (R-37/BR-2, `transactions/deposit-fees.ts`'s TRANSFER_FEE_KOBO),
+      // added 2026-08-27 so wallet_flows.dart's Add money sheet renders a
+      // real figure against this fixture instead of silently defaulting to
+      // 0/"Free" the way an absent field would.
+      return {'accountNumber': '9902447108', 'bankName': 'Providus Bank', 'feeKobo': 10000};
     }
     if (path.startsWith('/transactions/') && path.endsWith('/receipt')) {
       return {'url': 'https://example.com/receipt.pdf'};

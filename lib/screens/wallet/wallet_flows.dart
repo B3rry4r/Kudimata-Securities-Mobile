@@ -7,20 +7,25 @@
 //
 // THE FEE QUESTION (docs/redesign/DECISIONS.md C-3 / FACT-CONFLICTS.md):
 // s36 draws "Bank transfer ₦100 to ₦150 · same day" and "Debit card
-// Flutterwave · ₦28 fee, instant". Neither figure is real — no deposit or
-// card-funding fee constant exists anywhere in the backend
-// (WalletRepository.virtualAccount()/fund() carry no fee field at all, not
-// even an explicit zero one). So nothing below hardcodes ₦100, ₦150 or ₦28.
-// [_depositFeeLabel] is the ONE place either method's fee copy is decided —
-// currently "Free" because that is what is actually charged today (verified
-// against WalletRepository, not guessed), computed rather than pasted at
-// each call site so the day a real `feeKobo` field lands on these
-// endpoints, this is the only line that changes. See BACKEND_GAPS.md for
-// the filed gap. `fees.ts`'s own header records what a hardcoded
-// client-side fee cost last time — a quoted "Fees · 1.35%" while the
-// backend charged nothing at all — so this file does not repeat that
-// mistake in either direction (neither the wrong non-zero figure, nor a
-// figure that silently goes stale once a real one exists).
+// Flutterwave · ₦28 fee, instant". 2026-08-27 (R-37/BR-2): both figures are
+// now real — `WalletRepository.virtualAccount()`/`fund()` carry a real
+// `feeKobo` each, computed server-side by `transactions/deposit-fees.ts`
+// (the single source of truth: ₦100 transfer, ₦150 card, ₦28 of the card
+// figure is Flutterwave's own cut). Nothing below hardcodes any of those
+// numbers — [_feeLabel] renders whatever `feeKobo` the wire response
+// carries, "Free" only if that figure is genuinely zero. `fees.ts`'s own
+// header records what a hardcoded client-side fee cost last time — a
+// quoted "Fees · 1.35%" while the backend charged nothing at all — so this
+// file still never pastes a figure at a call site, even now that the
+// figures are real: every call site reads its own response's `feeKobo`.
+//
+// The debit-card method row is the one place a figure still can't be shown
+// before the investor acts: no quote endpoint exists, `fund()`'s response
+// (the only place a card `feeKobo` is served) only exists after the
+// backend has already created a pending Transaction. Per R-34 that row
+// states no card figure ahead of time — filed in BACKEND_GAPS.md. The real
+// card fee is shown as soon as it's known, in the awaiting-payment sheet
+// after `fund()` returns.
 //
 // Add money is ONE sheet (matching s36's single artboard, not a
 // chooser-then-push-to-a-second-sheet pair): two selectable method cards
@@ -161,16 +166,36 @@ Future<bool> _ensureEligibleToTransact(BuildContext context) async {
 // Shared bits.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// The fee copy for either Add money method — see the file header's "THE FEE
-/// QUESTION". Neither `VirtualAccountDetails` (bank transfer) nor
-/// `FundResult` (card, via `WalletRepository.fund`) carries any fee field at
-/// all today, so there is no response value to read a figure from. What IS
-/// verified is that neither path charges anything right now — no deposit or
-/// card-funding fee constant exists anywhere in the backend. That is a real,
-/// checked fact, so it renders as "Free" rather than being blanked out the
-/// way an unverifiable figure (R-34) would be. This single constant is the
-/// only line a future backend fee field requires updating.
-const String _depositFeeLabel = 'Free';
+/// The fee copy for a deposit — see the file header's "THE FEE QUESTION".
+/// The ONE place either funding method's fee figure is turned into display
+/// copy; every call site passes its own response's real `feeKobo`
+/// (`VirtualAccountDetails.feeKobo` for transfer, `FundResult.feeKobo` for
+/// card). Renders "Free" only if that response figure is genuinely zero.
+String _feeLabel(int feeKobo) => feeKobo > 0 ? _formatFeeNaira(feeKobo) : 'Free';
+
+/// kobo → "₦100.00". Duplicated from `WalletRepository`'s own private
+/// `_formatNaira` rather than exposed cross-file — mirrors that
+/// repository's file header, which documents this as the established
+/// per-file formatting-helper convention (`TransactionRepository`,
+/// `WalletRepository` each keep their own copy already).
+String _formatFeeNaira(int kobo) {
+  final wholeNaira = kobo ~/ 100;
+  final koboRemainder = kobo % 100;
+  final wholeStr = wholeNaira.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]},',
+      );
+  return '₦$wholeStr.${koboRemainder.toString().padLeft(2, '0')}';
+}
+
+/// The withdrawal-fee row's copy — kept as its own constant, NOT
+/// `_feeLabel`/`feeKobo`-driven: `POST /transactions/withdraw` returns a
+/// plain `Transaction` (common/types/transaction.types.ts), which carries
+/// no fee field at all, unlike the two deposit endpoints R-37/BR-2 touched.
+/// "Free" is a verified fact (no withdrawal-fee constant exists anywhere in
+/// the backend), not a guess, and it must stay independent of the deposit
+/// figure now that that one is real and non-zero.
+const String _withdrawalFeeLabel = 'Free';
 
 // A selectable row inside a hairline card (used for the withdraw
 // destination and the outside-hours variant's own destination row).
@@ -422,7 +447,13 @@ void _showSuccessSheet(
 /// deliberately `KStatusTone.pending`, not `success`, matching
 /// `_ensureEligibleToTransact`'s own use of the pending tone for an
 /// in-progress, not-yet-true state.
-void _showAwaitingPaymentSheet(BuildContext context) {
+///
+/// [feeKobo] is `FundResult.feeKobo` from the `fund()` call that got the
+/// investor here — the first (and only, per this file's header) point at
+/// which the real card fee is known, so it's surfaced here rather than
+/// nowhere.
+void _showAwaitingPaymentSheet(BuildContext context, {required int feeKobo}) {
+  final feeClause = feeKobo > 0 ? ' — a ${_feeLabel(feeKobo)} card fee is included' : '';
   showKSheet<void>(
     context,
     child: Padding(
@@ -430,7 +461,7 @@ void _showAwaitingPaymentSheet(BuildContext context) {
       child: KStatusView(
         tone: KStatusTone.pending,
         title: 'Complete your payment',
-        message: 'Finish paying in the window that just opened. Your '
+        message: 'Finish paying in the window that just opened$feeClause. Your '
             'balance updates here as soon as we confirm it.',
         primary: 'Done',
         onPrimary: () => Navigator.of(context).pop(),
@@ -574,7 +605,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
         return;
       }
       Navigator.of(context).pop();
-      _showAwaitingPaymentSheet(context);
+      _showAwaitingPaymentSheet(context, feeKobo: result.feeKobo);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _cardBusy = false);
@@ -595,41 +626,60 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text('How do you want to pay?', style: KType.title()),
-        const SizedBox(height: 6),
-        // s36's own subhead is "Fees and timing differ. Transfer costs
-        // less." — a comparison this file will not repeat: both methods
-        // charge nothing today (see [_depositFeeLabel]), so "transfer costs
-        // less" is not actually true right now, and the canvas's own two
-        // rows don't even agree with each other on which method is cheaper
-        // (₦28 card vs ₦100-150 transfer — card is cheaper as drawn). Not
-        // reconciled per this file's brief; rendered as a neutral true
-        // statement instead of a specific comparison this app cannot back.
-        Text('Fees and timing can differ by method.',
-            style: KType.body(color: KColor.ink2)),
-        const SizedBox(height: 16),
-        _FundMethodCard(
-          icon: 'transfer',
-          title: 'Bank transfer',
-          sub: '$_depositFeeLabel · same day',
-          selected: _method == _FundMethod.bankTransfer,
-          onTap: () => setState(() => _method = _FundMethod.bankTransfer),
-        ),
-        const SizedBox(height: 12),
-        _FundMethodCard(
-          icon: 'card',
-          title: 'Debit card',
-          sub: 'Flutterwave · $_depositFeeLabel, instant',
-          selected: _method == _FundMethod.card,
-          onTap: () => setState(() => _method = _FundMethod.card),
-        ),
-        const SizedBox(height: 20),
-        if (_method == _FundMethod.bankTransfer) _buildBankPanel() else _buildCardPanel(),
-      ],
+    // The bank-transfer fee IS known ahead of the investor picking anything
+    // — it comes back on the same [_bankFuture] `_buildBankPanel` already
+    // fetches (GET /transactions/virtual-account's real `feeKobo`) — so a
+    // second, lightweight FutureBuilder on that SAME cached future (no
+    // extra network call) lets the method-choice row above show it too, not
+    // just the panel beneath. The card fee has no such source (see file
+    // header) so its row states no figure at all.
+    return FutureBuilder<({VirtualAccountDetails account, String holderName})>(
+      future: _bankFuture,
+      builder: (context, bankSnapshot) {
+        final transferFeeKobo = bankSnapshot.data?.account.feeKobo;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('How do you want to pay?', style: KType.title()),
+            const SizedBox(height: 6),
+            // s36's own subhead is "Fees and timing differ. Transfer costs
+            // less." — a comparison this file will not repeat: the canvas's
+            // own two rows don't even agree with each other on which method
+            // is cheaper (₦28 card vs ₦100-150 transfer — card reads
+            // cheaper as drawn), and the real card figure isn't shown here
+            // at all (see file header). Rendered as a neutral true
+            // statement instead of a specific comparison this app cannot
+            // back from this row alone.
+            Text('Fees and timing can differ by method.',
+                style: KType.body(color: KColor.ink2)),
+            const SizedBox(height: 16),
+            _FundMethodCard(
+              icon: 'transfer',
+              title: 'Bank transfer',
+              sub: transferFeeKobo == null
+                  ? 'Same day'
+                  : '${_feeLabel(transferFeeKobo)} · same day',
+              selected: _method == _FundMethod.bankTransfer,
+              onTap: () => setState(() => _method = _FundMethod.bankTransfer),
+            ),
+            const SizedBox(height: 12),
+            _FundMethodCard(
+              icon: 'card',
+              title: 'Debit card',
+              // No fee figure here — see file header: this row's data
+              // source (POST /transactions/fund) only exists after the
+              // backend has already created a pending transaction, so a
+              // figure at this point would be invented, not read (R-34).
+              sub: 'Flutterwave · instant',
+              selected: _method == _FundMethod.card,
+              onTap: () => setState(() => _method = _FundMethod.card),
+            ),
+            const SizedBox(height: 20),
+            if (_method == _FundMethod.bankTransfer) _buildBankPanel() else _buildCardPanel(),
+          ],
+        );
+      },
     );
   }
 
@@ -740,12 +790,12 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                     );
                   }),
                   const SizedBox(height: 14),
-                  // s36's one footnote inside the plate — real fee truth
-                  // ("free", see [_depositFeeLabel]) in place of the
-                  // canvas's ₦100-₦150 claim; timing kept as drawn (no
-                  // ruling blocks the timing clause, only the money figure).
+                  // s36's one footnote inside the plate — real fee figure
+                  // (R-37/BR-2's `account.feeKobo`, via [_feeLabel]) in
+                  // place of the canvas's ₦100-₦150 claim; timing kept as
+                  // drawn (no ruling blocks the timing clause).
                   Text(
-                    'This account is yours alone. Transfers are $_depositFeeLabel and '
+                    'This account is yours alone. Transfers are ${_feeLabel(account.feeKobo)} and '
                     'usually land the same working day.',
                     style: KType.body(color: KColor.featureInk2).copyWith(fontSize: 13, height: 19 / 13),
                   ),
@@ -1003,7 +1053,7 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                 children: [
                   _SummaryRow(
                       label: 'Withdrawal fee',
-                      value: _depositFeeLabel,
+                      value: _withdrawalFeeLabel,
                       small: true,
                       valueColor: KColor.gain),
                   _SummaryRow(
@@ -1102,7 +1152,7 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
 // the SAME real withdraw() call right away — a transfer initiated at night
 // genuinely does land the next working day anyway, so the framing is
 // honest; only a literal clock promise is avoided. Fee is genuinely free,
-// same established fact as the in-hours withdraw (see [_depositFeeLabel]).
+// same established fact as the in-hours withdraw (see [_withdrawalFeeLabel]).
 //
 // Trigger: outside a rough 09:00-21:00 weekday window, client-clock only —
 // same class of heuristic as market_hours.dart's isNgxOpenNow(), not
@@ -1367,7 +1417,7 @@ class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> 
                       small: true),
                   _SummaryRow(
                       label: 'Withdrawal fee',
-                      value: _depositFeeLabel,
+                      value: _withdrawalFeeLabel,
                       small: true,
                       valueColor: KColor.gain,
                       divider: false),

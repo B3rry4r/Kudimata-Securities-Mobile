@@ -51,7 +51,14 @@ import 'bank_accounts_repository.dart' show BankAccountSummary;
 /// 2026-08-23: the Add money sheet offers this alongside
 /// [WalletRepository.virtualAccount] as the "pay by card" option — see
 /// wallet_flows.dart's showAddMoneyFlow.
-typedef FundResult = ({Txn transaction, String checkoutUrl});
+///
+/// 2026-08-27 (R-37/BR-2): [feeKobo] is what the investor pays to fund by
+/// this transaction's method — real now, computed server-side by
+/// `transactions/deposit-fees.ts`, the single source of truth. The backend
+/// also carries `providerFeeKobo`/`platformFeeKobo` (Flutterwave's cut vs.
+/// what Kudimata keeps) but those are reconciliation detail, not something
+/// the investor is shown, so only [feeKobo] is parsed here.
+typedef FundResult = ({Txn transaction, String checkoutUrl, int feeKobo});
 
 /// GET /transactions/virtual-account response — the investor's own
 /// permanent, dedicated bank account for wallet funding (Flutterwave v4
@@ -59,7 +66,11 @@ typedef FundResult = ({Txn transaction, String checkoutUrl});
 /// transfers directly to this account from their own banking app, no
 /// amount entry or redirect needed, and the wallet balance updates once the
 /// backend's webhook confirms the transfer landed.
-typedef VirtualAccountDetails = ({String accountNumber, String bankName});
+///
+/// 2026-08-27 (R-37/BR-2): [feeKobo] is the real bank-transfer deposit fee
+/// — see [FundResult]'s doc comment for why `providerFeeKobo`/
+/// `platformFeeKobo` aren't carried here too.
+typedef VirtualAccountDetails = ({String accountNumber, String bankName, int feeKobo});
 
 class WalletRepository {
   const WalletRepository(this._client);
@@ -113,6 +124,7 @@ class WalletRepository {
     return (
       transaction: _fromJson(json),
       checkoutUrl: json['checkoutUrl'] as String? ?? '',
+      feeKobo: (json['feeKobo'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -139,6 +151,7 @@ class WalletRepository {
     return (
       accountNumber: json['accountNumber'] as String? ?? '',
       bankName: json['bankName'] as String? ?? '',
+      feeKobo: (json['feeKobo'] as num?)?.toInt() ?? 0,
     );
   }
 
