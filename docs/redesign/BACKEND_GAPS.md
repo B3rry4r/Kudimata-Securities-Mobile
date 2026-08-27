@@ -472,3 +472,38 @@ separately, `logout`, which s51 also references for its own Log out
 button's leading icon and which `account_screen.dart`'s ghost-button Log
 out currently renders without) to `lib/widgets/k_icon.dart`'s glyph
 registry.
+
+---
+
+## PRODUCTION BUG — navigation `extra` is silently dropped
+
+*Found 2026-08-27 by the harness-integrity pass. Not a test artifact.*
+
+**Mechanism:** Home is kept alive in the `StatefulShellRoute` IndexedStack, so its
+async KYC-gating refresh (`refreshKycGatingState`, `home_screen.dart`) can resolve
+*after* the user has navigated away. It then calls `AppState.notifyListeners()`,
+which fires GoRouter's `refreshListenable`. The router reparses the current
+location **from the bare URI** — and `extra` is not URI-encodable, so it is lost.
+The route's type-guard then falls through to `KErrorView`.
+
+**Blast radius:** every route that takes an `extra`:
+
+- `withdraw_mandate_screen.dart`
+- `contract_note_screen.dart`
+- `statement_detail_screen.dart`
+- `complaint_tracked_screen.dart`
+
+**What a user sees:** they open a contract note, some background state settles a
+moment later, and the screen becomes an error card. Nothing they did caused it and
+retrying looks random, because it depends on request timing.
+
+**Why it hid for so long:** it is timing-dependent, so it does not reproduce on a
+fast local network — and the screenshot harness was reporting these four screens
+as captured while actually capturing the error card, so no rendered evidence ever
+contradicted it.
+
+**Not fixed here.** The harness now drains the pending refresh before navigating,
+which makes captures honest but does nothing for the app. The real fix is one of:
+pass identifiers in the path and re-fetch, rather than passing objects via `extra`;
+or stop the gating refresh from touching the refresh listenable once its screen is
+off-stage. That is a router/state-architecture decision, not a screen change.

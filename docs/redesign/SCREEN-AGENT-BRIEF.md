@@ -71,6 +71,24 @@ governs everything below. Note especially:
    `BACKEND_GAPS.md` or a line in your report — prose is not a resolution.
 8. **Kill any process you start.**
 
+9. **NEVER run `git stash`, `git reset --hard`, `git checkout -- .`, or any other
+   command that discards working-tree state.** Not to check a baseline, not to
+   compare against HEAD, not for any reason.
+
+   The working tree is **shared with every other agent running right now.**
+   `git stash` looks like it operates on "your" changes; it takes *everyone's*.
+   An agent did exactly this to check a gate baseline, captured 95 files of four
+   other agents' work, and a failed `stash pop` + `stash drop` discarded the lot —
+   the dark palette and the router rewiring included. It was recovered only
+   because the agent found the dangling commit with `git fsck` and knew to look.
+
+   **To compare against a baseline:** run the gates, record the number, make your
+   change, run them again. That is what the before/after counts in your report are
+   for. You never need to revert the tree to do it.
+
+   If you genuinely believe you need a destructive git operation, HALT and report
+   instead. There is no case where it is worth the risk.
+
 ## Gates — run all three before reporting
 
 ```bash

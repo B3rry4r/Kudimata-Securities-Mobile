@@ -126,7 +126,14 @@ than transcribing the canvas's "six years" — per R-7, a genuine numeric
 conflict on a compliance-facing screen is filed, not silently picked by an
 agent.
 
-- [ ] ruling:
+- [x] **RULED 2026-08-27 — keep 12 years; verify against the actual SEC rule
+  before go-live.** Twelve is the more corroborated figure: it appears
+  consistently across already-shipped legal copy, each instance citing the SEC,
+  while six appears once in a drawing. But *neither* has been checked against a
+  published SEC regulation, so this is a decision to keep the status quo, not a
+  confirmation that the status quo is right. A retention period stated to users
+  on a data-privacy screen is a compliance commitment — it needs counsel, not a
+  designer or an agent.
 
 ---
 
