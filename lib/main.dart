@@ -54,6 +54,11 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
     _state.apiClient = ApiClient(tokenStore: _tokenStore, onSessionExpired: _state.forceSignOut);
     // Single shared KYC form holder — see lib/screens/kyc/kyc_form_state.dart.
     _state.kycForm = KycFormState();
+    // R-41: apply every `kyc:status` socket event straight to the gate
+    // flags (AppState.applyRealtimeKycStatus — no network call). Wired
+    // once, here, rather than per-screen: it's an AppState-level flag every
+    // screen already reads, not view-local data.
+    _state.realtimeClient.kycStatus.listen(_state.applyRealtimeKycStatus);
     _state.addListener(_onState);
     // Prime AppState.isWatched() with the investor's real saved watchlist
     // once startup hydration (signedIn) resolves — see
@@ -64,6 +69,13 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
       if (_state.signedIn) {
         _state.hydrateWatchlist(WatchlistRepository(_state.apiClient));
         _state.startMarketStatusPolling(MarketStatusRepository(_state.apiClient));
+        // R-41: the cold-start "already signed in" path — setSignedIn()
+        // itself (which every INTERACTIVE sign-in goes through) already
+        // connects the socket, but a returning session restores [signedIn]
+        // straight from secure storage (AppState._hydrateSignedIn) without
+        // ever calling that setter, same reason this block also has to
+        // separately prime the watchlist/market-status poll above.
+        _state.realtimeClient.connect();
       }
     });
     // Theme preference: starts at ThemeMode.system synchronously (see
@@ -82,6 +94,20 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
   @override
   void didChangePlatformBrightness() {
     if (KThemePreference.instance.mode == ThemeMode.system) setState(() {});
+  }
+
+  /// R-41: reconnect the realtime socket on app foreground resume — a
+  /// backgrounded app's socket is routinely dropped by the OS/network
+  /// (Nigerian mobile connections most of all), and [RealtimeClient.connect]
+  /// is a safe no-op both when a session is already connected and when
+  /// there's no signed-in session to reconnect. No action needed on
+  /// pause/detach: socket.io's own Manager already handles a connection
+  /// dying mid-background the same way it handles any other drop.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _state.signedIn) {
+      _state.realtimeClient.connect();
+    }
   }
 
   @override

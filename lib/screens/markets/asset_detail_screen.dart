@@ -32,6 +32,17 @@
 // fetch, same as every other combined fetch in this app (e.g. the portfolio
 // screen's holdings+summary).
 //
+// R-41 (docs/redesign/DECISIONS.md): also wired to `market:quote` and
+// `market:orderBook` (RealtimeClient.quotes/orderBooks) — this screen
+// `market:subscribe`s to its one ticker on entry and `market:unsubscribe`s
+// on exit ([_AssetDetailScreenState.initState]/[dispose]). A decoded quote
+// is merged onto the already-loaded [Asset] via
+// AssetRepository.applyLiveQuote (price/change only — no network call); a
+// decoded order book replaces [_OrderBookTabState]'s displayed one
+// directly. Neither tab refetches on an event; each refetches ONCE on
+// RealtimeClient.reconnected, since events missed while disconnected can't
+// be replayed.
+//
 // Save/watch toggle: optimistic local flip via AppState.toggleWatch for
 // instant UI feedback, then the real POST/DELETE /watchlist-items via
 // WatchlistRepository — reverting the optimistic flip and surfacing a
@@ -93,8 +104,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/app/feature_flags.dart';
+import 'dart:async';
+
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/models.dart';
+import 'package:kudimata_invest/data/realtime/realtime_client.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
@@ -121,8 +135,59 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
   late final _repo = AssetRepository(AppScope.read(context).apiClient);
   late final _holdingsRepo = HoldingsRepository(AppScope.read(context).apiClient);
   late final _watchlistRepo = WatchlistRepository(AppScope.read(context).apiClient);
+  late final RealtimeClient _realtime = AppScope.read(context).realtimeClient;
   late Future<(Asset asset, String? about, Holding? holding)> _future =
       _load(widget.ticker);
+
+  /// The freshest known [Asset] — starts as whatever [_load] fetched, then
+  /// kept live in place by `market:quote` (see file header's R-41
+  /// paragraph). Preferred over the FutureBuilder's own snapshot, same
+  /// override pattern every other R-41-wired screen uses.
+  Asset? _liveAsset;
+
+  StreamSubscription<RealtimeQuote>? _quoteSub;
+  StreamSubscription<void>? _reconnectSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _realtime.subscribeMarket([widget.ticker]);
+    _quoteSub = _realtime.quotes.listen(_onQuote);
+    // Refetches ONCE on reconnect — a quote missed while disconnected
+    // can't be replayed. Deliberately does NOT reassign `_future`: that
+    // would flip the FutureBuilder back to ConnectionState.waiting and
+    // flash the whole screen to KLoadingView, same reason
+    // home_screen.dart/wallet_screens.dart's own silent polls avoid it.
+    // [_load] already updates [_liveAsset] as a side effect, which is all
+    // this surface (market:quote) needs kept current.
+    _reconnectSub = _realtime.reconnected.listen((_) => _load(widget.ticker));
+  }
+
+  /// Applies a decoded `market:quote` directly onto [_liveAsset] via
+  /// AssetRepository.applyLiveQuote — no network call. Dropped if nothing
+  /// has loaded yet ([_liveAsset] null); the in-flight initial [_future]
+  /// covers that case moments later.
+  void _onQuote(RealtimeQuote quote) {
+    if (quote.ticker != widget.ticker) return;
+    final base = _liveAsset;
+    if (base == null || !mounted) return;
+    setState(() {
+      _liveAsset = AssetRepository.applyLiveQuote(
+        base,
+        priceKobo: quote.priceKobo,
+        changeAbsKobo: quote.changeAbsKobo,
+        changePct: quote.changePct,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _quoteSub?.cancel();
+    _reconnectSub?.cancel();
+    _realtime.unsubscribeMarket([widget.ticker]);
+    super.dispose();
+  }
 
   /// Combines the asset/about fetch with an optional holding lookup — see
   /// file header for why a 404 on the holding fetch is swallowed as "no
@@ -132,6 +197,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     final holdingFuture = _fetchHolding(ticker);
     final (asset, about) = await assetFuture;
     final holding = await holdingFuture;
+    if (mounted) setState(() => _liveAsset = asset);
     return (asset, about, holding);
   }
 
@@ -250,7 +316,10 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                     );
                   }
                   final (asset, about, holding) = snapshot.data!;
-                  return _AssetDetailBody(asset: asset, about: about, holding: holding);
+                  // _liveAsset carries any market:quote update applied
+                  // since [asset] was fetched (see file header) — same
+                  // field, just current.
+                  return _AssetDetailBody(asset: _liveAsset ?? asset, about: about, holding: holding);
                 },
               ),
             ),
@@ -580,7 +649,46 @@ class _OrderBookTab extends StatefulWidget {
 
 class _OrderBookTabState extends State<_OrderBookTab> {
   late final _repo = AssetRepository(AppScope.read(context).apiClient);
-  late Future<OrderBook> _future = _repo.orderBook(widget.ticker);
+  late final RealtimeClient _realtime = AppScope.read(context).realtimeClient;
+  late Future<OrderBook> _future = _load();
+
+  /// The freshest known order book — kept live in place by
+  /// `market:orderBook` (file header's R-41 paragraph). No `market:subscribe`
+  /// call here: the parent [_AssetDetailScreenState] already subscribed to
+  /// this ticker for the whole screen's lifetime, and `market:orderBook`
+  /// rides that same room.
+  OrderBook? _liveBook;
+
+  StreamSubscription<OrderBook>? _bookSub;
+  StreamSubscription<void>? _reconnectSub;
+
+  Future<OrderBook> _load() async {
+    final book = await _repo.orderBook(widget.ticker);
+    if (mounted) setState(() => _liveBook = book);
+    return book;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _bookSub = _realtime.orderBooks.listen(_onOrderBook);
+    // See _AssetDetailScreenState's identical reconnect handling for why
+    // this doesn't reassign `_future`.
+    _reconnectSub = _realtime.reconnected.listen((_) => _load());
+  }
+
+  /// Applies a decoded `market:orderBook` directly — no network call.
+  void _onOrderBook(OrderBook book) {
+    if (book.ticker != widget.ticker || !mounted) return;
+    setState(() => _liveBook = book);
+  }
+
+  @override
+  void dispose() {
+    _bookSub?.cancel();
+    _reconnectSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -622,20 +730,25 @@ class _OrderBookTabState extends State<_OrderBookTab> {
           child: FutureBuilder<OrderBook>(
             future: _future,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(height: 180, child: KLoadingView());
-              }
-              if (snapshot.hasError) {
-                return SizedBox(
-                  height: 260,
-                  child: KErrorView(
-                    onPrimary: () => setState(
-                      () => _future = _repo.orderBook(widget.ticker),
+              // Prefer the freshest known book (kept live by
+              // market:orderBook, see file header) over the FutureBuilder's
+              // own snapshot — same override pattern as this screen's own
+              // [_liveAsset].
+              final effective = _liveBook ?? snapshot.data;
+              if (effective == null) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox(height: 180, child: KLoadingView());
+                }
+                if (snapshot.hasError) {
+                  return SizedBox(
+                    height: 260,
+                    child: KErrorView(
+                      onPrimary: () => setState(() => _future = _load()),
                     ),
-                  ),
-                );
+                  );
+                }
               }
-              final book = snapshot.data!;
+              final book = effective!;
               // Empty when both sides come back with zero levels — a real
               // possible response shape (not observed against
               // SimulatedNgxBroker today, which always returns 5 levels a

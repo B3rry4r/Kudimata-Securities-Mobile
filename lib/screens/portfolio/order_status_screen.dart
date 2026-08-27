@@ -15,11 +15,24 @@
 //
 // Wired to the real `GET /orders` via OrdersRepository.myOrders() —
 // investor-scoped, real Order rows.
+//
+// R-41 (docs/redesign/DECISIONS.md): also wired to `order:update`
+// (RealtimeClient.orderUpdates) — the decoded Order replaces or prepends
+// into [_OrderStatusScreenState._orders] directly, in place, with NO
+// network call on receipt. Per-user event, so no market:subscribe is
+// needed. On a reconnect after a drop (RealtimeClient.reconnected), this
+// refetches ONCE via the same [_load]/OrdersRepository.myOrders() this
+// screen already uses for its first load and Cancel's own refresh — the
+// one legitimate fetch in this path, since events missed while
+// disconnected can't be replayed.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/models.dart';
+import 'package:kudimata_invest/data/realtime/realtime_client.dart';
 import 'package:kudimata_invest/data/repositories/orders_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/markets/market_hours.dart';
@@ -37,7 +50,55 @@ class OrderStatusScreen extends StatefulWidget {
 
 class _OrderStatusScreenState extends State<OrderStatusScreen> {
   late final _repo = OrdersRepository(AppScope.read(context).apiClient);
-  late Future<List<Order>> _future = _repo.myOrders();
+  late final RealtimeClient _realtime = AppScope.read(context).realtimeClient;
+  late Future<List<Order>> _future = _load();
+
+  /// The freshest known order list — mirrors home_screen.dart's `_data`/
+  /// wallet_screens.dart's `_data` pattern: preferred over the
+  /// FutureBuilder's own snapshot once set, so an `order:update` socket
+  /// event (see file header) can update the screen without ever touching
+  /// `_future` (which would flash the whole list back to KLoadingView).
+  List<Order>? _orders;
+
+  StreamSubscription<Order>? _orderSub;
+  StreamSubscription<void>? _reconnectSub;
+
+  Future<List<Order>> _load() async {
+    final orders = await _repo.myOrders();
+    if (mounted) setState(() => _orders = orders);
+    return orders;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _orderSub = _realtime.orderUpdates.listen(_onOrderUpdate);
+    _reconnectSub = _realtime.reconnected.listen((_) => _load());
+  }
+
+  /// Applies a decoded `order:update` payload directly — replaces the
+  /// matching order by id, or inserts a brand-new one at the top (a fresh
+  /// `POST /orders` placement also emits this event). No network call.
+  void _onOrderUpdate(Order updated) {
+    if (!mounted) return;
+    setState(() {
+      final list = List<Order>.from(_orders ?? const <Order>[]);
+      final idx = list.indexWhere((o) => o.id == updated.id);
+      if (idx >= 0) {
+        list[idx] = updated;
+      } else {
+        list.insert(0, updated);
+      }
+      _orders = list;
+    });
+  }
+
+  @override
+  void dispose() {
+    _orderSub?.cancel();
+    _reconnectSub?.cancel();
+    super.dispose();
+  }
 
   // s41's three filter chips: Open / Done / Cancelled — covers every real
   // Order.status ('pending' / 'approved' / 'rejected' / 'cancelled') with no
@@ -70,9 +131,16 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
     );
     if (confirmed != true || !context.mounted) return;
     try {
-      await _repo.cancel(order.id);
+      // PATCH /orders/:id/cancel's own response already carries the
+      // updated Order — applied straight in, same as an `order:update`
+      // socket event would (see file header). A separate `order:update`
+      // for this exact change may also land later; [_onOrderUpdate] is
+      // idempotent (replaces by id), so that's harmless either way. This
+      // keeps Cancel instant even with the socket down, rather than
+      // waiting on it.
+      final cancelled = await _repo.cancel(order.id);
       if (!context.mounted) return;
-      setState(() => _future = _repo.myOrders());
+      _onOrderUpdate(cancelled);
     } on ApiException catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
@@ -119,16 +187,23 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
               child: FutureBuilder<List<Order>>(
                 future: _future,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const KLoadingView();
+                  // Prefer the freshest known list (kept live by
+                  // order:update, see file header) over the FutureBuilder's
+                  // own snapshot — same pattern home_screen.dart/
+                  // wallet_screens.dart already use for their own polling.
+                  final effective = _orders ?? snapshot.data;
+                  if (effective == null) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const KLoadingView();
+                    }
+                    if (snapshot.hasError) {
+                      return KErrorView(
+                        title: "Couldn't load orders",
+                        onPrimary: () => setState(() => _future = _load()),
+                      );
+                    }
                   }
-                  if (snapshot.hasError) {
-                    return KErrorView(
-                      title: "Couldn't load orders",
-                      onPrimary: () => setState(() => _future = _repo.myOrders()),
-                    );
-                  }
-                  final all = snapshot.data!;
+                  final all = effective!;
                   if (all.isEmpty) return const _EmptyOrders();
                   final orders = all.where(_matchesFilter).toList();
                   if (orders.isEmpty) return _EmptyFilter(filter: _filter);

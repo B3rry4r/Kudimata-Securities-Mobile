@@ -101,6 +101,38 @@ class AssetRepository {
     return OrderBook.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Re-renders [existing]'s price/change display strings from a live
+  /// `market:quote` socket payload (R-41 — lib/data/realtime/realtime_client.dart's
+  /// `RealtimeQuote`), reusing the SAME [_formatKobo]/[_formatPct]
+  /// formatting [_fromJson] uses for the initial REST fetch, so the two
+  /// can never drift into showing different digits for the same kobo
+  /// value. The live quote payload carries no name/logoColor/sector
+  /// (unlike the merged `Asset&Quote` REST shape this class's other
+  /// methods parse) — those three fields carry over unchanged from
+  /// [existing]. Pure in-memory merge: no network call.
+  static Asset applyLiveQuote(
+    Asset existing, {
+    required int priceKobo,
+    int? changeAbsKobo,
+    required double changePct,
+  }) {
+    final symbol = existing.assetClass == AssetClass.ngx ? '₦' : '\$';
+    final trend = changePct < 0 ? Trend.loss : Trend.gain;
+    return Asset(
+      name: existing.name,
+      ticker: existing.ticker,
+      price: '$symbol${_formatKobo(priceKobo)}',
+      change: '${_formatPct(changePct)}%',
+      changeAbs: changeAbsKobo == null
+          ? null
+          : '${changeAbsKobo < 0 ? '−' : '+'}$symbol${_formatKobo(changeAbsKobo.abs())}',
+      trend: trend,
+      assetClass: existing.assetClass,
+      logoColor: existing.logoColor,
+      sector: existing.sector,
+    );
+  }
+
   String _classParam(AssetClass c) => switch (c) {
     AssetClass.ngx => 'ngx',
     AssetClass.us => 'us',
@@ -145,7 +177,9 @@ class AssetRepository {
   }
 
   /// Minor-unit integer (kobo/cents) -> "1,234.56" with thousands separators.
-  String _formatKobo(int minorUnits) {
+  /// Static: used by both [_fromJson] (instance) and [applyLiveQuote]
+  /// (static, no REST response to construct an instance from).
+  static String _formatKobo(int minorUnits) {
     final negative = minorUnits < 0;
     final abs = negative ? -minorUnits : minorUnits;
     final major = abs ~/ 100;
@@ -161,7 +195,8 @@ class AssetRepository {
   }
 
   /// Percentage -> "+1.94" / "−0.62" (U+2212 minus, 2dp, always signed).
-  String _formatPct(double pct) {
+  /// Static — see [_formatKobo]'s doc comment for why.
+  static String _formatPct(double pct) {
     final sign = pct < 0 ? '−' : '+';
     return '$sign${pct.abs().toStringAsFixed(2)}';
   }

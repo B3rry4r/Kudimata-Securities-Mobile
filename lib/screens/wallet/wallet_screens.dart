@@ -32,11 +32,20 @@ import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/realtime/realtime_client.dart';
 import 'package:kudimata_invest/data/repositories/transaction_repository.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 
 import 'wallet_flows.dart';
+
+// R-41 (docs/redesign/DECISIONS.md): also wired to `wallet:update`
+// (RealtimeClient.walletUpdates) — the decoded WalletBalance is applied
+// straight onto [_WalletScreenState._data]'s balance/pending fields via
+// WalletRepository.walletUpdateFromJson, with NO network call on receipt.
+// On reconnect after a drop, this refetches ONCE via the same [_load] this
+// screen's own 8s poll already uses — the one legitimate fetch in this
+// path.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1 · WALLET HOME (root tab — shell provides the bottom nav).
@@ -58,7 +67,11 @@ class WalletScreen extends StatefulWidget {
 class _WalletScreenState extends State<WalletScreen> {
   late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
   late final _txnRepo = TransactionRepository(AppScope.read(context).apiClient);
+  late final RealtimeClient _realtime = AppScope.read(context).realtimeClient;
   late Future<_WalletData> _future = _load();
+
+  StreamSubscription<Map<String, dynamic>>? _walletSub;
+  StreamSubscription<void>? _reconnectSub;
 
   /// The data actually rendered once the first silent poll succeeds — see
   /// home_screen.dart's identical field for the full writeup of why this
@@ -79,11 +92,31 @@ class _WalletScreenState extends State<WalletScreen> {
   void initState() {
     super.initState();
     _pollTimer = Timer.periodic(_pollInterval, (_) => _silentRefresh());
+    _walletSub = _realtime.walletUpdates.listen(_onWalletUpdate);
+    _reconnectSub = _realtime.reconnected.listen((_) => _silentRefresh());
+  }
+
+  /// Applies a decoded `wallet:update` payload directly onto [_data]'s
+  /// balance/pending fields — reuses [_load]'s existing txns list rather
+  /// than re-fetching it, and reuses WalletRepository's own kobo->display
+  /// formatting ([WalletRepository.walletUpdateFromJson]) rather than a
+  /// second copy of it here. No network call. Dropped if nothing has
+  /// loaded yet ([_data] null) — the in-flight initial [_future] covers
+  /// that case moments later.
+  void _onWalletUpdate(Map<String, dynamic> json) {
+    final current = _data;
+    if (current == null || !mounted) return;
+    final snapshot = WalletRepository.walletUpdateFromJson(json);
+    setState(() {
+      _data = (balance: snapshot.available, pending: snapshot.pending, txns: current.txns);
+    });
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _walletSub?.cancel();
+    _reconnectSub?.cancel();
     super.dispose();
   }
 

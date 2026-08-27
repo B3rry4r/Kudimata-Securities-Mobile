@@ -72,6 +72,15 @@ typedef FundResult = ({Txn transaction, String checkoutUrl, int feeKobo});
 /// `platformFeeKobo` aren't carried here too.
 typedef VirtualAccountDetails = ({String accountNumber, String bankName, int feeKobo});
 
+/// The two preformatted display strings the wallet screen renders from a
+/// `WalletBalance` (registry.json / backend src/common/types/wallet.types.ts)
+/// — the SAME shape [WalletRepository.balanceDetail] returns from a REST
+/// fetch. Named so RealtimeClient's `wallet:update` payload
+/// (lib/data/realtime/realtime_client.dart) can be decoded into this exact
+/// type too, via [WalletRepository.walletUpdateFromJson] — one parser, two
+/// entry points (REST + socket), never two parsers of the same shape.
+typedef WalletBalanceSnapshot = ({String available, String? pending});
+
 class WalletRepository {
   const WalletRepository(this._client);
   final ApiClient _client;
@@ -92,8 +101,17 @@ class WalletRepository {
   /// there genuinely is one — see screen-specs.md spec 40). Added alongside
   /// [balance] rather than replacing it: [balance] is kept for any other
   /// caller that only ever wanted the available figure.
-  Future<({String available, String? pending})> balanceDetail() async {
+  Future<WalletBalanceSnapshot> balanceDetail() async {
     final json = await _rawBalance();
+    return _parseBalance(json);
+  }
+
+  Future<Map<String, dynamic>> _rawBalance() async {
+    final response = await _client.get('/wallet-balance');
+    return response.data as Map<String, dynamic>;
+  }
+
+  static WalletBalanceSnapshot _parseBalance(Map<String, dynamic> json) {
     final availableKobo = (json['availableBalanceKobo'] as num?)?.toInt() ?? 0;
     final pendingKobo = (json['pendingBalanceKobo'] as num?)?.toInt() ?? 0;
     return (
@@ -102,10 +120,12 @@ class WalletRepository {
     );
   }
 
-  Future<Map<String, dynamic>> _rawBalance() async {
-    final response = await _client.get('/wallet-balance');
-    return response.data as Map<String, dynamic>;
-  }
+  /// Parses a `wallet:update` socket payload (R-41) directly — the SAME
+  /// WalletBalance shape [balanceDetail] parses via [_parseBalance] from a
+  /// REST fetch. Not a second parser: [_parseBalance] is the one place
+  /// kobo->display-string formatting happens for this resource; this is
+  /// just its second entry point. No network call.
+  static WalletBalanceSnapshot walletUpdateFromJson(Map<String, dynamic> json) => _parseBalance(json);
 
   /// POST /transactions/fund. [amountKobo] is the amount the Add money sheet
   /// collected, converted from its entered naira string; [method] is

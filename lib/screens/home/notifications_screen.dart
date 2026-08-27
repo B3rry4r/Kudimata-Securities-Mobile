@@ -23,9 +23,20 @@
 // the header's settings gear (nav to Account → Notifications) and the
 // bottom "Choose what we notify you about" ghost button reuses the same
 // slot pattern, both wired to Routes.acctNotifications.
+//
+// R-41 (docs/redesign/DECISIONS.md): also wired to `notification:new`
+// (RealtimeClient.notifications) — each decoded Notification is prepended
+// straight onto [_NotificationsScreenState._items], with NO network call
+// on receipt. On reconnect after a drop (RealtimeClient.reconnected), this
+// refetches ONCE via the same [_load]/NotificationsRepository.list() this
+// screen already uses for its first load — the one legitimate fetch in
+// this path.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/realtime/realtime_client.dart';
 import 'package:kudimata_invest/data/repositories/notifications_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -43,7 +54,47 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   late final _repo = NotificationsRepository(AppScope.read(context).apiClient);
-  late Future<List<NotificationItem>> _future = _repo.list();
+  late final RealtimeClient _realtime = AppScope.read(context).realtimeClient;
+  late Future<List<NotificationItem>> _future = _load();
+
+  /// The freshest known list — same override pattern as
+  /// order_status_screen.dart/wallet_screens.dart. Once loaded, this (not
+  /// the FutureBuilder's own snapshot) is what's rendered and what
+  /// [_markRead] mutates.
+  List<NotificationItem>? _items;
+
+  StreamSubscription<Map<String, dynamic>>? _notificationSub;
+  StreamSubscription<void>? _reconnectSub;
+
+  Future<List<NotificationItem>> _load() async {
+    final items = await _repo.list();
+    if (mounted) setState(() => _items = items);
+    return items;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationSub = _realtime.notifications.listen(_onNotification);
+    _reconnectSub = _realtime.reconnected.listen((_) => _load());
+  }
+
+  /// Applies a decoded `notification:new` payload directly — prepends it
+  /// to [_items] via NotificationsRepository.notificationFromJson (reusing
+  /// [NotificationsRepository]'s own parser, not a second one). No network
+  /// call.
+  void _onNotification(Map<String, dynamic> json) {
+    if (!mounted) return;
+    final item = NotificationsRepository.notificationFromJson(json);
+    setState(() => _items = [item, ...(_items ?? const <NotificationItem>[])]);
+  }
+
+  @override
+  void dispose() {
+    _notificationSub?.cancel();
+    _reconnectSub?.cancel();
+    super.dispose();
+  }
 
   Future<void> _markRead(int index, List<NotificationItem> items) async {
     final item = items[index];
@@ -99,15 +150,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: FutureBuilder<List<NotificationItem>>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const KLoadingView();
+          // Prefer the freshest known list (kept live by notification:new,
+          // see file header) over the FutureBuilder's own snapshot — same
+          // pattern order_status_screen.dart/wallet_screens.dart use.
+          final effective = _items ?? snapshot.data;
+          if (effective == null) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const KLoadingView();
+            }
+            if (snapshot.hasError) {
+              return KErrorView(
+                onPrimary: () => setState(() => _future = _load()),
+              );
+            }
           }
-          if (snapshot.hasError) {
-            return KErrorView(
-              onPrimary: () => setState(() => _future = _repo.list()),
-            );
-          }
-          final items = snapshot.data!;
+          final items = effective!;
           if (items.isEmpty) {
             return const KEmptyView(
               icon: 'bell',
