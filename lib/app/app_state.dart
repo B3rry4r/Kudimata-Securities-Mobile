@@ -135,6 +135,19 @@ class AppState extends ChangeNotifier {
   /// security-reentry passcode change.
   bool loginPasscodeSetup = false;
 
+  /// The email being onboarded, set by otp_screen.dart right after a
+  /// successful verify. R-8a (DECISIONS.md, 2026-08-27) put suitability +
+  /// its result + the risk disclosure BETWEEN OTP and the other three legal
+  /// documents, so the email otp_screen.dart used to hand straight to
+  /// terms_and_privacy_screen.dart via a single GoRouter `extra` now has to
+  /// survive several hops it isn't otherwise involved in (questionnaire →
+  /// result → risk disclaimer → terms). Threaded via AppState rather than
+  /// re-plumbing `extra` through every one of those screens, same reasoning
+  /// as [loginPasscodeSetup] above. terms_and_privacy_screen.dart reads it
+  /// (via `AppScope.read`) when it hands off to Routes.createPasscode,
+  /// which is the one screen downstream that actually needs it.
+  String? pendingSignupEmail;
+
   // Live watchlist (tickers).
   final Set<String> _watchlist;
   Set<String> get watchlistTickers => Set.unmodifiable(_watchlist);
@@ -265,6 +278,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setPendingSignupEmail(String? v) {
+    pendingSignupEmail = v;
+    notifyListeners();
+  }
+
   /// On construction, read the secure token store to decide the initial
   /// [signedIn] value — a LOCAL presence check only (an access token was
   /// persisted from a prior session), not a server-side validation. If that
@@ -356,6 +374,7 @@ class AppState extends ChangeNotifier {
     await _tokenStore.clearTokens();
     signedIn = false;
     loginPasscodeSetup = false;
+    pendingSignupEmail = null;
     kycSubmitted = false;
     kycApproved = false;
     suitabilityComplete = false;

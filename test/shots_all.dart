@@ -129,10 +129,12 @@ class _RouteSpec {
   final Object? extra;
 }
 
-// Every GoRoute registered in lib/router/app_router.dart (76 total; the
-// errorBuilder's RouteNotFoundScreen is a fallback, not a registered route,
-// and is deliberately excluded). Grouped to match the state each screen is
-// actually reached with in the real flow — see the file header.
+// Every GoRoute registered in lib/router/app_router.dart (76 total as of
+// the 2026-08-27 flow pass, which added kycChecklist/onboardingNextSteps/
+// setPriceAlert — 73 before; the errorBuilder's RouteNotFoundScreen is a
+// fallback, not a registered route, and is deliberately excluded). Grouped
+// to match the state each screen is actually reached with in the real
+// flow — see the file header.
 final List<_RouteSpec> _specs = [
   // ── Onboarding / pre-auth (signed out, matching shots_onboarding.dart) ──
   _RouteSpec('01_splash', Routes.splash, 'onboarding/splash_screen.dart', signedIn: false),
@@ -160,6 +162,10 @@ final List<_RouteSpec> _specs = [
   _RouteSpec('12_onboarding_personal', Routes.onboardingPersonal,
       'onboarding/personal_details_screen.dart'),
   _RouteSpec('13_onboarding_avatar', Routes.onboardingAvatar, 'onboarding/avatar_screen.dart'),
+  // s07 "Your account is ready" (X-4, SHARED-CHANGES.md 2026-08-27) — sits
+  // between avatar selection and KYC start.
+  _RouteSpec('13b_onboarding_next_steps', Routes.onboardingNextSteps,
+      'onboarding/whats_next_screen.dart'),
   _RouteSpec('14_login', Routes.login, 'onboarding/log_in_screen.dart', signedIn: false),
   _RouteSpec('15_reset', Routes.reset, 'onboarding/reset_passcode_screen.dart', signedIn: false),
 
@@ -167,6 +173,11 @@ final List<_RouteSpec> _specs = [
   //    shots_kyc.dart's table — router gating only checks signedIn, so these
   //    flags drive what each screen itself shows, not navigation) ──────────
   _RouteSpec('16_kyc_intro', Routes.kycIntro, 'kyc/kyc_intro.dart',
+      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+  // s11 checklist hub (S-8, SHARED-CHANGES.md 2026-08-27) — the flow's
+  // spine, re-entered after every completed step; same in-progress flags
+  // as kyc_intro above.
+  _RouteSpec('16b_kyc_checklist', Routes.kycChecklist, 'kyc/kyc_checklist_screen.dart',
       kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
   _RouteSpec('17_kyc_bvn', Routes.kycBvn, 'kyc/bvn_nin.dart',
       kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
@@ -206,6 +217,11 @@ final List<_RouteSpec> _specs = [
   // '36_watchlist' no longer exists. See account_screen.dart's 'My alerts'
   // row / price_alerts_screen.dart for the surviving reader.
   _RouteSpec('37_asset_detail', Routes.assetDetail('MTNN'), 'markets/asset_detail_screen.dart'),
+  // s49 "Set a price alert" (S-11/X-7, SHARED-CHANGES.md 2026-08-27) —
+  // public, ticker-parametrised; reached from the asset page's own bell
+  // icon-button as well as price_alerts_screen.dart's "New alert" picker.
+  _RouteSpec('37b_set_price_alert', Routes.setPriceAlert('MTNN'), 'markets/price_alerts_screen.dart',
+      rulingKey: 'markets/price_alerts_screen.dart#set_price_alert'),
   _RouteSpec('38_explain', Routes.explainThis('MTNN'), 'markets/explain_screen.dart'),
   _RouteSpec('39_holding_detail', Routes.holdingDetail('MTNN'), 'portfolio/holding_detail_screen.dart'),
   _RouteSpec('40_transaction_detail', Routes.transactionDetail('TX1042'), 'wallet/wallet_screens.dart',

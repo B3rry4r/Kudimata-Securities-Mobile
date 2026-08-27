@@ -31,11 +31,19 @@ class Routes {
   static const String biometric = '/biometric';
   static const String onboardingPersonal = '/onboarding/personal';
   static const String onboardingAvatar = '/onboarding/avatar';
+  // "Your account is ready" / three-step checklist (screen s07) — X-4,
+  // SHARED-CHANGES.md. Sits between avatar selection and KYC start.
+  static const String onboardingNextSteps = '/onboarding/next-steps';
   static const String login = '/login';
   static const String reset = '/reset';
 
   // ── KYC ──────────────────────────────────────────────────────────────────
   static const String kycIntro = '/kyc';
+  // Verification checklist hub (screen s11) — the flow's spine. Re-entered
+  // after every completed step (see kyc_checklist_screen.dart's own header
+  // and DECISIONS.md's SHARED-CHANGES S-8/X-5), unlike kycIntro above,
+  // which is a one-shot entry with its own resume logic.
+  static const String kycChecklist = '/kyc/checklist';
   static const String kycBvn = '/kyc/bvn';
   // CHN · optional — 2 of 8 (2026-08-24 canvas screen 15, re-sequencing the
   // real 5-step flow to the canvas's real 8 steps). Right after bvn/nin,
@@ -100,6 +108,10 @@ class Routes {
 
   // Dynamic pushed routes.
   static String assetDetail(String ticker) => '/asset/$ticker';
+  // Set a price alert (screen s49) — S-11, SHARED-CHANGES.md. Public,
+  // ticker-parametrised, reached from the asset page's own entry point
+  // (X-7) as well as price_alerts_screen.dart's existing "New alert" picker.
+  static String setPriceAlert(String ticker) => '/asset/$ticker/alert';
   static String holdingDetail(String ticker) => '/portfolio/holding/$ticker';
   static String transactionDetail(String id) => '/wallet/txn/$id';
   // Read-only legal-document preview, pushed from sign_up_screen.dart's
@@ -120,6 +132,7 @@ class Routes {
 
   // Path patterns for GoRoute registration (the router agent uses these).
   static const String assetDetailPath = '/asset/:ticker';
+  static const String setPriceAlertPath = '/asset/:ticker/alert';
   static const String holdingDetailPath = '/portfolio/holding/:ticker';
   static const String transactionDetailPath = '/wallet/txn/:id';
   static const String legalPreviewPath = '/legal-preview/:kind';

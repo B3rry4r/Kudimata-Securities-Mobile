@@ -19,6 +19,10 @@
 // Resume-aware: if the investor already has a primary account (added here
 // before, or already had one), this shows it directly instead of asking to
 // re-add — Continue just moves on.
+//
+// Post-confirm navigation goes to Routes.kycChecklist, not straight to
+// Declarations (X-5, SHARED-CHANGES.md 2026-08-27) — the checklist hub is
+// the flow's spine, re-entered after every completed step.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -143,7 +147,7 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
   // "****6835" and a blank Name row rather than the real values s18b draws;
   // that's worse than the resume shortcut it would replace. The account was
   // already confirmed the session it was added.
-  void _continueWithExisting() => context.go(Routes.kycDeclarations);
+  void _continueWithExisting() => context.go(Routes.kycChecklist);
 
   /// s18b "Confirm your bank account" sheet. Primary -> declarations; ghost
   /// "Edit" just dismisses back onto s18 (the form stays exactly as typed).
@@ -156,7 +160,7 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
       context,
       child: _BankConfirmSheet(bankName: bankName, accountNumber: accountNumber, holderName: holderName),
     );
-    if (confirmed == true && mounted) context.go(Routes.kycDeclarations);
+    if (confirmed == true && mounted) context.go(Routes.kycChecklist);
   }
 
   @override

@@ -278,49 +278,64 @@ class _StepRow extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: dotBg, shape: BoxShape.circle),
-                child: dotChild,
-              ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: state == _RowState.done ? KColor.gain.withValues(alpha: 0.4) : KColor.hairline,
-                  ),
+      // IntrinsicHeight — the connector-line Column below has an Expanded
+      // child (the vertical line between dots), which needs a BOUNDED
+      // height to size against. Bare, this Row sits inside a Column inside
+      // a SingleChildScrollView, all of which pass unbounded height down —
+      // IntrinsicHeight measures the Row's own content once and hands that
+      // fixed height down to every child, giving the connector something
+      // real to fill. Found live: without it, every step but the last threw
+      // during layout/semantics (never a loud red-screen error — this
+      // screen was never actually rendered before this pass, see
+      // DECISIONS.md's flow-pass task) instead of drawing the connector.
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: dotBg, shape: BoxShape.circle),
+                  child: dotChild,
                 ),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 24, top: 3),
-              child: Row(
-                children: [
+                if (!isLast)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(step.title, style: KType.cardTitle(color: titleColor)),
-                        Text(step.note, style: KType.data(color: KColor.ink3)),
-                      ],
+                    child: Container(
+                      width: 2,
+                      color: state == _RowState.done
+                          ? KColor.gain.withValues(alpha: 0.4)
+                          : KColor.hairline,
                     ),
                   ),
-                  if (state == _RowState.current) KIcon('chevronRight', size: 18, color: KColor.indicator),
-                ],
+              ],
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 24, top: 3),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(step.title, style: KType.cardTitle(color: titleColor)),
+                          Text(step.note, style: KType.data(color: KColor.ink3)),
+                        ],
+                      ),
+                    ),
+                    if (state == _RowState.current)
+                      KIcon('chevronRight', size: 18, color: KColor.indicator),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

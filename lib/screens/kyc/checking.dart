@@ -7,9 +7,12 @@
 // result replaces this timer" — this pass IS that replacement). Now calls
 // POST /kyc-submissions/draft/liveness, which reads the selfie
 // liveness.dart already uploaded+registered against the draft and actually
-// runs the check. On success, advances to the utility-bill step (step 4);
-// on failure, shows a retryable error state rather than silently
-// continuing — this is a real verification call now, not a mocked delay.
+// runs the check. On failure, shows a retryable error state rather than
+// silently continuing — this is a real verification call now, not a mocked
+// delay. On success, returns to Routes.kycChecklist (X-5, SHARED-CHANGES.md
+// 2026-08-27) rather than hard-chaining straight to the next collection
+// screen — the checklist hub is the flow's spine, re-entered after every
+// completed step.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -42,7 +45,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
     try {
       await _repo.verifyDraftLiveness();
       if (!mounted) return;
-      context.go(Routes.kycUtilityBill);
+      context.go(Routes.kycChecklist);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);

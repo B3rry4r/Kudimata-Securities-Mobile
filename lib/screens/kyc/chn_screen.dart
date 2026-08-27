@@ -14,6 +14,10 @@
 // to null on a fresh draft; nothing to PATCH. "Skip — create one for me"
 // (ghost button) is the same no-op-and-move-on, always available regardless
 // of the radio/input state, per the canvas's own two-CTA design.
+//
+// Step-complete navigation goes to Routes.kycChecklist, not straight to the
+// next collection screen (X-5, SHARED-CHANGES.md 2026-08-27) — the
+// checklist hub is the flow's spine now, re-entered after every step.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -70,7 +74,7 @@ class _ChnScreenState extends State<ChnScreen> {
     }
     if (!_hasChn) {
       // Nothing to persist — chn already defaults to null on the draft.
-      context.go(Routes.kycId);
+      context.go(Routes.kycChecklist);
       return;
     }
     setState(() {
@@ -80,7 +84,7 @@ class _ChnScreenState extends State<ChnScreen> {
     try {
       await _repo.updateDraftFields(chn: _chn.text.trim());
       if (!mounted) return;
-      context.go(Routes.kycId);
+      context.go(Routes.kycChecklist);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -92,7 +96,7 @@ class _ChnScreenState extends State<ChnScreen> {
     }
   }
 
-  void _skip() => context.go(Routes.kycId);
+  void _skip() => context.go(Routes.kycChecklist);
 
   @override
   Widget build(BuildContext context) {

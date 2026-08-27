@@ -134,7 +134,14 @@ class _OtpScreenState extends State<OtpScreen> {
       final tokens = await _repo.verifyEmailOtp(email: email, code: _digits.join());
       await _tokenStore.saveTokens(tokens.accessToken, tokens.refreshToken ?? '');
       if (!mounted) return;
-      context.go(Routes.termsOfService, extra: email);
+      // R-8a (DECISIONS.md, 2026-08-27): suitability now runs immediately
+      // after OTP, ahead of the legal documents — the terms screen no
+      // longer follows straight from here, so `email` can't ride this
+      // route's `extra` any more. Stashed on AppState instead (see its own
+      // doc comment) for terms_and_privacy_screen.dart to pick up several
+      // screens downstream.
+      AppScope.read(context).setPendingSignupEmail(email);
+      context.go(Routes.questionnaire);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {

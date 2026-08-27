@@ -59,6 +59,7 @@ void main() {
       // pushed dynamic
       '/asset/MTNN',
       '/asset/AAPL',
+      '/asset/MTNN/alert',
       '/portfolio/holding/MTNN',
       '/wallet/txn/TX1042',
       // account subs
@@ -69,12 +70,13 @@ void main() {
       '/account/statements',
       // gated
       '/signup', '/otp', '/passcode/create', '/passcode/confirm', '/biometric',
-      '/onboarding/personal', '/login', '/reset',
+      '/onboarding/personal', '/onboarding/next-steps', '/login', '/reset',
       // kyc (2026-08-24: re-sequenced to 8 real steps — chn, bank-dcs,
       // declarations, review were new; D-1, 2026-08-27 removals pass, R-9:
       // review dropped, next-of-kin is now the last step and submits
       // directly)
       '/kyc',
+      '/kyc/checklist',
       '/kyc/bvn',
       '/kyc/chn',
       '/kyc/id',
@@ -83,7 +85,8 @@ void main() {
       '/kyc/bank-dcs', '/kyc/declarations', '/kyc/next-of-kin',
       '/kyc/submitted', '/kyc/approved',
       // suitability
-      '/suitability', '/suitability/result', '/suitability/terms',
+      '/suitability', '/suitability/result', '/suitability/risk-disclaimer',
+      '/suitability/terms',
       // 2026-08-22 "Soft Landing" redesign additions — added after this
       // exact test's original list missed a real overflow bug on
       // /security-alert (found only via test/shots.dart's visual check).

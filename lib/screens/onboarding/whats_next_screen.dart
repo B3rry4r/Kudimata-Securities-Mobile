@@ -12,17 +12,11 @@
 // (Routes.kycIntro, Routes.home) and are wired directly below — no shared
 // file touched for that part.
 //
-// What's missing: reaching THIS screen at all. Today avatar_screen.dart's
-// `_skip()`/`_continue()` both `context.go(Routes.kycIntro)` directly once
-// avatar selection finishes — there is no route constant for this screen, and
-// neither `lib/router/**` nor avatar_screen.dart itself belong to this
-// screen's own file boundary (SCREEN-AGENT-BRIEF.md rule 5/6). Filed as a
-// SHARED-CHANGE REQUEST (docs/redesign/SHARED-CHANGES.md, X-4): add
-// `Routes.onboardingNextSteps` (e.g. '/onboarding/next-steps') routed to
-// [WhatsNextScreen], and repoint avatar_screen.dart's two
-// `Routes.kycIntro` calls at it instead. Until that lands this screen is
-// built and correct but unreachable from the live flow — nothing here calls
-// a route that doesn't exist, per the brief.
+// Reached via Routes.onboardingNextSteps — wired up by X-4
+// (SHARED-CHANGES.md, 2026-08-27): avatar_screen.dart's `_skip()`/
+// `_continue()` both `context.go(Routes.onboardingNextSteps)` once avatar
+// selection finishes, and `routes.dart`/`app_router.dart` register the
+// route to [WhatsNextScreen].
 //
 // No back arrow: `s07`'s own markup has no back-button row at all (status
 // bar, then content starts straight at 34px padding) — this is a one-way

@@ -129,7 +129,13 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
             pepWho: _pep ? _who : null,
             pepPosition: _pep ? _position.text.trim() : null,
           );
-      context.go(Routes.kycNextOfKin);
+      // Routes.kycChecklist, not straight to Next of kin (X-5,
+      // SHARED-CHANGES.md 2026-08-27) — the checklist hub is the flow's
+      // spine, re-entered after every completed step. (The hub's own
+      // "Continue" then lands on Next of kin anyway, since it's always the
+      // one item still outstanding once 1-6 are done — see that screen's
+      // header comment.)
+      context.go(Routes.kycChecklist);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);

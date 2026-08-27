@@ -216,6 +216,15 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                       },
                     ),
                   ),
+                  // s49's own caption: "From the asset page, or 'Set a price
+                  // alert' on 39 Market closed" (X-7, SHARED-CHANGES.md
+                  // 2026-08-27) — this is that entry point.
+                  KIconButton(
+                    icon: 'bell',
+                    semanticLabel: 'Set a price alert',
+                    onPressed: () => context.push(Routes.setPriceAlert(widget.ticker)),
+                  ),
+                  const SizedBox(width: 8),
                   KIconButton(
                     icon: watched ? 'check' : 'plus',
                     semanticLabel: watched ? 'Remove from watchlist' : 'Add to watchlist',

@@ -2,19 +2,21 @@
 // Verification.dc.html) per RULINGS.md — a single scene, headline, body and
 // one "Start" primary. The canvas's own step-by-step checklist lives on a
 // SEPARATE artboard, s11 "Checklist hub" (the flow's spine — every later
-// step returns to it) — s11 has no app route yet; see this screen agent's
-// report for whether it should be absorbed here or built as its own screen.
-// Until it exists, "Start" goes straight into the collection steps, same as
-// before.
+// step returns to it), built as its own screen at
+// kyc_checklist_screen.dart / Routes.kycChecklist (S-8, DECISIONS.md's
+// SHARED-CHANGES.md).
 //
 // RESUME (2026-08-20, phased-KYC directive: "so users who goes out and
 // comes back don't have to start all over"): "Start" first checks
-// GET /kyc-submissions/draft. A draft in progress routes straight to
-// whichever step it's at (see _routeForStep) instead of always restarting
-// at step 1 — the same check home_screen.dart's "Complete your KYC — N/5
-// done" prompt already makes via AppState.kycDraftStep, but re-checked
-// live here rather than trusting a value that may be stale by the time the
-// investor actually taps Start.
+// GET /kyc-submissions/draft SOLELY to populate AppState.kycForm.draftId —
+// every step screen past step 1 needs that set before it can upload
+// anything (see AppState.kycDraftStep's own doc comment for the incident
+// this fixed). It then hands off to the checklist hub rather than jumping
+// straight to a specific step itself (X-5, SHARED-CHANGES.md, 2026-08-27):
+// the hub already re-derives exactly which step is next from the same real
+// draft/account data and is the one place that logic should live, now that
+// it exists as its own re-enterable screen instead of computing it here
+// too.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -34,33 +36,6 @@ class KycIntroScreen extends StatefulWidget {
 
 class _KycIntroScreenState extends State<KycIntroScreen> {
   bool _busy = false;
-
-  /// Which route a given backend currentStep (2-5, per
-  /// KycRepository.getDraft's doc comment — a draft always exists past step
-  /// 1) resumes into. The backend only tracks 5 milestones
-  /// (KYC_TOTAL_STEPS, kyc-submissions.service.ts) — CHN/bank-DCS/
-  /// declarations/next-of-kin/review are mobile-only screens layered
-  /// between those milestones, so several backend steps fan out to more
-  /// than one mobile route:
-  ///   backend 2 (no id document yet)   -> mobile step 2 (CHN), the first
-  ///                                        untracked screen after step 1;
-  ///                                        its own Continue/Skip always
-  ///                                        lands on step 3 (ID upload)
-  ///   backend 3 (liveness not done)    -> mobile step 4 (selfie capture)
-  ///   backend 4 (no utility bill)      -> mobile step 5 (utility bill)
-  ///   backend 5 (ready to finalize)    -> mobile step 6 (Bank & DCS), the
-  ///                                        first of the three untracked
-  ///                                        steps (bank/DCS, declarations,
-  ///                                        next of kin) still left; each
-  ///                                        is safe to redo/re-answer.
-  /// Step 1 has no entry here since a draft's currentStep is never reported
-  /// as 1.
-  static const _stepRoutes = {
-    2: Routes.kycChn,
-    3: Routes.kycLiveness,
-    4: Routes.kycUtilityBill,
-    5: Routes.kycBankDcs,
-  };
 
   /// "A few more details" (DOB/address/city/state/phone) — 2026-08-24,
   /// direct product feedback: "a few more details should be part of the
@@ -108,7 +83,7 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
       if (!mounted) return;
       if (draft != null && draft.id != null) {
         app.kycForm.setDraftId(draft.id!);
-        context.go(_stepRoutes[draft.currentStep] ?? Routes.kycBvn);
+        context.go(Routes.kycChecklist);
         return;
       }
       context.go(Routes.kycBvn);

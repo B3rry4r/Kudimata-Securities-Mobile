@@ -1,42 +1,37 @@
-// Statutory Risk Disclaimer (Rule 76 compliance) fallback screen.
+// Statutory Risk Disclaimer (Rule 76 compliance) — its OWN scroll-gated,
+// in-app screen. R-8a (DECISIONS.md, 2026-08-27) is the current ruling: it
+// resolves a three-way conflict between R-1a (suitability before the legal
+// documents), R-8 (risk disclosure bundled with the other three, phone
+// viewer) and the firm's real SEC-facing compliance intake ("My
+// observations on KSL papers.docx", "the disclaimer must appear
+// immediately after suitability", scroll-gated in-app).
 //
-// R-8 (DECISIONS.md, 2026-08-26) demotes this from a dedicated scroll-gated
-// acceptance screen to "one of the four [documents], presented at the start
-// with the rest, not as its own gated screen." Risk disclosure now lives in
-// the main onboarding bundle (terms_and_privacy_screen.dart, via
-// legal_acceptance_screen.dart) alongside Terms of Service, Privacy Policy
-// and Client Agreement, opened in the phone's native file viewer instead of
-// rendered inline.
+// Resolution: this screen runs right after suitability_result_screen.dart,
+// BEFORE the other three legal documents (terms of service, privacy
+// policy, client agreement — still opened in the phone's native viewer via
+// terms_and_privacy_screen.dart/legal_acceptance_screen.dart). It keeps
+// in-app rendering + a scroll-to-bottom gate because that's the only
+// mechanism that produces real evidence the investor was shown the text —
+// with BR-6 live (files never actually uploaded, presigning succeeds, the
+// viewer 404s) the phone-viewer pattern would record acceptance for a
+// document nobody could read.
 //
-// This screen still exists and is still routed to (Routes.riskDisclaimer,
-// wired in app_router.dart and app_state.dart's tradingEligibilityGap) for
-// ONE fallback case: a returning investor whose account has
-// suitabilityComplete=true but no recorded risk_disclosure acknowledgement
-// (e.g. onboarded before risk_disclosure joined the main bundle). For that
-// investor there is no other place in the app that still asks. Removing the
-// route/gate that reaches it is a router and app_state.dart change — see
-// this pass's report (SHARED-CHANGE REQUEST) rather than a local edit here,
-// per Rule 5/6 of the screen-agent brief.
+// The disclosure TEXT ITSELF (Risk of Capital Loss / Digital Platform
+// Infrastructure Risks / No Investment Advice / Regulatory Jurisdiction
+// sections) is deliberately NOT authored here — direct product
+// instruction: "leave risk disclaimer content for legal team, they would
+// do it". This screen renders whatever LegalDocument content already
+// exists for kind='risk_disclosure' (GET /legal-documents/content/
+// risk_disclosure) verbatim; only the STRUCTURE around it (scroll gating,
+// the button label, the NDPA-naming checkbox) is this screen's own.
 //
-// ═══ ACCEPTANCE-EVIDENCE CHANGE — reported, not softened ═══
-// Until 2026-08-27 this screen required scrolling to the bottom of the
-// FULL disclosure text (Risk of Capital Loss / Digital Platform
-// Infrastructure Risks / No Investment Advice / Regulatory Jurisdiction)
-// before "Accept & Proceed" enabled — real evidence the investor's screen
-// had displayed every word of the statutory notice. Matching R-8's native-
-// viewer pattern (and legal_acceptance_screen.dart, converted the same way)
-// replaces that with "tapped to open the document once" — the app can
-// confirm the file was handed off to an external viewer, nothing more. It
-// cannot confirm the investor read it, scrolled it, or even that the
-// destination rendered rather than 404ing (BR-6: the file was never
-// actually uploaded to storage, so presigning succeeds and the external
-// viewer opens to a broken page with no client-side way to detect that in
-// advance). If compliance ever needs proof an investor actually read this
-// document, neither this screen's new mechanism nor the bundle's does that
-// — flagged exactly as R-8 itself flags it, restated here concretely.
+// R-2 (still in force, restated by R-8a): the investor's computed risk
+// profile is never displayed on this screen. RiskDisclaimerArgs.profile is
+// kept only so the route contract (suitability_result_screen.dart's caller,
+// AppState.tradingEligibilityGap's fallback caller) doesn't change; it is
+// never read by the body below.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
@@ -49,11 +44,13 @@ import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
-/// Route `extra`. Kept for router-contract compatibility with existing
-/// callers (suitability_result_screen.dart) — R-2 (no profiling anywhere)
-/// means [profile] is never rendered by this screen; it is not read here at
-/// all any more, only carried so the route signature doesn't have to change
-/// in lockstep with a router file this directory can't edit.
+/// Route `extra`. Carried for router-contract compatibility with existing
+/// callers (suitability_result_screen.dart pushes this with the just-
+/// computed profile) — R-2 means [profile] is never rendered by this
+/// screen. AppState.tradingEligibilityGap's fallback prompt (home_screen.dart)
+/// pushes this route with no `extra` at all, for a returning investor
+/// re-gated here directly with no freshly-computed profile in hand; this
+/// screen doesn't need one either way.
 class RiskDisclaimerArgs {
   const RiskDisclaimerArgs({required this.profile});
   final String profile;
@@ -76,36 +73,43 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
   );
   late Future<LegalDocument> _future = _legalRepo.getContent('risk_disclosure');
 
-  bool _opened = false;
-  bool _opening = false;
+  final _scrollController = ScrollController();
+  bool _scrolledToBottom = false;
   bool _agreed = false;
   bool _submitting = false;
   String? _error;
 
-  Future<void> _openDocument(LegalDocument doc) async {
-    if (doc.fileObjectKey.isEmpty) {
-      _snack("This document hasn't been uploaded yet.");
-      return;
-    }
-    setState(() => _opening = true);
-    try {
-      final url = await _legalRepo.downloadUrl(doc.id);
-      final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      if (ok) {
-        setState(() => _opened = true);
-      } else if (mounted) {
-        _snack("Couldn't open the Risk Disclosure. Try again.");
-      }
-    } on ApiException catch (e) {
-      if (mounted) _snack(e.message);
-    } finally {
-      if (mounted) setState(() => _opening = false);
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrolledToBottom) return;
+    final position = _scrollController.position;
+    // 24px tolerance — a real device's last frame of momentum scrolling
+    // rarely lands on the exact maxScrollExtent pixel.
+    if (position.pixels >= position.maxScrollExtent - 24) {
+      setState(() => _scrolledToBottom = true);
     }
   }
 
-  void _snack(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  /// Runs once the document has laid out — a short document (or a tall
+  /// device) may never produce a scrollable overflow at all, in which case
+  /// there's nothing to scroll TO and the gate must not stay permanently
+  /// unmet.
+  void _checkAlreadyAtBottom() {
+    if (_scrolledToBottom || !_scrollController.hasClients) return;
+    if (_scrollController.position.maxScrollExtent <= 0) {
+      setState(() => _scrolledToBottom = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _accept() async {
@@ -121,8 +125,13 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
       // Idempotent — suitability_result_screen.dart already set this when
       // it computed the profile; harmless if already true.
       app.setSuitabilityComplete(true);
+      // R-8a moved this screen to run right after suitability, ahead of
+      // the other three legal documents / passcode / biometric / KYC — it
+      // is no longer the last gated onboarding step, but sign-in
+      // completion still fires exactly here (the point the disclaimer
+      // itself was accepted at), same as it always has.
       if (!app.signedIn) app.setSignedIn(true);
-      context.go(Routes.home);
+      context.go(Routes.termsOfService);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -148,123 +157,77 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                child: FutureBuilder<LegalDocument>(
-                  future: _future,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const KLoadingView();
-                    }
-                    if (snapshot.hasError) {
-                      return KErrorView(
-                        onPrimary: () => setState(
-                          () => _future = _legalRepo.getContent('risk_disclosure'),
-                        ),
-                      );
-                    }
-                    final doc = snapshot.data!;
-                    // Empty condition: the document record exists but no
-                    // file has been attached to it yet — a real backend
-                    // state, distinct from BR-6 (a file attached but never
-                    // actually uploaded, which this screen cannot detect).
-                    if (doc.fileObjectKey.isEmpty) {
-                      return const KEmptyView(
-                        icon: 'card',
-                        title: 'No file available yet',
-                        message:
-                            "The Risk Disclosure hasn't been uploaded yet. Please try again shortly.",
-                      );
-                    }
-                    return Column(
+              child: FutureBuilder<LegalDocument>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const KLoadingView();
+                  }
+                  if (snapshot.hasError) {
+                    return KErrorView(
+                      onPrimary: () => setState(
+                        () => _future = _legalRepo.getContent('risk_disclosure'),
+                      ),
+                    );
+                  }
+                  final doc = snapshot.data!;
+                  // Empty condition: the document record exists but no
+                  // sections have been published for it yet — a real
+                  // backend state, distinct from a network/server error.
+                  if (doc.sections.isEmpty) {
+                    return const KEmptyView(
+                      icon: 'card',
+                      title: 'No content available yet',
+                      message:
+                          "The Risk Disclosure hasn't been published yet. Please try again shortly.",
+                    );
+                  }
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _checkAlreadyAtBottom(),
+                  );
+                  return SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const KScreenHead(
                           title: 'Important regulatory & risk notice',
                           body:
-                              'Please open and read this disclosure before activating your account.',
+                              'Please read this disclosure carefully before activating your account.',
                         ),
                         const SizedBox(height: 20),
-                        GestureDetector(
-                          onTap: _opening ? null : () => _openDocument(doc),
-                          behavior: HitTestBehavior.opaque,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-                            decoration: BoxDecoration(
-                              color: KColor.paper,
-                              border: Border.all(
-                                color: _opened ? KColor.indicator : KColor.hairline,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: KColor.indicatorTint,
-                                    borderRadius: BorderRadius.circular(11),
-                                  ),
-                                  child: Center(
-                                    child: KIcon('doc', size: 16, color: KColor.indicator),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('Risk Disclosure', style: KType.cardTitle()),
-                                      Text(doc.sub, style: KType.micro(color: KColor.ink3)),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: _opening
-                                      ? CircularProgressIndicator(
-                                          strokeWidth: 2, color: KColor.ink3)
-                                      : KIcon(
-                                          _opened ? 'check' : 'download',
-                                          size: 16,
-                                          color: _opened ? KColor.indicator : KColor.ink3,
-                                        ),
-                                ),
-                              ],
-                            ),
+                        for (final section in doc.sections) ...[
+                          Text(section.heading, style: KType.cardTitle()),
+                          const SizedBox(height: 6),
+                          Text(
+                            section.body,
+                            style: KType.body(color: KColor.ink2),
                           ),
-                        ),
-                        if (_error != null) ...[
-                          const SizedBox(height: 12),
-                          Text(_error!, style: KType.body(color: KColor.loss)),
+                          const SizedBox(height: 18),
                         ],
-                        const SizedBox(height: 20),
-                        Opacity(
-                          opacity: _opened ? 1 : 0.45,
-                          child: IgnorePointer(
-                            ignoring: !_opened,
-                            child: KCheckbox(
-                              checked: _agreed,
-                              onChanged: (v) => setState(() => _agreed = v),
-                              label:
-                                  'I confirm that I have read, understood, and voluntarily accept the Risk Disclaimer and the Privacy Terms in alignment with the Nigeria Data Protection Act (NDPA).',
-                            ),
-                          ),
+                        if (_error != null) ...[
+                          Text(_error!, style: KType.body(color: KColor.loss)),
+                          const SizedBox(height: 12),
+                        ],
+                        KCheckbox(
+                          checked: _agreed,
+                          disabled: !_scrolledToBottom,
+                          onChanged: (v) => setState(() => _agreed = v),
+                          label:
+                              'I confirm that I have read, understood, and voluntarily accept the Risk Disclaimer and the Privacy Terms in alignment with the Nigeria Data Protection Act (NDPA).',
                         ),
-                        if (!_opened) ...[
+                        if (!_scrolledToBottom) ...[
                           const SizedBox(height: 8),
                           Text(
-                            'Open the document above to continue.',
+                            'Scroll to the end to continue.',
                             style: KType.micro(color: KColor.ink3),
                           ),
                         ],
                       ],
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
             Padding(
@@ -272,7 +235,9 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
               child: KButton(
                 label: 'Accept & Proceed',
                 loading: _submitting,
-                onPressed: _opened && _agreed && !_submitting ? _accept : null,
+                onPressed: _scrolledToBottom && _agreed && !_submitting
+                    ? _accept
+                    : null,
               ),
             ),
           ],

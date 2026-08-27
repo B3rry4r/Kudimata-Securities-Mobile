@@ -18,6 +18,11 @@
 // `context.go` from `onboarding/personal`, so "back" returns there instead,
 // the nearest real equivalent of "the step before this one".
 //
+// Both exits go to Routes.onboardingNextSteps (X-4, SHARED-CHANGES.md
+// 2026-08-27) — "s07"/whats_next_screen.dart's "Your account is ready"
+// checklist, which sits between avatar selection and KYC start in the
+// canvas's own linear flow, not straight back into kyc_intro.dart.
+//
 // Entirely optional — both "Skip" (top-right) and "Use this avatar" (with
 // nothing chosen) proceed to KYC without saving anything; only choosing a
 // tile and continuing calls updateProfile. `s06b` itself shows its first
@@ -45,7 +50,7 @@ class _OnboardingAvatarScreenState extends State<OnboardingAvatarScreen> {
   String? _chosen;
   bool _busy = false;
 
-  void _skip() => context.go(Routes.kycIntro);
+  void _skip() => context.go(Routes.onboardingNextSteps);
 
   Future<void> _continue() async {
     if (_chosen == null) {
@@ -63,7 +68,7 @@ class _OnboardingAvatarScreenState extends State<OnboardingAvatarScreen> {
       return;
     }
     if (!mounted) return;
-    context.go(Routes.kycIntro);
+    context.go(Routes.onboardingNextSteps);
   }
 
   @override

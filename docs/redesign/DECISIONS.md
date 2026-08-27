@@ -613,3 +613,149 @@ touch. Either give one agent ownership of each shared file and have the others
 consume it, or make shared-widget changes a serial pre-step. Rule 5 of the brief
 already forbids forking; it does not yet prevent two agents editing the same file
 at the same time, and that is the gap.
+
+---
+
+### R-8a — Risk disclosure is its own scroll-gated screen, not one of the four
+*Ruled by the product owner, 2026-08-27. Amends R-8. Executed by the flow pass.*
+
+R-8 put all four legal documents in one bundle opened in the phone's viewer.
+Three rulings then pulled against each other:
+
+- **R-1a** — suitability comes before the legal documents.
+- **R-8** — risk disclosure is one of the four, shown together at the start.
+- **The 2026-08-24 SEC-intake instruction** (recorded in
+  `suitability_result_screen.dart`, citing "My observations on KSL papers.docx")
+  — *"the disclaimer must appear immediately after suitability"* — plus the
+  2026-08-27 amendment keeping it scroll-gated in-app.
+
+**Resolution — the onboarding order is:**
+
+```
+signup → OTP → suitability → result → RISK DISCLOSURE (own screen, in-app,
+       scroll-gated) → the other 3 legal documents (phone viewer)
+       → passcode → biometric → KYC
+```
+
+So **R-8 now covers three documents, not four.** Terms of service, privacy
+policy and client agreement open in the phone's native viewer. The statutory
+risk disclosure keeps in-app rendering and a scroll gate, because that is the
+only mechanism producing evidence the investor was shown the text — and with
+BR-6 live (files never uploaded, presigning succeeds, the viewer 404s) the
+viewer pattern would record acceptance for a document nobody could read.
+
+**Two things that must not be lost in the rewiring:**
+
+1. `setSignedIn(true)` currently fires in the risk disclaimer's accept action.
+   Wherever that step lands, sign-in completion moves with it. Dropping it
+   strands a user mid-onboarding with no visible cause.
+2. R-2 still holds: the disclaimer must **not** display the computed profile.
+   The 2026-08-24 instruction's "show this computed profile dynamically" half is
+   superseded — `RiskDisclaimerArgs.profile` stays unused.
+
+**Retained deliberately:** `app_state.dart`'s post-KYC trading gate stays as a
+*fallback* for returning investors who onboarded under the old optional regime
+and never took the assessment. It is no longer the only path to the
+questionnaire, which is what R-1a was about — it is a safety net behind it.
+
+---
+
+## Rulings 2026-08-27 (evening) — the simulation phase
+
+### R-35 — Simulated market data is the INTENDED state, not a defect
+*Ruled by the product owner.*
+
+> "we need to simulate to get our license from SEC before we plug in to real NGX"
+
+This reframes BR-5 entirely. `SimulatedNgxBroker` is not a placeholder someone
+forgot to replace — **simulation is the product's current purpose.** The app is
+being built to demonstrate to the SEC for licensing, before any real market
+connection exists.
+
+So the order book is simulated too (done: `BrokerAdapter.getOrderBook`, generated
+only inside the simulator, seeded from the same price drift so depth and quote can
+never contradict each other).
+
+**What this does NOT change:** the `PROVISIONAL` gate stays. Simulated figures are
+correct for the licensing phase and must not reach real investors unreviewed, and
+tagging a release still fails while any provisional value stands. That mechanism
+now does exactly the job it was built for — it separates "fine for the demo" from
+"fine to take someone's money".
+
+### R-36 — Fees, stamp duty and rates resolve at broker integration
+*Ruled by the product owner.*
+
+> "it's a simulation same thing stamp duty... all those are not ours to actually
+> cover... when we plug in to a broker's API or NGX we can resolve all that"
+
+C-1 and C-2 are **closed for this phase.** The provisional rate card (buy 0.375%,
+sell 0.361%, stamp duty folded into the all-in figure) stands as simulation. The
+real commission split, the actual NGX/SEC/CSCS schedule and stamp duty are the
+broker's to supply and are settled at integration.
+
+The engineering rule is unchanged and is what makes this safe: **no screen
+computes a fee.** Every figure comes from the backend, so the day a real rate card
+arrives it is one edit in `fees.ts` and nothing else moves.
+
+The commission concern is recorded but deferred: 0.37% customer pricing against a
+0.90% broker cost would lose money per trade — but both figures are simulated, so
+there is nothing to reconcile until a real agreement exists.
+
+### R-37 — Deposit fee: ₦100 transfer, ₦150 card, ₦28 of it Flutterwave's
+*Ruled by the product owner.*
+
+> "it's meant to be 100–150 naira... 28 out of that is flutterwave, the rest we
+> own, it should be logical"
+
+**This resolves the canvas's apparent self-contradiction.** It reads
+*"Transfer costs less"* beside "transfer ₦100 to ₦150" and "card ₦28" — nonsense
+as drawn, because ₦28 was never the card's total. It is the **provider's cut
+inside** the fee.
+
+The logical structure:
+
+| method | investor pays | Flutterwave takes | Kudimata keeps |
+|---|---:|---:|---:|
+| bank transfer (virtual account) | **₦100** | — | ₦100 |
+| debit card | **₦150** | ₦28 | ₦122 |
+
+Transfer is cheaper than card, which is both true of the underlying costs and
+makes the canvas's own copy correct. The ₦100–₦150 "range" was the two methods,
+not a tier.
+
+**Implementation:** the fee lives in the backend and is returned by the funding
+endpoints. The app renders what it is given — `_depositFeeLabel` in
+`wallet_flows.dart` is already the single place the copy is decided. Nothing in
+the client hardcodes ₦100, ₦150 or ₦28. Introducing a real deposit fee triggers
+the in-app fee-change notice your client agreement requires.
+
+### R-38 — Legal documents ship as PDFs
+*Ruled by the product owner: "convert to pdfs please".*
+
+The four documents are converted from `.docx` to `.pdf` and uploaded at the
+seeded keys. PDF renders natively in iOS Quick Look and Android viewers; `.docx`
+depends on the reader having Word or Docs installed. This also means the seeded
+`fileObjectKey`s need no change.
+
+### R-39 — Search keeps recent searches (closes B-6)
+*Ruled by the product owner: "for search keep the capability".*
+
+Both ship: "Popular this week" as the canvas draws it, backed by the real trending
+endpoint, **and** the locally-saved recent searches beneath it. The artboard
+omitting a convenience is not evidence it should be removed.
+
+### R-40 — D-9, in plain words (closes the R-4 amendment)
+*Ruled by the product owner.*
+
+> "I don't even know what that means but all I want is the good new reasonable
+> design without losing key things — hence the decisions MD"
+
+That is the amendment, stated better than the original wording managed. Recorded
+as the governing principle:
+
+**Take the new design. Do not lose anything that works. Where the canvas asserts
+a fact the system does not have — a fee, a rate, a hold period, a document count,
+a guarantee — the system wins and the gap gets written down.**
+
+Every ruling in this file has been an instance of it. It needed no separate
+decision; it needed a name.
