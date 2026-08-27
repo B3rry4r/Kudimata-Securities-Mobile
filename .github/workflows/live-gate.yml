@@ -1,0 +1,172 @@
+name: Live gate
+
+# The only check in this repository that proves the app talks to a real backend.
+#
+# Everything else -- gates, unit tests, the 188-image screenshot harness -- runs
+# against test/fixtures/mock_api_adapter.dart, which answers whatever shape the
+# calling code asks for. Twice during the 2026-08 redesign it answered
+# *plausibly wrong* for a shape it did not know, rendering a mislabelled row
+# while every test passed. That class of defect is structurally invisible to a
+# self-consistent suite, and this workflow is the only thing that can see it.
+#
+# CLAUDE.md's definition of done, level 4:
+#   "The screen renders with real data from the real backend, reached through
+#    the real login flow, and a value that exists *only* on the server is
+#    visible."
+#
+# It could not be run in the development container (Flutter's Chrome device
+# launches a sandbox wrapper that dies under WebDriver -- see
+# docs/redesign/BACKEND_GAPS.md). GitHub's runners have real Chrome, so this is
+# its home.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Backend base URL to test against'
+        required: false
+        default: 'https://alpha.kudimatasecurities.com'
+      target:
+        description: 'Where to run it'
+        required: false
+        default: 'web'
+        type: choice
+        options: [web, android]
+  schedule:
+    # 06:00 UTC daily. A gate that only runs when someone remembers is a gate
+    # that stops running -- the previous end-to-end driver ran exactly once,
+    # from a scratchpad, and 120 commits later nobody noticed it was gone.
+    - cron: '0 6 * * *'
+  push:
+    branches: [ main ]
+
+concurrency:
+  # Two runs against one seeded account would fight over the same rows.
+  group: live-gate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  web:
+    name: Live gate (Chrome)
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'web'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install matching chromedriver
+        run: |
+          set -euo pipefail
+          CHROME_VERSION="$(google-chrome --version | grep -oE '[0-9]+' | head -1)"
+          echo "Chrome major: $CHROME_VERSION"
+          npx --yes @puppeteer/browsers install "chromedriver@$CHROME_VERSION" --path "$RUNNER_TEMP/cd"
+          DRIVER="$(find "$RUNNER_TEMP/cd" -name chromedriver -type f | head -1)"
+          chmod +x "$DRIVER"
+          echo "$(dirname "$DRIVER")" >> "$GITHUB_PATH"
+          "$DRIVER" --version
+
+      - run: flutter pub get
+
+      - name: Confirm the backend is reachable before blaming the app
+        env:
+          BASE_URL: ${{ inputs.base_url || 'https://alpha.kudimatasecurities.com' }}
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/market-status" || echo 000)"
+          echo "GET $BASE_URL/market-status -> $code"
+          # 401 is the healthy answer here: the route resolved and its guard ran.
+          # 000 or 5xx means the environment is down, which is not an app failure.
+          case "$code" in
+            2*|401|403) echo "backend reachable" ;;
+            *) echo "::error::Backend unreachable ($code). The gate cannot attribute a failure to the app."; exit 1 ;;
+          esac
+
+      - name: Run the live gate
+        env:
+          BASE_URL: ${{ inputs.base_url || 'https://alpha.kudimatasecurities.com' }}
+        run: |
+          set -euo pipefail
+          chromedriver --port=4444 &
+          for _ in $(seq 1 20); do curl -sf http://localhost:4444/status >/dev/null && break; sleep 1; done
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/live_gate_test.dart \
+            -d chrome \
+            --dart-define=API_BASE_URL="$BASE_URL" \
+            --dart-define=LIVE_GATE_EMAIL="${{ secrets.LIVE_GATE_EMAIL }}" \
+            --dart-define=LIVE_GATE_PASSWORD="${{ secrets.LIVE_GATE_PASSWORD }}" \
+            --dart-define=LIVE_GATE_FRESH_EMAIL="${{ secrets.LIVE_GATE_FRESH_EMAIL }}" \
+            --dart-define=LIVE_GATE_FRESH_PASSWORD="${{ secrets.LIVE_GATE_FRESH_PASSWORD }}"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-gate-screenshots
+          path: |
+            build/live_gate/**
+            build/screenshots/**
+          if-no-files-found: warn
+          retention-days: 30
+
+  android:
+    name: Live gate (Android emulator)
+    # Opt-in: slower, but it exercises the artifact users actually install
+    # rather than a web build of the same Dart.
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'android'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Enable KVM for a usable emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the live gate on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            flutter drive \
+              --driver=test_driver/integration_test.dart \
+              --target=integration_test/live_gate_test.dart \
+              --dart-define=API_BASE_URL="${{ inputs.base_url || 'https://alpha.kudimatasecurities.com' }}" \
+              --dart-define=LIVE_GATE_EMAIL="${{ secrets.LIVE_GATE_EMAIL }}" \
+              --dart-define=LIVE_GATE_PASSWORD="${{ secrets.LIVE_GATE_PASSWORD }}" \
+              --dart-define=LIVE_GATE_FRESH_EMAIL="${{ secrets.LIVE_GATE_FRESH_EMAIL }}" \
+              --dart-define=LIVE_GATE_FRESH_PASSWORD="${{ secrets.LIVE_GATE_FRESH_PASSWORD }}"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-gate-screenshots-android
+          path: |
+            build/live_gate/**
+            build/screenshots/**
+          if-no-files-found: warn
+          retention-days: 30

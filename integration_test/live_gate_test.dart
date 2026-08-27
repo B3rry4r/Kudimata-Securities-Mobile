@@ -45,12 +45,24 @@ import 'package:kudimata_invest/widgets/scaffold.dart' show KDetailHeader;
 
 import 'package:kudimata_invest/main.dart' as app;
 
-const _fullEmail = 'demo.full-investor-seed@kudimatasecurities.com';
-const _fullPassword = 'DemoInvestor#2026';
+const _fullEmail = String.fromEnvironment(
+  'LIVE_GATE_EMAIL',
+  defaultValue: 'demo.full-investor-seed@kudimatasecurities.com',
+);
+const _fullPassword = String.fromEnvironment(
+  'LIVE_GATE_PASSWORD',
+  defaultValue: 'DemoInvestor#2026',
+);
 const _fullFirstName = 'Ngozi';
 
-const _freshEmail = 'demo.fresh-signup-seed@kudimatasecurities.com';
-const _freshPassword = 'FreshSignup#2026';
+const _freshEmail = String.fromEnvironment(
+  'LIVE_GATE_FRESH_EMAIL',
+  defaultValue: 'demo.fresh-signup-seed@kudimatasecurities.com',
+);
+const _freshPassword = String.fromEnvironment(
+  'LIVE_GATE_FRESH_PASSWORD',
+  defaultValue: 'FreshSignup#2026',
+);
 
 // Any 6 digits — same value used for both the create and confirm step of
 // each pass through the local-passcode-creation flow this login path always
