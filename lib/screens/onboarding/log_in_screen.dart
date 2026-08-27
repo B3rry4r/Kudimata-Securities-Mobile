@@ -1,9 +1,17 @@
-// 06 · Log in — the returning-user unlock. Centered wordmark, passcode dots, the
-// keypad (with a biometric shortcut bottom-left), and a Forgot password link
-// (relabeled from "Forgot passcode" — the screen it leads to is a real
-// account password reset, not a local-passcode reset; see
-// reset_passcode_screen.dart's header comment).
-// On a full passcode we sign in and go home. Ported from screens.jsx LogIn.
+// s08 (trusted device) / s08p (untrusted device) — the returning-user unlock,
+// per the reverse-sweep's "device-trust login fork" (reverse-sweep.json):
+// s08 is a centered avatar + personalized greeting, 6-digit passcode dots,
+// a "Forgot password?" link, then the keypad (biometric shortcut
+// bottom-left); s08p is the email+password fallback for a device with no
+// local passcode, its own "Forgot password?" link under the fields, and a
+// helper line ("We text a code after this, then you set a passcode for
+// this phone.") above its Sign in button. "Forgot password?" leads to a
+// real account password reset, not a local-passcode reset — see
+// reset_passcode_screen.dart's header comment.
+// On a full passcode we sign in and go home. R-11: 6 digits with a
+// create+confirm pair everywhere including login — the canvas's 4-digit
+// single-entry look is what's adopted, not its length; the 6-dot count
+// here is unchanged, already correct.
 // Root gated screen: own Scaffold, no tab bar.
 //
 // WIRING NOTE (real-login pass): the original version of this screen was
@@ -76,6 +84,11 @@ class _LogInScreenState extends State<LogInScreen> {
   final _passcodeStore = PasscodeStore();
   bool _prefilledEmail = false;
 
+  // Canvas #s08 personalizes the unlock greeting ("Welcome back, Adebayo")
+  // and shows the investor's own chosen avatar — see [_loadProfileForGreeting].
+  String? _firstName;
+  String? _avatarKey;
+
   // ── Local unlock (existing passcode-dots flow — unchanged) ────────────
   String _code = '';
   bool _verifying = false;
@@ -89,13 +102,24 @@ class _LogInScreenState extends State<LogInScreen> {
   String? _serverError;
   final _tokenStore = AuthTokenStore();
 
-  // Persistent, not created inline in build() — a fresh TapGestureRecognizer
-  // on every rebuild leaks the previous one (same pattern sign_up_screen.dart
-  // uses for its legal-doc links).
-  late final _createAccountTap = TapGestureRecognizer()
-    ..onTap = () {
-      if (!_busy) context.go(Routes.signup);
-    };
+  // DECISIONS.md B-5 (2026-08-27 ruling): canvas #s08p draws no "Create an
+  // account" link, and this screen previously dropped it entirely to match.
+  // But `_showEmailLogin` covers TWO real paths, and the artboard only
+  // depicts one of them:
+  //   - the device-trust login fork (splash_screen.dart routes here
+  //     directly whenever `AppState.passcodeSet` is true — this device
+  //     recognizes an account was set up on it before, it's just
+  //     signed-out/session-expired now). THIS is what #s08p depicts, and it
+  //     correctly has no signup affordance — the investor already has an
+  //     account.
+  //   - a genuinely account-less fresh install: splash_screen.dart only
+  //     sends an unrecognized device to Welcome, whose "Sign in" CTA
+  //     (welcome_slider_screen.dart) is the other way to land here, with no
+  //     passcode ever set on this device. That user may have no account at
+  //     all and, without this link, had no way off this screen.
+  // `AppState.passcodeSet` is exactly the signal that tells the two apart,
+  // so the link is gated on it below rather than always shown.
+  final _createAccountTap = TapGestureRecognizer();
 
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
   bool get _emailValid => _emailPattern.hasMatch(_email.text.trim());
@@ -114,6 +138,7 @@ class _LogInScreenState extends State<LogInScreen> {
     super.initState();
     _decideMode();
     _checkBiometricAvailability();
+    _createAccountTap.onTap = () => context.go(Routes.signup);
   }
 
   /// Whether this device can actually run a biometric check. The keypad's
@@ -153,18 +178,43 @@ class _LogInScreenState extends State<LogInScreen> {
     final app = AppScope.read(context);
     final hasPasscode = await _passcodeStore.hasPasscode();
     if (!mounted) return;
+    final showEmailLogin = !app.signedIn || !hasPasscode;
     setState(() {
-      _showEmailLogin = !app.signedIn || !hasPasscode;
+      _showEmailLogin = showEmailLogin;
     });
+    if (!showEmailLogin) _loadProfileForGreeting();
+  }
+
+  /// GET /users/me for the local-unlock greeting's first name + avatar.
+  /// Neither is cached on-device — PasscodeStore only ever knows the
+  /// owner's EMAIL (see its `owner` getter) — so this is a real fetch, same
+  /// call [_unlock] already makes for session validity, just run once up
+  /// front instead of only at unlock time. Best-effort: on failure both
+  /// stay null and the screen falls back to the generic "Welcome back" +
+  /// initial-letter avatar (same fallback convention home_screen.dart /
+  /// account_screen.dart use for a null avatarKey) rather than blocking
+  /// passcode entry on a network call.
+  Future<void> _loadProfileForGreeting() async {
+    final app = AppScope.read(context);
+    try {
+      final profile = await UserRepository(app.apiClient).me();
+      if (!mounted) return;
+      setState(() {
+        _firstName = profile.firstName;
+        _avatarKey = profile.avatarKey;
+      });
+    } on ApiException {
+      // Fall through to the generic greeting — see doc comment above.
+    }
   }
 
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
-    _createAccountTap.dispose();
     _stepUpController.dispose();
     _stepUpFocus.dispose();
+    _createAccountTap.dispose();
     super.dispose();
   }
 
@@ -426,11 +476,23 @@ class _LogInScreenState extends State<LogInScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const KWordmark(center: true),
-                const SizedBox(height: 28),
-                const KAvatar.guide(size: KIllo.avatarLg),
+                // Canvas #s08 draws no wordmark on this screen — straight
+                // from the top of the frame into the avatar.
+                _avatarKey != null
+                    ? KAvatar(avatarKey: _avatarKey!, size: 64)
+                    : _LoginAvatar(
+                        initial: (_firstName?.isNotEmpty ?? false) ? _firstName![0] : 'K',
+                        size: 64,
+                      ),
                 const SizedBox(height: 14),
-                Text('Welcome back', style: KType.title()),
+                // Artboard copy: "Welcome back, Adebayo" — personalized with
+                // the account's real first name (see [_loadProfileForGreeting]).
+                // Falls back to the generic greeting while that fetch is in
+                // flight or if it fails.
+                Text(
+                  (_firstName?.isNotEmpty ?? false) ? 'Welcome back, $_firstName' : 'Welcome back',
+                  style: KType.title(),
+                ),
                 const SizedBox(height: 4),
                 Text('Enter your passcode', style: KType.body(color: KColor.ink2)),
                 const SizedBox(height: 24),
@@ -441,6 +503,25 @@ class _LogInScreenState extends State<LogInScreen> {
                     'Incorrect passcode',
                     style: KType.body(color: KColor.loss, w: KWeight.medium),
                   ),
+                const SizedBox(height: 12),
+                // Canvas #s08: "Forgot password?" sits directly under the
+                // dots, above the keypad — not below it. Plain text link
+                // (var(--indicator)), not a bordered ghost button.
+                GestureDetector(
+                  onTap: () async {
+                    final email = await _passcodeStore.owner;
+                    if (!context.mounted) return;
+                    // Thread the known device owner (PasscodeStore.owner) so
+                    // reset_passcode_screen.dart can skip straight to "step 2
+                    // of 2", matching canvas #s12 — see that getter's doc
+                    // comment.
+                    context.go(Routes.reset, extra: email);
+                  },
+                  child: Text(
+                    'Forgot password?',
+                    style: KType.body(color: KColor.indicator, w: KWeight.semibold),
+                  ),
+                ),
                 const SizedBox(height: 26),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 300),
@@ -454,22 +535,6 @@ class _LogInScreenState extends State<LogInScreen> {
                         : null,
                   ),
                 ),
-                const SizedBox(height: 8),
-                KButton(
-                  label: 'Forgot your password?',
-                  variant: KButtonVariant.ghost,
-                  size: KButtonSize.sm,
-                  fullWidth: false,
-                  // Thread the known device owner (PasscodeStore.owner) so
-                  // reset_passcode_screen.dart can skip straight to "step 2
-                  // of 2", matching canvas #s12 — see that getter's doc
-                  // comment.
-                  onPressed: () async {
-                    final email = await _passcodeStore.owner;
-                    if (!context.mounted) return;
-                    context.go(Routes.reset, extra: email);
-                  },
-                ),
               ],
             ),
           ),
@@ -479,84 +544,112 @@ class _LogInScreenState extends State<LogInScreen> {
   }
 
   // ── Email+password login UI (new) ───────────────────────────────────────
+  // Canvas #s08p — the device-trust login fork's untrusted-device branch
+  // (reverse-sweep.json: "Login branch for a NEW/untrusted device — email +
+  // password entry (vs s08's passcode entry for a trusted device)").
   Widget _buildLoginForm() {
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(
-        child: KOnboardBody(
-          paddingTop: 32,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const KWordmark(),
-            const SizedBox(height: 28),
-            const KScreenHead(title: 'Log in'),
-            const SizedBox(height: 28),
-            KInput(
-              label: 'Email',
-              icon: 'mail',
-              placeholder: 'you@email.com',
-              keyboardType: TextInputType.emailAddress,
-              controller: _email,
-              onChanged: _showErrors ? (_) => setState(() {}) : null,
-              error: _showErrors && !_emailValid ? 'Enter a valid email address' : null,
-            ),
-            const SizedBox(height: 16),
-            KInput(
-              label: 'Password',
-              icon: 'lock',
-              placeholder: 'Your password',
-              obscure: true,
-              controller: _password,
-              onChanged: _showErrors ? (_) => setState(() {}) : null,
-              error: _showErrors && _password.text.isEmpty ? 'Enter your password' : null,
-            ),
-            if (_serverError != null) ...[
-              const SizedBox(height: 16),
-              Text(_serverError!, style: KType.body(color: KColor.loss, w: KWeight.medium)),
-            ],
-            const Spacer(),
-            Column(
-              children: [
-                KButton(
-                  label: 'Log in',
-                  loading: _busy,
-                  onPressed: _busy ? null : _login,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: RichText(
-                text: TextSpan(
-                  style: KType.micro(color: KColor.ink3),
-                  children: [
-                    const TextSpan(text: 'New here? '),
-                    TextSpan(
-                      text: 'Create an account',
-                      style: KType.micro(color: KColor.ink2)
-                          .copyWith(decoration: TextDecoration.underline),
-                      recognizer: _createAccountTap,
+            // Canvas #s08p: a bare back chip, no step label, back to Welcome
+            // (nav.s02) — this screen previously had no back navigation at
+            // all.
+            KOnboardTopBar(onBack: () => context.go(Routes.welcome)),
+            Expanded(
+              child: KOnboardBody(
+                paddingTop: 8,
+                children: [
+                  // Canvas #s08p draws no wordmark — straight into the title.
+                  const KScreenHead(
+                    title: 'Sign in',
+                    body: 'New phone, so we need your email and password.',
+                  ),
+                  const SizedBox(height: 28),
+                  KInput(
+                    label: 'Email',
+                    icon: 'mail',
+                    placeholder: 'you@email.com',
+                    keyboardType: TextInputType.emailAddress,
+                    controller: _email,
+                    onChanged: _showErrors ? (_) => setState(() {}) : null,
+                    error: _showErrors && !_emailValid ? 'Enter a valid email address' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  KInput(
+                    label: 'Password',
+                    icon: 'lock',
+                    placeholder: 'Your password',
+                    obscure: true,
+                    controller: _password,
+                    onChanged: _showErrors ? (_) => setState(() {}) : null,
+                    error: _showErrors && _password.text.isEmpty ? 'Enter your password' : null,
+                  ),
+                  const SizedBox(height: 14),
+                  // Canvas #s08p: "Forgot password?" sits directly under the
+                  // fields, not near the bottom action. Plain text link
+                  // (var(--indicator)), not a bordered ghost button.
+                  GestureDetector(
+                    onTap: _busy
+                        ? null
+                        : () => context.go(
+                              Routes.reset,
+                              // Whatever's typed here is the known email —
+                              // thread it through so reset_passcode_screen.dart
+                              // can skip straight to "step 2 of 2" (canvas
+                              // #s12; see PasscodeStore.owner's doc comment
+                              // for the local-unlock equivalent).
+                              extra: _email.text.trim().isEmpty ? null : _email.text.trim(),
+                            ),
+                    child: Text(
+                      'Forgot password?',
+                      style: KType.data(color: KColor.indicator, w: KWeight.semibold),
+                    ),
+                  ),
+                  if (_serverError != null) ...[
+                    const SizedBox(height: 16),
+                    Text(_serverError!, style: KType.body(color: KColor.loss, w: KWeight.medium)),
+                  ],
+                  const Spacer(),
+                  // Canvas #s08p: a small centered helper line above the
+                  // button, describing what happens next — step-up code,
+                  // then set a passcode for this phone (exactly what
+                  // [_login]/[_verifyStepUp]/[_completeLogin] below do).
+                  Text(
+                    'We text a code after this, then you set a passcode for this phone.',
+                    textAlign: TextAlign.center,
+                    style: KType.data(color: KColor.ink3),
+                  ),
+                  const SizedBox(height: 14),
+                  KButton(
+                    label: 'Sign in',
+                    loading: _busy,
+                    onPressed: _busy ? null : _login,
+                  ),
+                  // DECISIONS.md B-5 — only on the account-less path (see the
+                  // doc comment on `_createAccountTap` above); the
+                  // device-trust fork #s08p depicts leaves this hidden.
+                  if (!AppScope.of(context).passcodeSet) ...[
+                    const SizedBox(height: 14),
+                    Center(
+                      child: RichText(
+                        text: TextSpan(
+                          style: KType.data(color: KColor.ink3),
+                          children: [
+                            const TextSpan(text: 'New here? '),
+                            TextSpan(
+                              text: 'Create an account',
+                              style: KType.data(color: KColor.indicator, w: KWeight.semibold),
+                              recognizer: _createAccountTap,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: KButton(
-                label: 'Forgot your password?',
-                variant: KButtonVariant.ghost,
-                size: KButtonSize.sm,
-                fullWidth: false,
-                // Whatever's typed here is the known email — thread it
-                // through so reset_passcode_screen.dart can skip straight
-                // to "step 2 of 2" (canvas #s12; see PasscodeStore.owner's
-                // doc comment for the local-unlock equivalent above).
-                onPressed: _busy
-                    ? null
-                    : () => context.go(
-                          Routes.reset,
-                          extra: _email.text.trim().isEmpty ? null : _email.text.trim(),
-                        ),
+                ],
               ),
             ),
           ],
@@ -781,6 +874,34 @@ Future<void> refreshKycGatingState(BuildContext context) async {
       kyc?.isRejectedWithRoomToRetry == true
           ? 'rejected_retry'
           : (terminalOutcomes.contains(kyc?.status) ? kyc!.status : null),
+    );
+  }
+}
+
+/// Fallback for canvas #s08's 64px avatar when the account has no chosen
+/// `avatarKey` yet — same initial-letter-in-a-ring convention
+/// home_screen.dart's `_Avatar` / account_screen.dart already use for that
+/// case, sized up to match this screen's larger avatar.
+class _LoginAvatar extends StatelessWidget {
+  const _LoginAvatar({required this.initial, required this.size});
+  final String initial;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: KColor.bg,
+        shape: BoxShape.circle,
+        border: Border.all(color: KColor.hairline, width: 1),
+      ),
+      child: Text(
+        initial.toUpperCase(),
+        style: KType.title(color: KColor.ink).copyWith(fontSize: size * 0.4),
+      ),
     );
   }
 }

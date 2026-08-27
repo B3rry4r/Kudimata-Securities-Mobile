@@ -34,6 +34,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Release-strength gates. GATES_RELEASE promotes PROVISIONAL values from a
+      # warning to a hard failure, so a back-derived fee rate or any other
+      # unconfirmed number cannot be shipped by tagging a release. Everything
+      # else in the gate set is already enforced on every push by gates.yml.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Gates (release strength)
+        env:
+          GATES_RELEASE: '1'
+        run: python3 scripts/gates/run.py
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

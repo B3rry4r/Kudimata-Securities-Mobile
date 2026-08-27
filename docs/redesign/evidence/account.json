@@ -1,0 +1,269 @@
+{
+  "batch": "account",
+  "screens": [
+    {
+      "app_screen": "lib/screens/account/account_screen.dart",
+      "purpose": "Account hub tab: profile header, AI-credit meter, and a menu into every account sub-screen (personal info, bank accounts, plans, statements, security, refer & earn, corporate actions, data & privacy, help, legal), plus Log out.",
+      "route": "/account (Routes.account, tab root under StatefulShellRoute)",
+      "is_helper": false,
+      "covered_by": ["s51"],
+      "coverage_confidence": "likely",
+      "evidence": "docs/design/redesign-2026-08/06 Account and Support.dc.html id=\"s51\" (\"51 · Account hub\"): avatar+name+Verified header, then rows 'Statements and contract notes', 'Security', 'Personal details', 'Corporate actions', 'Complaints', 'Terms and disclosures', 'Data and privacy', then a Log out button. This matches account_screen.dart's shape exactly but s51's menu has only 7 rows vs. the app's 9 ('Bank accounts & DCS', 'Plans & credits', 'Refer & earn', 'Tax documents', 'Help & support' have no row in s51 at all) — searched s51's full markup for 'Bank accounts', 'Plans & credits', 'Refer', 'Help & support': none present.",
+      "recommendation": "redesign-to-artboard",
+      "why": "s51 is clearly the redesigned Account hub (same header shape, same avatar/status pattern, same Log out placement) but is missing menu rows for 4-5 live app features, so the mapping is real but incomplete — a human should confirm whether those rows were cut deliberately."
+    },
+    {
+      "app_screen": "lib/screens/account/account_widgets.dart",
+      "purpose": "Shared local widget library for the Account section (KIconBubble, KAccountRow, KRowChevron, KAccountCard, KAccountSubScaffold) — not a user-facing screen.",
+      "route": "UNROUTED (no GoRoute; a widget helper file imported by every other file in this batch)",
+      "is_helper": true,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Not applicable — this file defines no screen; it supplies the row/card/scaffold styling every other Account screen in this batch uses.",
+      "recommendation": "no-action",
+      "why": "Pure helper/shared-widget file; design coverage is inherited from whatever screens use it, not assessed on its own."
+    },
+    {
+      "app_screen": "lib/screens/account/bank_accounts_screen.dart",
+      "purpose": "Manage linked bank accounts: view the primary DCS-mandate account with its mandate explainer, view secondary funding-only accounts, add a new account, and set-primary/remove/withdraw-mandate via an actions sheet.",
+      "route": "/account/banks (Routes.acctBanks)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'DCS active', 'Set as primary', 'Primary account', and 'linked account' — zero matches anywhere. The mechanical candidates (s37 'Withdraw', s18 KYC 'Add your bank account') are different screens: s37 assumes one already-linked account as a fixed withdrawal target ('Going to your bank... First Bank ···6835'), and s18 is the one-time bank collection step during KYC onboarding, not a multi-account management/primary-selection screen. s51's own Account hub menu (see account_screen.dart's row) also has no 'Bank accounts & DCS' entry at all.",
+      "recommendation": "restyle-only",
+      "why": "Bank-account/DCS-mandate management is core regulated-broker functionality (referenced by s37's mandate copy and the app's own DCS flow) with no artboard drawn anywhere in the new canvas; keep the screen and bring it onto the new design system pending a real artboard."
+    },
+    {
+      "app_screen": "lib/screens/account/close_account_screen.dart",
+      "purpose": "Account-closure request flow: shows shares-to-move and wallet-payout summary, closure effects, links to the closure terms, and submits a real closure request to the backend.",
+      "route": "/account/close (Routes.acctClose)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'close my account', 'close account', and 'account closure' — zero matches in any of the 8 .dc.html files. Mechanical candidates (s51 Account hub, s53 Complaints, s58 Personal details) don't mention closure at all when read in full.",
+      "recommendation": "restyle-only",
+      "why": "Account closure is a required self-service/compliance flow (SEC record-keeping language already lives in the app's own copy) with no artboard anywhere in the new canvas; keep and restyle rather than drop."
+    },
+    {
+      "app_screen": "lib/screens/account/complaint_screen.dart",
+      "purpose": "File a formal complaint: pick a category, optional order/transaction reference, free-text description, optional attachment, then submit to the real complaints backend.",
+      "route": "/account/help/complaint (Routes.acctComplaint)",
+      "is_helper": false,
+      "covered_by": ["s53"],
+      "coverage_confidence": "likely",
+      "evidence": "s53 ('Complaints') shows a 'Something went wrong?' hub with 4 category rows ('Money missing or delayed', 'A trade went wrong', 'How I was treated', 'Something else') and a bottom 'File a complaint' button — conceptually the same feature and similar (not identical) taxonomy to the app's 5 categories. However s53 does not draw the actual filing FORM (topic field, reference input, description box, attachment upload) as its own state/artboard — only the category-picker hub and CTA are shown.",
+      "recommendation": "redesign-to-artboard",
+      "why": "The complaints hub concept and category taxonomy are clearly designed for in s53; the detailed form fields aren't drawn but the screen's purpose is unambiguously retained, so it should follow s53's visual language rather than be treated as dropped."
+    },
+    {
+      "app_screen": "lib/screens/account/complaint_tracked_screen.dart",
+      "purpose": "Show one filed complaint's status: reference, category, filed/due dates, a register timeline (logged → under review → escalate to SEC), and an 'Add more information' / 'Back to help' pair. Reached by pushing after a successful filing.",
+      "route": "/account/help/complaint/tracked (Routes.acctComplaintTracked) — reachable via context.push from complaint_screen.dart's _send() after a real backend filing, despite routes.dart's stale comment claiming 'no live entry point yet'",
+      "is_helper": false,
+      "covered_by": ["s53"],
+      "coverage_confidence": "likely",
+      "evidence": "s53 embeds a 'Your open complaint' card inline in the Complaints hub: title 'Withdrawal not received', a 'Day 4 of 10' status pill, a progress bar, and 'Raised 22 Aug · reference KD-C-8841. We reply by 5 September.' This is the same concept (status + SLA countdown + reference) but as a small embedded widget on the hub screen, not a standalone detail screen with the app's 3-stage timeline (logged/under review/escalate). Searched for 'tracked', 'escalat', and 'reference KD-C' across every file — only found within s53 itself.",
+      "recommendation": "redesign-to-artboard",
+      "why": "The open-complaint status concept is clearly present in s53 (status pill, SLA countdown, reference), even though the app's dedicated timeline-detail screen has no separate artboard — treat as designed-for but under-specified."
+    },
+    {
+      "app_screen": "lib/screens/account/contract_note_screen.dart",
+      "purpose": "Show the itemised contract note for one executed order: issuer, executing broker (with logo), client/trade dates, per-line fee breakdown (consideration, commission, exchange fees, VAT), total, and a Download PDF action.",
+      "route": "/account/statements/contract-note (Routes.contractNote, pushed with a Statement extra from statements_screen.dart)",
+      "is_helper": false,
+      "covered_by": ["s38"],
+      "coverage_confidence": "likely",
+      "evidence": "docs/design/redesign-2026-08/05 Portfolio and Wallet.dc.html id=\"s38\" ('38 · Transaction receipt'): shows a completed-buy receipt with 'Shares cost', 'Fees, all in', 'Date', 'Shares settle', 'Reference', and an 'Executed by' box naming 'Blue Marina Securities Ltd, NGX dealing member, on behalf of Kudimata Securities' — same concept (per-trade receipt naming the executing broker) as contract_note_screen.dart's 'Executed through' + itemised fee rows, but s38's fee breakdown is one combined 'Fees, all in' line rather than the app's separate commission/NGX·SEC·CSCS/VAT rows.",
+      "recommendation": "redesign-to-artboard",
+      "why": "s38 is the closest new-canvas expression of a post-trade receipt naming the executing broker; the itemised fee breakdown is coarser there than in the real screen, so it's a real but partial match."
+    },
+    {
+      "app_screen": "lib/screens/account/data_privacy_screen.dart",
+      "purpose": "NDPA consent hub: two toggleable consent switches (improve the app / product emails), a link to the retention/data notice, a data-export request, and a link into account closure.",
+      "route": "/account/data-privacy (Routes.acctDataPrivacy)",
+      "is_helper": false,
+      "covered_by": ["s57"],
+      "coverage_confidence": "likely",
+      "evidence": "docs/design/redesign-2026-08/06 Account and Support.dc.html id=\"s57\" ('57 · Data and privacy'): 'Your data' header, two switches ('Market news and tips', 'Offers from partners'), a 'Download my data' row, and a 'Delete my data' button with a six-year retention line. Same structure (consent switches + export + delete) as the app screen, but the switch labels/semantics differ (app: 'Improve the app'/'Product emails' tied to a real NotificationPreferences API; canvas: 'Market news'/'Partner offers') and s57's action is 'Delete my data' where the app instead links to account closure.",
+      "recommendation": "redesign-to-artboard",
+      "why": "The screen's shape (consent toggles, export, delete/close, retention note) is a strong structural match to s57 even though the specific consent labels differ."
+    },
+    {
+      "app_screen": "lib/screens/account/dormant_account_screen.dart",
+      "purpose": "Full-screen status view shown when an account has gone dormant (12 months no sign-in): explains trading is paused, shows holdings value, and offers 'Reactivate my account' or 'Close it instead'.",
+      "route": "/account/dormant (Routes.acctDormant) — auto-routed here from log_in_screen.dart when PersonalInfo.accountStatus == 'dormant'",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'dormant' and 'Reactivate my account' — zero matches in any file.",
+      "recommendation": "restyle-only",
+      "why": "A real account-lifecycle edge state with a live auto-redirect from login; no artboard exists anywhere, but it's clearly still-needed functionality, not an obviously cut feature."
+    },
+    {
+      "app_screen": "lib/screens/account/faq_screen.dart",
+      "purpose": "General FAQ list (7 static Q&As) plus one real 'Article & Glossary' page (Settlement/T+3/DCS) reached specifically from Help & support's matching row.",
+      "route": "/account/help/faq (Routes.acctFaq, pushed with the tapped question as `extra`)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'frequently asked' and 'FAQ' — zero matches anywhere. No glossary/article-style screen exists either (also searched 'glossary', 'T+3', 'Direct Cash Settlement' as a defined term — no hits outside this file's own subject matter).",
+      "recommendation": "restyle-only",
+      "why": "No FAQ/article artboard exists anywhere in the new canvas; basic customer-education content is not an obviously dropped feature, so keep and restyle."
+    },
+    {
+      "app_screen": "lib/screens/account/freeze_account_screen.dart",
+      "purpose": "Confirm-and-freeze flow: shows the effects of freezing (blocks orders/withdrawals, signs out every device, requires support to lift), then calls the real freeze endpoint and signs the investor out.",
+      "route": "/account/security/freeze (Routes.acctFreeze, pushed from security_screen.dart's 'Freeze my account' button)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "s54 ('Security') has a 'Freeze my account' button and the line 'Freezing stops all trading and withdrawals until you unfreeze. Your shares stay yours.' — this is the ENTRY POINT only. Searched for 'Type FREEZE', 'freeze to confirm', and 'stops new orders' (the app's own effects-list copy) — no dedicated confirm screen with an effects list or type-to-confirm control is drawn anywhere.",
+      "recommendation": "restyle-only",
+      "why": "The freeze entry point is designed for in s54, but the actual confirmation screen this file implements has no artboard of its own — a real safety-critical flow that should be kept and restyled, not dropped."
+    },
+    {
+      "app_screen": "lib/screens/account/help_support_screen.dart",
+      "purpose": "Help & support hub: searchable FAQ row list, 'Talk to a person' contact card (email), a fraud-report nudge, and a 'File a complaint' footer button.",
+      "route": "/account/help (Routes.acctHelp)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'help' + 'support' co-occurring, 'contact us', and 'live chat' — no dedicated Help & support hub artboard found (s51 links to Complaints and Terms directly, with no intermediate Help hub). s53 (Complaints) is the closest neighbour but its own content is entirely about complaint categories/status, not FAQs or a contact card.",
+      "recommendation": "restyle-only",
+      "why": "No Help & support hub artboard exists; this is basic customer-service infrastructure, not an obviously cut feature, so keep and restyle onto the new system."
+    },
+    {
+      "app_screen": "lib/screens/account/legal_reference_screens.dart",
+      "purpose": "Four static reference-document viewers: Partner disclosures (who executes trades), Referral terms, Data notice (NDPA retention detail), and Account closure terms — each opened from its own entry point plus a second entry from the Legal hub.",
+      "route": "/account/legal/partner-disclosures, /account/legal/referral-terms, /account/legal/data-notice, /account/legal/closure-terms (Routes.acctLegalPartnerDisclosures / acctLegalReferralTerms / acctLegalDataNotice / acctLegalClosureTerms)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'partner disclosure', 'referral terms', 'closure terms', and 'data notice' — zero matches anywhere. The canvas's own 8-document legal bundle (s03c in '01 Getting In.dc.html': Terms of Business, Risk Disclosure, Privacy Policy, Fees and Charges, Best Execution, Conflicts of Interest, Complaints Procedure, Custody and Client Assets) is a DIFFERENT set of documents from these four.",
+      "recommendation": "restyle-only",
+      "why": "These are real compliance/reference documents with no artboard drawn; keep and restyle, though 'Referral terms' specifically is tied to the refer-and-earn feature that appears nowhere in the new canvas (see refer_earn_screen.dart's finding) and may need the same ruling."
+    },
+    {
+      "app_screen": "lib/screens/account/legal_screen.dart",
+      "purpose": "Legal documents hub: lists the 4 real onboarding-acceptance documents (terms/privacy/risk/client-agreement) via an in-app viewer, plus rows into the 4 reference screens (partner disclosures, referral terms, data notice, closure terms).",
+      "route": "/account/legal (Routes.acctLegal)",
+      "is_helper": false,
+      "covered_by": ["s03c"],
+      "coverage_confidence": "likely",
+      "evidence": "docs/design/redesign-2026-08/01 Getting In.dc.html id=\"s03c\" ('Terms and Disclosures'): a document-row list ('Terms of Business', 'Risk Disclosure Statement', 'Privacy Policy', 'Fees and Charges', 'Best Execution Policy', 'Conflicts of Interest Policy', 'Complaints Procedure', 'Custody and Client Assets') with the explicit footer note 'Also reachable from Account → Terms.' s51's own 'Terms and disclosures' row (onClick openTerms) opens this exact artboard. Document count/titles differ from the app's 4 LegalDocument-backed rows, and none of the 4 reference-screen topics appear on s03c.",
+      "recommendation": "redesign-to-artboard",
+      "why": "s03c is explicitly cross-referenced from Account in its own footer note, making this the one confident non-Account-file coverage in the batch, even though the exact document list differs from the app's real 4-document backend resource."
+    },
+    {
+      "app_screen": "lib/screens/account/notifications_settings_screen.dart",
+      "purpose": "Email notification preference toggles: order updates, money-in/out & security, price alerts, and a local-only weekly digest switch.",
+      "route": "/account/notifications (Routes.acctNotifications)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'notification' — only two unrelated hits: a bell IconButton on the Home screen (03 Home and Markets.dc.html) and a 'push notification opens here' footer note in onboarding (02 Verification.dc.html). No notification-PREFERENCES screen (switches for order/money/price-alert/digest) exists anywhere.",
+      "recommendation": "restyle-only",
+      "why": "No artboard exists for notification preferences; this is basic account infrastructure with a real wired backend, not an obviously dropped feature."
+    },
+    {
+      "app_screen": "lib/screens/account/personal_info_screen.dart",
+      "purpose": "View locked identity fields (legal name, DOB, CHN) with a 'verified from BVN/NIN' note, and edit phone/email/home address (each gated by a code) plus avatar and city/state.",
+      "route": "/account/personal (Routes.acctPersonal)",
+      "is_helper": false,
+      "covered_by": ["s58"],
+      "coverage_confidence": "certain",
+      "evidence": "docs/design/redesign-2026-08/06 Account and Support.dc.html id=\"s58\" ('58 · Personal details'): avatar + 'Change avatar', a verified banner ('Verified on 14 March 2026. Locked details come from your BVN and NIN.'), locked rows 'Legal name'/'Date of birth'/'CHN' each with a lock icon, then editable 'Phone'/'Email'/'Home address' rows each with a 'Change' action and a code-required helper line. This matches personal_info_screen.dart's structure and copy almost verbatim.",
+      "recommendation": "redesign-to-artboard",
+      "why": "Near-exact structural and copy match — the strongest single mapping in this batch."
+    },
+    {
+      "app_screen": "lib/screens/account/plans_screen.dart",
+      "purpose": "AI-credits subscription hub: shows remaining credits, lists plan tiers (free/plus/pro) with real prices, and lets the investor subscribe (currently blocked server-side, App Store IAP compliance) or cancel their current plan.",
+      "route": "/account/plans (Routes.acctPlans)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the ENTIRE canvas (all 8 files) for 'AI credit', 'credit meter', 'plans & credit', and 'subscription' — zero matches anywhere, not just in the Account section. s51's own Account-hub menu also has no 'Plans & credits' row, unlike the app's real menu.",
+      "recommendation": "needs-ruling",
+      "why": "The complete absence of any AI-credit/plan/subscription concept across the whole redesign canvas — combined with routes.dart's own note that the AI comprehension layer is 'UI-complete, content is static/canned pending a real backend' — suggests this feature may have been intentionally descoped from the redesign rather than merely unbatched; a human should confirm before deleting or restyling it."
+    },
+    {
+      "app_screen": "lib/screens/account/refer_earn_screen.dart",
+      "purpose": "Referral hub: shows the investor's referral code, copy/share actions, a friends-joined/credits-earned stats card, and a link to referral terms and to Plans & credits.",
+      "route": "/account/refer (Routes.acctRefer)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the ENTIRE canvas for 'refer a friend', 'referral', and 'refer & earn' — zero matches anywhere in any of the 8 files. s51's Account-hub menu also has no 'Refer & earn' row.",
+      "recommendation": "needs-ruling",
+      "why": "Total absence across the whole canvas, and its only real payout (AI credits) is itself the other feature with zero canvas presence (see plans_screen.dart) — this pattern suggests referrals may have been intentionally dropped alongside the AI-credits system, not just left undesigned; needs a human ruling rather than an assumed restyle."
+    },
+    {
+      "app_screen": "lib/screens/account/security_alert_screen.dart",
+      "purpose": "Full-screen alert shown after an unrecognised sign-in (from a push notification or the notifications list): device/location/time, and 'Freeze my account and sign that device out' vs 'That was me'.",
+      "route": "/security-alert (Routes.securityAlert)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'That was me', 'unrecognised sign', and 'Fraud desk' — zero matches anywhere. s54 (Security) has a signed-in-devices list ('This phone, Lagos' / 'iPhone 13, Abuja · tap to sign out') but no standalone full-screen alert-on-new-sign-in artboard.",
+      "recommendation": "restyle-only",
+      "why": "A real, already-shipped security-critical screen (audit P0 per its own header comment) with no artboard anywhere; keep and restyle rather than drop."
+    },
+    {
+      "app_screen": "lib/screens/account/security_screen.dart",
+      "purpose": "Security settings hub: change passcode, biometric-unlock toggle, always-on passcode-for-withdrawals row, signed-in devices, a phishing-warning nudge, Freeze account, and Log out.",
+      "route": "/account/security (Routes.acctSecurity)",
+      "is_helper": false,
+      "covered_by": ["s54"],
+      "coverage_confidence": "certain",
+      "evidence": "docs/design/redesign-2026-08/06 Account and Support.dc.html id=\"s54\" ('54 · Security'): 'Face ID to open the app' toggle, 'Ask for PIN on every trade' toggle, 'Alert me on new logins' toggle, 'Change passcode' row, 'Change transaction PIN' row, 'Where you are signed in' device list ('This phone, Lagos' / 'iPhone 13, Abuja · tap to sign out'), and 'Freeze my account' CTA. This matches security_screen.dart's structure closely (passcode change, biometric toggle, devices list, freeze CTA); the app additionally shows Log out here (moved from the hub per its own 2026-08-23 note) which s54 doesn't render (Log out sits on s51 instead in the new canvas).",
+      "recommendation": "redesign-to-artboard",
+      "why": "Strong structural match on the core security controls and devices list, with only the Log-out placement differing between the two designs."
+    },
+    {
+      "app_screen": "lib/screens/account/statement_detail_screen.dart",
+      "purpose": "Per-broker breakdown of one monthly statement PDF: issuer card, a 'full breakdown is in the PDF' explainer (broker-dimension data doesn't exist on the backend yet), compliance footer, and Download PDF.",
+      "route": "/account/statements/detail (Routes.acctStatementDetail, pushed with a Statement extra from statements_screen.dart)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'per broker', 'opening and closing', 'Acct BM', and 'Brokers ·' — the only hit is s51's own menu-row SUBTITLE 'One per broker, monthly' under 'Statements and contract notes' (a one-line description, not a per-broker breakdown screen). No dedicated per-broker statement-detail artboard exists anywhere.",
+      "recommendation": "restyle-only",
+      "why": "A real, already-scoped screen (its own header comment documents exactly which backend fields are missing) with no artboard drawn; keep and restyle rather than drop, since the per-broker concept is at least referenced in s51's subtitle copy."
+    },
+    {
+      "app_screen": "lib/screens/account/statements_screen.dart",
+      "purpose": "Statements & contract notes hub: a segmented Statements/Contract notes tab over one document list, 'prepare this month's statement' action, and rows that push into the detail/contract-note screens.",
+      "route": "/account/statements (Routes.acctStatements)",
+      "is_helper": false,
+      "covered_by": ["s52"],
+      "coverage_confidence": "certain",
+      "evidence": "docs/design/redesign-2026-08/06 Account and Support.dc.html id=\"s52\" ('52 · Statements and contract notes'): search pill, broker/year filter chips, a 'Ready to download · 12' list mixing monthly statements and contract notes, a compliance note about contract notes appearing within 24 hours, and a 'Request a statement' button linking to s56. Matches statements_screen.dart's document-list/tab structure closely (app uses a segmented control instead of filter chips, and links generation instead of a canvas-only 'request' flow, but the core list+download shape is the same).",
+      "recommendation": "redesign-to-artboard",
+      "why": "Direct structural and functional match — same document list concept, same downstream links to statement/contract-note detail and to a statement-request flow (app: generate-this-month; canvas: request-by-email via s56)."
+    },
+    {
+      "app_screen": "lib/screens/account/tax_documents_screen.dart",
+      "purpose": "Tax documents screen: 'this year so far' dividend/WHT summary from real data, plus a static 'not available yet' block for WHT credit note / annual tax summary documents (generator exists server-side but nothing calls it, and the mobile enum doesn't support the kinds yet).",
+      "route": "/account/tax (Routes.acctTax) — the route is registered but NOTHING in the app currently navigates to it: the account_screen.dart menu row was hidden 2026-08-24 ('please hide everything on tax') and statements_screen.dart's Tax tab segment was also removed, so this is effectively UNROUTED in practice despite having a live GoRoute",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'tax document' and 'withholding' — zero matches anywhere. Confirmed via grep that no code path currently pushes Routes.acctTax (only its own route registration references the constant).",
+      "recommendation": "no-action",
+      "why": "No artboard exists, and the screen is currently unreachable from any live UI in the app itself (hidden by direct product instruction) — a dead end on both sides, so no redesign action is needed until/unless it's re-exposed."
+    },
+    {
+      "app_screen": "lib/screens/account/withdraw_mandate_screen.dart",
+      "purpose": "Type-to-confirm flow to withdraw the DCS mandate from a bank account: shows the effects, requires typing WITHDRAW, and (honestly) reports the action isn't wired to a real backend endpoint yet.",
+      "route": "/account/banks/withdraw-mandate (Routes.acctWithdrawMandate, pushed with a BankAccountSummary extra from bank_accounts_screen.dart)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'withdraw mandate' and 'DCS mandate' — zero matches anywhere. s37 (Withdraw) is a cash-withdrawal amount screen, unrelated to mandate management, and bank-account management itself has no artboard either (see bank_accounts_screen.dart's finding).",
+      "recommendation": "restyle-only",
+      "why": "A real, regulatorily-meaningful destructive action (with its own honest 'not available yet' backend gap already documented) and no artboard anywhere; keep and restyle alongside bank_accounts_screen.dart once that gets a redesigned home."
+    }
+  ]
+}

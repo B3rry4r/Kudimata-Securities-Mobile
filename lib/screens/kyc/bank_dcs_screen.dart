@@ -1,5 +1,6 @@
-// KYC 6 of 8 — Bank & Direct Cash Settlement (canvas screen 19). NEW screen
-// (2026-08-24, re-sequencing to the canvas's real 8-step flow).
+// KYC 5 of 7 — Bank & Direct Cash Settlement (canvas screen 19). NEW screen
+// (2026-08-24, re-sequencing to the canvas's real 8-step flow; renumbered
+// 8->7 (was 6 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation).
 //
 // Reuses the app's EXISTING real bank-linking mechanism —
 // BankAccountsRepository (POST /bank-accounts, PATCH .../primary, GET
@@ -18,6 +19,10 @@
 // Resume-aware: if the investor already has a primary account (added here
 // before, or already had one), this shows it directly instead of asking to
 // re-add — Continue just moves on.
+//
+// Post-confirm navigation goes to Routes.kycChecklist, not straight to
+// Declarations (X-5, SHARED-CHANGES.md 2026-08-27) — the checklist hub is
+// the flow's spine, re-entered after every completed step.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -106,13 +111,23 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
       _busy = true;
       _error = null;
     });
+    final accountNumber = _accountNumber.text.trim();
     try {
-      final added = await _repo.add(bankCode: bank.code, accountNumber: _accountNumber.text.trim());
+      final added = await _repo.add(bankCode: bank.code, accountNumber: accountNumber);
       if (_dcs && !added.primary) {
         await _repo.setPrimary(added.id);
       }
       if (!mounted) return;
-      context.go(Routes.kycDeclarations);
+      setState(() => _busy = false);
+      // s18b — confirm before moving on. Only shown right after adding an
+      // account THIS session, where the real bank/number/name are all in
+      // hand; see _continueWithExisting's own comment for why a resumed
+      // existing account skips this instead.
+      await _showConfirmSheet(
+        bankName: bank.name,
+        accountNumber: accountNumber,
+        holderName: _resolvedName,
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -124,7 +139,29 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
     }
   }
 
-  void _continueWithExisting() => context.go(Routes.kycDeclarations);
+  // Resume path (an investor who already added a primary account before —
+  // this session or an earlier one): "Continue just moves on", per this
+  // file's header comment. No s18b sheet here — BankAccountSummary carries
+  // only a MASKED account number and no account-holder name at all (see
+  // BankAccountsRepository), so a confirm sheet built from it would show
+  // "****6835" and a blank Name row rather than the real values s18b draws;
+  // that's worse than the resume shortcut it would replace. The account was
+  // already confirmed the session it was added.
+  void _continueWithExisting() => context.go(Routes.kycChecklist);
+
+  /// s18b "Confirm your bank account" sheet. Primary -> declarations; ghost
+  /// "Edit" just dismisses back onto s18 (the form stays exactly as typed).
+  Future<void> _showConfirmSheet({
+    required String bankName,
+    required String accountNumber,
+    required String? holderName,
+  }) async {
+    final confirmed = await showKSheet<bool>(
+      context,
+      child: _BankConfirmSheet(bankName: bankName, accountNumber: accountNumber, holderName: holderName),
+    );
+    if (confirmed == true && mounted) context.go(Routes.kycChecklist);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,9 +173,9 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycUtilityBill),
-              stepLabel: 'Verification · 6 of 8',
+              stepLabel: 'Verification · 5 of 7',
             ),
-            const KycStepProgress(total: 8, current: 6),
+            const KycStepProgress(total: 7, current: 5),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -160,7 +197,7 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
                       children: [
                         const KScreenHead(
                           title: 'Add your bank account',
-                          body: 'One account, in your own name. Dividends and sale proceeds land here directly.',
+                          body: 'Withdrawals and dividends are paid here. It must be in your name.',
                         ),
                         const SizedBox(height: 20),
                         if (showExisting) ...[
@@ -260,16 +297,19 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
               keyboardType: TextInputType.number,
               placeholder: '10 digits',
               error: _showErrors && !_canAdd ? 'Select a bank and enter a valid account number' : null,
-              helper: _resolving
-                  ? 'Resolving account name…'
-                  : _resolvedName != null
-                      ? 'Account name: $_resolvedName'
-                      : null,
+              helper: _resolving ? 'Resolving account name…' : null,
               onChanged: (_) {
                 setState(() {});
                 _maybeResolveName();
               },
             ),
+            // s18's resolved-name confirmation — a distinct gain-tinted
+            // pill (check + the name in caps), not inline helper text under
+            // the field.
+            if (!_resolving && _resolvedName != null) ...[
+              const SizedBox(height: 14),
+              _ResolvedNameBanner(name: _resolvedName!),
+            ],
             if (_error != null) ...[
               const SizedBox(height: 10),
               Text(_error!, style: KType.body(color: KColor.loss)),
@@ -277,6 +317,108 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+/// s18's "ADEBAYO OKONKWO" confirmation row — a gain-tinted pill with a
+/// check icon, shown once [BankAccountsRepository.resolveAccountName]
+/// returns a real name for the bank+account-number pair just entered.
+class _ResolvedNameBanner extends StatelessWidget {
+  const _ResolvedNameBanner({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: KColor.gain.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          KIcon('check', size: 18, color: KColor.gain),
+          const SizedBox(width: 12),
+          Expanded(child: Text(name.toUpperCase(), style: KType.cardTitle())),
+        ],
+      ),
+    );
+  }
+}
+
+/// s18b "Confirm your bank account" — a sheet over s18, per the artboard:
+/// title, subtitle, a three-row Bank/Account/Name card, a primary "The
+/// details are correct" (-> declarations) and a ghost "Edit" (-> back to the
+/// form, unchanged). NOT included: the artboard's "Changing it later takes a
+/// 24-hour security hold" line — this codebase has no such mechanism
+/// anywhere (grepped end to end), and shipping a security guarantee nothing
+/// enforces is worse than a wrong figure; the same call already made for the
+/// identical line elsewhere in this redesign.
+class _BankConfirmSheet extends StatelessWidget {
+  const _BankConfirmSheet({required this.bankName, required this.accountNumber, required this.holderName});
+  final String bankName;
+  final String accountNumber;
+  final String? holderName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Confirm your bank account', textAlign: TextAlign.center, style: KType.section()),
+        const SizedBox(height: 8),
+        Text('Dividends and withdrawals will be paid here.',
+            textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),
+        const SizedBox(height: 18),
+        Container(
+          decoration: BoxDecoration(
+            color: KColor.bg,
+            border: Border.all(color: KColor.hairline, width: 1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Column(
+            children: [
+              _ConfirmRow(label: 'Bank', value: bankName, divider: true),
+              _ConfirmRow(label: 'Account', value: accountNumber, divider: true),
+              _ConfirmRow(label: 'Name', value: holderName ?? '—', divider: false),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        KButton(label: 'The details are correct', onPressed: () => Navigator.of(context).pop(true)),
+        const SizedBox(height: 10),
+        KButton(label: 'Edit', variant: KButtonVariant.ghost, onPressed: () => Navigator.of(context).pop(false)),
+      ],
+    );
+  }
+}
+
+class _ConfirmRow extends StatelessWidget {
+  const _ConfirmRow({required this.label, required this.value, required this.divider});
+  final String label;
+  final String value;
+  final bool divider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 13),
+      decoration: BoxDecoration(
+        border: divider ? Border(bottom: BorderSide(color: KColor.hairline, width: 1)) : null,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: KType.data(color: KColor.ink3)),
+          Flexible(
+            child: Text(value,
+                textAlign: TextAlign.right, style: KType.cardTitle(), overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -322,41 +464,51 @@ class _ExistingAccountCard extends StatelessWidget {
   }
 }
 
-/// The DCS explainer panel + checkbox — canvas copy verbatim.
+/// s18's DCS panel — checkbox (checked by default) + label + explainer, plus
+/// a "What is Direct Cash Settlement?" link, copy verbatim from the canvas.
 class _DcsPanel extends StatelessWidget {
   const _DcsPanel({required this.checked, required this.onChanged});
   final bool checked;
   final ValueChanged<bool> onChanged;
 
+  void _explain(BuildContext context) {
+    showKSheet<void>(
+      context,
+      child: const KExplainPanel(
+        title: 'What is Direct Cash Settlement?',
+        body: 'Direct Cash Settlement, required by the NGX. Money goes from the exchange to your bank, '
+            'never through us.',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: KColor.indicatorTint, borderRadius: KRadii.featureR),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: KColor.paper,
+        border: Border.all(color: KColor.hairline, width: 1),
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text('Direct Cash Settlement',
-                    style: KType.cardTitle(color: KColor.indicatorPress)),
-              ),
-              Text('REQUIRED FOR TRADING', style: KType.micro(color: KColor.ink3)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'With DCS, money from a sale or a dividend goes from the CSCS to your bank account — it never sits with a broker. That includes us.',
-            style: KType.body(color: KColor.ink2),
-          ),
-          const SizedBox(height: 10),
           KCheckbox(
             checked: checked,
             onChanged: onChanged,
-            label: 'Use this account for Direct Cash Settlement',
+            label: 'Pay my sales and dividends straight to this bank account',
+            description:
+                'Direct Cash Settlement, required by the NGX. Money goes from the exchange to your bank, never through us.',
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () => _explain(context),
+            behavior: HitTestBehavior.opaque,
+            child: Text('What is Direct Cash Settlement?',
+                style: KType.data(color: KColor.indicator, w: KWeight.semibold)),
           ),
         ],
       ),

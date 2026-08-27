@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/colors.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/typography.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/radii.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/motion.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/illustration.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/base.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/styles.css">
+<script src="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#F3EDE3}
+a{color:var(--indicator);text-decoration:none}
+a:hover{color:var(--indicator-press)}
+.hscroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="font-family:var(--font-core);padding:56px 64px 96px;display:flex;flex-direction:column;gap:40px">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3)">Kudimata Invest · home · 3E approved, light reworked</div>
+<div style="font:var(--text-hero);letter-spacing:var(--track-hero);color:var(--ink)">Home, final pair</div>
+<div style="font:var(--text-body);color:var(--ink-2);text-wrap:pretty">Same structure both modes. The naira illustration now sits in the card's top row beside the label, so it can never overlap the number or chips. Light mode gets a proper light card: paper, hairline, purple chips.</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+
+<div id="l1" style="flex:none;width:390px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="background:var(--indicator);color:#fff;font:var(--text-label);letter-spacing:var(--track-label);padding:4px 10px;border-radius:999px">L1</span><span style="font:var(--text-card-title);color:var(--ink)">Light · reworked</span></div>
+<div style="width:390px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px 12px">
+<div style="display:flex;align-items:center;gap:10px">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Avatar" seed="adebayo" size="36" base-path="assets/illustrations" hint-size="36px,36px"></x-import>
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Hi Adebayo</span>
+</div>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="bell" label="notifications" badge="{{ true }}" hint-size="40px,40px"></x-import>
+</div>
+<div style="display:flex;flex-direction:column;padding-bottom:28px">
+<div style="padding:8px 24px 0">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:26px;padding:20px 22px;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-card)">
+<span style="position:absolute;width:190px;height:190px;border-radius:999px;background:var(--indicator-tint);right:-80px;top:-80px"></span>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;position:relative">
+<div style="display:flex;align-items:center;gap:8px;font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);padding-top:8px">Total wealth <x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="eye" size="15" hint-size="15px,15px"></x-import></div>
+<img src="assets/illustrations/money-coins.svg" style="height:64px;flex:none" alt="">
+</div>
+<div style="font-family:var(--font-display);font-weight:800;font-size:42px;line-height:46px;letter-spacing:-.03em;color:var(--ink);font-variant-numeric:tabular-nums;position:relative">₦457,580<span style="font-size:23px;color:var(--ink-3)">.34</span></div>
+<div style="display:flex;gap:8px;padding-top:6px;position:relative;flex-wrap:wrap">
+<span style="display:inline-flex;align-items:center;gap:6px;background:var(--indicator-tint);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--ink)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="14" hint-size="14px,14px"></x-import>₦45,200</span>
+<span style="display:inline-flex;align-items:center;gap:6px;background:var(--indicator-tint);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--ink)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="portfolio" size="14" hint-size="14px,14px"></x-import>₦412,380 <span style="color:var(--gain)">+3.1%</span></span>
+</div>
+</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;justify-content:space-between">
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:var(--indicator);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="plus" size="22" hint-size="22px,22px"></x-import></span><span style="font-size:13px;font-weight:600;color:var(--ink)">Add</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="arrowUpRight" size="22" hint-size="22px,22px"></x-import></span><span style="font-size:13px;font-weight:600;color:var(--ink)">Withdraw</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="markets" size="22" hint-size="22px,22px"></x-import></span><span style="font-size:13px;font-weight:600;color:var(--ink)">Invest</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="22" hint-size="22px,22px"></x-import></span><span style="font-size:13px;font-weight:600;color:var(--ink)">Learn</span></div>
+</div>
+<div style="padding:30px 24px 0;font-family:var(--font-display);font-weight:800;font-size:22px;letter-spacing:-.02em;color:var(--ink)">Grow with Kudimata</div>
+<div class="hscroll" style="padding:14px 24px 0;display:flex;gap:12px;overflow-x:auto">
+<div style="flex:none;width:220px;background:var(--feature);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:10px;cursor:pointer">
+<img src="assets/illustrations/kd-readiness.svg" style="height:84px;align-self:center" alt="">
+<span style="font-family:var(--font-display);font-weight:800;font-size:17px;line-height:22px;color:var(--feature-ink)">How ready are you to invest?</span>
+<span style="font-size:13px;font-weight:700;color:var(--sun)">Check your readiness →</span>
+</div>
+<div style="flex:none;width:220px;background:var(--sun-tint);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:10px;cursor:pointer">
+<img src="assets/illustrations/kd-persona.svg" style="height:84px;align-self:center" alt="">
+<span style="font-family:var(--font-display);font-weight:800;font-size:17px;line-height:22px;color:var(--ink)">What's your money persona?</span>
+<span style="font-size:13px;font-weight:700;color:var(--indicator)">Take the quiz →</span>
+</div>
+</div>
+<div style="padding:24px 24px 0">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer"><div style="width:48px;height:48px;flex:none;background:var(--sun-tint);border-radius:12px;display:grid;place-items:center;overflow:hidden"><img src="assets/illustrations/kd-lesson.svg" style="height:38px" alt=""></div><div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Financial literacy</span><span style="font-size:13px;color:var(--ink-3)">Lesson 3 of 12 · 4 min</span></div><span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span></div>
+</div>
+<div style="padding:26px 24px 0;display:flex;align-items:center;justify-content:space-between">
+<span style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--ink)">Top movers today</span>
+<a href="#l1" style="font-size:15px;font-weight:600">Markets</a>
+</div>
+<div style="padding:8px 24px 0">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:14px">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:999px;background:{{ moverColor }};font-family:var(--font-display);font-weight:800;font-size:14px;color:var(--ink)">{{ moverInit }}</span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">{{ moverName }}</span><span style="font-size:13px;color:var(--ink-3)">{{ moverTicker }}</span></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums">{{ moverPrice }}</span><span style="font-size:13px;font-weight:700;color:{{ moverChgColor }}">{{ moverChg }}</span></div>
+</div>
+<div style="display:flex;gap:6px;justify-content:center">
+<sc-for list="{{ moverDots }}" as="d" hint-placeholder-count="3"><span style="width:{{ d.w }};height:6px;border-radius:999px;background:{{ d.bg }};transition:all .3s"></span></sc-for>
+</div>
+</div>
+</div>
+</div>
+<div style="display:flex;justify-content:space-around;align-items:center;padding:14px 8px 26px;border-top:1px solid var(--hairline);background:var(--paper)">
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="home" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:700">Home</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="markets" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Markets</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="portfolio" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Portfolio</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Wallet</span></div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Light card: paper + hairline, purple tint chips, illustration locked into the top row.</div>
+</div>
+
+<div id="3e" style="flex:none;width:390px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="background:#26242A;color:#C9A6EC;font:var(--text-label);letter-spacing:var(--track-label);padding:4px 10px;border-radius:999px">3E</span><span style="font:var(--text-card-title);color:var(--ink)">Dark · approved</span></div>
+<div style="width:390px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.5)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px 12px">
+<div style="display:flex;align-items:center;gap:10px">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Avatar" seed="adebayo" size="36" base-path="assets/illustrations" hint-size="36px,36px"></x-import>
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Hi Adebayo</span>
+</div>
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;position:relative;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="bell" size="19" hint-size="19px,19px"></x-import><span style="position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:999px;background:var(--warm)"></span></span>
+</div>
+<div style="display:flex;flex-direction:column;padding-bottom:28px">
+<div style="padding:8px 24px 0">
+<div style="background:#26242A;border-radius:26px;padding:20px 22px;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+<span style="position:absolute;width:190px;height:190px;border-radius:999px;background:rgba(255,255,255,.05);right:-80px;top:-80px"></span>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;position:relative">
+<div style="display:flex;align-items:center;gap:8px;font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:rgba(244,242,239,.55);padding-top:8px">Total wealth <x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="eye" size="15" hint-size="15px,15px"></x-import></div>
+<img src="assets/illustrations/money-coins.svg" style="height:64px;flex:none" alt="">
+</div>
+<div style="font-family:var(--font-display);font-weight:800;font-size:42px;line-height:46px;letter-spacing:-.03em;color:#F4F2EF;font-variant-numeric:tabular-nums;position:relative">₦457,580<span style="font-size:23px;color:rgba(244,242,239,.5)">.34</span></div>
+<div style="display:flex;gap:8px;padding-top:6px;position:relative;flex-wrap:wrap">
+<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:#F4F2EF"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="14" hint-size="14px,14px"></x-import>₦45,200</span>
+<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:#F4F2EF"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="portfolio" size="14" hint-size="14px,14px"></x-import>₦412,380 <span style="color:#9DEBC4">+3.1%</span></span>
+</div>
+</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;justify-content:space-between">
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:var(--indicator-soft);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="plus" size="22" hint-size="22px,22px"></x-import></span><span style="font-size:13px;font-weight:600;color:#F4F2EF">Add</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.08);color:#F4F2EF"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="arrowUpRight" size="22" hint-size="22px,22px"></x-import></span><span style="font-size:13px;font-weight:600;color:#F4F2EF">Withdraw</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.08);color:#F4F2EF"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="markets" size="22" hint-size="22px,22px"></x-import></span><span style="font-size:13px;font-weight:600;color:#F4F2EF">Invest</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer"><span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.08);color:#F4F2EF"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="22" hint-size="22px,22px"></x-import></span><span style="font-size:13px;font-weight:600;color:#F4F2EF">Learn</span></div>
+</div>
+<div style="padding:30px 24px 0;font-family:var(--font-display);font-weight:800;font-size:22px;letter-spacing:-.02em;color:#F4F2EF">Grow with Kudimata</div>
+<div class="hscroll" style="padding:14px 24px 0;display:flex;gap:12px;overflow-x:auto">
+<div style="flex:none;width:220px;background:#26242A;border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:10px;cursor:pointer">
+<img src="assets/illustrations/kd-readiness.svg" style="height:84px;align-self:center" alt="">
+<span style="font-family:var(--font-display);font-weight:800;font-size:17px;line-height:22px;color:#F4F2EF">How ready are you to invest?</span>
+<span style="font-size:13px;font-weight:700;color:#C9A6EC">Check your readiness →</span>
+</div>
+<div style="flex:none;width:220px;background:#26242A;border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:10px;cursor:pointer">
+<img src="assets/illustrations/kd-persona.svg" style="height:84px;align-self:center" alt="">
+<span style="font-family:var(--font-display);font-weight:800;font-size:17px;line-height:22px;color:#F4F2EF">What's your money persona?</span>
+<span style="font-size:13px;font-weight:700;color:#C9A6EC">Take the quiz →</span>
+</div>
+</div>
+<div style="padding:24px 24px 0">
+<div style="background:#26242A;border-radius:18px;padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer"><div style="width:48px;height:48px;flex:none;background:rgba(245,197,66,.14);border-radius:12px;display:grid;place-items:center;overflow:hidden"><img src="assets/illustrations/kd-lesson.svg" style="height:38px" alt=""></div><div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Financial literacy</span><span style="font-size:13px;color:rgba(244,242,239,.5)">Lesson 3 of 12 · 4 min</span></div><span style="color:rgba(244,242,239,.5)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span></div>
+</div>
+<div style="padding:26px 24px 0;display:flex;align-items:center;justify-content:space-between">
+<span style="font-family:var(--font-display);font-weight:700;font-size:18px;color:#F4F2EF">Top movers today</span>
+<a href="#3e" style="font-size:15px;font-weight:600;color:#C9A6EC">Markets</a>
+</div>
+<div style="padding:8px 24px 0">
+<div style="background:#26242A;border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:14px">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:999px;background:{{ moverColor }};font-family:var(--font-display);font-weight:800;font-size:14px;color:var(--ink)">{{ moverInit }}</span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">{{ moverName }}</span><span style="font-size:13px;color:rgba(244,242,239,.5)">{{ moverTicker }}</span></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF;font-variant-numeric:tabular-nums">{{ moverPrice }}</span><span style="font-size:13px;font-weight:700;color:{{ moverChgColorDark }}">{{ moverChg }}</span></div>
+</div>
+<div style="display:flex;gap:6px;justify-content:center">
+<sc-for list="{{ moverDotsNeutral }}" as="d" hint-placeholder-count="3"><span style="width:{{ d.w }};height:6px;border-radius:999px;background:{{ d.bg }};transition:all .3s"></span></sc-for>
+</div>
+</div>
+</div>
+</div>
+<div style="display:flex;justify-content:space-around;align-items:center;padding:14px 8px 26px;border-top:1px solid rgba(255,255,255,.07)">
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="home" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:700">Home</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(244,242,239,.4)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="markets" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Markets</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(244,242,239,.4)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="portfolio" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Portfolio</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(244,242,239,.4)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Wallet</span></div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Approved: neutral charcoal, dark grey money card, purple accents, clean navbar.</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { mi: 0 };
+  componentDidMount() {
+    this._t = setInterval(() => this.setState(s => ({ mi: (s.mi + 1) % 3 })), 3000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  renderVals() {
+    const movers = [
+      { name: 'MTN Nigeria', ticker: 'MTNN · Telecoms', init: 'MT', color: '#F5C542', price: '₦228.50', chg: '+4.2%', up: true },
+      { name: 'Dangote Cement', ticker: 'DANGCEM · Industrials', init: 'DC', color: '#F07A45', price: '₦482.00', chg: '+2.8%', up: true },
+      { name: 'GTCO', ticker: 'GTCO · Banking', init: 'GT', color: '#A16BE0', price: '₦45.20', chg: '-1.3%', up: false }
+    ];
+    const m = movers[this.state.mi];
+    return {
+      moverName: m.name, moverTicker: m.ticker, moverInit: m.init, moverColor: m.color,
+      moverPrice: m.price, moverChg: m.chg,
+      moverChgColor: m.up ? 'var(--gain)' : 'var(--loss)',
+      moverChgColorDark: m.up ? '#9DEBC4' : '#FFB3A8',
+      moverDots: movers.map((_, i) => ({ w: i === this.state.mi ? '20px' : '6px', bg: i === this.state.mi ? 'var(--indicator)' : 'var(--track)' })),
+      moverDotsNeutral: movers.map((_, i) => ({ w: i === this.state.mi ? '20px' : '6px', bg: i === this.state.mi ? '#A16BE0' : 'rgba(255,255,255,.15)' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

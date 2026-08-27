@@ -13,19 +13,21 @@ class KNavItem {
   final String label;
 }
 
-// Labels confirmed 2026-08-24 against the canvas's own real `navItems` data
-// (Kudimata Invest App.dc.html's own script block — not a screen-title
-// guess): { home: 'Home', portfolio: 'Assets', markets: 'Markets',
-// wallet: 'Wallet', account: 'You' }. Two of these were wrong — 'Portfolio'
-// and 'Account' — carried over from this tab's SCREEN title (canvas screen
-// 38 is titled "Portfolio"), which isn't the same thing as its nav-bar
-// label. `id`s stay as they were (internal routing keys, never shown).
+// R-28 (2026-08-26, ruled by product owner): four-tab bar, order Home ·
+// Markets · Portfolio · Wallet, per redesign-2026-08 canvas artboard s22
+// ("clean four-tab navbar"). The 'You' tab is gone — account is reached from
+// the header avatar (see home_screen.dart) — and the old 'Assets' label
+// consolidates with this same tab's 'Portfolio' screen title into one label,
+// 'Portfolio'. `id`s stay as they were (internal routing keys, never shown).
+//
+// (Previously: { home: 'Home', portfolio: 'Assets', markets: 'Markets',
+// wallet: 'Wallet', account: 'You' } — labels confirmed 2026-08-24 against
+// the old 5-tab canvas's own `navItems` data.)
 const List<KNavItem> kDefaultNavItems = [
   KNavItem(id: 'home', icon: 'home', label: 'Home'),
-  KNavItem(id: 'portfolio', icon: 'portfolio', label: 'Assets'),
   KNavItem(id: 'markets', icon: 'markets', label: 'Markets'),
+  KNavItem(id: 'portfolio', icon: 'portfolio', label: 'Portfolio'),
   KNavItem(id: 'wallet', icon: 'wallet', label: 'Wallet'),
-  KNavItem(id: 'profile', icon: 'profile', label: 'You'),
 ];
 
 class KBottomNav extends StatelessWidget {

@@ -1,5 +1,11 @@
-// Stage 9 — Help & support (pushed). Search pill + FAQ/contact rows. Mirrors
-// `HelpSupport` in extra-screens.jsx.
+// Account → Help & support — no artboard. RULINGS.md (docs/redesign/
+// evidence/account.json): searched the whole 56-artboard canvas for "help" +
+// "support" together, "contact us" and "live chat" — no dedicated hub
+// artboard anywhere (s51 links straight to Complaints and Terms; s53
+// Complaints is the closest neighbour but is entirely about complaint
+// categories/status, not FAQs or a contact card). Ruling: `restyle-only` —
+// basic customer-service infrastructure, not an obviously cut feature, kept
+// and brought onto the new design system's tokens.
 //
 // Per Kudimata-Securities-Backend/.pipeline/fragments/account-help.json, no
 // backend resource is declared for this screen's content — `_rows` (contact
@@ -33,17 +39,19 @@ class HelpSupportScreen extends StatefulWidget {
 }
 
 class _HelpSupportScreenState extends State<HelpSupportScreen> {
-  // Exact FAQ headlines from screen-specs.md spec 56 (2026-08-23 exactness
-  // pass — the prior redesign kept this screen's older generic
-  // contact-channel rows instead of the spec's specific question list).
-  // See faq_screen.dart's header for how these rows reach the real screen
-  // 57 Article & Glossary content vs. the general FAQ list fallback.
-  // Canvas s56's FAQ rows carry no leading icon at all — just title text and
-  // a trailing chevron. The first tuple field used to be fed straight into
+  // R-5: an earlier pass sourced these 4 headlines and their no-leading-icon
+  // row treatment from an older, pre-redesign spec doc's "screen 56"/"screen
+  // 57" — ids from a superseded artifact, not the current 56-artboard
+  // canvas (which, per this file's header, draws no Help & support artboard
+  // at all). Kept here purely as real, specific customer-question copy —
+  // NOT as a claim of current-canvas backing. See faq_screen.dart's header
+  // for how these rows reach the real "Settlement" article vs. the general
+  // FAQ list fallback. Rows carry no leading icon, just title text and a
+  // trailing chevron — the first tuple field used to be fed straight into
   // KAccountRow's LEADING icon slot as the literal string 'chevronRight',
   // which rendered a stray chevron glyph on the left of every row in
-  // addition to the real trailing KRowChevron on the right — a visual bug,
-  // not a design choice (2026-08-23 exactness pass; field dropped).
+  // addition to the real trailing KRowChevron on the right; a visual bug,
+  // not a design choice, so that field was dropped.
   static const List<(String, String)> _rows = [
     ("Why is my order still filling?", ''),
     (kSettlementArticleQuestion, ''),
@@ -78,19 +86,17 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   }
 
   // Every row pushes the one FAQ route (Routes.acctFaq), passing the tapped
-  // question as `extra`. FaqScreen renders the real, canvas-specified
-  // Article & Glossary content (screen 57) when it recognises the question
-  // ("When does money from a sale arrive?"); every other question falls
-  // back to the general FAQ list there, since there's no per-question route
-  // to deep-link into and no canvas-given article content for the rest
-  // (2026-08-23 exactness pass).
+  // question as `extra`. FaqScreen renders the real, grounded "Settlement"
+  // article when it recognises the question ("When does money from a sale
+  // arrive?"); every other question falls back to the general FAQ list
+  // there, since there's no per-question route to deep-link into and no
+  // other real article content written yet.
   void _onRowTap(String question) => context.push(Routes.acctFaq, extra: question);
 
   void _emailUs() => _launch(Uri(scheme: 'mailto', path: _kSupportEmail));
 
-  // Screen 87 (2026-08-23 canvas exactness pass) — a real complaint form now
-  // exists (complaint_screen.dart) so this no longer bounces straight out to
-  // a bare mailto: link.
+  // A real Complaints hub (s53, complaint_screen.dart) exists, so this no
+  // longer bounces straight out to a bare mailto: link.
   void _fileComplaint() {
     context.push(Routes.acctComplaint);
   }
@@ -100,8 +106,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     final rows = _filtered;
     return KAccountSubScaffold(
       title: 'Help & support',
-      // Canvas s56 pins "File a complaint" to the bottom of the screen
-      // (margin-top:auto), not as the last item in the scrolling list.
+      // "File a complaint" is pinned to the bottom of the screen, not as
+      // the last item in the scrolling list.
       footer: KButton(
         label: 'File a complaint',
         variant: KButtonVariant.secondary,
@@ -174,11 +180,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          // Canvas s56's "Report fraud" NudgeCard has no action button — the
-          // footer note is explicit that "freeze lives on 50" (the Security
-          // screen), a separate entry point this card doesn't duplicate. A
-          // 'Freeze my account' button was previously added here with no
-          // grounding in the canvas (removed 2026-08-23 exactness pass).
+          // "Report fraud" carries no action button of its own — freezing
+          // the account is a separate, real entry point on the Security
+          // screen (Routes.acctFreeze) that this card doesn't duplicate.
           KNudgeCard(
             tone: KNudgeTone.warm,
             title: 'Report fraud',

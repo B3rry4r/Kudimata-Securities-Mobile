@@ -57,6 +57,7 @@ class Holding {
     required this.totalReturn,
     required this.returnPct,
     required this.returnTrend,
+    this.marketValueKobo,
   });
 
   final Asset asset;
@@ -66,6 +67,13 @@ class Holding {
   final String totalReturn; // e.g. "+₦3,396.00"
   final String returnPct; // e.g. "+11.78%"
   final Trend returnTrend;
+
+  /// Raw market value in kobo, alongside the preformatted [marketValue]
+  /// string — needed to sum real position values across holdings (e.g. the
+  /// Portfolio screen's by-sector allocation bar, ruling R-22) without
+  /// re-parsing a currency string. Null for callers that only ever had the
+  /// formatted string (e.g. `mock.dart`'s fixtures) — never fabricated.
+  final int? marketValueKobo;
 }
 
 // 'dividend' added 2026-08-24 — matches the backend's TransactionType enum
@@ -189,6 +197,65 @@ class AppNotification {
   final String time; // e.g. "2h ago"
   final String icon; // KIcon name
   final bool unread;
+}
+
+/// One price level in an [OrderBook]'s bid or ask side — mirrors the
+/// backend's `OrderBookLevel` (Kudimata-Securities-Backend's
+/// src/common/types/asset.types.ts) 1:1. Deliberately carries raw kobo/unit
+/// integers rather than a preformatted string — unlike [Asset]'s
+/// price/change fields, this model follows contract_note_screen.dart's
+/// convention (raw ints formatted by the screen), per SHARED-CHANGES.md S-7.
+@immutable
+class OrderBookLevel {
+  const OrderBookLevel({required this.priceKobo, required this.units});
+
+  final int priceKobo;
+  final int units;
+
+  factory OrderBookLevel.fromJson(Map<String, dynamic> json) => OrderBookLevel(
+        priceKobo: (json['priceKobo'] as num?)?.toInt() ?? 0,
+        units: (json['units'] as num?)?.toInt() ?? 0,
+      );
+}
+
+/// Wire shape for the backend's OrderBook resource — BR-5's simulated depth
+/// feed (`SimulatedNgxBroker#getOrderBook`, `GET /assets/:ticker/order-book`).
+/// [bids] is sorted best-first (highest price first), [asks] is sorted
+/// best-first (lowest price first); every bid price is strictly less than
+/// every ask price. The backend always returns exactly five levels a side;
+/// this model does not assume that (an empty list on either side is a valid,
+/// renderable state — see asset_detail_screen.dart's `_OrderBookTab`).
+///
+/// NOTE: this depth feed is simulated, like every price this app already
+/// shows (see SimulatedNgxBroker) — no user-facing "simulated" label is
+/// added here, matching the rest of the app's honesty convention (no other
+/// price/quote in this app carries one either).
+@immutable
+class OrderBook {
+  const OrderBook({
+    required this.ticker,
+    required this.bids,
+    required this.asks,
+    required this.asOf,
+  });
+
+  final String ticker;
+  final List<OrderBookLevel> bids;
+  final List<OrderBookLevel> asks;
+  final String asOf; // ISO-8601 timestamp
+
+  factory OrderBook.fromJson(Map<String, dynamic> json) => OrderBook(
+        ticker: json['ticker'] as String? ?? '',
+        bids: ((json['bids'] as List<dynamic>?) ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(OrderBookLevel.fromJson)
+            .toList(),
+        asks: ((json['asks'] as List<dynamic>?) ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(OrderBookLevel.fromJson)
+            .toList(),
+        asOf: json['asOf'] as String? ?? '',
+      );
 }
 
 @immutable

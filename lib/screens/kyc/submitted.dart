@@ -188,7 +188,16 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
                     : KStatusView(
                         tone: KStatusTone.pending,
                         illustrationName: 'kyc-checking',
-                        title: "We're reviewing your details",
+                        // s20's own title, verbatim. Body is NOT s20's "Usually
+                        // 1–2 business days" — that's an unverified SLA claim
+                        // (no mechanism in this codebase backs a specific
+                        // duration; the real signal set is the synchronous
+                        // provider check this screen polls for below), so it
+                        // gets the same treatment as the redesign's other
+                        // unverified-claim removals rather than being
+                        // transcribed. This copy states what's actually true
+                        // of the flow instead.
+                        title: "You're done. We're reviewing",
                         message:
                             "This usually takes a few minutes. We'll notify you when you're verified — you can close the app.",
                         // Canvas screen 23's own checklist card, between the
@@ -199,10 +208,10 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
                         extra: _lastResult?.verificationSignals != null
                             ? _VerificationChecklist(signals: _lastResult!.verificationSignals!)
                             : null,
-                        // Canvas screen 23's own wording — browsing (not a
-                        // plain "back to home") is the intent while waiting.
-                        secondary: 'Look around while you wait',
-                        onSecondary: () => context.go(Routes.home),
+                        // s20's own single CTA, verbatim — the same route
+                        // approved.dart's own "Add money" primary uses.
+                        primary: 'Add money while you wait',
+                        onPrimary: () => context.go(Routes.wallet),
                   ),
           ),
         ),

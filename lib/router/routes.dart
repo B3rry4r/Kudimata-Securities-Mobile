@@ -1,6 +1,9 @@
 // Kudimata Securities — route table. Path constants + dynamic-route helpers for
-// GoRouter. The 5 tab roots live in a StatefulShellRoute (indexedStack); every
-// `pushed` route below is TOP-LEVEL so it covers the shell (no tab bar).
+// GoRouter. The 4 tab roots (R-28, 2026-08-26: Home · Markets · Portfolio ·
+// Wallet — "You" removed, account reached from the header avatar) live in a
+// StatefulShellRoute (indexedStack); every `pushed` route below is TOP-LEVEL
+// so it covers the shell (no tab bar). `account` is one such pushed route now
+// — it used to be the 5th tab root.
 //
 // Navigation convention:
 //   • gated linear steps  → context.go(...)   (replace, no back stack)
@@ -28,11 +31,19 @@ class Routes {
   static const String biometric = '/biometric';
   static const String onboardingPersonal = '/onboarding/personal';
   static const String onboardingAvatar = '/onboarding/avatar';
+  // "Your account is ready" / three-step checklist (screen s07) — X-4,
+  // SHARED-CHANGES.md. Sits between avatar selection and KYC start.
+  static const String onboardingNextSteps = '/onboarding/next-steps';
   static const String login = '/login';
   static const String reset = '/reset';
 
   // ── KYC ──────────────────────────────────────────────────────────────────
   static const String kycIntro = '/kyc';
+  // Verification checklist hub (screen s11) — the flow's spine. Re-entered
+  // after every completed step (see kyc_checklist_screen.dart's own header
+  // and DECISIONS.md's SHARED-CHANGES S-8/X-5), unlike kycIntro above,
+  // which is a one-shot entry with its own resume logic.
+  static const String kycChecklist = '/kyc/checklist';
   static const String kycBvn = '/kyc/bvn';
   // CHN · optional — 2 of 8 (2026-08-24 canvas screen 15, re-sequencing the
   // real 5-step flow to the canvas's real 8 steps). Right after bvn/nin,
@@ -53,12 +64,10 @@ class Routes {
   // Declarations · PEP — 7 of 8 (2026-08-24 canvas screen 20). PATCHes
   // pepSelfDeclared onto the draft.
   static const String kycDeclarations = '/kyc/declarations';
+  // Next of kin — the last collection step (D-1, 2026-08-27 removals pass,
+  // R-9: the standalone Review & submit screen was dropped; Next of kin's
+  // own "Submit for verification" now calls finalizeDraft() directly).
   static const String kycNextOfKin = '/kyc/next-of-kin';
-  // Review & submit — new final screen (2026-08-24 canvas screen 22). Next
-  // of kin's Continue now lands here instead of calling finalizeDraft()
-  // directly; THIS screen's "Submit for verification" is what actually
-  // calls it.
-  static const String kycReview = '/kyc/review';
   static const String kycSubmitted = '/kyc/submitted';
   static const String kycApproved = '/kyc/approved';
   static const String kycOutcome = '/kyc/outcome';
@@ -74,23 +83,35 @@ class Routes {
   static const String riskDisclaimer = '/suitability/risk-disclaimer';
 
   // ── Tab roots (StatefulShellRoute / indexedStack) ────────────────────────
+  // R-28: 4 tabs, Markets before Portfolio. "Assets" (the old nav label on
+  // this same `portfolio` route/screen) and "Portfolio" consolidate into one
+  // tab, labelled "Portfolio" — see lib/widgets/navigation.dart.
   static const String home = '/home';
-  static const String portfolio = '/portfolio';
   static const String markets = '/markets';
+  static const String portfolio = '/portfolio';
   static const String wallet = '/wallet';
-  static const String account = '/account';
 
-  /// Tab roots in shell branch order (index 0..4).
-  static const List<String> tabs = [home, portfolio, markets, wallet, account];
+  /// Tab roots in shell branch order (index 0..3).
+  static const List<String> tabs = [home, markets, portfolio, wallet];
 
   // ── Pushed (top-level) detail screens — cover the shell, no tab bar ───────
+  // Account hub — was the 5th tab root ("You"); R-28 moved it here, reached
+  // from the header avatar on Home instead of a tab.
+  static const String account = '/account';
   static const String notifications = '/notifications';
   static const String search = '/search';
   static const String orderStatus = '/orders';
-  static const String watchlist = '/watchlist';
+  // watchlist_screen.dart dropped (D-2, SHARED-CHANGES.md 2026-08-27
+  // removals pass, R-16) — the '+ watchlist' toggle on asset detail stays,
+  // and 'My alerts' (priceAlerts below) is now the permanent reader for the
+  // saved-assets data, reached from the Account menu instead of this route.
 
   // Dynamic pushed routes.
   static String assetDetail(String ticker) => '/asset/$ticker';
+  // Set a price alert (screen s49) — S-11, SHARED-CHANGES.md. Public,
+  // ticker-parametrised, reached from the asset page's own entry point
+  // (X-7) as well as price_alerts_screen.dart's existing "New alert" picker.
+  static String setPriceAlert(String ticker) => '/asset/$ticker/alert';
   static String holdingDetail(String ticker) => '/portfolio/holding/$ticker';
   static String transactionDetail(String id) => '/wallet/txn/$id';
   // Read-only legal-document preview, pushed from sign_up_screen.dart's
@@ -111,6 +132,7 @@ class Routes {
 
   // Path patterns for GoRoute registration (the router agent uses these).
   static const String assetDetailPath = '/asset/:ticker';
+  static const String setPriceAlertPath = '/asset/:ticker/alert';
   static const String holdingDetailPath = '/portfolio/holding/:ticker';
   static const String transactionDetailPath = '/wallet/txn/:id';
   static const String legalPreviewPath = '/legal-preview/:kind';
@@ -137,22 +159,20 @@ class Routes {
   static String explainThis(String topic) => '/explain/$topic';
   static const String explainThisPath = '/explain/:topic';
   static const String acctPlans = '/account/plans';
-  // Plain-English document summary (screen 06) — pushed with a
-  // DocumentSummaryArgs `extra`, not a path param, since it needs the
-  // already-fetched title/summary/points/original text, not just a kind
-  // string. Reachable from the terms screen's document rows and later from
-  // Account → Legal. Was built (2026-08-22) but never actually wired in —
-  // found unreachable during the exactness audit.
-  static const String documentSummary = '/document-summary';
+  // documentSummary ('/document-summary', screen 06) removed (D-4,
+  // SHARED-CHANGES.md 2026-08-27 removals pass, R-8): it was built
+  // (2026-08-22) but never actually wired in — found unreachable during the
+  // exactness audit, and superseded anyway by legal documents opening in
+  // the phone's native viewer (legal_preview_screen.dart).
 
   // ── Flow G — market hours, mandate and receipts (2026-08-23) ─────────────
   // Withdraw the DCS mandate (screen 65) — pushed with a BankAccountSummary
   // `extra` (not a path param — needs the full bank/masked-number pair, not
   // just an id). Reachable from Account -> Bank accounts.
   static const String acctWithdrawMandate = '/account/banks/withdraw-mandate';
-  // Contract note document (screen 66) — pushed with a Statement `extra`,
-  // same reasoning as documentSummary above (needs the already-fetched
-  // title/date/size, not just an id). Reachable from Statements & documents.
+  // Contract note document (screen 66) — pushed with a Statement `extra`
+  // (needs the already-fetched title/date/size, not just an id). Reachable
+  // from Statements & documents.
   static const String contractNote = '/account/statements/contract-note';
 
   // ── Screens 76-97 — canvas expansion from 66 to 97 screens (2026-08-23) ──

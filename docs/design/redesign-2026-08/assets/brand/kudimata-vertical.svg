@@ -1,0 +1,15 @@
+<?xml version="1.0"?><svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 155.9 142.6">
+  <defs>
+    
+    <linearGradient id="linear-gradient" x1="65.78" y1="95.39" x2="94.47" y2="25.22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5d1aa3"></stop>
+      <stop offset=".54" stop-color="#7225ae"></stop>
+      <stop offset="1" stop-color="#802db5"></stop>
+    </linearGradient>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <path class="cls-3" d="M63.24,57.72l-10.87,9.51v-25.49l10.87-9.51v25.48ZM77.87,15.76l-10.87,9.51v29.17l10.87-9.51V15.76ZM92.49,0l-10.87,9.51v32.14l10.87-9.51V0ZM92.49,35.8l-40.12,35.08v15.17l40.12-35.08v-15.17ZM83.3,63.69l-3.89,3.21-6.05,5.29,13.23,13.46,18.44.15-21.73-22.11Z"></path>
+    <text class="cls-1" transform="translate(0 117.98)"><tspan class="cls-6" x="0" y="0">K</tspan><tspan x="20.66" y="0">UDIM</tspan><tspan class="cls-5" x="100.58" y="0">AT</tspan><tspan class="cls-4" x="134.84" y="0">A</tspan></text>
+    <text class="cls-2" transform="translate(15.7 137.31)"><tspan x="0" y="0">SECURITIES LTD</tspan></text>
+  </g>
+</svg>

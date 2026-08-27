@@ -1,25 +1,31 @@
-// KYC 7 of 8 — Declarations · PEP (canvas screen 20). NEW screen (2026-08-24,
-// re-sequencing to the canvas's real 8-step flow).
+// KYC 6 of 7 — Declarations (artboard s19 "Two quick questions",
+// docs/design/redesign-2026-08/02 Verification.dc.html). Renumbered 8->7
+// (was 7 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation.
 //
-// Two real declarations, per the canvas — NOT one checkbox:
+// s19's actual two questions, per RULINGS.md's evidence
+// (docs/redesign/evidence/kyc.json) — the previous build of this screen had
+// the RIGHT first question and the WRONG second one (an undesigned
+// "I trade for myself" declaration instead of s19's real second question);
+// fixed here to match the artboard:
 //   1. PEP question (Yes/No) — wired to the real backend field
 //      KycSubmission.pepSelfDeclared via PATCH /kyc-submissions/draft
 //      (KycRepository.updateDraftFields). A "Yes" reveals a "who holds the
 //      position" select + a free-text "position and body" input — the
-//      canvas calls for both, but NEITHER has a backend field yet
-//      (confirmed against UpdateKycDraftFieldsRequest/KycSubmission,
-//      backend common/types/kyc.types.ts: only the boolean is stored).
-//      Rendered as real UI per the canvas anyway; held in KycFormState for
-//      review_submit_screen.dart to echo back THIS session only — NOT
-//      persisted server-side. A real, flaggable gap, not faked.
-//   2. "I trade for myself, with my own money" — ALSO has no backend field;
-//      a pure client-side confirmation. JUDGMENT CALL: this app blocks
-//      Continue when it's unchecked (see _canContinue below) — the
-//      description text itself ("Trading for someone else needs a
-//      different account type") frames it as a genuine account-type
-//      mismatch, not a soft nudge, and this flow is what a real SEC/NGX
-//      licence application runs on, so treating it as advisory-only risked
-//      quietly onboarding someone into the wrong account type.
+//      canvas draws only a "What's a PEP?" link on this question, no
+//      who/position sub-fields, but a real "Yes" here is a genuine
+//      SEC-compliance detail the screen can't leave uncollected just
+//      because the artboard's one drawn scene is "No" (same reasoning as
+//      the brief's Cancel/status-pill precedents — neither has a backend
+//      field yet, confirmed against UpdateKycDraftFieldsRequest/
+//      KycSubmission, backend common/types/kyc.types.ts: only the boolean
+//      is stored). Held in KycFormState for THIS session only — a real,
+//      flaggable gap, not faked.
+//   2. "Do you work for a stockbroker or the NGX?" (Yes/No) — s19's real
+//      second question. ALSO has no backend field (same file, same
+//      confirmation) — a real gap, filed in BACKEND_GAPS.md. Held in
+//      KycFormState (brokerOrNgxEmployed) for this session only, same
+//      treatment as the PEP who/position detail above.
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -43,7 +49,11 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
   final _position = TextEditingController();
   bool _pep = false;
   String? _who;
-  bool _tradeForSelf = true;
+  // s19's second question — "Do you work for a stockbroker or the NGX?" —
+  // replaces the app's old, undesigned "I trade for myself" declaration
+  // (see kyc_form_state.dart's brokerOrNgxEmployed doc comment). Defaults to
+  // No, same as PEP.
+  bool _brokerOrNgxEmployed = false;
   bool _busy = false;
   String? _error;
   bool _prefilled = false;
@@ -63,7 +73,7 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
     _prefilled = true;
     final form = AppScope.read(context).kycForm;
     setState(() {
-      _tradeForSelf = form.tradeForSelf;
+      _brokerOrNgxEmployed = form.brokerOrNgxEmployed;
       _who = form.pepWho;
       _position.text = form.pepPosition ?? '';
     });
@@ -71,6 +81,18 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
       if (!mounted || draft?.pepSelfDeclared == null) return;
       setState(() => _pep = draft!.pepSelfDeclared!);
     }).catchError((_) {});
+  }
+
+  void _explainPep(BuildContext context) {
+    showKSheet<void>(
+      context,
+      child: const KExplainPanel(
+        title: "What's a PEP?",
+        body: 'A politically exposed person holds — or has held — a prominent public role: elected '
+            'office, a senior government or military post, or a similar position. Family members and '
+            'close associates count too.',
+      ),
+    );
   }
 
   Future<void> _pickWho() async {
@@ -94,10 +116,7 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
     setState(() => _who = picked);
   }
 
-  bool get _canContinue => _tradeForSelf;
-
   Future<void> _continue() async {
-    if (!_canContinue) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -106,11 +125,17 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
       await _repo.updateDraftFields(pepSelfDeclared: _pep);
       if (!mounted) return;
       AppScope.read(context).kycForm.setDeclarations(
-            tradeForSelf: _tradeForSelf,
+            brokerOrNgxEmployed: _brokerOrNgxEmployed,
             pepWho: _pep ? _who : null,
             pepPosition: _pep ? _position.text.trim() : null,
           );
-      context.go(Routes.kycNextOfKin);
+      // Routes.kycChecklist, not straight to Next of kin (X-5,
+      // SHARED-CHANGES.md 2026-08-27) — the checklist hub is the flow's
+      // spine, re-entered after every completed step. (The hub's own
+      // "Continue" then lands on Next of kin anyway, since it's always the
+      // one item still outstanding once 1-6 are done — see that screen's
+      // header comment.)
+      context.go(Routes.kycChecklist);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -132,9 +157,9 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycBankDcs),
-              stepLabel: 'Verification · 7 of 8',
+              stepLabel: 'Verification · 6 of 7',
             ),
-            const KycStepProgress(total: 8, current: 7),
+            const KycStepProgress(total: 7, current: 6),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -142,9 +167,10 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // s19's title/body, verbatim.
                     const KScreenHead(
-                      title: 'Two declarations',
-                      body: 'The SEC requires both. A yes is fine — it only means a person reviews your file.',
+                      title: 'Two quick questions',
+                      body: 'The regulator requires these. Most people answer no.',
                     ),
                     const SizedBox(height: 18),
                     KCard(
@@ -152,14 +178,21 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            'Do you, a family member or a close associate hold public office?',
-                            style: KType.cardTitle(),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Elected office, a government or military post, a party role.',
-                            style: KType.data(color: KColor.ink2),
+                          RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Are you, a family member, or a close associate a '
+                                      'politically exposed person? ',
+                                  style: KType.cardTitle(),
+                                ),
+                                TextSpan(
+                                  text: "What's a PEP?",
+                                  style: KType.data(color: KColor.indicator, w: KWeight.semibold),
+                                  recognizer: TapGestureRecognizer()..onTap = () => _explainPep(context),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 14),
                           Row(
@@ -181,6 +214,14 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
                               ),
                             ],
                           ),
+                          // Canvas's static PEP question draws only the
+                          // Yes/No fork — but a real "Yes" here is a genuine
+                          // SEC-compliance detail, not something the screen
+                          // can leave uncollected just because the one
+                          // situation the artboard depicts is "No". Same
+                          // reasoning as the brief's Cancel/status-pill
+                          // precedents: the code path this "Yes" branch
+                          // serves is broader than the one scene drawn.
                           if (_pep) ...[
                             const SizedBox(height: 16),
                             GestureDetector(
@@ -202,21 +243,38 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
+                    // s19's second question, verbatim — replaces the app's
+                    // old "I trade for myself" declaration (see
+                    // kyc_form_state.dart).
                     KCard(
-                      child: KCheckbox(
-                        checked: _tradeForSelf,
-                        onChanged: (v) => setState(() => _tradeForSelf = v),
-                        label: 'I trade for myself, with my own money',
-                        description: 'Trading for someone else needs a different account type',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Do you work for a stockbroker or the NGX?', style: KType.cardTitle()),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _YesNoTile(
+                                  label: 'Yes',
+                                  selected: _brokerOrNgxEmployed,
+                                  onTap: () => setState(() => _brokerOrNgxEmployed = true),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _YesNoTile(
+                                  label: 'No',
+                                  selected: !_brokerOrNgxEmployed,
+                                  onTap: () => setState(() => _brokerOrNgxEmployed = false),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    if (!_tradeForSelf) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        "You'll need a different account type for that — confirm this to continue with this account.",
-                        style: KType.data(color: KColor.loss),
-                      ),
-                    ],
                     if (_error != null) ...[
                       const SizedBox(height: 12),
                       Text(_error!, style: KType.body(color: KColor.loss)),
@@ -236,7 +294,7 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
               child: KButton(
                 label: 'Continue',
                 loading: _busy,
-                onPressed: (_busy || !_canContinue) ? null : _continue,
+                onPressed: _busy ? null : _continue,
               ),
             ),
           ],

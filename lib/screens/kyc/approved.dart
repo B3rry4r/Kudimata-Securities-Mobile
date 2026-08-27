@@ -1,6 +1,13 @@
-// KYC 8 — approved (success). A centred success StatusView. Sets kycApproved and
-// the primary "Start investing" hands off to the suitability questionnaire.
-// Mirrors Approved.
+// KYC — approved (success). Artboard s21 (+ s21d), "02 Verification.dc.html".
+// A centred success StatusView. Sets kycApproved and offers "Add money" /
+// "Browse the market first" — s21's own two CTAs.
+//
+// R-1a (docs/redesign/DECISIONS.md): the suitability questionnaire moved
+// EARLIER in onboarding — after OTP, before the legal documents — and no
+// longer attaches to this screen. The previous "Start investing → hands off
+// to the questionnaire" wiring (and the 2026-08-24 "make it mandatory"
+// restore that put it there) is removed per that ruling; this screen no
+// longer references Routes.questionnaire at all.
 //
 // WIRING NOTE (kyc-approved pass): per .pipeline/fragments/kyc-approved.json
 // this screen used to call AppScope.read(context).setKycApproved(true)
@@ -105,29 +112,30 @@ class _ApprovedScreenState extends State<ApprovedScreen> {
 
   Widget _buildForStatus(String status) {
     if (status == 'approved') {
-      // RESTORED 2026-08-24 (direct product instruction, real SEC
-      // compliance intake — "please make the suitability mandatory"): back
-      // to the questionnaire, not straight to Home. The 2026-08-20 "make
-      // it optional" directive that had this routing straight to Home is
-      // superseded, same as AppState.tradingEligibilityGap's own restored
-      // block.
-      // KMilestoneSheet, not KStatusView — a once-per-investor celebration
-      // moment (2026-08-22 "Soft Landing", screen 25), sun-tinted rather
-      // than the routine pending/error status views below.
-      return KMilestoneSheet(
+      // s21: no enclosing tinted card — the illustration, title, message and
+      // two full-width buttons sit directly on `--bg`. KMilestoneSheet (the
+      // old canvas screen 25's sun-tinted "celebration sheet") no longer
+      // matches that structure, so this uses KStatusView like every other
+      // KYC outcome view (submitted.dart's s20, this screen's own pending/
+      // error branches below) — tone: success gives the same sun-tone plate
+      // via KIllustration.
+      //
+      // s21 (light) draws the illustration bare and the "Browse the market
+      // first" ghost CTA borderless; s21d (dark) plates the illustration and
+      // outlines the ghost CTA — see SHARED-CHANGES.md S-4/S-5.
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return KStatusView(
+        tone: KStatusTone.success,
         illustrationName: 'kyc-approved',
-        eyebrow: 'Verification complete',
+        illustrationPlate: isDark,
         title: "You're verified",
-        message: 'Your money is ready to invest.',
-        // fullWidth: false — KMilestoneSheet lays this out in a Wrap, which
-        // gives children unbounded width; a fullWidth (the KButton default)
-        // button asks for infinite width there and renders as a visible
-        // overflow glitch (found live via test/shots.dart).
-        primary: KButton(
-          label: 'Start investing',
-          fullWidth: false,
-          onPressed: () => context.go(Routes.questionnaire),
-        ),
+        message: "Your NGX account is live. Buy your first share from ₦5,000.",
+        primary: 'Add money',
+        onPrimary: () => context.go(Routes.wallet),
+        secondary: 'Browse the market first',
+        onSecondary: () => context.go(Routes.markets),
+        secondaryVariant: KButtonVariant.ghost,
+        secondaryGhostBorder: isDark,
       );
     }
     if (status == 'pending' || status == 'review') {

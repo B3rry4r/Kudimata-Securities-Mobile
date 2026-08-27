@@ -1,0 +1,221 @@
+{
+  "batch": "markets-home",
+  "screens": [
+    {
+      "app_screen": "lib/screens/home/home_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s23",
+          "overlap": 0.2,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s37",
+          "overlap": 0.147,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "37 \u00b7 Withdraw"
+        },
+        {
+          "id": "s07",
+          "overlap": 0.137,
+          "file": "01 Getting In.dc.html",
+          "label": "07 \u00b7 What happens next"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/home/notifications_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s44",
+          "overlap": 0.24,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 7 \u00b7 Bought, at the real prices"
+        },
+        {
+          "id": "s33",
+          "overlap": 0.2,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "33 \u00b7 Portfolio"
+        },
+        {
+          "id": "s49",
+          "overlap": 0.16,
+          "file": "03 Home and Markets.dc.html",
+          "label": "49 \u00b7 Set a price alert"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/home/search_screen.dart",
+      "mechanical_status": "proposed",
+      "candidate_artboards": [
+        {
+          "id": "s24",
+          "overlap": 0.31,
+          "file": "03 Home and Markets.dc.html",
+          "label": "24 \u00b7 Markets"
+        },
+        {
+          "id": "s33",
+          "overlap": 0.172,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "33 \u00b7 Portfolio"
+        },
+        {
+          "id": "s55",
+          "overlap": 0.138,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/markets/asset_detail_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s37",
+          "overlap": 0.163,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "37 \u00b7 Withdraw"
+        },
+        {
+          "id": "s34",
+          "overlap": 0.14,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "34 \u00b7 One holding"
+        },
+        {
+          "id": "s27",
+          "overlap": 0.14,
+          "file": "03 Home and Markets.dc.html",
+          "label": "27 \u00b7 Order book"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/markets/explain_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s48",
+          "overlap": 0.13,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Sell step 4 \u00b7 Review the sale"
+        },
+        {
+          "id": "s27",
+          "overlap": 0.13,
+          "file": "03 Home and Markets.dc.html",
+          "label": "27 \u00b7 Order book"
+        },
+        {
+          "id": "s57",
+          "overlap": 0.087,
+          "file": "06 Account and Support.dc.html",
+          "label": "57 \u00b7 Data and privacy"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/markets/market_hours.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s39",
+          "overlap": 0.167,
+          "file": "03 Home and Markets.dc.html",
+          "label": "39 \u00b7 Market closed"
+        },
+        {
+          "id": "s40",
+          "overlap": 0.143,
+          "file": "03 Home and Markets.dc.html",
+          "label": "40 \u00b7 Queued order, and cancelling it"
+        },
+        {
+          "id": "s29",
+          "overlap": 0.143,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 4 \u00b7 Review, naming your price"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/markets/markets_screen.dart",
+      "mechanical_status": "proposed",
+      "candidate_artboards": [
+        {
+          "id": "s39",
+          "overlap": 0.355,
+          "file": "03 Home and Markets.dc.html",
+          "label": "39 \u00b7 Market closed"
+        },
+        {
+          "id": "s41",
+          "overlap": 0.226,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Orders hub \u00b7 reached from the home quick actions"
+        },
+        {
+          "id": "s40",
+          "overlap": 0.226,
+          "file": "03 Home and Markets.dc.html",
+          "label": "40 \u00b7 Queued order, and cancelling it"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/markets/price_alerts_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s49",
+          "overlap": 0.196,
+          "file": "03 Home and Markets.dc.html",
+          "label": "49 \u00b7 Set a price alert"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.137,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s39",
+          "overlap": 0.137,
+          "file": "03 Home and Markets.dc.html",
+          "label": "39 \u00b7 Market closed"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/markets/watchlist_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s50",
+          "overlap": 0.135,
+          "file": "03 Home and Markets.dc.html",
+          "label": "50 \u00b7 My alerts, and one that fired"
+        },
+        {
+          "id": "s24",
+          "overlap": 0.135,
+          "file": "03 Home and Markets.dc.html",
+          "label": "24 \u00b7 Markets"
+        },
+        {
+          "id": "s58",
+          "overlap": 0.108,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        }
+      ]
+    }
+  ]
+}

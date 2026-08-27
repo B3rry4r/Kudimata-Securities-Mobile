@@ -1,19 +1,35 @@
-// Statutory Risk Disclaimer (Rule 76 compliance) — NEW screen, 2026-08-24.
-// Sourced from the firm's real SEC-facing compliance intake ("My
-// observations on KSL papers.docx"): must appear immediately after the
-// suitability questionnaire, show the investor's own just-computed risk
-// category, require scrolling to the bottom of the disclosure text before
-// "Accept & Proceed" enables, and record a real acknowledgement.
+// Statutory Risk Disclaimer (Rule 76 compliance) — its OWN scroll-gated,
+// in-app screen. R-8a (DECISIONS.md, 2026-08-27) is the current ruling: it
+// resolves a three-way conflict between R-1a (suitability before the legal
+// documents), R-8 (risk disclosure bundled with the other three, phone
+// viewer) and the firm's real SEC-facing compliance intake ("My
+// observations on KSL papers.docx", "the disclaimer must appear
+// immediately after suitability", scroll-gated in-app).
+//
+// Resolution: this screen runs right after suitability_result_screen.dart,
+// BEFORE the other three legal documents (terms of service, privacy
+// policy, client agreement — still opened in the phone's native viewer via
+// terms_and_privacy_screen.dart/legal_acceptance_screen.dart). It keeps
+// in-app rendering + a scroll-to-bottom gate because that's the only
+// mechanism that produces real evidence the investor was shown the text —
+// with BR-6 live (files never actually uploaded, presigning succeeds, the
+// viewer 404s) the phone-viewer pattern would record acceptance for a
+// document nobody could read.
 //
 // The disclosure TEXT ITSELF (Risk of Capital Loss / Digital Platform
 // Infrastructure Risks / No Investment Advice / Regulatory Jurisdiction
-// sections) is deliberately NOT rewritten here — direct product
+// sections) is deliberately NOT authored here — direct product
 // instruction: "leave risk disclaimer content for legal team, they would
 // do it". This screen renders whatever LegalDocument content already
 // exists for kind='risk_disclosure' (GET /legal-documents/content/
 // risk_disclosure) verbatim; only the STRUCTURE around it (scroll gating,
-// the dynamic risk-category callout, the button label, the NDPA-naming
-// checkbox) is this pass's responsibility.
+// the button label, the NDPA-naming checkbox) is this screen's own.
+//
+// R-2 (still in force, restated by R-8a): the investor's computed risk
+// profile is never displayed on this screen. RiskDisclaimerArgs.profile is
+// kept only so the route contract (suitability_result_screen.dart's caller,
+// AppState.tradingEligibilityGap's fallback caller) doesn't change; it is
+// never read by the body below.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,14 +44,13 @@ import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
-/// Route `extra` — the profile just computed by suitability_result_screen.dart,
-/// carried forward so this screen's dynamic callout doesn't need a second
-/// GET /suitability-result/me round-trip for that entry path. Optional:
-/// AppState.tradingEligibilityGap's own prompt (home_screen.dart) pushes
-/// this route with no `extra` at all when a RETURNING investor is re-gated
-/// here directly (suitability already complete from a past session, just
-/// never accepted this disclaimer) — that path fetches the real profile
-/// itself instead.
+/// Route `extra`. Carried for router-contract compatibility with existing
+/// callers (suitability_result_screen.dart pushes this with the just-
+/// computed profile) — R-2 means [profile] is never rendered by this
+/// screen. AppState.tradingEligibilityGap's fallback prompt (home_screen.dart)
+/// pushes this route with no `extra` at all, for a returning investor
+/// re-gated here directly with no freshly-computed profile in hand; this
+/// screen doesn't need one either way.
 class RiskDisclaimerArgs {
   const RiskDisclaimerArgs({required this.profile});
   final String profile;
@@ -56,13 +71,7 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
   late final _complianceRepo = ComplianceRepository(
     AppScope.read(context).apiClient,
   );
-  late Future<LegalDocument> _future = _load();
-
-  /// Only the document now — the investor's computed profile was displayed
-  /// here until 2026-08-24 (see the removed callout below) and is no longer
-  /// read by this screen. `widget.profile` and RiskDisclaimerArgs are kept
-  /// so the caller and route contract are unchanged if it is restored.
-  Future<LegalDocument> _load() => _legalRepo.getContent('risk_disclosure');
+  late Future<LegalDocument> _future = _legalRepo.getContent('risk_disclosure');
 
   final _scrollController = ScrollController();
   bool _scrolledToBottom = false;
@@ -114,13 +123,15 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
       final app = AppScope.read(context);
       app.setRiskDisclosureAccepted(true);
       // Idempotent — suitability_result_screen.dart already set this when
-      // it computed the profile this screen is displaying; harmless if
-      // already true (e.g. a returning investor re-gated after this
-      // screen shipped, who reaches here with suitabilityComplete already
-      // set from a much earlier session).
+      // it computed the profile; harmless if already true.
       app.setSuitabilityComplete(true);
+      // R-8a moved this screen to run right after suitability, ahead of
+      // the other three legal documents / passcode / biometric / KYC — it
+      // is no longer the last gated onboarding step, but sign-in
+      // completion still fires exactly here (the point the disclaimer
+      // itself was accepted at), same as it always has.
       if (!app.signedIn) app.setSignedIn(true);
-      context.go(Routes.home);
+      context.go(Routes.termsOfService);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -154,10 +165,23 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
                   }
                   if (snapshot.hasError) {
                     return KErrorView(
-                      onPrimary: () => setState(() => _future = _load()),
+                      onPrimary: () => setState(
+                        () => _future = _legalRepo.getContent('risk_disclosure'),
+                      ),
                     );
                   }
                   final doc = snapshot.data!;
+                  // Empty condition: the document record exists but no
+                  // sections have been published for it yet — a real
+                  // backend state, distinct from a network/server error.
+                  if (doc.sections.isEmpty) {
+                    return const KEmptyView(
+                      icon: 'card',
+                      title: 'No content available yet',
+                      message:
+                          "The Risk Disclosure hasn't been published yet. Please try again shortly.",
+                    );
+                  }
                   WidgetsBinding.instance.addPostFrameCallback(
                     (_) => _checkAlreadyAtBottom(),
                   );
@@ -172,25 +196,6 @@ class _RiskDisclaimerScreenState extends State<RiskDisclaimerScreen> {
                           body:
                               'Please read this disclosure carefully before activating your account.',
                         ),
-                        const SizedBox(height: 16),
-                        // 2026-08-24, direct instruction: "There is still an
-                        // investor profile on the risk legal doc view on kyc
-                        // please remove that container". The removed block
-                        // was the SEC intake document's own dynamic
-                        // "Suitability Acknowledgement" field — "you have
-                        // been categorized as a [Conservative / Moderate /
-                        // Aggressive] investor. Investing in assets outside
-                        // of your designated risk profile can lead to severe
-                        // financial distress."
-                        //
-                        // FLAGGED, NOT SILENTLY DROPPED: that field is the
-                        // one element the compliance doc explicitly requires
-                        // ON THIS SCREEN. The profile is still computed and
-                        // persisted (SuitabilityResult), so restoring the
-                        // callout is re-adding this block — but as it stands
-                        // the app no longer shows the investor their
-                        // categorisation anywhere, which compliance should
-                        // sign off before go-live.
                         const SizedBox(height: 20),
                         for (final section in doc.sections) ...[
                           Text(section.heading, style: KType.cardTitle()),

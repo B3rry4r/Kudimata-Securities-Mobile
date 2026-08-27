@@ -59,3 +59,5 @@ ios/fastlane/report.xml
 # Local-only credentials notes generated while setting up release signing —
 # deliberately never committed. See RELEASE_SECRETS.local.md's own header.
 RELEASE_SECRETS.local.md
+scripts/gates/__pycache__/
+scripts/gates/**/__pycache__/

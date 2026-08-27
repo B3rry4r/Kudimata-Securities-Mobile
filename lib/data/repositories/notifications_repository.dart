@@ -97,7 +97,13 @@ class NotificationsRepository {
     await _client.patch('/notifications/mark-all-read');
   }
 
-  NotificationItem _fromJson(Map<String, dynamic> json) {
+  /// Parses a `notification:new` socket payload (R-41) directly — the SAME
+  /// Notification shape [list] already parses per page via [_fromJson], so
+  /// this reuses it (static: no REST response needed) rather than
+  /// declaring a second parser. No network call.
+  static NotificationItem notificationFromJson(Map<String, dynamic> json) => _fromJson(json);
+
+  static NotificationItem _fromJson(Map<String, dynamic> json) {
     return NotificationItem(
       id: json['id'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),

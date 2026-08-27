@@ -1,8 +1,9 @@
-// Screen 90 — Close your account (2026-08-23, account-lifecycle/legal
-// cluster). Reuses `KFreezeConfirm` per the recently-established pattern
-// (see withdraw_mandate_screen.dart) of nulling `primary`/`secondary` so the
-// buttons can sit below the shares/wallet summary card exactly as the canvas
-// lays it out, rather than immediately after the effects list.
+// Close your account (pushed, restyled 2026-08-27 — no artboard in the
+// redesign-2026-08 canvas; kept and restyled per RULINGS.md — account
+// closure is a required self-service/compliance flow). Reuses
+// `KFreezeConfirm` (see withdraw_mandate_screen.dart) with `primary`/
+// `secondary` left null, so the buttons sit below the shares/wallet summary
+// card rather than immediately after the effects list.
 //
 // REMAINING GAP (flagged per the cluster brief):
 //   - "Shares to move or sell" / "Wallet to pay out" are wired to real data

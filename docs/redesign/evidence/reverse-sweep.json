@@ -1,0 +1,321 @@
+{
+  "method": "Compared docs/redesign/canvas-inventory.json's 56 light artboards against build/shots/manifest.json's 'artboard' claims. 31 of 56 are unclaimed by the mechanical matcher (task estimated ~29; actual mechanical gap is 31, several of which turn out to be already covered by a DECISIONS.md ruling once cross-checked). For each, searched lib/screens/** for at least two distinctive copy phrases before concluding new vs already-built. RULINGS.md/DECISIONS.md were read first per instructions; nothing here re-opens a settled ruling.",
+  "unclaimed_artboards": [
+    {
+      "artboard": "s02 (01 Getting In.dc.html)",
+      "label": "02 · Welcome",
+      "what_it_is": "Single static welcome screen: one growth illustration, 'Own a piece of Nigeria's biggest companies. From ₦5,000.' tagline, Create account / Sign in buttons.",
+      "already_exists": "welcome_slider_screen.dart exists at Routes.welcome but implements a 3-slide illustrated carousel, not this static screen.",
+      "verdict": "covered-by-ruling (R-14)",
+      "depends_on_backend": false,
+      "evidence": "Searched welcome_slider_screen.dart: carousel confirmed. R-14 in DECISIONS.md explicitly supersedes s02: build target is 'Landing Video Concept' V3, 'Not s02'. So s02 itself is intentionally not the thing to build."
+    },
+    {
+      "artboard": "s03 (01 Getting In.dc.html)",
+      "label": "03 · What's your name?",
+      "what_it_is": "Step 1 of 4 signup: first/last official name only, single-purpose screen.",
+      "already_exists": "sign_up_screen.dart exists and collects 'First name' and 'Last name' fields (grep confirmed, lines 92/108) but in ONE screen together with email and password, not split across s03/s03b/s03p's three steps.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": false,
+      "evidence": "Grepped sign_up_screen.dart for 'First name'/'Last name' — found, same screen also holds email+password. DECISIONS.md D-3 ('Auth and onboarding mechanics') lists this exact 1-screen-vs-3-screen split as an OPEN decision, not yet ruled — R-11 only settled passcode digits, phone field, and terms placement, not the name/email/password split."
+    },
+    {
+      "artboard": "s05 (01 Getting In.dc.html)",
+      "label": "05 · Create passcode",
+      "what_it_is": "4-digit single-entry passcode creation (no confirm step).",
+      "already_exists": "create_passcode_screen.dart exists and matches structurally per RULINGS.md, but the app uses 6 digits with a separate confirm step.",
+      "verdict": "covered-by-ruling (R-11)",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 42 documents the match; R-11 explicitly rules 'Passcode stays 6 digits with a confirm step, everywhere including login. The canvas's 4-digit single-entry screen is not adopted; its look is.'"
+    },
+    {
+      "artboard": "s07 (01 Getting In.dc.html)",
+      "label": "07 · What happens next",
+      "what_it_is": "Post-account-creation, pre-KYC overview screen: 'Your account is ready' + a 3-step preview (Verify identity / Add bank / Add money & buy) with 'Start step 1' / 'Look around first' CTAs.",
+      "already_exists": "No. Searched lib/screens/onboarding/*.dart for 'Verify your identity...BVN', 'about 5 minutes', and 'Add your bank account...Where your money' — zero matches anywhere in the app.",
+      "verdict": "new-screen",
+      "depends_on_backend": false,
+      "evidence": "grep -rln \"Verify your identity.*BVN|about 5 minutes|Add your bank account.*Where your money\" lib/screens/ → no results. No onboarding file (sign_up, otp, create_passcode, biometric, avatar, personal_details) contains this 3-step-preview interstitial."
+    },
+    {
+      "artboard": "s09 (01 Getting In.dc.html)",
+      "label": "09 · Reset password",
+      "what_it_is": "Combined password-reset flow: single 'Email me a reset link' screen for account password, feeding into a local-passcode reset.",
+      "already_exists": "reset_passcode_screen.dart exists and copy-matches per RULINGS.md.",
+      "verdict": "covered-by-ruling (R-20)",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 46 documents the copy match. R-20 rules 'Account password reset and local passcode reset stay separate flows. The canvas's combined flow is not adopted.'"
+    },
+    {
+      "artboard": "s11 (02 Verification.dc.html)",
+      "label": "Checklist hub — 'You're almost there, 2 of 5 done. Next: take a selfie.'",
+      "what_it_is": "The KYC flow's spine screen: a per-step checklist (BVN/NIN, documents, selfie, bank, questions) with progress dots, returned to after each step.",
+      "already_exists": "Partially. kyc_intro.dart shows an 'Eight steps, about six minutes' overview and resumes an in-progress draft at the right route, but does not implement a standalone returning checklist-hub screen with per-step dots/status rows; home_screen.dart separately shows a 'Complete your KYC — N/5 done' one-line prompt, which is not the same as s11's full checklist card.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": false,
+      "evidence": "Grepped lib/screens/ for '2 of 5'/'of 5 done'/'Next: take a selfie' — zero matches. RULINGS.md line 109 already notes 'the app conflates s10 (intro) and s11 (checklist hub) into one' screen."
+    },
+    {
+      "artboard": "s17 (02 Verification.dc.html)",
+      "label": "17 · Address — 'Where do you live?'",
+      "what_it_is": "Street address / state / LGA fields paired with the utility-bill upload, as one step.",
+      "already_exists": "utility_bill.dart exists and handles the upload ('Proof of address', 'Dated in the last three months') but has no street/state/LGA fields in it. Those fields live instead in personal_details_screen.dart ('Residential address', separate 'A few more details' screen), not paired with the upload as designed.",
+      "verdict": "covered-by-ruling (R-19)",
+      "depends_on_backend": false,
+      "evidence": "Grepped utility_bill.dart for 'street address'/'LGA'/'state' — none found; grepped personal_details_screen.dart — 'Residential address' field found there instead. R-19 explicitly rules: 's17 already pairs address fields with the utility-bill upload — build that,' confirming this gap is real and directs the fix."
+    },
+    {
+      "artboard": "s22 (03 Home and Markets.dc.html)",
+      "label": "22 · Home, verified",
+      "what_it_is": "Verified-investor Home: money card, 5 round quick actions (Add/Withdraw/Invest/Orders/Learn), a 'Grow with Kudimata' content rail (readiness/persona/literacy promo cards), a rotating 'Top movers today' card, link into Markets.",
+      "already_exists": "home_screen.dart exists but its header comment says it is built against OLD canvas ids 's29'/'s30' (a stale 97-screen-canvas numbering per R-5's explicit warning) — the current body is header → BalancePanel → 3 quick actions (Add money/Buy shares/Orders) → AI DigestCard → holdings list. None of s22's Grow-with-Kudimata rail, movers card, Withdraw/Learn actions exist.",
+      "verdict": "covered-by-ruling (R-15)",
+      "depends_on_backend": false,
+      "evidence": "See separate 'home_new_features' list below. R-15 names s22/s22d as the canonical Home target and lists these exact features."
+    },
+    {
+      "artboard": "s23 (03 Home and Markets.dc.html)",
+      "label": "23 · Home, first time (verification not finished)",
+      "what_it_is": "Unverified-investor Home: KYC-progress banner above a ₦0 money card, locked Invest action, a 'While you wait' rail (persona quiz + 'Start lesson 1' financial-literacy card + 'Have a look around'), plus the same movers rail as s22.",
+      "already_exists": "home_screen.dart's not-verified body (_NotVerifiedContent) is explicitly commented as built against OLD canvas id 's30' — a 'Get set up · 1 of 3 done' checklist + a single 'Biggest mover today' row. None of s23's specific copy ('2 of 5 steps done. Next: take a selfie.', 'While you wait', persona/lesson cards) exists.",
+      "verdict": "covered-by-ruling (R-15)",
+      "depends_on_backend": false,
+      "evidence": "grep -n 'not.*verif|KycPrompt|biggest mover' home_screen.dart confirms the stale-id build basis (line 674: 'Canvas s30 — Home · not verified yet: a Get set up · 1 of 3 done...'). grep for '2 of 5'/'While you wait' — zero matches."
+    },
+    {
+      "artboard": "s26 (03 Home and Markets.dc.html)",
+      "label": "26 · Asset detail, About and Order book",
+      "what_it_is": "Asset detail's 'About' tab (company description) alongside an 'Order book' tab.",
+      "already_exists": "asset_detail_screen.dart's About content exists (matched confidently in RULINGS.md), but the screen's own header comment says 'custom top bar... no tab bar' — there is no tab structure at all, so there is nowhere for an Order Book tab to live.",
+      "verdict": "already-built (About content), see s27 for the missing tab",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 37 confirms the About-content match. asset_detail_screen.dart line 5: 'custom top bar (back + ticker + save), no tab bar.'"
+    },
+    {
+      "artboard": "s27 (03 Home and Markets.dc.html)",
+      "label": "27 · Order book",
+      "what_it_is": "A depth/order-book tab on Asset Detail.",
+      "already_exists": "No. asset_detail_screen.dart has no tab bar and no order-book content anywhere (grepped for 'Order Book'/'tab' — only the file-header comment noting the absence).",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": "Yes — depth/order-book data. R-18 rules 'Build the Order Book tab as designed. If the broker feed serves no depth data, that is a backend gap ticket.'",
+      "evidence": "grep -n -i 'order book|tab' lib/screens/markets/asset_detail_screen.dart → only the header comment confirming no tab bar exists. R-18 in DECISIONS.md."
+    },
+    {
+      "artboard": "s39 (03 Home and Markets.dc.html)",
+      "label": "39 · Market closed",
+      "what_it_is": "Asset Detail's market-closed variant, which per RULINGS.md's watchlist_finding is the ONLY place the canvas shows a 'Set a price alert' button.",
+      "already_exists": "Partially. asset_detail_screen.dart already shows a KMarketClosedBanner when the market is shut (2026-08-24 fix), but has no 'Set a price alert' button anywhere in the file.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": false,
+      "evidence": "grep -n -i 'price alert' lib/screens/markets/asset_detail_screen.dart → zero matches. Lines 247-255 confirm the closed-market banner exists but nothing past it references alerts."
+    },
+    {
+      "artboard": "s49 (03 Home and Markets.dc.html)",
+      "label": "49 · Set a price alert",
+      "what_it_is": "Per-asset absolute-price alert setter (rises-above/falls-below ₦X), reached from s39's market-closed asset page.",
+      "already_exists": "price_alerts_screen.dart exists but implements a DIFFERENT model — percent-of-day-move presets (±3%/±5%/±10%) from a per-watchlist-hub editor, not one alert per asset with an absolute naira threshold.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": "Possibly — depends how the alert data model is resolved; the two models (percent-move vs absolute-price) don't map 1:1.",
+      "evidence": "RULINGS.md's watchlist_finding (line 222) documents the model mismatch directly. DECISIONS.md D-5 ('Watchlist / price alerts') lists this as still an OPEN decision."
+    },
+    {
+      "artboard": "s50 (03 Home and Markets.dc.html)",
+      "label": "50 · My alerts, and one that fired",
+      "what_it_is": "Flat list of the investor's price alerts with a 'New alert' button.",
+      "already_exists": "price_alerts_screen.dart is a management screen for the OLD alert model (see s49). No 'permanent Account-menu row' entry point exists yet.",
+      "verdict": "covered-by-ruling (R-16)",
+      "depends_on_backend": false,
+      "evidence": "R-16 explicitly rules: '\"My alerts\" (s50) gets a permanent Account-menu row so saved assets still have a reader and alerts stay reachable' — this row does not yet exist (grepped account_screen.dart's menu for 'alert' — not checked exhaustively here, flagged as build work R-16 calls for)."
+    },
+    {
+      "artboard": "s40 (03 Home and Markets.dc.html)",
+      "label": "40 · Queued order, and cancelling it",
+      "what_it_is": "A buy queued because the market is closed, with a cancel action that 'releases it back to your wallet'.",
+      "already_exists": "Yes. trade_flows.dart's #buy_market_closed (_MarketClosedBuySheet) matches this copy closely per RULINGS.md.",
+      "verdict": "already-built",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 59: 'Searched \"Waiting for the market to open\" -> found in s40. Searched \"releases it back to your wallet\" -> found in s40', matched to trade_flows.dart#buy_market_closed. R-17 additionally confirms the live Cancel control on Orders is kept even though the artboard omits it there."
+    },
+    {
+      "artboard": "s42 (04 Buy and Sell.dc.html)",
+      "label": "Step 1 · How to buy",
+      "what_it_is": "Up-front chooser: 'Buy now' (market, cheapest shares on sale) vs 'Name your price' (limit order).",
+      "already_exists": "No. trade_flows.dart's live buy flow is market-order-only — an amount sheet with a naira/shares toggle and quick-amount chips, no up-front buy-now-vs-limit choice screen, no limit-order support at all.",
+      "verdict": "new-screen",
+      "depends_on_backend": "Yes — limit-order placement/tracking is not modeled server-side today (the whole limit-vs-market paradigm is DECISIONS.md's open D-4).",
+      "evidence": "grep -n -i 'how to buy|limit order|name your price' lib/screens/trade/trade_flows.dart → zero matches. DECISIONS.md D-4 ('Trading mechanics') is explicitly still open: 'Limit (\"name your price\") becomes the primary flow with market as a branch.'"
+    },
+    {
+      "artboard": "s43 (04 Buy and Sell.dc.html)",
+      "label": "Step 2 · Your price per share (naming your price)",
+      "what_it_is": "Limit-price entry step, part of the 'name your price' branch.",
+      "already_exists": "No — no limit-price entry UI anywhere in trade_flows.dart (only the naira/shares amount toggle at a live market price).",
+      "verdict": "new-screen",
+      "depends_on_backend": "Yes, same limit-order gap as s42 — part of open decision D-4.",
+      "evidence": "Same grep as s42; no price-per-share entry control found in trade_flows.dart."
+    },
+    {
+      "artboard": "s29 (04 Buy and Sell.dc.html)",
+      "label": "Step 4 · Review, naming your price",
+      "what_it_is": "Order review screen for a limit ('name your price') buy.",
+      "already_exists": "trade_flows.dart has a review step, but only for the existing market-order flow — no limit-order review variant exists.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": "Yes — same D-4 limit-order gap.",
+      "evidence": "trade_flows.dart's review sheet (_ReviewSheet, referenced near amount-sheet code) has no order-type branch for limit pricing; confirmed no 'Order type: Limit' string in the file."
+    },
+    {
+      "artboard": "s30 (04 Buy and Sell.dc.html)",
+      "label": "Step 6 · PIN, then order placed",
+      "what_it_is": "A per-order transaction PIN entry ('Enter your transaction PIN to approve ₦25,000') before the order is placed.",
+      "already_exists": "No. trade_flows.dart's order-placement path (_showSuccessSheet → _OrderPlacedScreen) goes straight from review to a placed-confirmation screen with no PIN step anywhere.",
+      "verdict": "new-screen",
+      "depends_on_backend": "Yes — a transaction-PIN mechanism does not exist in the app at all (distinct from the login/local passcode). DECISIONS.md D-4 explicitly names this: 'a new per-order PIN step.'",
+      "evidence": "grep -n -i pin lib/screens/trade/trade_flows.dart → no PIN-entry UI matches (only unrelated words containing 'pin', e.g. 'pinned'). Confirmed no PIN step between review and _OrderPlacedScreen."
+    },
+    {
+      "artboard": "s31 (04 Buy and Sell.dc.html)",
+      "label": "(unlabelled placeholder — literal 's31' header text left in the canvas source)",
+      "what_it_is": "'Order placed' tracker: three-step progress (Sent to the market / Buying your shares / Shares settled) plus 'Go to portfolio' / 'View this order'.",
+      "already_exists": "Partially. _OrderPlacedScreen exists (a single confirmation screen with settlement-date label) but does not implement the three-step tracker UI this artboard shows.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": false,
+      "evidence": "Read trade_flows.dart lines 1083-1105: _OrderPlacedScreen shows amount/total/settleLabel, not a three-step tracker. RULINGS.md's own buy_sell_journey table (line 380) flags this artboard's own header text as likely a leftover placeholder — worth flagging to the human before building against it verbatim."
+    },
+    {
+      "artboard": "s44 (04 Buy and Sell.dc.html)",
+      "label": "Step 7 · Bought, at the real prices",
+      "what_it_is": "Post-fill confirmation showing a MULTI-PRICE fill breakdown ('64 shares at ₦228.50, 45 shares at ₦229.10, average price ₦228.75') plus fees and wallet debit.",
+      "already_exists": "Partially. _OrderPlacedScreen exists but shows only a single amount/total, no per-fill-tranche price breakdown or computed average price.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": "Yes — the app's order model does not appear to track multiple per-tranche fill prices (only one amountNaira/total in _OrderPlacedScreen).",
+      "evidence": "Read _OrderPlacedScreen build method (trade_flows.dart ~1090-1096): single amountStr/total, no fill-tranche list or average-price computation."
+    },
+    {
+      "artboard": "s41 (04 Buy and Sell.dc.html)",
+      "label": "Orders hub · reached from the home quick actions",
+      "what_it_is": "Open/Done/Cancelled order list with per-order status (queued, filled-so-far, waiting-for-market-to-open).",
+      "already_exists": "Yes — order_status_screen.dart matches closely per RULINGS.md ('Orders' title, 'Filled so far' copy both found).",
+      "verdict": "covered-by-ruling (R-17)",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 50 documents the direct copy match. R-17 additionally rules the live Cancel action (which the artboard itself omits) stays, restyled into the new layout."
+    },
+    {
+      "artboard": "s45 (04 Buy and Sell.dc.html)",
+      "label": "Sell step 1 · How to sell",
+      "what_it_is": "Up-front chooser: 'Sell now' (market) vs 'Name your price' (limit sell).",
+      "already_exists": "No — same gap as s42, mirrored for sell. trade_flows.dart's showSellFlow() (_runSellFlow) is market-only with no up-front choice screen.",
+      "verdict": "new-screen",
+      "depends_on_backend": "Yes — same open D-4 limit-order gap, sell side.",
+      "evidence": "grep -n -i 'how to sell|limit order' lib/screens/trade/trade_flows.dart → zero matches."
+    },
+    {
+      "artboard": "s46 (04 Buy and Sell.dc.html)",
+      "label": "Sell step 2 · Your price per share",
+      "what_it_is": "Limit-price entry for a sell order.",
+      "already_exists": "No limit-sell pricing UI in trade_flows.dart.",
+      "verdict": "new-screen",
+      "depends_on_backend": "Yes — same D-4 gap.",
+      "evidence": "Same search as s45; no per-share sell-price entry control found."
+    },
+    {
+      "artboard": "s47 (04 Buy and Sell.dc.html)",
+      "label": "Sell step 3 · How many shares (naming your price)",
+      "what_it_is": "Share-quantity entry for the limit-sell branch.",
+      "already_exists": "The dedicated sell flow's amount step exists (shares/naira entry, per RULINGS.md's trade_flows.dart#sell mapping), but only for the existing market-sell model, not a limit-priced variant.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": "Yes — same D-4 gap.",
+      "evidence": "RULINGS.md line 60 confirms the existing sell-amount step's evidence ('Where the money goes' -> s48); no limit-price branch found alongside it."
+    },
+    {
+      "artboard": "s48 (04 Buy and Sell.dc.html)",
+      "label": "Sell step 4 · Review the sale",
+      "what_it_is": "Order review for a limit ('name your price') sell.",
+      "already_exists": "Yes for the destination-selector content (RULINGS.md matched 'Where the money goes' to s48), but only within the existing market-sell review, not a limit variant.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": "Yes — same D-4 gap.",
+      "evidence": "RULINGS.md line 60."
+    },
+    {
+      "artboard": "s33 (05 Portfolio and Wallet.dc.html)",
+      "label": "33 · Portfolio",
+      "what_it_is": "Portfolio tab: total value, allocation by SECTOR as a bar chart, holdings list.",
+      "already_exists": "Yes — portfolio_screen.dart matches with 'certain' confidence per RULINGS.md, but its allocation visualization is a donut by ASSET CLASS, not the canvas's sector bar chart.",
+      "verdict": "covered-by-ruling (R-22)",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 51 confirms the direct match with the digest-wording caveat. R-22 rules: 'Adopt the canvas — bar chart by sector, replacing the donut by asset class.'"
+    },
+    {
+      "artboard": "s34 (05 Portfolio and Wallet.dc.html)",
+      "label": "34 · One holding",
+      "what_it_is": "Per-holding detail: value, gain/loss, shares/avg cost/market price, plus dividends-received and held-in-CSCS rows.",
+      "already_exists": "Yes — holding_detail_screen.dart matches closely per RULINGS.md, already carrying the extra dividend/CSCS rows.",
+      "verdict": "covered-by-ruling (R-23)",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 49. R-23: 'Build s34, keep the extra rows — dividends received and held-in-CSCS stay.'"
+    },
+    {
+      "artboard": "s36 (05 Portfolio and Wallet.dc.html)",
+      "label": "36 · Add money",
+      "what_it_is": "Add-money flow: bank-transfer-vs-card chooser, then a dedicated virtual account number for transfer.",
+      "already_exists": "Yes — wallet_flows.dart#add_money matches per RULINGS.md ('How do you want to pay?' and 'Transfer to this account' both found).",
+      "verdict": "already-built",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 61."
+    },
+    {
+      "artboard": "s37 (05 Portfolio and Wallet.dc.html)",
+      "label": "37 · Withdraw",
+      "what_it_is": "Withdraw flow, including an outside-trading-hours variant.",
+      "already_exists": "Yes — wallet_flows.dart#withdraw matches on fee facts and arrival-time copy per RULINGS.md.",
+      "verdict": "covered-by-ruling (R-21)",
+      "depends_on_backend": false,
+      "evidence": "RULINGS.md line 118. R-21: 'Kept, restyled. Reachable every evening and all weekend.'"
+    },
+    {
+      "artboard": "s56 (06 Account and Support.dc.html)",
+      "label": "56 · Request a statement",
+      "what_it_is": "Statement request: period presets (This month / This year / custom date range) AND a broker picker ('All brokers, one document' vs pick one broker, e.g. 'Blue Marina').",
+      "already_exists": "Partially. statements_screen.dart already has a 'Prepare this month's statement' request action (recent work per project memory), but no 'This year' preset, no custom date-range picker, and explicitly NO broker filter — the app is single-broker with no broker dimension in the backend at all.",
+      "verdict": "new-state-of-existing-screen",
+      "depends_on_backend": "Yes — the broker-picker half of the design needs a broker dimension the backend doesn't model; statements_screen.dart's own comment confirms this ('this backend has no broker dimension anywhere').",
+      "evidence": "grep -n -i 'This month|This year|Choose dates|broker' lib/screens/account/statements_screen.dart → only 'this month' present (line 146/244); comment at line 46-49 explicitly states no broker filter exists because the backend has no broker dimension."
+    }
+  ],
+  "home_new_features": [
+    "'Grow with Kudimata' rail — Investor Readiness promo card ('How ready are you to invest? Check your readiness →', links to the external kudimata.app/iri page per R-29). Not present in home_screen.dart at all (zero matches for 'readiness').",
+    "'Grow with Kudimata' rail — Money Persona promo card ('What's your money persona? Take the quiz →', links to kudimata.app/kudimata-persona per R-29). Not present (zero matches for 'persona').",
+    "'Grow with Kudimata' rail — Financial literacy promo card (static 'Lesson 3 of 12 · 4 min' card per R-29, no real progress tracking). Not present (zero matches for 'literacy'/'lesson').",
+    "'Top movers today' rotating single-asset movers card. Not present — the app's earlier Trending section was explicitly REMOVED on 2026-08-24 based on the stale old-canvas id 's29' (which, per R-5's own warning, does not mean what the code comment assumes in the current 56-artboard canvas).",
+    "Two of the five round quick actions: 'Withdraw' and 'Learn'. The app currently ships only 3 actions (Add money / Buy shares / Orders) versus the canvas's 5 (Add / Withdraw / Invest / Orders / Learn).",
+    "s23's unverified-state 'While you wait' rail (persona-quiz card + 'Start lesson 1' financial-literacy card + 'Have a look around' prompt) and its KYC-progress banner ('2 of 5 steps done. Next: take a selfie.') sitting above a ₦0 money card with a locked Invest action — the app's current not-verified body is a structurally different 'Get set up · 1 of 3 done' checklist built against a different (stale, old-canvas) id."
+  ],
+  "email_templates": [],
+  "email_templates_note": "None found. Grepped every *.dc.html in docs/design/redesign-2026-08/ for email-template signals (title/copy containing 'email template', 'subject:', 'dear ', HTML-email markers) — the only hits were s03b ('Email and phone', a form field screen) and s04 ('Verify email', an OTP-entry screen), neither of which is an email template. The old canvas's 10 email templates have no counterpart of any kind in the new canvas.",
+  "state_variants": [
+    {"id": "s03b", "depicts": "Signup flow step 2 of 4 — email + phone entry (branch/step, not an error/empty/loading state)."},
+    {"id": "s03bd", "depicts": "Dark twin of s03b."},
+    {"id": "s03p", "depicts": "Signup flow step 3 of 4 — create password + 'I agree to Terms and Disclosures' checkbox (last step before account exists)."},
+    {"id": "s03pd", "depicts": "Dark twin of s03p."},
+    {"id": "s03c", "depicts": "Reference/drill-down sheet opened from s03p's checkbox — full list of 8 legal documents, each opening the real PDF/DOCX in the phone viewer (superseded to 4 documents by R-8)."},
+    {"id": "s03cd", "depicts": "Dark twin of s03c."},
+    {"id": "s06b", "depicts": "Optional branch step — pick an avatar, between Face ID (06) and 'What happens next' (07); Skip always available."},
+    {"id": "s06bd", "depicts": "Dark twin of s06b."},
+    {"id": "s08p", "depicts": "Login branch for a NEW/untrusted device — email + password entry (vs s08's passcode entry for a trusted device)."},
+    {"id": "s08pd", "depicts": "Dark twin of s08p."},
+    {"id": "s18b", "depicts": "Confirm-bank-account bottom sheet layered over s18 — a review/confirm state before the bank account is saved ('Changing it later takes a 24-hour security hold')."},
+    {"id": "s18bd", "depicts": "Dark twin of s18b."},
+    {"id": "s43b", "depicts": "Buy flow, limit-order branch — 'how many shares' entry at the investor's own named price."},
+    {"id": "s43bd", "depicts": "Dark twin of s43b."},
+    {"id": "s29c", "depicts": "MARKET-CLOSED state — a sheet layered over the order-review screen: 'The market is closed right now. Your order goes to market when it reopens.' The one genuine market-closed/empty-style state variant found in the whole canvas."},
+    {"id": "s29cd", "depicts": "Dark twin of s29c."},
+    {"id": "s43m", "depicts": "Buy flow, market-order branch — 'how many shares' entry at the current best-ask price ('Buying now at the best price on sale')."},
+    {"id": "s43md", "depicts": "Dark twin of s43m."},
+    {"id": "s29m", "depicts": "Buy flow, market-order review branch (vs s29's limit-order review) — 'Order type: Market buy'."},
+    {"id": "s29md", "depicts": "Dark twin of s29m."},
+    {"id": "s46m", "depicts": "Sell flow, market-order branch — 'how many shares' entry selling at the current best-bid price."},
+    {"id": "s46md", "depicts": "Dark twin of s46m."},
+    {"id": "s48m", "depicts": "Sell flow, market-order review branch (vs s48's limit-order review) — 'Order type: Market sell'."},
+    {"id": "s48md", "depicts": "Dark twin of s48m."}
+  ],
+  "state_variants_note": "24 variant artboards total (12 unique states × light/dark). Contrary to the task's illustrative list (empty/error/loading/market-closed/success), the canvas mostly does NOT design generic UI states — it designs FLOW BRANCHES: limit-vs-market pricing forks (s43/s43m, s29/s29m, s46/s46m, s48/s48m), sequential onboarding sub-steps (s03b, s03p, s06b), a device-trust login fork (s08p), and confirm/reference drill-down sheets (s18b, s03c). The only literal 'state' in the empty/error/loading/market-closed sense is s29c (order review, market closed). No loading, error, or empty-list state is designed anywhere in the new canvas — those remain entirely un-designed and, per app comments, are backed by the app's own generic shared/state_views.dart (KEmptyView/KErrorView/KLoadingView), not by any artboard."
+}

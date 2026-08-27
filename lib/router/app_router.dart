@@ -1,8 +1,10 @@
-// Kudimata Securities — GoRouter (Stage 10 wiring). One StatefulShellRoute with
-// 5 indexed-stack branches (Home · Portfolio · Markets · Wallet · Account), each
-// keeping its own stack, under a shell scaffold that floats KBottomNav above the
-// content. Every gated / KYC / suitability / pushed-detail / account-sub route is
-// TOP-LEVEL so it covers the tab bar (no nav, KDetailHeader chrome).
+// Kudimata Securities — GoRouter (Stage 10 wiring, R-28 2026-08-26: 4 tabs).
+// One StatefulShellRoute with 4 indexed-stack branches (Home · Markets ·
+// Portfolio · Wallet), each keeping its own stack, under a shell scaffold
+// that floats KBottomNav above the content. Every gated / KYC / suitability /
+// pushed-detail / account-sub route is TOP-LEVEL so it covers the tab bar (no
+// nav, KDetailHeader chrome) — Account itself is now one of these too (it was
+// the 5th tab, "You"; R-28 removed it in favour of the header avatar).
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -16,13 +18,13 @@ import 'routes.dart';
 // Onboarding / security.
 import '../screens/onboarding/splash_screen.dart';
 import '../screens/onboarding/welcome_slider_screen.dart';
-import '../screens/onboarding/document_summary_screen.dart';
 import '../screens/onboarding/sign_up_screen.dart';
 import '../screens/onboarding/otp_screen.dart';
 import '../screens/onboarding/create_passcode_screen.dart';
 import '../screens/onboarding/confirm_passcode_screen.dart';
 import '../screens/onboarding/biometric_screen.dart';
 import '../screens/onboarding/avatar_screen.dart';
+import '../screens/onboarding/whats_next_screen.dart';
 import '../screens/onboarding/personal_details_screen.dart';
 import '../screens/onboarding/log_in_screen.dart';
 import '../screens/onboarding/reset_passcode_screen.dart';
@@ -30,6 +32,7 @@ import '../screens/onboarding/legal_preview_screen.dart';
 
 // KYC.
 import '../screens/kyc/kyc_intro.dart';
+import '../screens/kyc/kyc_checklist_screen.dart';
 import '../screens/kyc/bvn_nin.dart';
 import '../screens/kyc/chn_screen.dart';
 import '../screens/kyc/id_upload.dart';
@@ -39,7 +42,6 @@ import '../screens/kyc/utility_bill.dart';
 import '../screens/kyc/bank_dcs_screen.dart';
 import '../screens/kyc/declarations_screen.dart';
 import '../screens/kyc/next_of_kin.dart';
-import '../screens/kyc/review_submit_screen.dart';
 import '../screens/kyc/submitted.dart';
 import '../screens/kyc/approved.dart';
 import '../screens/kyc/outcome_not_approved.dart';
@@ -63,7 +65,6 @@ import '../screens/home/search_screen.dart';
 
 // Markets pushed.
 import '../screens/markets/asset_detail_screen.dart';
-import '../screens/markets/watchlist_screen.dart';
 import '../screens/markets/explain_screen.dart';
 
 // Portfolio pushed.
@@ -115,10 +116,9 @@ import '../screens/shared/state_views.dart';
 /// fresh instance is created on each rebuild (a const instance would be skipped).
 GoRouter buildRouter(AppState state) {
   final homeKey = GlobalKey<NavigatorState>();
-  final portfolioKey = GlobalKey<NavigatorState>();
   final marketsKey = GlobalKey<NavigatorState>();
+  final portfolioKey = GlobalKey<NavigatorState>();
   final walletKey = GlobalKey<NavigatorState>();
-  final accountKey = GlobalKey<NavigatorState>();
 
   // Re-theme on every AppState notify (theme toggle / system brightness bump).
   Widget themed(Widget Function() build) =>
@@ -174,22 +174,6 @@ GoRouter buildRouter(AppState state) {
         },
       ),
       GoRoute(
-        path: Routes.documentSummary,
-        // Pushed from legal_acceptance_screen.dart's document rows with a
-        // DocumentSummaryArgs `extra` (screen 06 — was built but never
-        // wired in, found unreachable during the exactness audit).
-        builder: (_, st) {
-          final args = st.extra;
-          final a = args is DocumentSummaryArgs
-              ? args
-              : const DocumentSummaryArgs(docTitle: 'Document');
-          return themed(() => DocumentSummaryScreen(
-                docTitle: a.docTitle,
-                original: a.original,
-              ));
-        },
-      ),
-      GoRoute(
         path: Routes.biometric,
         // Biometric enrolment can't function on web (no local_auth backing
         // store) — bounce straight past it to the next onboarding step, same
@@ -206,11 +190,16 @@ GoRouter buildRouter(AppState state) {
         path: Routes.onboardingAvatar,
         builder: (_, _) => themed(() => OnboardingAvatarScreen()),
       ),
+      GoRoute(
+        path: Routes.onboardingNextSteps,
+        builder: (_, _) => themed(() => WhatsNextScreen()),
+      ),
       GoRoute(path: Routes.login, builder: (_, _) => themed(() => LogInScreen())),
       GoRoute(path: Routes.reset, builder: (_, _) => themed(() => ResetPasscodeScreen())),
 
       // ── KYC ───────────────────────────────────────────────────────────--
       GoRoute(path: Routes.kycIntro, builder: (_, _) => themed(() => KycIntroScreen())),
+      GoRoute(path: Routes.kycChecklist, builder: (_, _) => themed(() => KycChecklistScreen())),
       GoRoute(path: Routes.kycBvn, builder: (_, _) => themed(() => BvnNinScreen())),
       GoRoute(path: Routes.kycChn, builder: (_, _) => themed(() => ChnScreen())),
       GoRoute(path: Routes.kycId, builder: (_, _) => themed(() => IdUploadScreen())),
@@ -220,7 +209,6 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.kycBankDcs, builder: (_, _) => themed(() => BankDcsScreen())),
       GoRoute(path: Routes.kycDeclarations, builder: (_, _) => themed(() => DeclarationsScreen())),
       GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => themed(() => NextOfKinScreen())),
-      GoRoute(path: Routes.kycReview, builder: (_, _) => themed(() => ReviewSubmitScreen())),
       GoRoute(path: Routes.kycSubmitted, builder: (_, _) => themed(() => SubmittedScreen())),
       GoRoute(path: Routes.kycApproved, builder: (_, _) => themed(() => ApprovedScreen())),
       GoRoute(path: Routes.kycOutcome, builder: (_, _) => themed(() => KycOutcomeScreen())),
@@ -230,12 +218,13 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themed(() => SuitabilityResultScreen())),
       GoRoute(
         path: Routes.riskDisclaimer,
-        // Pushed from suitability_result_screen.dart with a
-        // RiskDisclaimerArgs `extra` (profile already known there), or from
-        // AppState.tradingEligibilityGap's prompt (home_screen.dart) with
-        // no `extra` at all for a returning investor re-gated here
-        // directly — RiskDisclaimerScreen fetches the real profile itself
-        // in that case (see its own header comment).
+        // R-8a (DECISIONS.md, 2026-08-27): its own scroll-gated in-app
+        // screen, run right after suitability's result — pushed from
+        // suitability_result_screen.dart with a RiskDisclaimerArgs `extra`
+        // (profile already known there, though R-2 means the screen never
+        // displays it), or from AppState.tradingEligibilityGap's prompt
+        // (home_screen.dart) with no `extra` at all for a returning
+        // investor re-gated here directly.
         builder: (_, st) {
           final args = st.extra;
           return themed(() => RiskDisclaimerScreen(
@@ -245,26 +234,28 @@ GoRouter buildRouter(AppState state) {
       ),
       GoRoute(
         path: Routes.termsOfService,
-        // `extra` is the account email, threaded from otp_screen.dart's
-        // post-verify handoff — same pattern createPasscode's route uses.
-        // ALL FOUR legal documents in one screen/one tick (2026-08-20
-        // consolidation, final pass — see TermsAndPrivacyScreen's own doc
-        // comment). This is the only legal-acceptance route left; the old
-        // post-suitability Client Agreement route/screen are gone —
-        // suitability_result_screen.dart goes straight to Home now.
-        builder: (_, st) => themed(
-          () => TermsAndPrivacyScreen(email: st.extra is String ? st.extra as String : null),
-        ),
+        // R-8a: the remaining THREE legal documents (risk disclosure moved
+        // to its own screen above) in one screen/one tick — reached from
+        // risk_disclaimer_screen.dart's own accept action, not straight off
+        // OTP any more. The account email rides AppState.pendingSignupEmail
+        // across the suitability/result/risk-disclaimer hops between OTP
+        // and here (see that field's doc comment) rather than this route's
+        // `extra`.
+        builder: (_, _) => themed(() => TermsAndPrivacyScreen()),
       ),
 
       // ── Pushed detail (top-level — cover the shell, no tab bar) ─────────--
       GoRoute(path: Routes.notifications, builder: (_, _) => themed(() => NotificationsScreen())),
       GoRoute(path: Routes.search, builder: (_, _) => themed(() => SearchScreen())),
       GoRoute(path: Routes.orderStatus, builder: (_, _) => themed(() => OrderStatusScreen())),
-      GoRoute(path: Routes.watchlist, builder: (_, _) => themed(() => WatchlistScreen())),
       GoRoute(
         path: Routes.assetDetailPath,
         builder: (_, st) => themed(() => AssetDetailScreen(ticker: st.pathParameters['ticker']!)),
+      ),
+      GoRoute(
+        // Set a price alert (screen s49) — S-11/X-7, SHARED-CHANGES.md.
+        path: Routes.setPriceAlertPath,
+        builder: (_, st) => themed(() => SetPriceAlertScreen(ticker: st.pathParameters['ticker']!)),
       ),
       GoRoute(
         path: Routes.explainThisPath,
@@ -278,6 +269,13 @@ GoRouter buildRouter(AppState state) {
         path: Routes.transactionDetailPath,
         builder: (_, st) => themed(() => TransactionDetailScreen(id: st.pathParameters['id']!)),
       ),
+
+      // ── Account (pushed) ────────────────────────────────────────────────
+      // R-28: no longer a shell branch/tab ("You" removed) — reached by
+      // pushing from the header avatar on Home instead. Same route path
+      // (Routes.account), so close_account_screen.dart's context.go(Routes.
+      // account) after a cancelled closure still resolves.
+      GoRoute(path: Routes.account, builder: (_, _) => themed(() => AccountScreen())),
 
       // ── Account sub-pages (pushed) ─────────────────────────────────────--
       GoRoute(path: Routes.acctPersonal, builder: (_, _) => themed(() => PersonalInfoScreen())),
@@ -387,17 +385,14 @@ GoRouter buildRouter(AppState state) {
           StatefulShellBranch(navigatorKey: homeKey, routes: [
             GoRoute(path: Routes.home, builder: (_, _) => themed(() => HomeScreen())),
           ]),
-          StatefulShellBranch(navigatorKey: portfolioKey, routes: [
-            GoRoute(path: Routes.portfolio, builder: (_, _) => themed(() => PortfolioScreen())),
-          ]),
           StatefulShellBranch(navigatorKey: marketsKey, routes: [
             GoRoute(path: Routes.markets, builder: (_, _) => themed(() => MarketsScreen())),
           ]),
+          StatefulShellBranch(navigatorKey: portfolioKey, routes: [
+            GoRoute(path: Routes.portfolio, builder: (_, _) => themed(() => PortfolioScreen())),
+          ]),
           StatefulShellBranch(navigatorKey: walletKey, routes: [
             GoRoute(path: Routes.wallet, builder: (_, _) => themed(() => WalletScreen())),
-          ]),
-          StatefulShellBranch(navigatorKey: accountKey, routes: [
-            GoRoute(path: Routes.account, builder: (_, _) => themed(() => AccountScreen())),
           ]),
         ],
       ),
@@ -431,22 +426,14 @@ String? _gateRedirect(AppState state, GoRouterState st) {
   const gated = <String>{
     Routes.splash, Routes.welcome, Routes.signup, Routes.otp,
     Routes.createPasscode, Routes.confirmPasscode,
-    Routes.biometric, Routes.login, Routes.reset,
-    Routes.kycIntro, Routes.kycBvn, Routes.kycChn, Routes.kycId,
+    Routes.biometric, Routes.onboardingPersonal, Routes.onboardingAvatar,
+    Routes.onboardingNextSteps, Routes.login, Routes.reset,
+    Routes.kycIntro, Routes.kycChecklist, Routes.kycBvn, Routes.kycChn, Routes.kycId,
     Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill,
-    Routes.kycBankDcs, Routes.kycDeclarations, Routes.kycNextOfKin, Routes.kycReview,
+    Routes.kycBankDcs, Routes.kycDeclarations, Routes.kycNextOfKin,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     Routes.questionnaire, Routes.suitabilityResult, Routes.riskDisclaimer,
     Routes.termsOfService,
-    // 2026-08-24 bug fix, reported live: "the 3 legal docs on sign up when
-    // I click them they force open the login screen". The terms step runs
-    // BEFORE setSignedIn(true) (which now happens on the risk disclaimer),
-    // so signedIn is false there — and /document-summary was in neither
-    // `gated` nor the two legal-preview escapes below, so it fell through
-    // to `return Routes.splash` and bounced the investor to login. Reading
-    // a document you are being asked to accept must never require being
-    // signed in first.
-    Routes.documentSummary,
   };
 
   // Pre-auth-only screens — never legitimately reachable once fully signed
@@ -475,15 +462,16 @@ class _TabShell extends StatelessWidget {
   const _TabShell({required this.navShell});
   final StatefulNavigationShell navShell;
 
-  // KBottomNav item id → branch index (Account's nav id is `profile`).
+  // KBottomNav item id → branch index. R-28: 4 tabs, Markets before
+  // Portfolio; Account/`profile` is no longer a branch at all (pushed from
+  // the header avatar instead — see home_screen.dart).
   static const _branchForNav = {
     'home': 0,
-    'portfolio': 1,
-    'markets': 2,
+    'markets': 1,
+    'portfolio': 2,
     'wallet': 3,
-    'profile': 4,
   };
-  static const _navForBranch = ['home', 'portfolio', 'markets', 'wallet', 'profile'];
+  static const _navForBranch = ['home', 'markets', 'portfolio', 'wallet'];
 
   void _onNav(String id) {
     final idx = _branchForNav[id] ?? 0;

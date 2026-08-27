@@ -1,5 +1,7 @@
-// Self-service account freeze (screen 50/51, 2026-08-22 "Soft Landing" —
-// audit P0: "no self-service freeze exists, only admin-side suspend"). Calls
+// Self-service account freeze (pushed, restyled 2026-08-27 — no artboard in
+// the redesign-2026-08 canvas; the entry point to this flow is designed in
+// the canvas, but this confirm screen itself has none, so it is kept and
+// restyled per RULINGS.md). Calls
 // the real, deployed POST /users/me/freeze (UserRepository.freeze()), which
 // blocks new orders/withdrawals and revokes every session immediately.
 // Reversible only by contacting support — there is no self-service unfreeze,

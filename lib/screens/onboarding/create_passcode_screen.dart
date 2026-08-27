@@ -1,5 +1,18 @@
-// 03 · Create a passcode — 6 dots fill from the keypad; at 6 digits we advance to
-// confirm. Ported from screens.jsx CreatePasscode. Mid-flow gated, no tab bar.
+// Artboard `s05` (+ dark `s05d`) in `01 Getting In.dc.html` — 6 dots fill
+// from the keypad; at 6 digits we advance to confirm. Ported from
+// screens.jsx CreatePasscode. Mid-flow gated, no tab bar.
+//
+// R-11 (docs/redesign/DECISIONS.md): the app keeps 6 digits with a separate
+// confirm step everywhere, including login — "The canvas's 4-digit
+// single-entry screen is not adopted; its *look* is." So the numpad/dots
+// visual language is `s05`'s, the digit count and confirm step are not.
+//
+// 2026-08-27 (SCREEN-AGENT-BRIEF.md R-5 audit): this file's comments used to
+// cite "#s07"/"#s08" — ids from the retired 97-screen canvas. In the current
+// canvas this screen is `s05`; its own top bar draws only a back arrow, no
+// step label at all (`s04`, the OTP screen before it, is the one that says
+// "Step 4 of 4" — the numbered steps end there). The "Step 3 of 4" label
+// this screen had grown is dropped below to match.
 //
 // Re-entry (reentry): Security's "Change passcode" (security_screen.dart)
 // PUSHes here with `extra: true` for an already-signed-in investor, instead
@@ -68,11 +81,16 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KOnboardTopBar(
-              stepLabel: widget.reentry ? null : 'Step 3 of 4',
-              // Canvas #s07's back arrow targets nav.s05 (Terms &
-              // disclosures), not the OTP screen — this used to route to
-              // Routes.otp, silently skipping back over the terms screen
-              // (found during the 2026-08-23 exactness audit).
+              // `s05` draws no step label at all — see file header.
+              stepLabel: null,
+              // `s05`'s own back arrow targets `s04` (the OTP screen)
+              // directly, because the canvas has no separate terms screen.
+              // R-11 keeps terms acceptance as a dedicated post-OTP screen in
+              // this app ("The canvas's pre-OTP checkbox is not adopted"),
+              // so the real flow is OTP -> Terms -> here — back correctly
+              // returns to Terms, not OTP. This used to route to Routes.otp,
+              // silently skipping back over the terms screen (found during
+              // the 2026-08-23 exactness audit) — kept fixed here.
               onBack: () => widget.reentry
                   ? context.pop()
                   : context.go(Routes.termsOfService),
@@ -82,14 +100,14 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
                 paddingTop: 22,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Ported 1:1 from the canvas mockup's #s07 block: a
-                  // centered flex column — title, then body, THEN the dots
-                  // (not dots-then-body) — gap:10px between children, dots
-                  // additionally offset margin-top:18px. The block sits near
-                  // the top with its own padding; the keypad is pushed to
-                  // the bottom by the Spacer below (CSS margin-top:auto in
-                  // the mockup — same mechanism), so the gap between them is
-                  // intentional, not a layout bug.
+                  // Ported 1:1 from `s05`'s block: a centered flex column —
+                  // title, then body, THEN the dots (not dots-then-body) —
+                  // gap:10px between children, dots additionally offset
+                  // margin-top:18px. The block sits near the top with its
+                  // own padding; the keypad is pushed to the bottom by the
+                  // Spacer below (CSS margin-top:auto in the mockup — same
+                  // mechanism), so the gap between them is intentional, not
+                  // a layout bug.
                   Text(
                     'Create a passcode',
                     textAlign: TextAlign.center,

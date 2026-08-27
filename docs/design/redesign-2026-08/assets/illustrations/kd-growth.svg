@@ -1,0 +1,8 @@
+<svg width="240" height="180" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="44" y="104" width="30" height="48" rx="6" fill="#A16BE0" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<rect x="86" y="80" width="30" height="72" rx="6" fill="#F5C542" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<rect x="128" y="58" width="30" height="94" rx="6" fill="#6FD3A4" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<rect x="170" y="34" width="30" height="118" rx="6" fill="#F5C542" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<path d="M48 74l38-26 34 16 38-38" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none"></path>
+<path d="M146 22h22v22" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none"></path>
+<path d="M28 32l2.56 5.44L36 40l-5.44 2.56L28 48l-2.56-5.44L20 40l5.44-2.56z" fill="#A16BE0"></path><path d="M216 132l2.56 5.44L224 140l-5.44 2.56L216 148l-2.56-5.44L208 140l5.44-2.56z" fill="#6FD3A4"></path></svg>

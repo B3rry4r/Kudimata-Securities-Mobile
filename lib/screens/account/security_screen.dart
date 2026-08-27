@@ -4,6 +4,29 @@
 // backing store there — same reasoning as biometric_screen.dart being
 // skipped in the web onboarding flow (confirm_passcode_screen.dart).
 //
+// R-5 correction (2026-08-27, docs/redesign/DECISIONS.md): this file used
+// to cite "#s50" for both the freeze/log-out placement and the current
+// device row — that id is from the OLD 97-screen canvas. The real, current
+// artboard is `06 Account and Support.dc.html#s54` ("54 · Security").
+// Re-verified against s54 below:
+//  - s54 draws NO Log out button anywhere (unlike old #s50) — the row here
+//    stays anyway as a real, kept convenience (account_screen.dart also has
+//    its own, per direct product instruction; two working entry points,
+//    neither a design match).
+//  - s54's toggles are "Face ID to open the app" (→ this screen's
+//    Biometric unlock, already cross-platform-renamed for the same reason
+//    documented below), "Ask for PIN on every trade", and "Alert me on new
+//    logins". The first two are real (see the PIN row added below); "Alert
+//    me on new logins" has no backing preference/notification field
+//    anywhere in this app — filed in BACKEND_GAPS.md, not built.
+//  - s54's "Change transaction PIN" row (24-hour hold) is NOT built: R-31
+//    already rules that per-order PIN reuses the existing passcode rather
+//    than a second, separately-managed credential, and grepping the
+//    backend for any 24-hour hold found nothing (same null result as the
+//    wallet withdraw screen's identical claim — see wallet_flows.dart).
+//  - s54's second signed-in device ("iPhone 13, Abuja") stays NOT
+//    fabricated — no real multi-device feed exists (see below).
+//
 // Two-factor authentication was removed from this screen (2026-08-10) — no
 // real 2FA infrastructure exists distinct from the OTP verification the app
 // already does at sign-up/sign-in; the toggle only fired
@@ -201,6 +224,25 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   disabled: true,
                 ),
               ),
+              // s54's "Ask for PIN on every trade" — real, existing
+              // behaviour, same shape as the withdrawal row above: every
+              // buy/sell order is gated on `confirmPasscode()` before it's
+              // placed (trade_flows.dart, R-31 — the "PIN" reuses this
+              // app's existing 6-digit passcode, not a second credential).
+              // Shown disabled/always-on, matching what the app actually
+              // does, not an unwired setting.
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
+                ),
+                child: const KSwitch(
+                  label: 'PIN on every trade',
+                  description: 'Always ask before an order is placed',
+                  checked: true,
+                  disabled: true,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -233,6 +275,21 @@ class _SecurityScreenState extends State<SecurityScreen> {
             body: 'Not by call, not by WhatsApp, not by email. If someone does, it isn\'t us.',
           ),
           const SizedBox(height: 24),
+          // s54's own explanatory line above "Freeze my account" —
+          // "Freezing stops all trading and withdrawals until you
+          // unfreeze" — is NOT transcribed: freeze_account_screen.dart's
+          // real behaviour (POST /users/me/freeze) has no self-service
+          // unfreeze at all ("Reversible only by contacting support"), and
+          // it also revokes every session immediately, which "until you
+          // unfreeze" doesn't convey. Copy corrected to match what freezing
+          // actually does, reusing that screen's own accurate wording.
+          Text(
+            'Freezing blocks new orders and withdrawals and signs you out everywhere, '
+            'immediately. Your shares stay yours at the CSCS — nothing is sold. Contact '
+            'support to lift it.',
+            style: KType.data(color: KColor.ink3),
+          ),
+          const SizedBox(height: 12),
           Column(
             children: [
               KButton(

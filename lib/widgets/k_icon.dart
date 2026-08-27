@@ -102,6 +102,12 @@ const Map<String, String> _kIconPaths = {
   // screen 47, icon="settings") silently rendered nothing usable.
   'settings': '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>'
       '<circle cx="12" cy="12" r="3"/>',
+  // Lucide 'file-text' — Home's "Learn" quick action (icon="doc" on s22/s23,
+  // '03 Home and Markets.dc.html'). Same gap class as 'mail'/'lock'/
+  // 'settings' above: referenced by the canvas, never added.
+  'doc': '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>'
+      '<path d="M14 2v4a2 2 0 0 0 2 2h4"/>'
+      '<path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
   // custom — drawn in the same Lucide idiom (shared.jsx Fingerprint)
   'fingerprint': '<path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>'
       '<path d="M5 19.5C5.5 18 6 16 6 14a6 6 0 0 1 .34-2"/>'

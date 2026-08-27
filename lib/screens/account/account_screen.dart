@@ -10,15 +10,24 @@
 // name/masked number crowded that row, and the document count was
 // dropped separately). "Verified" comes from
 // AppState.kycApproved — already refreshed at login (see
-// refreshKycGatingState), so no extra fetch is needed for it. "Log out" was
-// removed from this screen (2026-08-23 exactness pass): the canvas's #s45
-// body has no sign-out affordance at all — that lives on Security (#s50,
-// see security_screen.dart) instead, alongside "Freeze my account".
+// refreshKycGatingState), so no extra fetch is needed for it.
+//
+// R-5 correction (2026-08-27, docs/redesign/DECISIONS.md): this file used
+// to cite "#s45" for the account hub — that id is from the OLD 97-screen
+// canvas and now points at an unrelated screen. The real, current artboard
+// for this hub is `06 Account and Support.dc.html#s51` ("51 · Account
+// hub"). "Log out" now appears on BOTH this screen (added 2026-08-24, direct
+// instruction: "logout should be on the account screen please... its too
+// hard to see" — s51 itself has no sign-out affordance drawn at all, so this
+// row is a kept, deliberate addition, not a design match) and Security
+// (kept there too — see security_screen.dart's own R-5 note).
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/app/feature_flags.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/ai_repository.dart';
+import 'package:kudimata_invest/data/repositories/corporate_actions_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -26,45 +35,87 @@ import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
-/// Menu row (title, route, optional trailing meta text). Order and
-/// membership match the canvas mockup's #s45 block exactly (re-verified
-/// 2026-08-23 against the real s45.html body, not against other screens'
-/// footer notes — a prior pass had wrongly dropped "Plans & credits",
-/// "Corporate actions" and "Tax documents" from this list, reasoning from
-/// #s81/#s85's OWN footer notes ("entry from 38, 39..."/"from 52 tab...")
-/// instead of #s45's actual markup, which unambiguously lists all three as
-/// rows here — s45.html is the ground truth for what's ON s45, footer notes
-/// on other screens are non-exhaustive entry-point hints, not an override).
-/// "Notifications" stays correctly dropped — not a row on this screen in
-/// the mockup (reachable from Home's bell icon instead, screen 29).
-List<(String title, String route, String? trailing)> _menuRows() {
+/// Menu row (title, route, icon, sub). Order and membership are s51's own
+/// ("51 · Account hub") plus the app's real extra rows s51 doesn't draw —
+/// see this list's trailing comments for exactly which. s51's own icon
+/// names ('users' for Personal details, 'flag' for Corporate actions) have
+/// no glyph in lib/widgets/k_icon.dart's registry (frozen — SEE REPORT,
+/// SHARED-CHANGE REQUEST) — KIconBubble silently falls back to 'card' for
+/// any unregistered name, which would be worse than a deliberate, adjacent
+/// substitute, so those two rows use 'profile'/'transfer' instead.
+List<(String title, String route, String? icon, String? sub)> _menuRows(int pendingCorpActions) {
   return [
-    ('Personal info', Routes.acctPersonal, null),
+    // s51: 'doc' · "One per broker, monthly".
+    ('Statements & documents', Routes.acctStatements, 'doc', 'One per broker, monthly'),
+    // s51: 'shield' · "Face ID, passcode, devices" — reworded to this app's
+    // own cross-platform toggle name (security_screen.dart deliberately
+    // calls it "Biometric unlock", not "Face ID" — Android has no Face ID).
+    ('Security', Routes.acctSecurity, 'shield', 'Biometric unlock, passcode, devices'),
+    // s51: 'users' (unregistered, see header note) · "Name, contact,
+    // address". Title kept as "Personal info", NOT s58's "Personal
+    // details" — suitability_result_screen.dart and dormant_account_screen.dart
+    // (both out of this pass's scope) already say "Account › Personal
+    // info" verbatim; renaming here alone would silently break that
+    // cross-screen breadcrumb. SHARED-CHANGE REQUEST filed in the report.
+    ('Personal info', Routes.acctPersonal, 'profile', 'Name, contact, address'),
     // 2026-08-24: trailing bank name/masked number removed per direct
     // product instruction ("You tab should not show the user bank account
     // and number... so that the bank account and DCS can sit properly") —
-    // canvas s45 does show it ("GTB ••••6789"), but a long bank name
-    // crowded this row; the full detail is one tap away on the Bank
-    // accounts & DCS screen itself.
-    ('Bank accounts & DCS', Routes.acctBanks, null),
-    ('Plans & credits', Routes.acctPlans, null),
-    ('Statements & documents', Routes.acctStatements, null),
-    ('Security', Routes.acctSecurity, null),
-    ('Refer & earn', Routes.acctRefer, null),
-    ('Corporate actions', Routes.corpActions, null),
-    // Tax documents hidden 2026-08-24 (direct instruction: "please hide
-    // everything on tax"). The backend now really generates annual
-    // withholding-tax summaries, but the screen behind this row still shows
-    // static "not available" copy — the mobile StatementKind enum has no
-    // tax kinds, so it cannot list them. Hidden rather than left pointing
-    // at a dead end; restore this row once the enum and screen are wired.
-    ('Data & privacy', Routes.acctDataPrivacy, null),
-    ('Help & support', Routes.acctHelp, null),
-    // 2026-08-24: trailing document count removed per direct product
-    // instruction — canvas s45 literally shows "8 documents" here, but the
-    // real count is arguably churn-prone/uninteresting to an investor, and
-    // was explicitly asked to be dropped.
-    ('Legal', Routes.acctLegal, null),
+    // s51 doesn't draw this row at all (see report: rows the artboard
+    // omits), but it's real and wired, so it stays.
+    ('Bank accounts & DCS', Routes.acctBanks, 'card', 'Linked accounts, DCS mandate'),
+    // D-3 (SHARED-CHANGES.md, 2026-08-27 removals pass, R-6): the
+    // AI-credits line is parked behind kAiCreditsEnabled — see
+    // lib/app/feature_flags.dart. Screen + repository stay in the tree.
+    if (kAiCreditsEnabled) ('Plans & credits', Routes.acctPlans, null, null),
+    if (kAiCreditsEnabled) ('Refer & earn', Routes.acctRefer, null, null),
+    // s51: 'flag' (unregistered, see header note) · "1 waiting: Zenith
+    // rights issue". The named ticker is a drawn example, not a real
+    // figure this screen can source cheaply — R-34 territory — so the
+    // count alone is computed from the same real
+    // CorporateActionsRepository data corporate_actions_screen.dart uses
+    // (open + not-yet-elected/voted), and only the count is shown.
+    (
+      'Corporate actions',
+      Routes.corpActions,
+      'transfer',
+      pendingCorpActions > 0 ? '$pendingCorpActions waiting' : 'AGM votes, dividends, rights issues',
+    ),
+    // s51: 'alert' · "Raise one, or track yours" — real, wired
+    // (complaint_screen.dart posts to a real backend). Not previously a
+    // hub row (only reachable via Help & support's "File a complaint"
+    // button); s51 draws it as its own row, so it's added here too — both
+    // entry points are real, neither is fake.
+    ('Complaints', Routes.acctComplaint, 'alert', 'Raise one, or track yours'),
+    // D-2 (SHARED-CHANGES.md, 2026-08-27 removals pass, R-16): permanent
+    // entry point for price_alerts_screen.dart now that watchlist_screen.dart
+    // — its only other entry point — is gone. Keeps s50 reachable and gives
+    // the saved-assets data (WatchlistRepository) a reader. Not an s51 row.
+    ('My alerts', Routes.priceAlerts, 'bell', 'Price alerts on saved assets'),
+    // Restored 2026-08-27: was hidden 2026-08-24 (direct instruction:
+    // "please hide everything on tax") because the mobile StatementKind
+    // enum had no tax kinds, so tax_documents_screen.dart could only show
+    // static "not available" copy. That's fixed — the enum now carries
+    // `whtCreditNote`/`annualTaxSummary` (statements_repository.dart) and
+    // the screen makes real `GET /statements?kind=` calls for both, so the
+    // row no longer points at a dead end.
+    (
+      'Tax documents',
+      Routes.acctTax,
+      'doc',
+      'Annual summary, WHT credit notes',
+    ),
+    // s51: 'settings' · "Consents, export, deletion".
+    ('Data & privacy', Routes.acctDataPrivacy, 'settings', 'Consents, export, deletion'),
+    // Not an s51 row — kept, real, wired (FAQ + contact channels + file a
+    // complaint).
+    ('Help & support', Routes.acctHelp, 'mail', 'FAQs, contact, file a complaint'),
+    // s51 calls this "Terms and disclosures" with a "All eight documents"
+    // sub — R-8/C-4 (DECISIONS.md) already ruled the real set is 4
+    // documents, not 8, so that clause is not transcribed (would be a
+    // false claim). 2026-08-24: trailing document count removed per direct
+    // product instruction as a separate, earlier decision.
+    ('Legal', Routes.acctLegal, 'doc', 'Terms, risk disclosure, client agreement'),
   ];
 }
 
@@ -95,17 +146,39 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late final _aiRepo = AiRepository(AppScope.read(context).apiClient);
-  late Future<(PersonalInfo, AiCreditStatus)> _future = _load();
+  late final _corpActionsRepo = CorporateActionsRepository(AppScope.read(context).apiClient);
+  late Future<(PersonalInfo, AiCreditStatus, int)> _future = _load();
 
   // Local-only — no app-wide language/locale persistence exists anywhere in
   // this app yet, same as onboarding/welcome_slider_screen.dart's and
   // document_summary_screen.dart's own KLanguageSwitch usage.
   String _lang = 'en';
 
-  Future<(PersonalInfo, AiCreditStatus)> _load() async {
+  Future<(PersonalInfo, AiCreditStatus, int)> _load() async {
     final infoFuture = _userRepo.personalInfo();
     final creditsFuture = _aiRepo.credits();
-    return (await infoFuture, await creditsFuture);
+    final pendingFuture = _pendingCorpActions();
+    return (await infoFuture, await creditsFuture, await pendingFuture);
+  }
+
+  /// Real count of rights issues/AGM meetings still waiting on this
+  /// investor's decision — same "open and not yet acted on" test
+  /// corporate_actions_screen.dart's own hub uses. This is a decorative
+  /// sub-line on a menu row, not the hub's primary data, so a failure here
+  /// falls back to 0 (no "N waiting" clause) rather than failing the whole
+  /// Account screen's load.
+  Future<int> _pendingCorpActions() async {
+    try {
+      final (rightsIssues, agmMeetings) =
+          await (_corpActionsRepo.rightsIssues(), _corpActionsRepo.agmMeetings()).wait;
+      final pendingRights =
+          rightsIssues.where((r) => r.status == CorpActionStatus.open && !r.alreadyElected).length;
+      final pendingAgm =
+          agmMeetings.where((a) => a.status == CorpActionStatus.open && !a.alreadyVoted).length;
+      return pendingRights + pendingAgm;
+    } on ApiException {
+      return 0;
+    }
   }
 
   void _reload() => setState(() => _future = _load());
@@ -115,9 +188,15 @@ class _AccountScreenState extends State<AccountScreen> {
     final kycApproved = AppScope.of(context).kycApproved;
     return Scaffold(
       backgroundColor: KColor.bg,
+      // Pushed from Home's header avatar (R-28, docs/redesign/DECISIONS.md)
+      // rather than a tab root — same KDetailHeader chrome every other
+      // pushed account screen uses (see KAccountSubScaffold), so there's a
+      // visible/tappable back affordance in addition to the edge-swipe and
+      // hardware back that already worked.
+      appBar: const KDetailHeader(title: 'Account'),
       body: SafeArea(
-        bottom: false,
-        child: FutureBuilder<(PersonalInfo, AiCreditStatus)>(
+        top: false,
+        child: FutureBuilder<(PersonalInfo, AiCreditStatus, int)>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -126,10 +205,11 @@ class _AccountScreenState extends State<AccountScreen> {
             if (snapshot.hasError) {
               return KErrorView(onPrimary: _reload);
             }
-            final (info, credits) = snapshot.data!;
+            final (info, credits, pendingCorpActions) = snapshot.data!;
             return _AccountBody(
               info: info,
               credits: credits,
+              pendingCorpActions: pendingCorpActions,
               verified: kycApproved,
               lang: _lang,
               onLangChanged: (v) => setState(() => _lang = v),
@@ -170,6 +250,7 @@ class _AccountBody extends StatelessWidget {
   const _AccountBody({
     required this.info,
     required this.credits,
+    required this.pendingCorpActions,
     required this.verified,
     required this.lang,
     required this.onLangChanged,
@@ -179,6 +260,7 @@ class _AccountBody extends StatelessWidget {
 
   final PersonalInfo info;
   final AiCreditStatus credits;
+  final int pendingCorpActions;
   final bool verified;
   final String lang;
   final ValueChanged<String> onLangChanged;
@@ -211,15 +293,14 @@ class _AccountBody extends StatelessWidget {
         : '${info.accountStatus[0].toUpperCase()}${info.accountStatus.substring(1)} account';
     final subtitle = hasChn ? 'CHN ${info.cscsNumber} · $statusText' : statusText;
 
-    final rows = _menuRows();
+    final rows = _menuRows(pendingCorpActions);
 
     return SingleChildScrollView(
-      // Root tab: clear the floating KBottomNav (~70px + margin + safe area)
-      // so the menu's bottom row isn't hidden behind it.
-      // bottom:160, not 100 — the floating bottom nav overlays this scroll
-      // view, and the Log out button added below the menu card (2026-08-24)
-      // sat underneath it at the old value, half-hidden.
-      padding: const EdgeInsets.only(top: 20, bottom: 160),
+      // Pushed screen now (R-28) — no floating KBottomNav sits under this
+      // screen any more, so there's nothing to clear at the bottom; matches
+      // the plain bottom:32 every other KAccountSubScaffold-chromed screen
+      // scrolls to.
+      padding: const EdgeInsets.only(top: 20, bottom: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -263,32 +344,39 @@ class _AccountBody extends StatelessWidget {
           // design's default bare-`<a>` accent (var(--indicator)), not ink.
           // 2026-08-24: real balance (AiCreditStatus) instead of a hardcoded
           // 7-of-10 literal — see AiCreditsService on the backend.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
-            child: GestureDetector(
-              onTap: () async {
-                await context.push(Routes.acctPlans);
-                onReturnFromPlans();
-              },
-              behavior: HitTestBehavior.opaque,
-              child: Row(
-                children: [
-                  KCreditMeter(
-                    used: _creditsUsed(credits),
-                    total: _creditsTotal(credits),
-                    kind: credits.plan == null ? 'trial' : 'plan',
-                    compact: true,
-                  ),
-                  const SizedBox(width: 10),
-                  Text('Plans & credits', style: KType.data(color: KColor.indicator)),
-                ],
+          //
+          // D-3 (SHARED-CHANGES.md, 2026-08-27 removals pass, R-6): parked
+          // behind kAiCreditsEnabled along with the "Plans & credits" menu
+          // row above — this is the other entry point into that screen.
+          if (kAiCreditsEnabled)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
+              child: GestureDetector(
+                onTap: () async {
+                  await context.push(Routes.acctPlans);
+                  onReturnFromPlans();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  children: [
+                    KCreditMeter(
+                      used: _creditsUsed(credits),
+                      total: _creditsTotal(credits),
+                      kind: credits.plan == null ? 'trial' : 'plan',
+                      compact: true,
+                    ),
+                    const SizedBox(width: 10),
+                    Text('Plans & credits', style: KType.data(color: KColor.indicator)),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // Menu group — plain text + chevron rows, no leading icon bubble
-          // (the canvas's #s45 rows are bare `<a>`s with just a title span
-          // and a chevron `Icon`; icon bubbles never appear here).
+          if (kAiCreditsEnabled) const SizedBox(height: 12),
+          // Menu group — s51's own rows carry a leading icon bubble + a
+          // one-line sub caption under each title (2026-08-27 exactness
+          // pass against the CURRENT s51, replacing the prior pass's "bare
+          // rows, no bubble" note — that note described the OLD, now
+          // unrelated #s45; see this file's header for the R-5 correction).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: KAccountCard(
@@ -296,6 +384,8 @@ class _AccountBody extends StatelessWidget {
                 for (var i = 0; i < rows.length; i++)
                   KAccountRow(
                     title: rows[i].$1,
+                    icon: rows[i].$3,
+                    sub: rows[i].$4,
                     first: i == 0,
                     onTap: () async {
                       await context.push(rows[i].$2);
@@ -303,28 +393,20 @@ class _AccountBody extends StatelessWidget {
                         onReturnFromPersonalInfo();
                       }
                     },
-                    right: rows[i].$3 == null
-                        ? const KRowChevron()
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(rows[i].$3!, style: KType.data(color: KColor.ink3)),
-                              const SizedBox(width: 8),
-                              const KRowChevron(),
-                            ],
-                          ),
+                    right: const KRowChevron(),
                   ),
               ],
             ),
           ),
           const SizedBox(height: 20),
           // Log out (2026-08-24, direct instruction: "logout should be on
-          // the account screen please... its too hard to see"). It lived
-          // ONLY on the Security screen — two taps deep behind a row whose
-          // label says nothing about signing out, which is where the
-          // canvas (#s50) put it, but which in practice meant nobody could
-          // find it. Security keeps its copy; this is an addition, not a
-          // move, so neither route regresses for anyone used to the other.
+          // the account screen please... its too hard to see"). s51 itself
+          // draws NO sign-out affordance anywhere on the hub (re-verified
+          // 2026-08-27 against the current s51 markup) — this row is a
+          // kept, deliberate usability addition, not a design match.
+          // Security keeps its own copy too (see security_screen.dart);
+          // this is an addition, not a move, so neither route regresses for
+          // anyone used to the other.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: KButton(
@@ -344,6 +426,22 @@ class _AccountBody extends StatelessWidget {
           //   padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
           //   child: KLanguageSwitch(value: lang, onChanged: onLangChanged),
           // ),
+          // s51's own footer line, below its Log out button. Version number
+          // dropped ("v3.1" in the artboard) — this app has no user-facing
+          // build/version string convention anywhere else (checked); a
+          // literal build number nobody maintains for user display would be
+          // exactly the kind of unverified figure R-34 exists to keep out.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
+            child: SizedBox(
+              width: double.infinity,
+              child: Text(
+                'Kudimata Securities Ltd · SEC registered',
+                textAlign: TextAlign.center,
+                style: KType.micro(color: KColor.ink3),
+              ),
+            ),
+          ),
         ],
       ),
     );

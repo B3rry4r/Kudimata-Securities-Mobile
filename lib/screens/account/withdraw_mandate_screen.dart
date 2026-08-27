@@ -1,8 +1,8 @@
-// Withdraw the DCS mandate (screen 65, 2026-08-23 "Soft Landing" exactness
-// pass — Flow G was entirely unbuilt until now). Reuses KFreezeConfirm, per
-// screen-specs.md spec 65's own note that the design system treats "freeze
-// account" and "withdraw DCS mandate" as the same class of type-to-confirm
-// destructive action.
+// Withdraw the DCS mandate (pushed, restyled 2026-08-27 — no artboard in the
+// redesign-2026-08 canvas; kept and restyled per RULINGS.md as a real,
+// regulatorily-meaningful destructive action). Reuses KFreezeConfirm, since
+// this app's design idiom treats "freeze account" and "withdraw DCS mandate"
+// as the same class of type-to-confirm destructive action.
 //
 // Real backend limitation, flagged rather than faked: BankAccountsRepository
 // only exposes setPrimary()/remove() — there is no dedicated "demote this
@@ -85,12 +85,16 @@ class _WithdrawMandateScreenState extends State<WithdrawMandateScreen> {
             style: KType.data(color: KColor.ink3),
           ),
           const SizedBox(height: 16),
-          // grid-template-columns:130px 1fr per spec — "Keep it" fixed
-          // width, "Withdraw mandate" takes the remaining space.
+          // Equal-width buttons (2026-08-27 restyle) — matches every sibling
+          // destructive-confirm screen's idiom (KFreezeConfirm's own
+          // primary/secondary default, used as-is by freeze_account_screen.dart
+          // and close_account_screen.dart): cancel and the destructive action
+          // get the same visual weight. The old fixed-130px "Keep it" / 1fr
+          // "Withdraw mandate" split gave the destructive button materially
+          // more width than its cancel — not something a restyle should ship.
           Row(
             children: [
-              SizedBox(
-                width: 130,
+              Expanded(
                 child: KButton(
                   label: 'Keep it',
                   variant: KButtonVariant.secondary,

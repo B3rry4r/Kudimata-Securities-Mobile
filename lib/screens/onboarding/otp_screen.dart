@@ -1,6 +1,9 @@
-// 02 · OTP verify — 6 single-digit cells (fed by a hidden numeric TextField, since
-// KOtpCells itself is display-only), a live resend countdown, Verify.
-// Ported from screens.jsx Otp. Mid-flow gated screen: top bar with back, no tab bar.
+// s04 · Verify email — 6 single-digit cells (fed by a hidden numeric
+// TextField, since KOtpCells itself is display-only), a live resend
+// countdown, one full-width Verify button. Mid-flow gated screen: top bar
+// with back + "Step 4 of 4", no tab bar. R-11: the app keeps 6 digits here
+// (the artboard itself already draws 6, unlike the 4-digit passcode
+// screens R-11 governs) — no length change needed on this screen.
 //
 // Wired to POST /auth/verify-email-otp (AuthRepository) and POST
 // /email-otps/resend. The email being verified arrives via GoRouter `extra`
@@ -50,10 +53,11 @@ class _OtpScreenState extends State<OtpScreen> {
   bool _resending = false;
   String? _error;
 
-  // Canvas #s04 renders "Resend code in 00:42 · Change email" as one small
-  // inline text line under the OTP cells, not as buttons — tap targets for
-  // that line. "Change email" has no dedicated screen of its own in the
-  // canvas; it returns to sign-up where the email was entered.
+  // Canvas #s04 renders "Resend in 00:42" as one small centered text line
+  // under the OTP cells, and "Change" inline in the "Sent to X · Change"
+  // subtitle above — tap targets for both. Neither is a dedicated screen of
+  // its own in the canvas; "Change" returns to sign-up where the email was
+  // entered.
   late final _resendTap = TapGestureRecognizer()
     ..onTap = () {
       if (_secondsLeft <= 0 && !_resending && !_verifying) _resend();
@@ -130,7 +134,14 @@ class _OtpScreenState extends State<OtpScreen> {
       final tokens = await _repo.verifyEmailOtp(email: email, code: _digits.join());
       await _tokenStore.saveTokens(tokens.accessToken, tokens.refreshToken ?? '');
       if (!mounted) return;
-      context.go(Routes.termsOfService, extra: email);
+      // R-8a (DECISIONS.md, 2026-08-27): suitability now runs immediately
+      // after OTP, ahead of the legal documents — the terms screen no
+      // longer follows straight from here, so `email` can't ride this
+      // route's `extra` any more. Stashed on AppState instead (see its own
+      // doc comment) for terms_and_privacy_screen.dart to pick up several
+      // screens downstream.
+      AppScope.read(context).setPendingSignupEmail(email);
+      context.go(Routes.questionnaire);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -171,11 +182,15 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
+  // Artboard #s04 renders "Resend in 00:42" (zero-padded minutes, unlike the
+  // countdown's un-padded seconds-tens digit). The ready-to-resend wording
+  // has no artboard evidence — no variant depicts it — so "Resend code" is
+  // this screen's own reasonable label for a state the design doesn't draw.
   String get _resendLabel {
     if (_secondsLeft <= 0) return 'Resend code';
     final m = (_secondsLeft ~/ 60).toString().padLeft(2, '0');
     final s = (_secondsLeft % 60).toString().padLeft(2, '0');
-    return 'Resend code in $m:$s';
+    return 'Resend in $m:$s';
   }
 
   @override
@@ -188,18 +203,33 @@ class _OtpScreenState extends State<OtpScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KOnboardTopBar(
-              stepLabel: 'Step 1 of 4',
+              stepLabel: 'Step 4 of 4',
               onBack: () => context.go(Routes.signup),
             ),
             Expanded(
               child: KOnboardBody(
                 paddingTop: 18,
                 children: [
-                  const KIllustration('email-sent', role: KIlloRole.banner),
-                  const SizedBox(height: 20),
-                  KScreenHead(
-                    title: 'Check your email',
-                    body: 'We sent a 6-digit code to ${email ?? 'your email'}.',
+                  // Canvas #s04 draws no illustration on this screen — straight
+                  // from the top bar into the title. The 2026-08-23 pass had
+                  // added one; dropped to match.
+                  const KScreenHead(title: 'Enter the code we emailed you'),
+                  const SizedBox(height: 10),
+                  // Artboard copy: "Sent to adebayo@email.com · Change" — one
+                  // line, "Change" a same-line link back to sign-up (where the
+                  // email was entered), not a separate line under the cells.
+                  RichText(
+                    text: TextSpan(
+                      style: KType.body(color: KColor.ink2),
+                      children: [
+                        TextSpan(text: 'Sent to ${email ?? 'your email'} · '),
+                        TextSpan(
+                          text: 'Change',
+                          style: KType.body(color: KColor.ink2, w: KWeight.semibold),
+                          recognizer: _changeEmailTap,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Stack(
@@ -233,29 +263,24 @@ class _OtpScreenState extends State<OtpScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Canvas #s04: "Resend code in 00:42 · Change email" — one
-                  // small inline text line right under the cells, not a
-                  // full-width ghost button (that was this screen's old
-                  // shape; it also silently dropped "Change email"
-                  // entirely). Found + fixed in the 2026-08-23 exactness
-                  // audit.
-                  RichText(
-                    text: TextSpan(
-                      style: KType.data(color: KColor.ink3),
-                      children: [
-                        TextSpan(
-                          text: _resendLabel,
-                          recognizer: (_secondsLeft > 0 || _resending || _verifying)
-                              ? null
-                              : _resendTap,
-                        ),
-                        const TextSpan(text: ' · '),
-                        TextSpan(
-                          text: 'Change email',
-                          style: const TextStyle(decoration: TextDecoration.underline),
-                          recognizer: _changeEmailTap,
-                        ),
-                      ],
+                  // Canvas #s04: "Resend in 00:42" — centered, on its own,
+                  // directly under the cells. "Change" already sits in the
+                  // subtitle above (next to the email address), not
+                  // repeated here.
+                  Center(
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: KType.body(color: KColor.ink3),
+                        children: [
+                          TextSpan(
+                            text: _resendLabel,
+                            recognizer: (_secondsLeft > 0 || _resending || _verifying)
+                                ? null
+                                : _resendTap,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   if (_error != null) ...[
@@ -263,26 +288,20 @@ class _OtpScreenState extends State<OtpScreen> {
                     Text(_error!, style: KType.body(color: KColor.loss, w: KWeight.medium)),
                   ],
                   const Spacer(),
-                  Column(
-                    children: [
-                      KButton(
-                        label: 'Verify email',
-                        loading: _verifying,
-                        onPressed: (_complete && !_verifying && !_resending) ? _verify : null,
-                      ),
-                      const SizedBox(height: 10),
-                      // Canvas #s04's second button — links to nav.s12
-                      // (Reset your password), not a resend action; this
-                      // was entirely missing before (the resend button sat
-                      // in its place).
-                      KButton(
-                        label: "I can't access this email",
-                        variant: KButtonVariant.ghost,
-                        onPressed: _verifying
-                            ? null
-                            : () => context.go(Routes.reset, extra: email),
-                      ),
-                    ],
+                  // Canvas #s04 draws exactly one button, labelled "Verify".
+                  // A prior pass added a second "I can't access this email"
+                  // button here citing "Canvas #s04's second button" — that
+                  // comment was reading the OLD 97-screen canvas (R-5's
+                  // trap: this build's #s04 is a different screen and draws
+                  // no second control at all). Removed; password reset is
+                  // still reachable from the login screen's own "Forgot
+                  // password?" link (log_in_screen.dart), which fits better
+                  // anyway — this screen is verifying a brand-new signup
+                  // email, not an existing account login.
+                  KButton(
+                    label: 'Verify',
+                    loading: _verifying,
+                    onPressed: (_complete && !_verifying && !_resending) ? _verify : null,
                   ),
                 ],
               ),

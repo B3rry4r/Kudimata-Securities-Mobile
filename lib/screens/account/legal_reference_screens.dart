@@ -114,6 +114,7 @@ import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+import 'account_widgets.dart';
 
 /// Fetches a real LegalDocument's sections and joins them into one string
 /// for `KDocumentSummary.original` — non-blocking and best-effort: a 404 (no
@@ -131,7 +132,19 @@ Future<String?> _fetchOriginal(BuildContext context, String kind) async {
 }
 
 /// Shared layout for all four screens — back header, the document card, an
-/// optional footnote, and one secondary "Back to X" button.
+/// optional footnote, and one secondary "Back to X" button. Restyled
+/// 2026-08-27 (ruling: restyle-only, see legal_screen.dart's own header —
+/// "keep and restyle", no artboard of its own) onto `KAccountSubScaffold`,
+/// the scaffold every other Account sub-screen already builds on
+/// (account_widgets.dart) — this file was the one screen still hand-rolling
+/// its own `Scaffold`/`KDetailHeader`/`SingleChildScrollView` plumbing.
+/// Same arrangement as before (header, then card, then footnote, then one
+/// secondary back button as the last scrolled item, matching
+/// faq_screen.dart's `_SettlementArticle` — not `KAccountSubScaffold`'s
+/// pinned `footer` slot, which is reserved for a margin-top:auto primary
+/// action like Help & support's "File a complaint", not a plain "go back"
+/// link) — only the header chrome and outer padding now come from the
+/// shared scaffold instead of being redrawn here.
 class _LegalDocScaffold extends StatelessWidget {
   const _LegalDocScaffold({
     required this.title,
@@ -149,29 +162,23 @@ class _LegalDocScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: KColor.bg,
-      // English/Pidgin switch temporarily hidden (2026-08-24, direct
-      // product instruction) — no real Pidgin translation of any legal
-      // document exists anywhere in this app.
-      appBar: KDetailHeader(title: title, onBack: onBack),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(KSpace.gutter, 10, KSpace.gutter, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              summary,
-              if (footnote != null) ...[
-                const SizedBox(height: 14),
-                Text(footnote!, style: KType.data(color: KColor.ink3)),
-              ],
-              const SizedBox(height: 20),
-              KButton(label: backLabel, variant: KButtonVariant.secondary, onPressed: onBack),
-            ],
-          ),
-        ),
+    // English/Pidgin switch temporarily hidden (2026-08-24, direct product
+    // instruction) — no real Pidgin translation of any legal document
+    // exists anywhere in this app, so `KAccountSubScaffold.headerTrailing`
+    // is left unset rather than passed a switch with nothing to switch to.
+    return KAccountSubScaffold(
+      title: title,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          summary,
+          if (footnote != null) ...[
+            const SizedBox(height: 14),
+            Text(footnote!, style: KType.data(color: KColor.ink3)),
+          ],
+          const SizedBox(height: 20),
+          KButton(label: backLabel, variant: KButtonVariant.secondary, onPressed: onBack),
+        ],
       ),
     );
   }

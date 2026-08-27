@@ -1,4 +1,5 @@
-// KYC 5 — verifying liveness (interstitial right after step 4 of 8, before step 5).
+// KYC — verifying liveness (interstitial right after step 4 of 7, before step
+// 5; renumbered 8->7 2026-08-27 per X-2/bvn_nin.dart's derivation).
 // A centred spinner while the REAL liveness check runs server-side.
 //
 // REPURPOSED 2026-08-20 (phased-KYC directive): previously a pure UX-pacing
@@ -6,9 +7,12 @@
 // result replaces this timer" — this pass IS that replacement). Now calls
 // POST /kyc-submissions/draft/liveness, which reads the selfie
 // liveness.dart already uploaded+registered against the draft and actually
-// runs the check. On success, advances to the utility-bill step (step 4);
-// on failure, shows a retryable error state rather than silently
-// continuing — this is a real verification call now, not a mocked delay.
+// runs the check. On failure, shows a retryable error state rather than
+// silently continuing — this is a real verification call now, not a mocked
+// delay. On success, returns to Routes.kycChecklist (X-5, SHARED-CHANGES.md
+// 2026-08-27) rather than hard-chaining straight to the next collection
+// screen — the checklist hub is the flow's spine, re-entered after every
+// completed step.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -41,7 +45,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
     try {
       await _repo.verifyDraftLiveness();
       if (!mounted) return;
-      context.go(Routes.kycUtilityBill);
+      context.go(Routes.kycChecklist);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -66,9 +70,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycLiveness),
-              stepLabel: 'Verification · 4 of 8',
+              stepLabel: 'Verification · 4 of 7',
             ),
-            const KycStepProgress(total: 8, current: 4),
+            const KycStepProgress(total: 7, current: 4),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
@@ -88,8 +92,12 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       : [
                           const KIllustration('kyc-checking', role: KIlloRole.state),
                           const SizedBox(height: 22),
-                          Text('Checking your face liveness…',
+                          // s16's own title/body, verbatim.
+                          Text('Checking your selfie',
                               textAlign: TextAlign.center, style: KType.section()),
+                          const SizedBox(height: 10),
+                          Text('Done on the spot. If it fails, you just retake it.',
+                              textAlign: TextAlign.center, style: KType.body(color: KColor.ink2)),
                           // 2026-08-24 fix: this file's own header comment
                           // has always claimed "a centred spinner while the
                           // REAL liveness check runs server-side" — it was

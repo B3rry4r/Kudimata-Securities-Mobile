@@ -23,12 +23,20 @@ class KIllustration extends StatelessWidget {
     this.role = KIlloRole.state,
     this.tone = KIlloTone.indicator,
     this.padding,
+    this.plate = true,
   });
 
   final String name;
   final KIlloRole role;
   final KIlloTone tone;
   final double? padding;
+
+  /// Whether to draw the tinted plate behind the illustration. Defaults to
+  /// `true` — every existing call site wants the plate and is unaffected.
+  /// `false` renders the SVG bare, no background/padding: artboard `s21`
+  /// (light "Approved") draws the illustration bare while `s21d` (dark)
+  /// plates it — see SHARED-CHANGES.md S-4.
+  final bool plate;
 
   double get _height => switch (role) {
         KIlloRole.hero => KIllo.hero,
@@ -56,19 +64,19 @@ class KIllustration extends StatelessWidget {
     // shrink-wraps to the SvgPicture's real size in a loose/unbounded
     // context, while still centering it when the incoming constraint IS
     // bounded/tight — same fix as KPillChip's identical bug.
+    final svg = SvgPicture.asset(
+      'assets/illustrations/$name.svg',
+      height: _height,
+      fit: BoxFit.contain,
+    );
+    if (!plate) {
+      return Center(widthFactor: 1, heightFactor: 1, child: svg);
+    }
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(padding ?? KIllo.platePad),
       decoration: BoxDecoration(color: _plate, borderRadius: KRadii.illoR),
-      child: Center(
-        widthFactor: 1,
-        heightFactor: 1,
-        child: SvgPicture.asset(
-          'assets/illustrations/$name.svg',
-          height: _height,
-          fit: BoxFit.contain,
-        ),
-      ),
+      child: Center(widthFactor: 1, heightFactor: 1, child: svg),
     );
   }
 }

@@ -13,6 +13,7 @@ import 'package:flutter/widgets.dart';
 import '../data/api/api_client.dart';
 import '../data/api/auth_token_store.dart';
 import '../data/api/passcode_store.dart';
+import '../data/realtime/realtime_client.dart';
 import '../data/repositories/market_status_repository.dart';
 import '../data/repositories/watchlist_repository.dart';
 import '../router/routes.dart';
@@ -27,6 +28,7 @@ class AppState extends ChangeNotifier {
     Set<String>? watchlistTickers,
     AuthTokenStore? tokenStore,
     PasscodeStore? passcodeStore,
+    RealtimeClient? realtimeClient,
     // `?? {}` — this used to default to a hardcoded {'MTNN', 'GTCO',
     // 'ZENITHBANK', 'DANGCEM'} mock set, never hydrated from the real
     // watchlist. That made asset_detail_screen.dart's save toggle (which
@@ -37,7 +39,16 @@ class AppState extends ChangeNotifier {
     // hydrateWatchlist() below for how it gets populated with real data.
   })  : _watchlist = watchlistTickers ?? {},
         _tokenStore = tokenStore ?? AuthTokenStore(),
-        _passcodeStore = passcodeStore ?? PasscodeStore() {
+        _passcodeStore = passcodeStore ?? PasscodeStore(),
+        // Shares the SAME (possibly caller-supplied) `tokenStore` param
+        // ApiClient is built with in main.dart, not [_tokenStore] above —
+        // Dart's initializer list can't reference an already-initialized
+        // sibling field, so this passes the raw param straight through;
+        // [RealtimeClient]'s own constructor applies the identical
+        // `?? AuthTokenStore()` default when it's null. Two default
+        // instances both just wrap the same underlying secure storage, so
+        // this is harmless when no [tokenStore] is supplied at all (tests).
+        realtimeClient = realtimeClient ?? RealtimeClient(tokenStore: tokenStore) {
     ready = _hydrate();
   }
 
@@ -68,6 +79,19 @@ class AppState extends ChangeNotifier {
   ///   `AppScope.of(context).apiClient`    (only if the widget already listens to AppState)
   /// See lib/data/api/README.md.
   late final ApiClient apiClient;
+
+  /// The single shared [RealtimeClient] (R-41, docs/redesign/DECISIONS.md)
+  /// — unlike [apiClient]/[kycForm], built right here in the constructor
+  /// (below) rather than assigned externally by main.dart: it needs no
+  /// back-reference to this AppState, only the SAME [AuthTokenStore]
+  /// [_tokenStore] already wraps, so there's no chicken-and-egg to solve.
+  /// Connected after authentication ([setSignedIn]/main.dart's cold-start
+  /// hydration), disconnected on sign-out ([_resetSessionState]) and on
+  /// [dispose], reconnected on app foreground resume (main.dart's
+  /// `didChangeAppLifecycleState`). Reached the same way as [apiClient]:
+  ///   `AppScope.read(context).realtimeClient`
+  ///   `AppScope.of(context).realtimeClient`
+  final RealtimeClient realtimeClient;
 
   /// The single shared [KycFormState] — assigned exactly once, at app
   /// startup, by `main.dart`'s `_KudimataAppState.initState`, alongside
@@ -134,6 +158,19 @@ class AppState extends ChangeNotifier {
   /// instant it acts on it, so it never leaks into a later, unrelated
   /// security-reentry passcode change.
   bool loginPasscodeSetup = false;
+
+  /// The email being onboarded, set by otp_screen.dart right after a
+  /// successful verify. R-8a (DECISIONS.md, 2026-08-27) put suitability +
+  /// its result + the risk disclosure BETWEEN OTP and the other three legal
+  /// documents, so the email otp_screen.dart used to hand straight to
+  /// terms_and_privacy_screen.dart via a single GoRouter `extra` now has to
+  /// survive several hops it isn't otherwise involved in (questionnaire →
+  /// result → risk disclaimer → terms). Threaded via AppState rather than
+  /// re-plumbing `extra` through every one of those screens, same reasoning
+  /// as [loginPasscodeSetup] above. terms_and_privacy_screen.dart reads it
+  /// (via `AppScope.read`) when it hands off to Routes.createPasscode,
+  /// which is the one screen downstream that actually needs it.
+  String? pendingSignupEmail;
 
   // Live watchlist (tickers).
   final Set<String> _watchlist;
@@ -208,6 +245,7 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _marketStatusTimer?.cancel();
+    realtimeClient.dispose();
     super.dispose();
   }
 
@@ -255,13 +293,53 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Applies a `kyc:status` socket payload (R-41) directly to the gate
+  /// flags it can determine on its own — [kycApproved]/[kycSubmitted]/
+  /// [kycOutcomeStatus] — with NO network call. Wired from main.dart via
+  /// `realtimeClient.kycStatus.listen(applyRealtimeKycStatus)`, so it
+  /// reaches every screen that reads these flags (not just whichever one
+  /// happens to be open), same as any other AppState mutation.
+  ///
+  /// Deliberately narrower than [refreshKycGatingState]
+  /// (log_in_screen.dart), the REST check this does NOT replace or
+  /// trigger: the backend's `User` payload carries only the coarse
+  /// `kycStatus` enum, not the KycSubmission's own `flagReason`
+  /// (needed for [kycOutcomeStatus]'s "still has a retry" nuance —
+  /// KycSubmissionStatus.isRejectedWithRoomToRetry, kyc_repository.dart),
+  /// nor suitability/risk-disclosure completion. Those three
+  /// ([suitabilityComplete], [riskDisclosureAccepted], [kycDraftStep]/
+  /// [kycDraftTotal]) are left untouched here — they stay owned by the
+  /// existing REST poll (home_screen.dart's `_pollKycStatus`, unchanged by
+  /// this pass) and by reconnect-triggered refetches.
+  void applyRealtimeKycStatus(RealtimeKycStatus status) {
+    kycApproved = status.kycStatus == 'approved';
+    kycSubmitted = status.kycStatus != 'draft';
+    kycOutcomeStatus = const {'rejected', 'flagged', 'expired'}.contains(status.kycStatus)
+        ? status.kycStatus
+        : null;
+    notifyListeners();
+  }
+
   void setSignedIn(bool v) {
     signedIn = v;
+    // R-41: connect the realtime socket the moment a session becomes
+    // valid — covers the interactive sign-in path (hydrateGatingStateAndRoute,
+    // log_in_screen.dart); the cold-start "already signed in" path is
+    // covered separately by main.dart's `ready.then` block, since this
+    // setter isn't the one that flips [signedIn] there (see
+    // [_hydrateSignedIn]). Fire-and-forget: [RealtimeClient.connect] is
+    // safe to call repeatedly and no-ops with nothing stored to auth with.
+    if (v) unawaited(realtimeClient.connect());
     notifyListeners();
   }
 
   void setLoginPasscodeSetup(bool v) {
     loginPasscodeSetup = v;
+    notifyListeners();
+  }
+
+  void setPendingSignupEmail(String? v) {
+    pendingSignupEmail = v;
     notifyListeners();
   }
 
@@ -354,8 +432,13 @@ class AppState extends ChangeNotifier {
   /// hydration path.
   Future<void> _resetSessionState() async {
     await _tokenStore.clearTokens();
+    // R-41: tear down the socket on every sign-out path (voluntary or
+    // forced) — a socket authenticated as this investor must not survive
+    // into a different investor's session on the same device.
+    realtimeClient.disconnect();
     signedIn = false;
     loginPasscodeSetup = false;
+    pendingSignupEmail = null;
     kycSubmitted = false;
     kycApproved = false;
     suitabilityComplete = false;

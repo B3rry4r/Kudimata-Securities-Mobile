@@ -1,0 +1,189 @@
+{
+  "batch": "trade-wallet",
+  "screens": [
+    {
+      "app_screen": "lib/screens/portfolio/holding_detail_screen.dart",
+      "purpose": "Per-holding position detail: hero market value + gain/loss, Shares/Average cost/Market price/Dividends received/Held-in-CSCS key-value card, 'Your orders in {ticker}' list (real Order rows filtered client-side), Sell/Buy-more footer.",
+      "route": "/portfolio/holding/:ticker (GoRoute, see lib/router/app_router.dart:275)",
+      "is_helper": false,
+      "covered_by": ["s34"],
+      "coverage_confidence": "likely",
+      "evidence": "Canvas 05 Portfolio and Wallet.dc.html, artboard s34 ('34 · One holding'): searched 'Your holding' -> found (s34 header 'MTNN / Your holding'); searched 'Worth today' -> found (s34 hero label, matches app's bare hero price treatment, no KBalancePanel on either). Searched 'Dividends received' (app's exact row label) -> NOT found in s34; canvas instead shows a one-off 'Dividend paid 12 Jul. ₦4,548 went to your wallet.' callout, a different presentation of the same fact. Searched 'Executing broker'/'Held in' -> NOT found in s34 at all; the app's CSCS/held-in row and (commented-out) broker row have no canvas counterpart. Canvas's 'Your trades' list shows only executed BUY trades (date+amount), not the app's real 'Your orders in {ticker}' list (all Order records incl. sells/pending/cancelled with status pills) -- a narrower, different data shape.",
+      "recommendation": "needs-ruling",
+      "why": "Strong purpose match (hero value, key/value card, Buy more/Sell footer all present in s34) but the orders-list and dividends/held-in rows are structurally different data shapes, not just styling -- a straight reskin would silently drop 'Held in CSCS' and change 'your orders' (live order records) into 'your trades' (historical fills only)."
+    },
+    {
+      "app_screen": "lib/screens/portfolio/order_status_screen.dart",
+      "purpose": "Lists the investor's buy/sell orders (Open/All filter), per-order StatusPill, cancels the oldest pending order (or a specific row's order) via PATCH /orders/:id/cancel.",
+      "route": "/orders (GoRoute Routes.orderStatus, lib/router/app_router.dart:263)",
+      "is_helper": false,
+      "covered_by": ["s41"],
+      "coverage_confidence": "likely",
+      "evidence": "Canvas 04 Buy and Sell.dc.html, artboard s41 ('Orders hub'): searched 'Orders' as screen title -> found (s41 header 'Orders'). Searched 'Filled so far' -> found inline in s41's order card (a 37%-filled progress bar + '40 of 109 shares'), a richer per-order progress affordance than app's plain StatusPill. Canvas uses a 3-way filter 'Open / Done / Cancelled' vs app's 2-way 'Open / All' segmented control. Canvas includes a 'Place a new order' CTA and a 'What these mean' In-queue-vs-Queued explainer block, neither present in the app. No visible per-row or bottom Cancel action appears anywhere in the s41 markup I read -- the app's real, live Cancel functionality (PATCH /orders/:id/cancel, both per-row and a bottom destructive button) has no drawn counterpart in this artboard.",
+      "recommendation": "needs-ruling",
+      "why": "Purpose and general shape match well (same order list, same StatusPill vocabulary), but the drawn artboard omits the Cancel action entirely, which is a real, live, wired feature (order_status_screen.dart's own 2026-08-24 history shows this was previously reported broken/missing and fixed) -- shipping s41 as drawn would silently strand that capability unless a human confirms Cancel belongs somewhere off-canvas (e.g. inside the order-detail push this hub implies but doesn't draw)."
+    },
+    {
+      "app_screen": "lib/screens/portfolio/portfolio_screen.dart",
+      "purpose": "Portfolio tab root: total value + all-time return, allocation visualization + legend, holdings-concentration digest, holdings list.",
+      "route": "/portfolio (tab root, lib/router/app_router.dart:391)",
+      "is_helper": false,
+      "covered_by": ["s33"],
+      "coverage_confidence": "likely",
+      "evidence": "Canvas 05 Portfolio and Wallet.dc.html, artboard s33 ('33 · Portfolio'): searched 'Portfolio' title -> found. Searched app's exact digest wording 'Heavy on two names' / 'a concentrated portfolio' -> NOT found anywhere in s33; canvas's digest is a static prompt card ('Is my portfolio healthy? A plain reading of your spread and risk.'), not the app's real deterministic two-largest-slice narrative (_ConcentrationDigest). Searched for a donut/pie shape -> NOT present; s33 renders allocation as a flat SEGMENTED BAR with a Telecoms/Banking/Industrials/Consumer sector legend, whereas the app's real KAllocationDonut + legend groups by NGX/Cash asset class (per this file's own header comment) fed from PortfolioSummary.allocation.",
+      "recommendation": "needs-ruling",
+      "why": "This is clearly the intended redesign of the live portfolio tab (balance figure, holdings list, digest card all present) but the allocation chart's TYPE (donut -> bar) and DIMENSION (asset-class -> sector) is a data-model mismatch, not a visual one -- the backend's real PortfolioAllocationSlice data may not carry sector classification at all, so adopting s33 verbatim could require new backend work, not just a UI rebuild."
+    },
+    {
+      "app_screen": "lib/screens/trade/order_fill_progress_screen.dart",
+      "purpose": "Dedicated part-fill progress screen (spec screen 80): fill timeline, progress bar, 'See the contract notes' + 'Cancel the unfilled X' actions. Built UI-ready but explicitly not wired to any route.",
+      "route": "UNROUTED (no GoRoute or call site anywhere in lib/router; confirmed via grep for OrderFillProgressScreen across lib/router/*.dart -- zero matches)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched all *.dc.html in docs/design/redesign-2026-08 for 'still on the market' -> 0 matches. Searched for 'Cancel the unfilled' -> 0 matches. Searched for 'Part-filled' (the status pill label) -> 0 matches. The only related canvas content is s41's inline 'Filled so far' progress bar inside an order-list row (see order_status_screen.dart's entry above) -- a lightweight hub affordance, not a dedicated screen matching this file's fill-timeline/contract-notes/cancel-unfilled design.",
+      "recommendation": "no-action",
+      "why": "This app screen is dead code by its own header comment (UI-ready, not wired into any real navigation path; no partial-fill data model exists anywhere in this app's Order/Txn types), and the new canvas does not design a dedicated equivalent either -- only a much lighter inline progress bar inside the Orders hub. Nothing live is at risk of being stranded; a redesign task only becomes relevant if/when the backend gains real partial-fill data."
+    },
+    {
+      "app_screen": "lib/screens/trade/price_moved_screen.dart",
+      "purpose": "Dedicated 'price moved above your limit at market open' decision screen (spec screen 62): Buy at open / Raise my limit / Cancel and return the money. Built UI-ready but explicitly not wired to any route (needs a push notification / queued-order-detection trigger this client doesn't have).",
+      "route": "UNROUTED (no GoRoute or call site anywhere in lib/router; confirmed via grep for PriceMovedScreen across lib/router/*.dart -- zero matches)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched all *.dc.html for 'opened above' -> 0 matches. Searched for 'NEEDS YOUR DECISION' -> 0 matches. Directly inspected s39 (03 Home and Markets.dc.html, 'Market closed' asset-detail banner) and s40 ('Queued order, and cancelling it') -- neither models the 'it opened above your limit, decide now' branch; s40 only shows the still-waiting state ('Waiting for the market to open').",
+      "recommendation": "no-action",
+      "why": "Dead code (unrouted, no trigger mechanism exists) and no canvas artboard designs this specific post-open decision scenario either -- nothing live is at risk, and there is no artboard to redesign toward."
+    },
+    {
+      "app_screen": "lib/screens/trade/trade_flows.dart#buy_market",
+      "purpose": "LIVE buy flow (market order, market open): amount sheet (naira/shares toggle, quick-amount chips, 1.35% fee) -> review sheet (risk checkbox, 'Place order') -> KMilestoneSheet success/placed screen. Wired to POST /orders via OrderPlacementRepository.",
+      "route": "UNROUTED as a named route -- launched via showBuyFlow(context, asset) from asset-detail / holding-detail screens; success step pushes a bespoke MaterialPageRoute (_OrderPlacedScreen), not a go_router route.",
+      "is_helper": false,
+      "covered_by": ["s42", "s43m", "s29m", "s30"],
+      "coverage_confidence": "likely",
+      "evidence": "Canvas 04 Buy and Sell.dc.html: searched 'Market buy' -> found in s29m's 'Order type' row, matching the app's own 'Order type: Market' row. Searched 'Buy MTNN' -> found as s43m's header. Structural differences found: s42 is a dedicated 'How to buy' CHOICE screen (buy-now vs name-your-price) that the app has no equivalent of (app always defaults straight to a market order when the market is open); s43m is a shares-ONLY stepper input with no naira/shares toggle and no ₦5,000/₦50,000/₦100,000/Max quick-amount chips (all present in the app's real _AmountSheet); s29m's review adds an expandable 'Estimated commission' row and a 'Best price now' line the app doesn't show; s30 is a dedicated PIN-entry step between review and success that the app's real flow has no equivalent of (the app only has an 'I understand the risks' checkbox, no passcode/PIN gate on order placement).",
+      "recommendation": "needs-ruling",
+      "why": "Live, core, revenue-path flow. The redesign introduces a NEW security step (per-order PIN) the current implementation doesn't have anywhere, and reshapes amount entry from toggle+chips to a bare stepper -- both are product/security decisions, not just visual restyling, and need a human call before building against this artboard set."
+    },
+    {
+      "app_screen": "lib/screens/trade/trade_flows.dart#buy_market_closed",
+      "purpose": "LIVE buy-when-NGX-closed queuing sheet (_MarketClosedBuySheet): combined Amount + Limit-price entry in one sheet, 'Queue for 10:00' button, places a real limit order (POST /orders) that sits pending until the broker adapter fills it.",
+      "route": "UNROUTED -- shown automatically by showBuyFlow(context, asset) when AppScope.marketOpen is false, in place of the normal amount sheet.",
+      "is_helper": false,
+      "covered_by": ["s40"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched 'Waiting for the market to open' -> found in s40. Searched 'releases it back to your wallet' -> found in s40 ('Cancelling releases it back to your wallet straight away'), closely matching the app's own '...returns to your wallet if nothing fills' wording. However s40 is a POST-PLACEMENT STATUS view (reached only via s39's 'Queue a buy' button, which navigates straight to s40 with no intervening form); I could not find any canvas artboard showing an editable Amount + Limit-price ENTRY FORM for this state anywhere in '03 Home and Markets.dc.html' or '04 Buy and Sell.dc.html' -- the closest thing is s29c ('Market closed sheet, over the review'), which is a read-only interstitial ('The market is closed right now... Continue') shown AFTER the normal multi-step review, not a combined amount+price input sheet.",
+      "recommendation": "needs-ruling",
+      "why": "Live, real, wired flow. The canvas covers the resulting queued-order STATUS state (s40) but not the actual entry form the app uses today; it's unclear whether the redesign intends this case to reuse the full normal 'name your price' flow (s42->s43->s29->s29c interstitial) instead of a single combined sheet -- a human needs to pick the intended shape before rebuilding."
+    },
+    {
+      "app_screen": "lib/screens/trade/trade_flows.dart#sell",
+      "purpose": "LIVE dedicated sell flow (spec screens 77-79): amount (shares/naira) + destination (wallet only -- bank option shown but disabled, real backend gap) -> review (gain/loss note, 1.35% fee) -> confirm -> SalePlacedScreen (T+3 settle, real order reference). Wired to POST /orders.",
+      "route": "UNROUTED -- launched via showSellFlow(context, asset) from asset-detail / holding-detail screens; placed step pushes a bespoke MaterialPageRoute (SalePlacedScreen).",
+      "is_helper": false,
+      "covered_by": ["s45", "s46", "s47", "s48", "s46m", "s48m", "s30"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched 'Where the money goes' -> found in s48 (a real, enabled destination selector: 'First Bank ...6835' pre-selected with a checkmark, 'My Kudimata wallet' as the unselected alternative). Searched 'Fees and stamp duty' -> found verbatim in s48, matching the app's own 'Fees · 1.35%' concept. Real conflict found: the canvas PRE-SELECTS a bank-account destination for sell proceeds, while the app's own header comment documents that this is impossible today -- 'OrdersService.applyWalletSideEffect credits the wallet for EVERY sell regardless of destination right now'; the app therefore hard-disables the bank row and always defaults to wallet.",
+      "recommendation": "needs-ruling",
+      "why": "Live, core, wired flow with strong structural coverage (how-to-sell choice, price/shares steps, review, PIN, placed screen all present across s45-s48/s46m/s48m), but the canvas's default destination selection (bank) actively conflicts with a documented, current backend limitation (sell proceeds can only ever land in the wallet) -- shipping the artboard as drawn would either need backend work first, or the default flipped to match reality."
+    },
+    {
+      "app_screen": "lib/screens/wallet/wallet_flows.dart#add_money",
+      "purpose": "LIVE Add Money flow: chooser (bank transfer vs card) -> bank-transfer sheet (dedicated virtual account number, Free fee, copy/share) OR card sheet (Flutterwave hosted checkout link, external browser handoff).",
+      "route": "UNROUTED -- launched via showAddMoneyFlow(context) from the Wallet screen.",
+      "is_helper": false,
+      "covered_by": ["s36"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched 'How do you want to pay?' -> found in s36 (matches the app's chooser step). Searched 'Transfer to this account' -> found in s36, matching the app's virtual-account display. Real numeric conflict found: s36's own chooser subtitles state 'Bank transfer, ₦100 to ₦150 · same day' and 'Debit card, Flutterwave · ₦28 fee, instant', whereas the app's real _AddMoneySheet explicitly states 'Transfer fee: Free' (a genuine fact about the Flutterwave v4 Virtual Account per WalletRepository.virtualAccount's own doc comment), and the app's card sheet shows no specific fee figure at all.",
+      "recommendation": "needs-ruling",
+      "why": "Live, wired, money-movement flow. The canvas asserts specific priced fees that contradict the app's real 'Free' bank-transfer fact and introduce an unverified ₦28 card fee -- the same class of 'don't fabricate a business fact' concern this codebase's own comments already flag elsewhere (e.g. the 'Blue Marina' co-branding gap), so a human needs to confirm real fee figures before this copy ships."
+    },
+    {
+      "app_screen": "lib/screens/wallet/wallet_flows.dart#withdraw",
+      "purpose": "LIVE Withdraw flow (normal hours, ~09:00-21:00 weekdays): amount + destination (fixed to primary/first saved bank account) -> review (Fee ₦0.00, arrives within 1 business day, passcode-gated confirm) -> success.",
+      "route": "UNROUTED -- launched via showWithdrawFlow(context) from the Wallet screen; selects this variant when _isOutsideWithdrawHours() is false.",
+      "is_helper": false,
+      "covered_by": ["s37", "s30"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched 'How much do you want out?' -> found in s37. Searched 'Withdrawal fee' + 'Free' -> found together in s37 ('Withdrawal fee / Free'), consistent with the app's real ₦0.00 fact (no fee concept exists anywhere in the backend's Transaction model, per this file's own comment) -- unlike the Add Money fee conflict above, this one agrees. s37's footer note references 'Withdraw -> PIN (Section 4, screen 30)', lining up with the app's real 2026-08-24 passcode-confirmation gate (confirmPasscode() before repo.withdraw()).",
+      "recommendation": "redesign-to-artboard",
+      "why": "Strong content and behavioral match: fee facts agree, arrival-time copy agrees, and both the live app and the new canvas independently converged on a security-confirmation step (passcode vs PIN) before money leaves the wallet. Safe to rebuild against s37 + the shared s30 PIN screen."
+    },
+    {
+      "app_screen": "lib/screens/wallet/wallet_flows.dart#withdraw_outside_hours",
+      "purpose": "LIVE 'queued withdrawal' variant (spec screen 63) shown outside ~09:00-21:00 weekdays or on weekends: same real withdraw() call, honest 'within 1 business day' copy (deliberately not spec 63's literal 'Tomorrow from 09:00', since no server-side queuing/scheduling exists), pushes straight to the real transaction-detail screen on success.",
+      "route": "UNROUTED -- launched via showWithdrawFlow(context) from the Wallet screen; selects this variant when _isOutsideWithdrawHours() is true.",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched all *.dc.html for 'Queued for morning' (the app's own status-pill label for this state) -> 0 matches. Searched for 'Queue it for 09:00' (the app's own button label) -> 0 matches. Confirmed no alternate-state artboard exists for the withdraw screen: '05 Portfolio and Wallet.dc.html' contains only s37/s37d (no s37b/s37p/etc variant ids), unlike other flows in this canvas that do carry b/c/m state-variant ids.",
+      "recommendation": "needs-ruling",
+      "why": "This is a LIVE, currently-reachable state -- any withdrawal attempt outside roughly 9am-9pm on a weekday, or any time on a weekend, hits this exact variant -- with zero design counterpart in the new canvas. Shipping only s37's single always-open-hours shape would silently drop a real, frequently-hit UX branch (evenings and weekends); a human needs to decide whether the redesign should gain this variant or whether the product should simplify the distinction away."
+    },
+    {
+      "app_screen": "lib/screens/wallet/wallet_screens.dart#wallet_home",
+      "purpose": "Wallet tab root: available balance (naira), Add money / Withdraw buttons, recent transactions list, 'Orders' shortcut link, pending-balance-aware helper copy.",
+      "route": "/wallet (tab root, lib/router/app_router.dart:397)",
+      "is_helper": false,
+      "covered_by": ["s35"],
+      "coverage_confidence": "certain",
+      "evidence": "Searched 'Cash available' -> found in s35, matching the purpose of the app's own 'Available to invest' balance panel. Searched for the 'Add money' / 'Withdraw' button PAIR together -> found in s35 in the same row, exactly matching the app's real button row and their showAddMoneyFlow/showWithdrawFlow targets. Only differences found are copy-level: canvas's balance card adds a trust line ('Held with our custodian, never lent out') the app doesn't currently show, and canvas labels the section 'Cash available' vs the app's 'Available to invest'.",
+      "recommendation": "redesign-to-artboard",
+      "why": "Direct structural and purpose match with only copy-level differences -- a straightforward rebuild against s35."
+    },
+    {
+      "app_screen": "lib/screens/wallet/wallet_screens.dart#transaction_detail",
+      "purpose": "Pushed per-transaction detail: hero amount, status pill, Reference/Requested/Fee/Settlement rows, 'Get receipt' (real endpoint, known backend stub) and 'Back to wallet'.",
+      "route": "/wallet/txn/:id (GoRoute, lib/router/app_router.dart:279)",
+      "is_helper": false,
+      "covered_by": ["s38"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched 'Reference' as a row label -> found in s38 ('Reference · KD-4471902'), matching the app's own 'Reference' row. Searched 'Fees, all in' -> found in s38 ('Fees, all in ₦93.50'), which directly conflicts with the app's real 'Fee' row, explicitly documented as always '₦0.00' ('no fee concept exists anywhere in this backend's Transaction model'). Also found s38's 'Executed by Blue Marina Securities Ltd, NGX dealing member, on behalf of Kudimata Securities' co-branding line -- the same fabricated-partner-relationship this app's own holding_detail_screen.dart comment already explicitly declined to build ('Blue Marina is the canvas's own placeholder co-branding, not a real integrated partner relationship this backend models').",
+      "recommendation": "needs-ruling",
+      "why": "Purpose and row shape match well, but two real content conflicts need a human decision before this ships: a nonzero fee line item the backend genuinely does not have, and a specific broker co-branding claim ('Blue Marina') this app's own prior work already identified as unverifiable/fabricated."
+    }
+  ],
+  "buy_sell_journey": {
+    "source": "04 Buy and Sell.dc.html (34 artboards -- the largest canvas file), read in on-page order",
+    "note": "The canvas's buy/sell paradigm is 'name your price' (limit order) FIRST, with 'buy now'/'sell now' (market order) as an explicit alternate branch chosen up front on a dedicated 'How to buy'/'How to sell' screen -- structurally different from the live app, where a market order is simply the unlabelled default and there is no such up-front choice screen.",
+    "ordered_sections": [
+      { "header": "Step 1 · How to buy", "artboards": ["s42", "s42d"] },
+      { "header": "Step 2 · Your price per share (naming your price)", "artboards": ["s43", "s43d"] },
+      { "header": "Step 3 · How many shares (naming your price)", "artboards": ["s43b", "s43bd"] },
+      { "header": "Step 4 · Review, naming your price", "artboards": ["s29", "s29d"] },
+      { "header": "Step 5 · Market closed sheet, over the review", "artboards": ["s29c", "s29cd"] },
+      { "header": "Step 3 (buy now) · How many shares", "artboards": ["s43m", "s43md"] },
+      { "header": "Step 4 (buy now) · Review", "artboards": ["s29m", "s29md"] },
+      { "header": "Step 6 · PIN, then order placed", "artboards": ["s30", "s30d"] },
+      { "header": "(unlabelled -- literal 's31' header text in the source, likely a placeholder left in the canvas)", "artboards": ["s31", "s31d"] },
+      { "header": "Step 7 · Bought, at the real prices", "artboards": ["s44", "s44d"] },
+      { "header": "Orders hub · reached from the home quick actions", "artboards": ["s41", "s41d"] },
+      { "header": "Sell step 1 · How to sell", "artboards": ["s45", "s45d"] },
+      { "header": "Sell step 2 · Your price per share", "artboards": ["s46", "s46d"] },
+      { "header": "Sell step 3 · How many shares (naming your price)", "artboards": ["s47", "s47d"] },
+      { "header": "Sell step 4 · Review the sale", "artboards": ["s48", "s48d"] },
+      { "header": "Sell step 3 (sell now) · How many shares", "artboards": ["s46m", "s46md"] },
+      { "header": "Sell step 4 (sell now) · Review", "artboards": ["s48m", "s48md"] }
+    ]
+  },
+  "dead_flows": [
+    {
+      "flow": "lib/screens/trade/order_fill_progress_screen.dart (whole screen, spec screen 80)",
+      "evidence": "File header: 'UI-ready, NOT wired into any real navigation path... no partial-fill DATA exists anywhere in this app's model.' Confirmed no call site in lib/router/*.dart (grep for OrderFillProgressScreen: zero matches)."
+    },
+    {
+      "flow": "lib/screens/trade/price_moved_screen.dart (whole screen, spec screen 62)",
+      "evidence": "File header: 'UI-ready, NOT wired into a route... reaching it for real needs an event this mobile client has no way to receive yet.' Confirmed no call site in lib/router/*.dart (grep for PriceMovedScreen: zero matches)."
+    },
+    {
+      "flow": "lib/screens/trade/trade_flows.dart -- the shared _AmountSheet/_ReviewSheet/_OrderPlacedScreen's `_Side.sell` branches (the pre-77-79 generic sell path)",
+      "evidence": "File header, 2026-08-23 pass: 'The `_Side.sell` branches left in the shared sheets below are dead code as of this pass (nothing calls them with `side: _Side.sell` anymore) -- kept rather than stripped to limit the size of this diff.' Confirmed: showSellFlow() calls _runSellFlow() (the dedicated 77-79 implementation), never _runTradeFlow(..., side: _Side.sell); showBuyFlow() is the only caller of _runTradeFlow and always passes side: _Side.buy."
+    },
+    {
+      "flow": "lib/screens/wallet/wallet_screens.dart -- TxnType.convert handling in _TxnRow (icon/color switch cases)",
+      "evidence": "File header: 'NGX-only: no USD wallet / Convert flow in the UI (HIDE phase -- TxnType.convert stays as dead code below).' The enum case is handled defensively in _icon/_iconColors but the backend has no way to actually produce a convert-type Txn for an NGX-only product; wallet_flows.dart's own header separately confirms 'the Convert (₦ -> $) flow was removed.'"
+    }
+  ]
+}

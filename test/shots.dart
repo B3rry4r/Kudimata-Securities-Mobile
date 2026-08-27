@@ -1,8 +1,11 @@
 // Screenshot harness (run by path, not part of CI):
 //   flutter test test/shots.dart
 // Renders the real app (router) across key screens to /tmp/shots/<name>.png
-// so we can visually verify the design. Light-only (2026-08-22 "Soft
-// Landing" redesign removed dark mode — see main.dart's header comment).
+// so we can visually verify the design. Every capture below still renders
+// light (KTheme.light()/KPalette.light, the default `mode` on `_mount`) —
+// R-13's dark palette (docs/redesign/DECISIONS.md) is exercised by the
+// 'capture dark mode' test at the bottom of this file instead of switching
+// every existing capture over.
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -29,7 +32,8 @@ const _routes = <String, String>{
   'home': '/home',
   'markets': '/markets',
   'asset_detail': '/asset/MTNN',
-  'watchlist': '/watchlist',
+  // watchlist_screen.dart dropped (D-2, SHARED-CHANGES.md 2026-08-27
+  // removals pass, R-16) — no route to capture here any more.
   'notifications': '/notifications',
   'search': '/search',
   'portfolio': '/portfolio',
@@ -114,7 +118,14 @@ void _mockPlatformChannels() {
 
 typedef _Mounted = ({AppState state, GoRouter router, GlobalKey key});
 
-Future<_Mounted> _mount(WidgetTester tester) async {
+/// [mode] defaults to [ThemeMode.light] — every existing caller below relied
+/// on the old light-only `MaterialApp.router(theme: KTheme.light())` (no
+/// `darkTheme`/`themeMode` at all), so this keeps their captures unchanged
+/// rather than switching them onto `ThemeMode.system` (whose resolved
+/// brightness would depend on the test environment's platform brightness,
+/// making those captures non-deterministic). Pass [ThemeMode.dark] to render
+/// against KPalette.dark instead — see 'capture dark mode' below.
+Future<_Mounted> _mount(WidgetTester tester, {ThemeMode mode = ThemeMode.light}) async {
   // screen-specs.md: "Screens 01–66 are 390×880 phone frames." None of these
   // harnesses were setting this — every capture rendered at flutter_test's
   // default ~800×600 desktop-shaped surface instead, which understates
@@ -126,7 +137,7 @@ Future<_Mounted> _mount(WidgetTester tester) async {
   tester.view.devicePixelRatio = 3.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  KColor.active = KPalette.light;
+  KColor.active = mode == ThemeMode.dark ? KPalette.dark : KPalette.light;
   final apiClient = ApiClient();
   // Without this, every API-backed screen just renders its generic
   // KErrorView — Flutter's test binding synthesizes a bare 400 for any real
@@ -153,6 +164,8 @@ Future<_Mounted> _mount(WidgetTester tester) async {
         child: MaterialApp.router(
           debugShowCheckedModeBanner: false,
           theme: KTheme.light(),
+          darkTheme: KTheme.dark(),
+          themeMode: mode,
           routerConfig: router,
         ),
       ),
@@ -306,5 +319,30 @@ void main() {
     await _capture(tester, key, '/tmp/shots/withdraw.png');
 
     mounted.state.dispose();
+  });
+
+  // R-13 (docs/redesign/DECISIONS.md): one screen, both themes, in the same
+  // harness the rest of this file already uses — Home, since that's the
+  // screen this app's dark work was verified against (canvas #s22d).
+  testWidgets('capture dark mode', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    Directory('/tmp/shots').createSync(recursive: true);
+
+    final light = await _mount(tester);
+    light.router.go('/home');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump(const Duration(milliseconds: 350));
+    await _capture(tester, light.key, '/tmp/shots/home_light.png');
+    light.state.dispose();
+
+    final dark = await _mount(tester, mode: ThemeMode.dark);
+    dark.router.go('/home');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump(const Duration(milliseconds: 350));
+    await _capture(tester, dark.key, '/tmp/shots/home_dark.png');
+    dark.state.dispose();
   });
 }

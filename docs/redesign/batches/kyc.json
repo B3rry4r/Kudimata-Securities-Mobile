@@ -1,0 +1,389 @@
+{
+  "batch": "kyc",
+  "screens": [
+    {
+      "app_screen": "lib/screens/kyc/_kyc_chrome.dart",
+      "mechanical_status": "proposed",
+      "candidate_artboards": [
+        {
+          "id": "s23",
+          "overlap": 0.667,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s07",
+          "overlap": 0.667,
+          "file": "01 Getting In.dc.html",
+          "label": "07 \u00b7 What happens next"
+        },
+        {
+          "id": "s48",
+          "overlap": 0.333,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Sell step 4 \u00b7 Review the sale"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/approved.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s23",
+          "overlap": 0.216,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s20",
+          "overlap": 0.196,
+          "file": "02 Verification.dc.html",
+          "label": "20 Under review 9:41 LTE You're done. We're reviewing Your NGX trading"
+        },
+        {
+          "id": "s07",
+          "overlap": 0.157,
+          "file": "01 Getting In.dc.html",
+          "label": "07 \u00b7 What happens next"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/bank_dcs_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s18",
+          "overlap": 0.235,
+          "file": "02 Verification.dc.html",
+          "label": "18 Bank account 9:41 LTE Step 4 of 5 Add your bank account Withdrawals"
+        },
+        {
+          "id": "s11",
+          "overlap": 0.137,
+          "file": "02 Verification.dc.html",
+          "label": "11 Checklist hub 9:41 LTE You're almost there 2 of 5 done. Next: take "
+        },
+        {
+          "id": "s55",
+          "overlap": 0.118,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/bvn_nin.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s07",
+          "overlap": 0.172,
+          "file": "01 Getting In.dc.html",
+          "label": "07 \u00b7 What happens next"
+        },
+        {
+          "id": "s58",
+          "overlap": 0.138,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.138,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/checking.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s15",
+          "overlap": 0.286,
+          "file": "02 Verification.dc.html",
+          "label": "15 Selfie check 9:41 LTE Fit your face in the oval Good light \u00b7 no cap"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.214,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s23",
+          "overlap": 0.143,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/chn_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s55",
+          "overlap": 0.132,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s58",
+          "overlap": 0.113,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s56",
+          "overlap": 0.113,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/declarations_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s53",
+          "overlap": 0.138,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s19",
+          "overlap": 0.138,
+          "file": "02 Verification.dc.html",
+          "label": "19 Two questions 9:41 LTE Step 5 of 5 Two quick questions The regulato"
+        },
+        {
+          "id": "s57",
+          "overlap": 0.123,
+          "file": "06 Account and Support.dc.html",
+          "label": "57 \u00b7 Data and privacy"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/id_upload.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s14",
+          "overlap": 0.278,
+          "file": "02 Verification.dc.html",
+          "label": "14 Your documents 9:41 LTE Step 2 of 5 Your documents Pick one ID to p"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.13,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s56",
+          "overlap": 0.111,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/kyc_form_state.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s23",
+          "overlap": 0.158,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s07",
+          "overlap": 0.158,
+          "file": "01 Getting In.dc.html",
+          "label": "07 \u00b7 What happens next"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.105,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/kyc_intro.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s07",
+          "overlap": 0.258,
+          "file": "01 Getting In.dc.html",
+          "label": "07 \u00b7 What happens next"
+        },
+        {
+          "id": "s11",
+          "overlap": 0.21,
+          "file": "02 Verification.dc.html",
+          "label": "11 Checklist hub 9:41 LTE You're almost there 2 of 5 done. Next: take "
+        },
+        {
+          "id": "s58",
+          "overlap": 0.177,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/liveness.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s53",
+          "overlap": 0.137,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s57",
+          "overlap": 0.118,
+          "file": "06 Account and Support.dc.html",
+          "label": "57 \u00b7 Data and privacy"
+        },
+        {
+          "id": "s15",
+          "overlap": 0.118,
+          "file": "02 Verification.dc.html",
+          "label": "15 Selfie check 9:41 LTE Fit your face in the oval Good light \u00b7 no cap"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/next_of_kin.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s58",
+          "overlap": 0.222,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s37",
+          "overlap": 0.139,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "37 \u00b7 Withdraw"
+        },
+        {
+          "id": "s13",
+          "overlap": 0.139,
+          "file": "02 Verification.dc.html",
+          "label": "13 Details from BVN 9:41 LTE Step 1 of 5 Is this you? From your BVN an"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/outcome_not_approved.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s58",
+          "overlap": 0.177,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s51",
+          "overlap": 0.127,
+          "file": "06 Account and Support.dc.html",
+          "label": "51 \u00b7 Account hub"
+        },
+        {
+          "id": "s23",
+          "overlap": 0.127,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/review_submit_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s53",
+          "overlap": 0.117,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s56",
+          "overlap": 0.074,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        },
+        {
+          "id": "s14",
+          "overlap": 0.074,
+          "file": "02 Verification.dc.html",
+          "label": "14 Your documents 9:41 LTE Step 2 of 5 Your documents Pick one ID to p"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/submitted.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s58",
+          "overlap": 0.2,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s23",
+          "overlap": 0.2,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s20",
+          "overlap": 0.2,
+          "file": "02 Verification.dc.html",
+          "label": "20 Under review 9:41 LTE You're done. We're reviewing Your NGX trading"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/kyc/utility_bill.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s53",
+          "overlap": 0.136,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s17",
+          "overlap": 0.114,
+          "file": "02 Verification.dc.html",
+          "label": "17 Address 9:41 LTE Step 2 of 5 Where do you live? A recent utility bi"
+        },
+        {
+          "id": "s14",
+          "overlap": 0.114,
+          "file": "02 Verification.dc.html",
+          "label": "14 Your documents 9:41 LTE Step 2 of 5 Your documents Pick one ID to p"
+        }
+      ]
+    }
+  ]
+}

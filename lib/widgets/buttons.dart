@@ -20,6 +20,7 @@ class KButton extends StatefulWidget {
     this.loading = false,
     this.iconLeft,
     this.iconRight,
+    this.ghostBorder = false,
   });
 
   final String label;
@@ -30,6 +31,13 @@ class KButton extends StatefulWidget {
   final bool loading;
   final String? iconLeft;
   final String? iconRight;
+
+  /// Draws a hairline outline around the `ghost` variant, which otherwise
+  /// renders borderless. Defaults to `false` — every existing call site
+  /// keeps today's borderless look. `s21d` (dark "Approved") draws its ghost
+  /// CTA outlined while `s21` (light) leaves it bare — see
+  /// SHARED-CHANGES.md S-5. Ignored for every other variant.
+  final bool ghostBorder;
 
   bool get _disabled => onPressed == null;
 
@@ -79,6 +87,7 @@ class _KButtonState extends State<KButton> {
       case KButtonVariant.ghost:
         bg = _pressed && !blocked ? KColor.bg : const Color(0x00000000);
         fg = disabled ? KColor.ink3 : KColor.ink;
+        if (widget.ghostBorder) border = KColor.ink.withValues(alpha: 0.25);
         break;
       case KButtonVariant.warm:
         // Celebration/personality only — never gain/loss, never an error. Screens
@@ -152,7 +161,8 @@ class _KButtonState extends State<KButton> {
             borderRadius: KRadii.buttonR,
             border: Border.all(
               color: widget.variant == KButtonVariant.secondary ||
-                      widget.variant == KButtonVariant.destructive
+                      widget.variant == KButtonVariant.destructive ||
+                      (widget.variant == KButtonVariant.ghost && widget.ghostBorder)
                   ? border
                   : const Color(0x00000000),
               width: 1,

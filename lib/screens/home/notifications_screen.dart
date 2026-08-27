@@ -1,19 +1,42 @@
 // Notifications feed (pushed) — NotificationsRepository in a hairline card.
-// Ported from extra-screens.jsx `NotificationsFeed`. Pushed screen: own Scaffold
-// with KDetailHeader (back chevron, no tab bar).
+//
+// R-25 (docs/redesign/DECISIONS.md): "Kept, restyled." No artboard anywhere
+// in the redesign-2026-08 canvas covers this screen — R-5 correction
+// 2026-08-27: this file used to cite "#s47"/"#s48" for its row-tap and
+// settings-gear destinations, ids from the OLD 97-screen canvas that in the
+// current 56-artboard canvas point at unrelated screens (Buy/Sell). There is
+// no real replacement id, so those citations are removed rather than
+// re-pointed. Layout/structure below are this screen's own, restyled onto
+// the current tokens/component idiom (KDetailHeader, KEyebrow, KCard,
+// KIcon-badge rows) to match already-rebuilt screens
+// (account_screen.dart, statements_screen.dart) rather than inventing a
+// parallel interpretation.
+//
+// Pushed screen: own Scaffold with KDetailHeader (back chevron, no tab bar).
 //
 // Wired per lib/data/api/README.md's FutureBuilder convention. Tap a row to
 // mark it read (optimistic update, PATCH /notifications/:id/read) AND
-// navigate to whatever the row is about — the canvas (#s47) is explicit:
-// "every row opens the thing it is about · security items go straight to
-// 51". KDetailHeader DOES carry a trailing-action slot (added generically
-// for spec screen 80's status pill, see its own doc comment) — the header's
-// settings gear (nav to Account → Notifications) and the bottom "Choose
-// what we notify you about" ghost button both use it, wired to the same
-// Routes.acctNotifications destination the canvas points at (#s48).
+// navigate to whatever the row is about — every row opens the thing it is
+// about (security items go to the security-alert screen, markets items to
+// order status, wallet/dividend items to the tab they landed in, an
+// account-live check to Home). KDetailHeader's trailing-action slot carries
+// the header's settings gear (nav to Account → Notifications) and the
+// bottom "Choose what we notify you about" ghost button reuses the same
+// slot pattern, both wired to Routes.acctNotifications.
+//
+// R-41 (docs/redesign/DECISIONS.md): also wired to `notification:new`
+// (RealtimeClient.notifications) — each decoded Notification is prepended
+// straight onto [_NotificationsScreenState._items], with NO network call
+// on receipt. On reconnect after a drop (RealtimeClient.reconnected), this
+// refetches ONCE via the same [_load]/NotificationsRepository.list() this
+// screen already uses for its first load — the one legitimate fetch in
+// this path.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/realtime/realtime_client.dart';
 import 'package:kudimata_invest/data/repositories/notifications_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -31,7 +54,47 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   late final _repo = NotificationsRepository(AppScope.read(context).apiClient);
-  late Future<List<NotificationItem>> _future = _repo.list();
+  late final RealtimeClient _realtime = AppScope.read(context).realtimeClient;
+  late Future<List<NotificationItem>> _future = _load();
+
+  /// The freshest known list — same override pattern as
+  /// order_status_screen.dart/wallet_screens.dart. Once loaded, this (not
+  /// the FutureBuilder's own snapshot) is what's rendered and what
+  /// [_markRead] mutates.
+  List<NotificationItem>? _items;
+
+  StreamSubscription<Map<String, dynamic>>? _notificationSub;
+  StreamSubscription<void>? _reconnectSub;
+
+  Future<List<NotificationItem>> _load() async {
+    final items = await _repo.list();
+    if (mounted) setState(() => _items = items);
+    return items;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationSub = _realtime.notifications.listen(_onNotification);
+    _reconnectSub = _realtime.reconnected.listen((_) => _load());
+  }
+
+  /// Applies a decoded `notification:new` payload directly — prepends it
+  /// to [_items] via NotificationsRepository.notificationFromJson (reusing
+  /// [NotificationsRepository]'s own parser, not a second one). No network
+  /// call.
+  void _onNotification(Map<String, dynamic> json) {
+    if (!mounted) return;
+    final item = NotificationsRepository.notificationFromJson(json);
+    setState(() => _items = [item, ...(_items ?? const <NotificationItem>[])]);
+  }
+
+  @override
+  void dispose() {
+    _notificationSub?.cancel();
+    _reconnectSub?.cancel();
+    super.dispose();
+  }
 
   Future<void> _markRead(int index, List<NotificationItem> items) async {
     final item = items[index];
@@ -46,11 +109,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  /// Canvas mapping (#s47): shield → security alert (51), markets (order
-  /// filled) → Orders, wallet/arrowDown (money in / dividend) → the tab it
-  /// landed in, check (account live) → Home. AppNotification carries no
-  /// ticker/order id to deep-link to the exact record, so this routes to
-  /// the screen the row is ABOUT, same as every other icon-typed row here.
+  /// Icon-to-destination mapping (R-25, no artboard): shield → security
+  /// alert, markets (order filled) → Orders, wallet/arrowDown (money in /
+  /// dividend) → the tab it landed in, check (account live) → Home.
+  /// AppNotification carries no ticker/order id to deep-link to the exact
+  /// record, so this routes to the screen the row is ABOUT, same as every
+  /// other icon-typed row here.
   void _open(String icon) {
     switch (icon) {
       case 'shield':
@@ -86,15 +150,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: FutureBuilder<List<NotificationItem>>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const KLoadingView();
+          // Prefer the freshest known list (kept live by notification:new,
+          // see file header) over the FutureBuilder's own snapshot — same
+          // pattern order_status_screen.dart/wallet_screens.dart use.
+          final effective = _items ?? snapshot.data;
+          if (effective == null) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const KLoadingView();
+            }
+            if (snapshot.hasError) {
+              return KErrorView(
+                onPrimary: () => setState(() => _future = _load()),
+              );
+            }
           }
-          if (snapshot.hasError) {
-            return KErrorView(
-              onPrimary: () => setState(() => _future = _repo.list()),
-            );
-          }
-          final items = snapshot.data!;
+          final items = effective!;
           if (items.isEmpty) {
             return const KEmptyView(
               icon: 'bell',
@@ -120,8 +190,8 @@ class _NotificationsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Canvas (#s47): two date-grouped sections, "Today" and "Earlier",
-    // each its own eyebrow + hairline card — not one undivided list.
+    // Two date-grouped sections, "Today" and "Earlier", each its own
+    // eyebrow + hairline card — not one undivided list.
     final now = DateTime.now();
     bool isToday(NotificationItem item) {
       final c = item.createdAt?.toLocal();
@@ -254,11 +324,11 @@ class _NotificationGroup extends StatelessWidget {
   }
 }
 
-/// Category-tinted 34px badge — screen-specs.md 47 / the canvas mockup's
-/// #s47 block colour each notification's icon by what it's about (security
-/// = loss-red, markets = indicator-grape, money-in/dividend = sun,
-/// verified/success = gain-green), not one flat neutral circle for every
-/// row (2026-08-23 exactness pass — the prior port dropped this).
+/// Category-tinted 34px badge — colours each notification's icon by what
+/// it's about (security = loss-red, markets = indicator-grape,
+/// money-in/dividend = sun, verified/success = gain-green), not one flat
+/// neutral circle for every row (2026-08-23 exactness pass — the prior port
+/// dropped this).
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.icon});
   final String icon;

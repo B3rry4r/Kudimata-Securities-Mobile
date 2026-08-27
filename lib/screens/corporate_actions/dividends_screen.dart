@@ -1,40 +1,66 @@
-// Dividends & e-mandate (screen 84, 2026-08-23 "Soft Landing"). Wired per
-// lib/data/api/README.md's FutureBuilder convention:
+// Dividends & e-mandate — R-24 (docs/redesign/DECISIONS.md): kept and
+// restyled onto the new tokens; no artboard of its own (R-5 correction,
+// 2026-08-27 — this file used to cite a stale "screen 84" id from an
+// earlier, now-superseded pass; the task brief is the only valid source
+// for an artboard id and it names none for this screen). Reached from the
+// s55 hub's "Recent" dividend rows and its e-mandate footer note.
+//
+// Wired per lib/data/api/README.md's FutureBuilder convention:
 // DividendRepository.summary() (GET /dividends/summary) replaces the
 // hardcoded `kDividendsPaidThisYearLabel`, DividendRepository.history()
 // (GET /dividends) replaces `kMockDividendHistory`, and
 // DividendRepository.mandate()/.signMandate() (GET /e-dividend-mandate/me,
 // POST /e-dividend-mandate/sign) replace the always-unsigned
 // "Sign the e-dividend mandate" button that used to just show a "not
-// available yet" snackbar. BankAccountsRepository.list() (already wired
-// elsewhere, GET /bank-accounts) supplies the real primary-account subtitle
-// instead of the old static "GTB ••••6789" fixture — reused here rather
-// than duplicated, same as wallet_repository.dart importing
-// BankAccountSummary from bank_accounts_repository.dart.
+// available yet" snackbar.
+//
+// R-34/stale-claim correction, 2026-08-27 — two things this screen used to
+// assert turned out false against the backend and are fixed here:
+//
+//   1. The money-card subtitle used to say "All by Direct Cash Settlement ·
+//      [bank] [masked]" whenever a primary bank account existed, joining in
+//      BankAccountsRepository for that subtitle alone. But
+//      DividendsService.declare() (Kudimata-Securities-Backend) only ever
+//      calls WalletBalanceService.adjustBalance() on `availableBalanceKobo`
+//      — a dividend lands in the in-app wallet, never an actual bank
+//      transfer. There is no DCS/bank-settlement step anywhere in this
+//      codebase for dividends. The claim was a promise nothing in the
+//      system keeps, same defect class as the "24-hour security hold" line
+//      DECISIONS.md's R-34 precedent removed — so it's gone, along with the
+//      now-unused BankAccountsRepository join. The card now says plainly
+//      that the payout is credited to the wallet, which is what actually
+//      happens and is true for every investor, not only ones with a
+//      primary bank on file.
+//   2. The warm "unclaimed" card used to add "Signing the e-dividend
+//      mandate once lets them pay everything to your bank" after
+//      explaining unclaimed dividends sit with the registrar.
+//      DividendsService.signMandate() only upserts an investor-attested
+//      `EDividendMandate` row (see dividend.types.ts's own doc comment: "no
+//      real share-registrar integration is contracted yet") — signing
+//      triggers no payout of anything. That second sentence is omitted
+//      (same "omit the claim, keep the surrounding element" resolution
+//      R-34 sets), leaving the first sentence — a real, verifiable
+//      NGX/SEC market-practice fact — and the Sign button, which still
+//      does something real: records the investor's attestation.
 //
 // IMPORTANT — the e-dividend mandate here is NOT the same thing as the
 // existing DCS mandate in bank_accounts_screen.dart, even though both are
 // called "the mandate" informally:
 //   - DCS mandate (bank_accounts_screen.dart, backed by the real
-//     `BankAccountSummary.primary` flag) routes CURRENT/FUTURE sale
-//     proceeds and dividends from the CSCS straight to a bank account, for
-//     shares already held through Kudimata.
+//     `BankAccountSummary.primary` flag) is a bank_accounts_screen.dart
+//     concept, out of this screen's own directory.
 //   - The e-dividend mandate this screen's warm card is about is a
 //     registrar-level mechanism (per NGX/SEC market practice — Datamax,
 //     Meristem, First Registrars etc.) for CLAIMING dividends that were
 //     declared BEFORE any e-mandate existed on those shares — money that
-//     sits unclaimed with a registrar, not with the CSCS, and isn't touched
-//     by signing a DCS mandate. s84.html's own copy makes this explicit:
-//     "Dividends from shares you held before an e-mandate existed sit with
-//     the registrar." There is still no registrar-integration entity
-//     anywhere in this codebase — DividendSummary.unclaimedKobo is
+//     sits unclaimed with a registrar. There is no registrar-integration
+//     entity anywhere in this codebase — DividendSummary.unclaimedKobo is
 //     genuinely `null` from the backend (dividend.types.ts's own doc
 //     comment), so that figure is rendered as "—", never fabricated.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
-import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart';
 import 'package:kudimata_invest/data/repositories/dividend_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
@@ -46,7 +72,6 @@ typedef _DividendsData = ({
   DividendSummary summary,
   List<Dividend> history,
   EDividendMandate mandate,
-  BankAccountSummary? primaryBank,
 });
 
 class DividendsScreen extends StatefulWidget {
@@ -58,7 +83,6 @@ class DividendsScreen extends StatefulWidget {
 
 class _DividendsScreenState extends State<DividendsScreen> {
   late final _repo = DividendRepository(AppScope.read(context).apiClient);
-  late final _bankRepo = BankAccountsRepository(AppScope.read(context).apiClient);
   late Future<_DividendsData> _future = _load();
 
   // Same "prefer the freshest loaded data over FutureBuilder's own
@@ -69,20 +93,12 @@ class _DividendsScreenState extends State<DividendsScreen> {
   bool _signing = false;
 
   Future<_DividendsData> _load() async {
-    final (summary, historyPage, mandate, banks) = await (
+    final (summary, historyPage, mandate) = await (
       _repo.summary(),
       _repo.history(),
       _repo.mandate(),
-      _bankRepo.list(),
     ).wait;
-    BankAccountSummary? primary;
-    for (final b in banks) {
-      if (b.primary) {
-        primary = b;
-        break;
-      }
-    }
-    return (summary: summary, history: historyPage.data, mandate: mandate, primaryBank: primary);
+    return (summary: summary, history: historyPage.data, mandate: mandate);
   }
 
   Future<void> _reload() async {
@@ -185,11 +201,13 @@ class _DividendsBody extends StatelessWidget {
                 ).tnum,
               ),
               const SizedBox(height: 4),
+              // Real and true for every investor, unlike the "All by Direct
+              // Cash Settlement · [bank]" claim this replaced — dividends
+              // land in the wallet balance (DividendsService.declare's own
+              // WalletBalanceService.adjustBalance call), never a bank
+              // transfer. See this file's header comment for the fix.
               Text(
-                data.primaryBank != null
-                    ? 'All by Direct Cash Settlement · ${data.primaryBank!.bankName} '
-                        '${data.primaryBank!.accountNumberMasked}'
-                    : 'No DCS mandate set up yet',
+                'Credited to your Kudimata wallet',
                 style: KType.data(color: KColor.featureInk2),
               ),
             ],
@@ -221,10 +239,15 @@ class _DividendsBody extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
+              // The second sentence this card used to carry — "Signing the
+              // e-dividend mandate once lets them pay everything to your
+              // bank" — is omitted: signMandate() only records an
+              // investor attestation (dividend.types.ts: "no real share-
+              // registrar integration is contracted yet"), so nothing pays
+              // out on signing. See this file's header comment.
               Text(
                 'Dividends from shares you held before an e-mandate existed sit with '
-                'the registrar. Signing the e-dividend mandate once lets them pay '
-                'everything to your bank.',
+                'the registrar.',
                 style: KType.data(color: KColor.ink2),
               ),
               const SizedBox(height: 10),

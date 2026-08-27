@@ -5,6 +5,14 @@
 // is about K* components; a local private row/scaffold widget used only
 // inside one feature folder is the established escape hatch — see
 // account_widgets.dart's own KAccountRow/KIconBubble/KAccountCard).
+//
+// R-5 correction (2026-08-27, docs/redesign/DECISIONS.md): this file used
+// to cite "#s82" for the fact-row shape — that id is stale (from an earlier,
+// now-superseded pass; the current, authoritative artboard for this
+// cluster is `06 Account and Support.dc.html#s55`, "55 · Corporate
+// actions" — the hub only. The three detail screens (rights issue, AGM,
+// dividends) have no artboard of their own — R-24 (DECISIONS.md): kept and
+// restyled onto the new tokens, behaviour unchanged.
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -35,8 +43,8 @@ class KCorpActionScaffold extends StatelessWidget {
 }
 
 /// One label/value row inside a hairline card — "Your entitlement · 80
-/// shares · 1 for 5" etc (#s82's fact table). [emphasis] renders the value
-/// in cardTitle weight for the one standout row ("Cost to take it all").
+/// shares · 1 for 5" etc. [emphasis] renders the value in cardTitle weight
+/// for the one standout row ("Cost to take it all").
 class KFactRow extends StatelessWidget {
   const KFactRow({
     super.key,
@@ -73,20 +81,62 @@ class KFactRow extends StatelessWidget {
   }
 }
 
-/// A tappable "needs a decision" card on the hub — the review-status rights
-/// issue / AGM cards in #s81.
-class KDecisionCard extends StatelessWidget {
-  const KDecisionCard({
+/// The circular icon/initials bubble s55 draws on every row — the green
+/// "ZB" ticker-initials mark on the spotlighted rights-issue card, and the
+/// smaller icon-in-a-tint bubbles on the "Recent" list. One widget, two
+/// content modes ([icon] xor [initials]), so both places share one shape.
+class KCorpAvatarBadge extends StatelessWidget {
+  const KCorpAvatarBadge({
     super.key,
-    required this.deadlineLabel,
+    this.icon,
+    this.initials,
+    required this.background,
+    required this.foreground,
+    this.size = 40,
+  }) : assert((icon == null) != (initials == null), 'pass exactly one of icon/initials');
+
+  final String? icon;
+  final String? initials;
+  final Color background;
+  final Color foreground;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+      child: icon != null
+          ? KIcon(icon!, size: size * 0.45, color: foreground)
+          : Text(
+              initials!,
+              style: KType.cardTitle(color: foreground).copyWith(fontSize: 12, height: 1.0),
+            ),
+    );
+  }
+}
+
+/// A tappable history/waiting row — badge + title + subtitle + trailing
+/// (chevron by default). Backs both s55's "Recent" list and the compact
+/// "Also waiting" rows for a second/third pending item the artboard's own
+/// single spotlighted card doesn't draw (see corporate_actions_screen.dart's
+/// report for why more than one can be pending at once).
+class KCorpActivityRow extends StatelessWidget {
+  const KCorpActivityRow({
+    super.key,
+    required this.badge,
     required this.title,
-    required this.body,
+    required this.subtitle,
+    this.trailing,
     this.onTap,
   });
 
-  final String deadlineLabel;
+  final Widget badge;
   final String title;
-  final String body;
+  final String subtitle;
+  final Widget? trailing;
   final VoidCallback? onTap;
 
   @override
@@ -95,29 +145,29 @@ class KDecisionCard extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: KColor.paper,
           border: Border.all(color: KColor.hairline, width: 1),
-          borderRadius: BorderRadius.circular(KRadii.card),
+          borderRadius: BorderRadius.circular(18),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
           children: [
-            Row(
-              children: [
-                const KStatusPill(status: KStatus.review, label: 'Needs you', small: true),
-                const SizedBox(width: 10),
-                Text(deadlineLabel.toUpperCase(),
-                    style: KType.micro(color: KColor.ink3)),
-              ],
+            badge,
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: KType.cardTitle().copyWith(fontSize: 15)),
+                  const SizedBox(height: 1),
+                  Text(subtitle, style: KType.data(color: KColor.ink3).copyWith(fontSize: 13)),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(title, style: KType.cardTitle()),
-            const SizedBox(height: 2),
-            Text(body, style: KType.data(color: KColor.ink2)),
+            const SizedBox(width: 8),
+            trailing ?? KIcon('chevronRight', size: 17, color: KColor.ink3),
           ],
         ),
       ),

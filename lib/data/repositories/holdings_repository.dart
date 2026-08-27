@@ -51,6 +51,7 @@ class PortfolioSummary {
     required this.changeTrend,
     required this.allocation,
     required this.chartSeries,
+    required this.allTimeReturnAmount,
   });
 
   final String totalValue; // e.g. "₦2,418,650.00"
@@ -58,6 +59,12 @@ class PortfolioSummary {
   final Trend changeTrend;
   final List<PortfolioAllocationSlice> allocation;
   final List<double> chartSeries; // feeds KLineChart, same shape as MockData.homeSeries
+
+  /// Amount-only all-time return, no percentage — e.g. "+₦12,540". Portfolio
+  /// screen #s33's money card shows this alone in its "all time" pill,
+  /// separately from the "N companies" pill; [change] (which bundles the %)
+  /// stays as-is for Home's BalancePanel, its other real caller.
+  final String allTimeReturnAmount;
 }
 
 class HoldingsRepository {
@@ -106,6 +113,7 @@ class HoldingsRepository {
         return PortfolioAllocationSlice(label: label, value: value);
       }).toList(),
       chartSeries: chartSeriesJson.map((e) => (e as num).toDouble()).toList(),
+      allTimeReturnAmount: _formatSignedNaira(allTimeReturnKobo),
     );
   }
 
@@ -163,6 +171,11 @@ class HoldingsRepository {
       totalReturn: _formatSignedNaira(totalReturnKobo),
       returnPct: _formatSignedPercent(returnPct),
       returnTrend: returnTrend,
+      // Raw kobo alongside the formatted string above — the Portfolio
+      // screen's by-sector allocation bar (ruling R-22) sums real position
+      // values across holdings and can't do that from a preformatted "₦x"
+      // string.
+      marketValueKobo: marketValueKobo,
     );
   }
 
@@ -183,6 +196,13 @@ class HoldingsRepository {
       trend: trend,
       assetClass: assetClass,
       logoColor: _colorFromHex(json['logoColor'] as String?),
+      // Real NGX sector classification (backend's Asset.sector — see
+      // models.dart's Asset.sector doc) — was dropped here even though
+      // asset_repository.dart's own _assetFromJson already reads it; this
+      // repository has its own copy (see file header) and needed the same
+      // fix for the by-sector allocation bar (ruling R-22) to have anything
+      // to group by.
+      sector: json['sector'] as String?,
     );
   }
 

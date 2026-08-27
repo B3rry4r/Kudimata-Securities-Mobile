@@ -1,0 +1,83 @@
+{
+  "repo": "Kudimata-Securities-Mobile",
+  "stack": "flutter",
+  "files": {
+    "source": [
+      "lib/**/*.dart",
+      "test/**/*.dart",
+      "integration_test/**/*.dart"
+    ],
+    "test": [
+      "test/**",
+      "integration_test/**"
+    ],
+    "exclude": [
+      "**/*.g.dart",
+      "**/*.freezed.dart",
+      "**/*.mocks.dart",
+      "build/**",
+      ".dart_tool/**"
+    ]
+  },
+  "gates": {
+    "deferrals": {
+      "enabled": true,
+      "include_tests": false
+    },
+    "fake_data": {
+      "enabled": true,
+      "allow_paths": []
+    },
+    "wire_types": {
+      "enabled": true,
+      "data_layer": [
+        "lib/data/**"
+      ]
+    },
+    "forks": {
+      "enabled": true,
+      "min_name_length": 4,
+      "ignore_names": [
+        "State",
+        "Result",
+        "Data",
+        "Item",
+        "Model",
+        "Args",
+        "Params"
+      ]
+    },
+    "hardcoded_signals": {
+      "enabled": true,
+      "token_layer": [
+        "lib/theme/**"
+      ],
+      "check_colors": true,
+      "allow_paths": []
+    },
+    "dead_controls": {
+      "enabled": true
+    },
+    "product_invariants": {
+      "enabled": true,
+      "banned": [
+        {
+          "pattern": "risk[ -]?profile|risk[ -]?score|risk (?:category|rating|classification)|investor profile|profiling",
+          "ruling": "R-2",
+          "why": "we are not profiling anyone. The suitability questionnaire stays; the classification it produced does not. See docs/redesign/DECISIONS.md"
+        }
+      ]
+    },
+    "pipeline_open_items": {
+      "enabled": true,
+      "require_pipeline": false,
+      "pipeline_dirs": [
+        ".pipeline",
+        "../Kudimata-Securities-Backend/.pipeline"
+      ]
+    },
+    "provisional": {
+      "enabled": true
+    }
+  }
+}

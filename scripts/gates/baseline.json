@@ -1,0 +1,12 @@
+{
+  "accepted": {
+    "967428e6c1db03ea": {
+      "gate": "hardcoded_signals",
+      "where": "lib/app/feature_flags.dart:17",
+      "message": "'kAiCreditsEnabled' - constant stands in for a runtime signal",
+      "evidence": "const bool kAiCreditsEnabled = false;",
+      "owner": "Excel",
+      "reason": "Deliberate compile-time toggle, not a fake runtime source (D-3, SHARED-CHANGES.md 2026-08-27 removals pass; R-6, docs/redesign/DECISIONS.md). R-6 explicitly asks for the AI-credits line to be parked behind ONE flag so it is reversible in a single edit -- there is no backend 'is this feature on' endpoint to read, and there should not be one for a product decision still pending. This is the intended shape of the flag, not a stand-in for a real source that was never wired up."
+    }
+  }
+}

@@ -1,0 +1,1239 @@
+{
+  "queue": [
+    {
+      "id": "01_splash",
+      "dartFile": "onboarding/splash_screen.dart",
+      "route": "/",
+      "artboard": "s01",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/01_splash__light.png",
+        "build/shots/01_splash__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding"
+    },
+    {
+      "id": "02_welcome",
+      "dartFile": "onboarding/welcome_slider_screen.dart",
+      "route": "/welcome",
+      "artboard": "s02",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/02_welcome__light.png",
+        "build/shots/02_welcome__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "artboard_all": [
+        "s02"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-14",
+      "ruling_instruction": "replaced by Landing Video Concept V3; V1 illustrated frame as interim"
+    },
+    {
+      "id": "03_signup",
+      "dartFile": "onboarding/sign_up_screen.dart",
+      "route": "/signup",
+      "artboard": "s03",
+      "bucket": "needs-ruling",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/03_signup__light.png",
+        "build/shots/03_signup__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "artboard_all": [
+        "s03",
+        "s03b",
+        "s03p"
+      ],
+      "artboard_source": "evidence"
+    },
+    {
+      "id": "04_otp",
+      "dartFile": "onboarding/otp_screen.dart",
+      "route": "/otp",
+      "artboard": "s04",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/04_otp__light.png",
+        "build/shots/04_otp__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding"
+    },
+    {
+      "id": "05_legal_bundle_preview",
+      "dartFile": "onboarding/legal_preview_screen.dart",
+      "route": "/legal-preview",
+      "artboard": "s03c",
+      "bucket": "needs-ruling",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/05_legal_bundle_preview__light.png",
+        "build/shots/05_legal_bundle_preview__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "artboard_all": [
+        "s03c"
+      ],
+      "artboard_source": "evidence"
+    },
+    {
+      "id": "06_legal_preview_kind",
+      "dartFile": "onboarding/legal_preview_screen.dart",
+      "route": "/legal-preview/terms_of_service",
+      "artboard": "s03c",
+      "bucket": "needs-ruling",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/06_legal_preview_kind__light.png",
+        "build/shots/06_legal_preview_kind__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "artboard_all": [
+        "s03c"
+      ],
+      "artboard_source": "evidence"
+    },
+    {
+      "id": "07_terms",
+      "dartFile": "suitability/terms_and_privacy_screen.dart",
+      "route": "/suitability/terms",
+      "artboard": "s03c/s03p (see legal_acceptance_screen.dart finding \u2014 same structural mismatch)",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/07_terms__light.png",
+        "build/shots/07_terms__dark.png"
+      ],
+      "stateTask": true,
+      "area": "suitability",
+      "artboard_all": [
+        "s03c/s03p (see legal_acceptance_screen.dart finding \u2014 same structural mismatch)"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-8",
+      "ruling_instruction": "4 documents; acceptance stays a dedicated post-OTP screen (R-11)"
+    },
+    {
+      "id": "08_passcode_create",
+      "dartFile": "onboarding/create_passcode_screen.dart",
+      "route": "/passcode/create",
+      "artboard": "s05",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/08_passcode_create__light.png",
+        "build/shots/08_passcode_create__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "artboard_all": [
+        "s05"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-11",
+      "ruling_instruction": "keep 6-digit + confirm; adopt the canvas LOOK only"
+    },
+    {
+      "id": "09_passcode_confirm",
+      "dartFile": "onboarding/confirm_passcode_screen.dart",
+      "route": "/passcode/confirm",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/09_passcode_confirm__light.png",
+        "build/shots/09_passcode_confirm__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "governing_ruling": "R-11",
+      "ruling_instruction": "keep 6-digit + confirm; adopt the canvas LOOK only"
+    },
+    {
+      "id": "10_biometric",
+      "dartFile": "onboarding/biometric_screen.dart",
+      "route": "/biometric",
+      "artboard": "s06",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/10_biometric__light.png",
+        "build/shots/10_biometric__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding"
+    },
+    {
+      "id": "11_document_summary",
+      "dartFile": "onboarding/document_summary_screen.dart",
+      "route": "/document-summary",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/11_document_summary__light.png",
+        "build/shots/11_document_summary__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "governing_ruling": "R-8",
+      "ruling_instruction": "superseded: documents open in the phone's file viewer"
+    },
+    {
+      "id": "12_onboarding_personal",
+      "dartFile": "onboarding/personal_details_screen.dart",
+      "route": "/onboarding/personal",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/12_onboarding_personal__light.png",
+        "build/shots/12_onboarding_personal__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "governing_ruling": "R-19",
+      "ruling_instruction": "BVN auto-populate + keep an address step (s17 pairs address with utility bill)"
+    },
+    {
+      "id": "13_onboarding_avatar",
+      "dartFile": "onboarding/avatar_screen.dart",
+      "route": "/onboarding/avatar",
+      "artboard": "s06b",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/13_onboarding_avatar__light.png",
+        "build/shots/13_onboarding_avatar__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding"
+    },
+    {
+      "id": "14_login",
+      "dartFile": "onboarding/log_in_screen.dart",
+      "route": "/login",
+      "artboard": "s08, s08p",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/14_login__light.png",
+        "build/shots/14_login__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding"
+    },
+    {
+      "id": "15_reset",
+      "dartFile": "onboarding/reset_passcode_screen.dart",
+      "route": "/reset",
+      "artboard": "s09",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/15_reset__light.png",
+        "build/shots/15_reset__dark.png"
+      ],
+      "stateTask": true,
+      "area": "onboarding",
+      "artboard_all": [
+        "s09"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-20",
+      "ruling_instruction": "keep account-password reset SEPARATE from local passcode"
+    },
+    {
+      "id": "16_kyc_intro",
+      "dartFile": "kyc/kyc_intro.dart",
+      "route": "/kyc",
+      "artboard": "s10",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/16_kyc_intro__light.png",
+        "build/shots/16_kyc_intro__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "17_kyc_bvn",
+      "dartFile": "kyc/bvn_nin.dart",
+      "route": "/kyc/bvn",
+      "artboard": "s12, s13",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/17_kyc_bvn__light.png",
+        "build/shots/17_kyc_bvn__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "18_kyc_chn",
+      "dartFile": "kyc/chn_screen.dart",
+      "route": "/kyc/chn",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/18_kyc_chn__light.png",
+        "build/shots/18_kyc_chn__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc",
+      "governing_ruling": "R-9",
+      "ruling_instruction": "KEEP as a KYC step, restyled (CSCS requires it)"
+    },
+    {
+      "id": "19_kyc_id",
+      "dartFile": "kyc/id_upload.dart",
+      "route": "/kyc/id",
+      "artboard": "s14",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/19_kyc_id__light.png",
+        "build/shots/19_kyc_id__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "20_kyc_liveness",
+      "dartFile": "kyc/liveness.dart",
+      "route": "/kyc/liveness",
+      "artboard": "s15",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/20_kyc_liveness__light.png",
+        "build/shots/20_kyc_liveness__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "21_kyc_checking",
+      "dartFile": "kyc/checking.dart",
+      "route": "/kyc/checking",
+      "artboard": "s16",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/21_kyc_checking__light.png",
+        "build/shots/21_kyc_checking__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "22_kyc_utility_bill",
+      "dartFile": "kyc/utility_bill.dart",
+      "route": "/kyc/utility-bill",
+      "artboard": "s17",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/22_kyc_utility_bill__light.png",
+        "build/shots/22_kyc_utility_bill__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc",
+      "artboard_all": [
+        "s17"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-19",
+      "ruling_instruction": "combine with address fields per s17"
+    },
+    {
+      "id": "23_kyc_bank_dcs",
+      "dartFile": "kyc/bank_dcs_screen.dart",
+      "route": "/kyc/bank-dcs",
+      "artboard": "s18, s18b",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/23_kyc_bank_dcs__light.png",
+        "build/shots/23_kyc_bank_dcs__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "24_kyc_declarations",
+      "dartFile": "kyc/declarations_screen.dart",
+      "route": "/kyc/declarations",
+      "artboard": "s19",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/24_kyc_declarations__light.png",
+        "build/shots/24_kyc_declarations__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "25_kyc_next_of_kin",
+      "dartFile": "kyc/next_of_kin.dart",
+      "route": "/kyc/next-of-kin",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/25_kyc_next_of_kin__light.png",
+        "build/shots/25_kyc_next_of_kin__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc",
+      "governing_ruling": "R-9",
+      "ruling_instruction": "KEEP as a KYC step, restyled (CSCS requires it)"
+    },
+    {
+      "id": "26_kyc_review",
+      "dartFile": "kyc/review_submit_screen.dart",
+      "route": "/kyc/review",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/26_kyc_review__light.png",
+        "build/shots/26_kyc_review__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc",
+      "governing_ruling": "R-9",
+      "ruling_instruction": "DROP: submission happens from the last collection step"
+    },
+    {
+      "id": "27_kyc_submitted",
+      "dartFile": "kyc/submitted.dart",
+      "route": "/kyc/submitted",
+      "artboard": "s20",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/27_kyc_submitted__light.png",
+        "build/shots/27_kyc_submitted__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "28_kyc_approved",
+      "dartFile": "kyc/approved.dart",
+      "route": "/kyc/approved",
+      "artboard": "s21",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/28_kyc_approved__light.png",
+        "build/shots/28_kyc_approved__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc"
+    },
+    {
+      "id": "29_kyc_outcome",
+      "dartFile": "kyc/outcome_not_approved.dart",
+      "route": "/kyc/outcome",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/29_kyc_outcome__light.png",
+        "build/shots/29_kyc_outcome__dark.png"
+      ],
+      "stateTask": true,
+      "area": "kyc",
+      "governing_ruling": "R-10",
+      "ruling_instruction": "design FRESH in the canvas's visual language; keep resubmit/support behaviour"
+    },
+    {
+      "id": "30_questionnaire",
+      "dartFile": "suitability/questionnaire_screen.dart",
+      "route": "/suitability",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/30_questionnaire__light.png",
+        "build/shots/30_questionnaire__dark.png"
+      ],
+      "stateTask": true,
+      "area": "suitability",
+      "governing_ruling": "R-1a",
+      "ruling_instruction": "moves EARLY: after OTP, before the legal documents. No profiling framing (R-2)"
+    },
+    {
+      "id": "31_suitability_result",
+      "dartFile": "suitability/suitability_result_screen.dart",
+      "route": "/suitability/result",
+      "artboard": "s21 (structural pattern only, not a dedicated match)",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/31_suitability_result__light.png",
+        "build/shots/31_suitability_result__dark.png"
+      ],
+      "stateTask": true,
+      "area": "suitability",
+      "artboard_all": [
+        "s21 (structural pattern only, not a dedicated match)"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-2",
+      "ruling_instruction": "completion screen only; no classification. Remove SuitabilityResult.profile server-side"
+    },
+    {
+      "id": "32_risk_disclaimer",
+      "dartFile": "suitability/risk_disclaimer_screen.dart",
+      "route": "/suitability/risk-disclaimer",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/32_risk_disclaimer__light.png",
+        "build/shots/32_risk_disclaimer__dark.png"
+      ],
+      "stateTask": true,
+      "area": "suitability",
+      "governing_ruling": "R-8",
+      "ruling_instruction": "becomes one of the 4 legal documents, shown at the start"
+    },
+    {
+      "id": "33_notifications",
+      "dartFile": "home/notifications_screen.dart",
+      "route": "/notifications",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/33_notifications__light.png",
+        "build/shots/33_notifications__dark.png"
+      ],
+      "stateTask": true,
+      "area": "home",
+      "governing_ruling": "R-25",
+      "ruling_instruction": "KEEP, restyle to the new design"
+    },
+    {
+      "id": "34_search",
+      "dartFile": "home/search_screen.dart",
+      "route": "/search",
+      "artboard": "s25",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/34_search__light.png",
+        "build/shots/34_search__dark.png"
+      ],
+      "stateTask": true,
+      "area": "home"
+    },
+    {
+      "id": "35_orders",
+      "dartFile": "portfolio/order_status_screen.dart",
+      "route": "/orders",
+      "artboard": "s41",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/35_orders__light.png",
+        "build/shots/35_orders__dark.png"
+      ],
+      "stateTask": true,
+      "area": "portfolio",
+      "artboard_all": [
+        "s41"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-17",
+      "ruling_instruction": "KEEP the Cancel action; add it to the new layout"
+    },
+    {
+      "id": "36_watchlist",
+      "dartFile": "markets/watchlist_screen.dart",
+      "route": "/watchlist",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/36_watchlist__light.png",
+        "build/shots/36_watchlist__dark.png"
+      ],
+      "stateTask": true,
+      "area": "markets",
+      "governing_ruling": "R-16",
+      "ruling_instruction": "DROP the screen; keep the + toggle; My alerts moves to the Account menu"
+    },
+    {
+      "id": "37_asset_detail",
+      "dartFile": "markets/asset_detail_screen.dart",
+      "route": "/asset/MTNN",
+      "artboard": "s26",
+      "bucket": "needs-ruling",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/37_asset_detail__light.png",
+        "build/shots/37_asset_detail__dark.png"
+      ],
+      "stateTask": true,
+      "area": "markets",
+      "artboard_all": [
+        "s26",
+        "s27"
+      ],
+      "artboard_source": "evidence"
+    },
+    {
+      "id": "38_explain",
+      "dartFile": "markets/explain_screen.dart",
+      "route": "/explain/MTNN",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/38_explain__light.png",
+        "build/shots/38_explain__dark.png"
+      ],
+      "stateTask": true,
+      "area": "markets",
+      "governing_ruling": "R-6",
+      "ruling_instruction": "PARK: remove entry points, keep code behind a flag"
+    },
+    {
+      "id": "39_holding_detail",
+      "dartFile": "portfolio/holding_detail_screen.dart",
+      "route": "/portfolio/holding/MTNN",
+      "artboard": "s34",
+      "bucket": "needs-ruling",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/39_holding_detail__light.png",
+        "build/shots/39_holding_detail__dark.png"
+      ],
+      "stateTask": true,
+      "area": "portfolio",
+      "artboard_all": [
+        "s34"
+      ],
+      "artboard_source": "evidence"
+    },
+    {
+      "id": "40_transaction_detail",
+      "dartFile": "wallet/wallet_screens.dart",
+      "route": "/wallet/txn/TX1042",
+      "artboard": "s38",
+      "bucket": "needs-ruling",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/40_transaction_detail__light.png",
+        "build/shots/40_transaction_detail__dark.png"
+      ],
+      "stateTask": true,
+      "area": "wallet",
+      "artboard_all": [
+        "s38"
+      ],
+      "artboard_source": "evidence"
+    },
+    {
+      "id": "41_acct_personal",
+      "dartFile": "account/personal_info_screen.dart",
+      "route": "/account/personal",
+      "artboard": "s58",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/41_acct_personal__light.png",
+        "build/shots/41_acct_personal__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "42_acct_banks",
+      "dartFile": "account/bank_accounts_screen.dart",
+      "route": "/account/banks",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/42_acct_banks__light.png",
+        "build/shots/42_acct_banks__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "43_acct_refer",
+      "dartFile": "account/refer_earn_screen.dart",
+      "route": "/account/refer",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/43_acct_refer__light.png",
+        "build/shots/43_acct_refer__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account",
+      "governing_ruling": "R-6",
+      "ruling_instruction": "PARK: remove entry points, keep code behind a flag"
+    },
+    {
+      "id": "44_acct_help",
+      "dartFile": "account/help_support_screen.dart",
+      "route": "/account/help",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/44_acct_help__light.png",
+        "build/shots/44_acct_help__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "45_acct_faq",
+      "dartFile": "account/faq_screen.dart",
+      "route": "/account/help/faq",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/45_acct_faq__light.png",
+        "build/shots/45_acct_faq__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "46_acct_security",
+      "dartFile": "account/security_screen.dart",
+      "route": "/account/security",
+      "artboard": "s54",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/46_acct_security__light.png",
+        "build/shots/46_acct_security__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "47_acct_notifications",
+      "dartFile": "account/notifications_settings_screen.dart",
+      "route": "/account/notifications",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/47_acct_notifications__light.png",
+        "build/shots/47_acct_notifications__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "48_acct_legal",
+      "dartFile": "account/legal_screen.dart",
+      "route": "/account/legal",
+      "artboard": "s03c",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/48_acct_legal__light.png",
+        "build/shots/48_acct_legal__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "49_acct_statements",
+      "dartFile": "account/statements_screen.dart",
+      "route": "/account/statements",
+      "artboard": "s52",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/49_acct_statements__light.png",
+        "build/shots/49_acct_statements__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "50_acct_freeze",
+      "dartFile": "account/freeze_account_screen.dart",
+      "route": "/account/security/freeze",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/50_acct_freeze__light.png",
+        "build/shots/50_acct_freeze__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "51_security_alert",
+      "dartFile": "account/security_alert_screen.dart",
+      "route": "/security-alert",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/51_security_alert__light.png",
+        "build/shots/51_security_alert__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "52_acct_plans",
+      "dartFile": "account/plans_screen.dart",
+      "route": "/account/plans",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/52_acct_plans__light.png",
+        "build/shots/52_acct_plans__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account",
+      "governing_ruling": "R-6",
+      "ruling_instruction": "PARK: remove entry points, keep code behind a flag"
+    },
+    {
+      "id": "53_withdraw_mandate",
+      "dartFile": "account/withdraw_mandate_screen.dart",
+      "route": "/account/banks/withdraw-mandate",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/53_withdraw_mandate__light.png",
+        "build/shots/53_withdraw_mandate__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "54_contract_note",
+      "dartFile": "account/contract_note_screen.dart",
+      "route": "/account/statements/contract-note",
+      "artboard": "s38",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/54_contract_note__light.png",
+        "build/shots/54_contract_note__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "55_statement_detail",
+      "dartFile": "account/statement_detail_screen.dart",
+      "route": "/account/statements/detail",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/55_statement_detail__light.png",
+        "build/shots/55_statement_detail__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "57_price_alerts",
+      "dartFile": "markets/price_alerts_screen.dart",
+      "route": "/watchlist/alerts",
+      "artboard": "s49",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/57_price_alerts__light.png",
+        "build/shots/57_price_alerts__dark.png"
+      ],
+      "stateTask": true,
+      "area": "markets",
+      "artboard_all": [
+        "s49",
+        "s50"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-16",
+      "ruling_instruction": "alerts become per-asset (s49/s50); My alerts reachable from Account"
+    },
+    {
+      "id": "58_corp_actions",
+      "dartFile": "corporate_actions/corporate_actions_screen.dart",
+      "route": "/corporate-actions",
+      "artboard": "s55",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/58_corp_actions__light.png",
+        "build/shots/58_corp_actions__dark.png"
+      ],
+      "stateTask": true,
+      "area": "corporate_actions"
+    },
+    {
+      "id": "59_rights_issue",
+      "dartFile": "corporate_actions/rights_issue_screen.dart",
+      "route": "/corporate-actions/rights-issue",
+      "artboard": "s55 (partial \u2014 summary card only)",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/59_rights_issue__light.png",
+        "build/shots/59_rights_issue__dark.png"
+      ],
+      "stateTask": true,
+      "area": "corporate_actions",
+      "artboard_all": [
+        "s55 (partial \u2014 summary card only)"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-24",
+      "ruling_instruction": "KEEP, restyle; partial take-up retained (R-12)"
+    },
+    {
+      "id": "60_agm_vote",
+      "dartFile": "corporate_actions/agm_vote_screen.dart",
+      "route": "/corporate-actions/agm",
+      "artboard": null,
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/60_agm_vote__light.png",
+        "build/shots/60_agm_vote__dark.png"
+      ],
+      "stateTask": true,
+      "area": "corporate_actions",
+      "governing_ruling": "R-24",
+      "ruling_instruction": "KEEP, restyle"
+    },
+    {
+      "id": "61_dividends",
+      "dartFile": "corporate_actions/dividends_screen.dart",
+      "route": "/corporate-actions/dividends",
+      "artboard": "s55 (partial, footer note + one list row only)",
+      "bucket": "needs-ruling",
+      "kind": "ruling-driven",
+      "shots": [
+        "build/shots/61_dividends__light.png",
+        "build/shots/61_dividends__dark.png"
+      ],
+      "stateTask": true,
+      "area": "corporate_actions",
+      "artboard_all": [
+        "s55 (partial, footer note + one list row only)"
+      ],
+      "artboard_source": "evidence",
+      "governing_ruling": "R-24",
+      "ruling_instruction": "KEEP, restyle"
+    },
+    {
+      "id": "62_complaint",
+      "dartFile": "account/complaint_screen.dart",
+      "route": "/account/help/complaint",
+      "artboard": "s53",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/62_complaint__light.png",
+        "build/shots/62_complaint__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "63_complaint_tracked",
+      "dartFile": "account/complaint_tracked_screen.dart",
+      "route": "/account/help/complaint/tracked",
+      "artboard": "s53",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/63_complaint_tracked__light.png",
+        "build/shots/63_complaint_tracked__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "64_dormant",
+      "dartFile": "account/dormant_account_screen.dart",
+      "route": "/account/dormant",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/64_dormant__light.png",
+        "build/shots/64_dormant__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "65_close_account",
+      "dartFile": "account/close_account_screen.dart",
+      "route": "/account/close",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/65_close_account__light.png",
+        "build/shots/65_close_account__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "66_data_privacy",
+      "dartFile": "account/data_privacy_screen.dart",
+      "route": "/account/data-privacy",
+      "artboard": "s57",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/66_data_privacy__light.png",
+        "build/shots/66_data_privacy__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "68_partner_disclosures",
+      "dartFile": "account/legal_reference_screens.dart",
+      "route": "/account/legal/partner-disclosures",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/68_partner_disclosures__light.png",
+        "build/shots/68_partner_disclosures__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "69_referral_terms",
+      "dartFile": "account/legal_reference_screens.dart",
+      "route": "/account/legal/referral-terms",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/69_referral_terms__light.png",
+        "build/shots/69_referral_terms__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "70_data_notice",
+      "dartFile": "account/legal_reference_screens.dart",
+      "route": "/account/legal/data-notice",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/70_data_notice__light.png",
+        "build/shots/70_data_notice__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "71_closure_terms",
+      "dartFile": "account/legal_reference_screens.dart",
+      "route": "/account/legal/closure-terms",
+      "artboard": null,
+      "bucket": "restyle-only",
+      "kind": "restyle",
+      "shots": [
+        "build/shots/71_closure_terms__light.png",
+        "build/shots/71_closure_terms__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "72_home",
+      "dartFile": "home/home_screen.dart",
+      "route": "/home",
+      "artboard": "s22",
+      "bucket": "needs-ruling",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/72_home__light.png",
+        "build/shots/72_home__dark.png"
+      ],
+      "stateTask": true,
+      "area": "home",
+      "artboard_all": [
+        "s22",
+        "s23"
+      ],
+      "artboard_source": "evidence"
+    },
+    {
+      "id": "73_portfolio",
+      "dartFile": "portfolio/portfolio_screen.dart",
+      "route": "/portfolio",
+      "artboard": "s33",
+      "bucket": "needs-ruling",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/73_portfolio__light.png",
+        "build/shots/73_portfolio__dark.png"
+      ],
+      "stateTask": true,
+      "area": "portfolio",
+      "artboard_all": [
+        "s33"
+      ],
+      "artboard_source": "evidence"
+    },
+    {
+      "id": "74_markets",
+      "dartFile": "markets/markets_screen.dart",
+      "route": "/markets",
+      "artboard": "s24",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/74_markets__light.png",
+        "build/shots/74_markets__dark.png"
+      ],
+      "stateTask": true,
+      "area": "markets"
+    },
+    {
+      "id": "75_wallet",
+      "dartFile": "wallet/wallet_screens.dart",
+      "route": "/wallet",
+      "artboard": "s35",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/75_wallet__light.png",
+        "build/shots/75_wallet__dark.png"
+      ],
+      "stateTask": true,
+      "area": "wallet"
+    },
+    {
+      "id": "76_account",
+      "dartFile": "account/account_screen.dart",
+      "route": "/account",
+      "artboard": "s51",
+      "bucket": "redesign-to-artboard",
+      "kind": "redesign",
+      "shots": [
+        "build/shots/76_account__light.png",
+        "build/shots/76_account__dark.png"
+      ],
+      "stateTask": true,
+      "area": "account"
+    },
+    {
+      "id": "NEW_s07 (01 Getting In.dc.html)",
+      "dartFile": null,
+      "route": null,
+      "artboard": "s07 (01 Getting In.dc.html)",
+      "bucket": "new-screen",
+      "kind": "build-new",
+      "shots": [],
+      "stateTask": true,
+      "label": "07 \u00b7 What happens next",
+      "area": "new"
+    },
+    {
+      "id": "NEW_s42 (04 Buy and Sell.dc.html)",
+      "dartFile": null,
+      "route": null,
+      "artboard": "s42 (04 Buy and Sell.dc.html)",
+      "bucket": "new-screen",
+      "kind": "build-new",
+      "shots": [],
+      "stateTask": true,
+      "label": "Step 1 \u00b7 How to buy",
+      "area": "new"
+    },
+    {
+      "id": "NEW_s43 (04 Buy and Sell.dc.html)",
+      "dartFile": null,
+      "route": null,
+      "artboard": "s43 (04 Buy and Sell.dc.html)",
+      "bucket": "new-screen",
+      "kind": "build-new",
+      "shots": [],
+      "stateTask": true,
+      "label": "Step 2 \u00b7 Your price per share (naming your price)",
+      "area": "new"
+    },
+    {
+      "id": "NEW_s30 (04 Buy and Sell.dc.html)",
+      "dartFile": null,
+      "route": null,
+      "artboard": "s30 (04 Buy and Sell.dc.html)",
+      "bucket": "new-screen",
+      "kind": "build-new",
+      "shots": [],
+      "stateTask": true,
+      "label": "Step 6 \u00b7 PIN, then order placed",
+      "area": "new"
+    },
+    {
+      "id": "NEW_s45 (04 Buy and Sell.dc.html)",
+      "dartFile": null,
+      "route": null,
+      "artboard": "s45 (04 Buy and Sell.dc.html)",
+      "bucket": "new-screen",
+      "kind": "build-new",
+      "shots": [],
+      "stateTask": true,
+      "label": "Sell step 1 \u00b7 How to sell",
+      "area": "new"
+    },
+    {
+      "id": "NEW_s46 (04 Buy and Sell.dc.html)",
+      "dartFile": null,
+      "route": null,
+      "artboard": "s46 (04 Buy and Sell.dc.html)",
+      "bucket": "new-screen",
+      "kind": "build-new",
+      "shots": [],
+      "stateTask": true,
+      "label": "Sell step 2 \u00b7 Your price per share",
+      "area": "new"
+    }
+  ]
+}

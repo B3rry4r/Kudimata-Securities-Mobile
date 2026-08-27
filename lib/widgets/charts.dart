@@ -223,6 +223,47 @@ class KDonutSegment {
   final Color? color;
 }
 
+/// Single-row proportional stacked bar — segments sized by relative [value],
+/// a thin gap between each. New for the 2026-08 redesign (ruling R-22:
+/// portfolio allocation moves from a donut-by-asset-class to a bar-by-sector,
+/// docs/design/redesign-2026-08/05 Portfolio and Wallet.dc.html #s33's "Where
+/// your money sits"). No prior K* widget covered this shape, so this is a new
+/// widget rather than a fork of [KAllocationDonut] — reuses [KDonutSegment]
+/// (value + colour) so both charts share one segment model.
+class KAllocationBar extends StatelessWidget {
+  const KAllocationBar({super.key, required this.segments, this.height = 14, this.gap = 4});
+
+  final List<KDonutSegment> segments;
+  final double height;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ramp = KColor.ramp;
+    final total = segments.fold<double>(0, (sum, s) => sum + s.value);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        height: height,
+        child: Row(
+          children: [
+            for (var i = 0; i < segments.length; i++) ...[
+              if (i != 0) SizedBox(width: gap),
+              Expanded(
+                // Flex must be a positive int; scale the (0-100-ish)
+                // percentage up so rounding never collapses a real, non-zero
+                // slice to a zero flex.
+                flex: total <= 0 ? 1 : (segments[i].value * 100 / total).round().clamp(1, 1000000),
+                child: Container(color: segments[i].color ?? ramp[i % ramp.length]),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Allocation donut — brand purple ramp (indicator → tints).
 class KAllocationDonut extends StatelessWidget {
   const KAllocationDonut({

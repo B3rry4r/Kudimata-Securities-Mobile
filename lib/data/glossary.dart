@@ -35,6 +35,13 @@ const Map<String, String> kGlossary = {
           'is reasonable for you: money you need within a year shouldn\'t sit somewhere it can '
           'drop sharply in a month, while money you won\'t touch for years has time to recover '
           'from a bad patch.',
+  // Added 2026-08-27 for asset_detail_screen.dart's Order book tab (s27) —
+  // its "Explain more" link opens this same sheet.
+  'Order book':
+      'The live list of buy and sell offers waiting to be matched on the exchange. Buyers name '
+          'the price they\'ll pay, sellers name the price they want, and a trade happens the '
+          'moment a buyer and a seller agree on one. A thicker book — more offers on both sides '
+          '— usually means it\'s easier to buy or sell quickly at a fair price.',
 };
 
 /// Case-insensitive lookup — [term] is matched by lowercasing and trimming

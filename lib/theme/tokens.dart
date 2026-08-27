@@ -5,10 +5,20 @@
 // personality without borrowing the gain/loss semantics. Do not invent
 // values here — every constant traces to a token.
 //
-// Light-only: tokens/base.css declares `color-scheme: light` and the design
-// system's readme is explicit that dark is an undesigned draft ("no
-// surface, illustration plate or contrast pair has been designed against
-// it") — see main.dart's header comment for where the app enforces this.
+// Light and dark (R-13, docs/redesign/DECISIONS.md): dark was previously
+// removed because the OLD design system's readme called it "an undesigned
+// draft" ("no surface, illustration plate or contrast pair has been designed
+// against it"). The redesign canvas at docs/design/redesign-2026-08/*.dc.html
+// designs 55 dark artboards, so that reason is gone — see KPalette.dark's own
+// doc comment for where its values come from. They are NOT read from
+// `_ds/kudimata-design-system-*/tokens/colors.css` (the path this header
+// otherwise names as the token source): that bundle is a DIFFERENT design
+// system — the admin-dashboard "Kudimata Desk" one, confirmed by its own
+// readme.md ("desktop internal admin dashboard... used by compliance and
+// operations staff") and its `_ds_manifest.json`'s `"themes": []` — and its
+// `:root` block is exactly as undesigned-dark as the old mobile system's was.
+// The redesign canvas's own dark artboards are the real source for
+// KPalette.dark.
 import 'package:flutter/material.dart';
 
 /// The semantic palette. [KColor] reads from [KColor.active] so screens keep
@@ -106,6 +116,152 @@ class KPalette {
     statusRejectedTint: Color(0x1FD0503F), // rgba(208,80,63,.12)
     statusReviewTint: Color(0xFFF0E7FA), // == indicatorTint
     scrim: Color(0x5C2B1A3D), // rgba(43,26,61,.36)
+  );
+
+  /// R-13's dark palette. `_ds/kudimata-design-system-*/tokens/colors.css`
+  /// (the file this app's dark work was pointed at) has no dark section at
+  /// all — see this file's header comment — so every value below is read
+  /// directly off the redesign canvas's own dark artboards instead, chiefly
+  /// `docs/design/redesign-2026-08/03 Home and Markets.dc.html`'s `#s22d`
+  /// (dark Home), `#s23d` (dark Home, unverified) and `#s24d` (dark
+  /// Markets), corroborated by `05 Portfolio and Wallet.dc.html`'s dark
+  /// allocation bar for the ramp. Each value below says which.
+  ///
+  /// The canvas is NOT internally consistent on one point, flagged rather
+  /// than resolved here: `#s22d`'s balance panel and `#s24d`'s market-mood
+  /// panel — both `--feature` (grape) in light — render as the same flat
+  /// dark card colour as an ordinary card, not grape. But
+  /// `01 Getting In.dc.html`'s dark welcome/BVN screens use literal
+  /// `var(--feature)` (unchanged grape `#6524A8`) as a full-bleed
+  /// background. [feature]/[feature2] below follow the Home/Markets
+  /// artboards (the ones this task named for verification); the Getting-In
+  /// screens' literal-grape background is a screen-specific choice for a
+  /// later screen pass to reconcile, not a second palette.
+  static const dark = KPalette(
+    brightness: Brightness.dark,
+    // Phone-frame background across every `sNNd` artboard.
+    bg: Color(0xFF1A191D),
+    // Card/row/sheet surface across every `sNNd` artboard (`#26242A`) — also
+    // where `--feature` lands in the Home/Markets dark artboards; see the
+    // doc comment above.
+    paper: Color(0xFF26242A),
+    feature: Color(0xFF26242A),
+    // No dark artboard shows a second, lifted tone distinct from [paper] —
+    // every dark card in `#s22d`/`#s23d`/`#s24d` is the same flat `#26242A`,
+    // and the "lifted circle" decorations inside them are a translucent
+    // white overlay, not a second solid colour. This entry keeps the
+    // paper/feature split's shape (so a caller doing `feature2` still gets
+    // something plausibly "one step lighter than feature") but is a
+    // reasoned continuation of the neutral-elevation pattern above, not a
+    // value read off any artboard.
+    feature2: Color(0xFF302E36),
+    // `#F4F2EF`, the one ink colour every dark artboard uses for primary
+    // text (`#s22d`'s "Hi Adebayo", the ₦ balance figure, etc.).
+    ink: Color(0xFFF4F2EF),
+    // `rgba(244,242,239,.70)` — the dominant secondary/body alpha across the
+    // canvas (e.g. `05 Portfolio and Wallet.dc.html`'s "Shares you hold").
+    ink2: Color(0xB3F4F2EF),
+    // `rgba(244,242,239,.50)` — the dominant tertiary/label/metadata alpha
+    // (e.g. `#s22d`'s ticker line under each mover, "9:41 · LTE").
+    ink3: Color(0x80F4F2EF),
+    // `rgba(255,255,255,.08)` — row dividers and disabled/neutral icon-chip
+    // fills (`05 Portfolio and Wallet.dc.html`'s "Shares you hold" divider).
+    hairline: Color(0x14FFFFFF),
+    // `rgba(255,255,255,.05)` — the disabled "Withdraw"/"Invest" action
+    // fill in `#s23d`, paired with `ink3`-strength text (its own
+    // `rgba(244,242,239,.35–.4)`), matching light's track+ink3 disabled
+    // pairing.
+    track: Color(0x0DFFFFFF),
+    // `#F4F2EF` — same value as [ink]: the ₦ balance figure inside the
+    // flattened feature panel in `#s22d` uses plain ink, not a separate
+    // "on-feature" white, because the panel itself is no longer grape here.
+    featureInk: Color(0xFFF4F2EF),
+    // `rgba(244,242,239,.55)` — `#s22d`'s "Total wealth" eyebrow label,
+    // sitting on the same flattened feature panel.
+    featureInk2: Color(0x8CF4F2EF),
+    // Every filled primary control in the canvas's dark screens (buttons,
+    // active pills, the "Add" action) uses the CSS var `--indicator-soft`
+    // (`#A16BE0`, light's [indicatorSoft]/ramp3) as ITS primary fill, not
+    // `--indicator` — 30+ occurrences across `01 Getting In.dc.html` and
+    // `02 Verification.dc.html` alone. The whole purple ramp reads as
+    // shifted one step lighter for dark; see [ramp1]..[ramp5] below, which
+    // is read directly off `05 Portfolio and Wallet.dc.html`'s dark
+    // allocation bar and confirms the same one-step shift.
+    indicator: Color(0xFFA16BE0),
+    // Ramp2 (`#8B4FC4`) continues the one-step-lighter shift as the pressed/
+    // darker neighbour of the new [indicator] — no dark artboard renders an
+    // actual pressed state (these are static mocks), so this is the ramp
+    // pattern's continuation rather than a directly observed press colour.
+    indicatorPress: Color(0xFF8B4FC4),
+    // `rgba(161,107,224,.20)` — `02 Verification.dc.html`'s "No" segmented
+    // option (`background:rgba(161,107,224,.20);border:1.5px solid
+    // var(--indicator-soft)`) is the one dark tint fill in the canvas built
+    // from the new dark [indicator]'s own RGB.
+    indicatorTint: Color(0x33A16BE0),
+    // Ramp4 (`#C9A6EC`) — 90+ occurrences as the accent link/"→" text colour
+    // across every dark screen ("Take the quiz →", the "Markets" nav link),
+    // exactly the illustration/chart-accent role [indicatorSoft] plays in
+    // light, one ramp step lighter.
+    indicatorSoft: Color(0xFFC9A6EC),
+    // Warm and sun read unchanged between light and dark everywhere they
+    // appear as a solid fill (the KYC banner's shield icon, lesson-card
+    // icons) — only their tints change.
+    warm: Color(0xFFF07A45),
+    // No dark artboard renders a pressed warm control; carried forward
+    // unchanged from light since warm itself is unchanged.
+    warmPress: Color(0xFFA63C13),
+    // `rgba(240,122,69,.14)` — `#s23d`'s verification-banner background and
+    // the "Financial literacy" lesson-icon chip fill, replacing light's
+    // solid `--warm-tint`.
+    warmTint: Color(0x24F07A45),
+    sun: Color(0xFFF5C542),
+    // No dark artboard renders a pressed sun control; carried forward
+    // unchanged from light, same reasoning as [warmPress].
+    sunPress: Color(0xFFC9973F),
+    // `rgba(245,197,66,.14)` — the "Financial literacy" icon chip's warm
+    // sibling fill in `#s22d`/`Home Variants.dc.html`.
+    sunTint: Color(0x24F5C542),
+    // Gain/loss figures read the identical hex in light and dark throughout
+    // the canvas (`#2AA36B`/`#D0503F` — e.g. the "Sent to the market"
+    // checkmark in `04 Buy and Sell.dc.html`).
+    gain: Color(0xFF2AA36B),
+    loss: Color(0xFFD0503F),
+    // `#9DEBC4`/`#FFB3A8` — identical to light's on-feature values,
+    // confirmed directly (37 and 12 occurrences respectively) as the
+    // movement-figure colour on every dark card/pill.
+    gainOnInk: Color(0xFF9DEBC4),
+    lossOnInk: Color(0xFFFFB3A8),
+    // Read directly off `05 Portfolio and Wallet.dc.html`'s dark "Where
+    // your money sits" allocation bar (42%/26%/19%/13% shares, largest
+    // first): `#C9A6EC`, `#A16BE0`, `#8B4FC4`, `#6524A8` — exactly light's
+    // ramp4/ramp3/ramp2/ramp1, one step shifted, matching [indicator]'s own
+    // shift above.
+    ramp1: Color(0xFFC9A6EC),
+    ramp2: Color(0xFFA16BE0),
+    ramp3: Color(0xFF8B4FC4),
+    ramp4: Color(0xFF6524A8),
+    // No dark artboard's allocation bar has a fifth segment, so there is no
+    // directly-read fifth ramp value. `#4A1A80` (light's [indicatorPress])
+    // continues the same one-step shift one position further — a reasoned
+    // extrapolation of the confirmed ramp1..4 pattern, not a read value.
+    ramp5: Color(0xFF4A1A80),
+    // `rgba(111,211,164,.16)` — `#s24d`'s "Open till 4:30pm" pill and
+    // `05 Portfolio and Wallet.dc.html`'s "+₦12,540 all time" pill (which
+    // vary .14–.18 across the canvas; .16 is the middle, most-repeated
+    // value) — dark's gain-tint, replacing light's solid 12%-alpha-on-white.
+    statusApprovedTint: Color(0x296FD3A4),
+    // No dark artboard renders a rejected-status tint; extrapolated from
+    // [statusApprovedTint]'s pattern (the loss on-feature RGB at the same
+    // 16%-alpha convention), not a read value.
+    statusRejectedTint: Color(0x29FFB3A8),
+    // Mirrors light's own statusReviewTint==indicatorTint identity. (The
+    // KColor.statusPendingTint getter below reads [track] directly — there
+    // is no separate statusPendingTint field, same as light.)
+    statusReviewTint: Color(0x33A16BE0),
+    // No dark artboard shows a modal/sheet scrim; extrapolated as a plain
+    // half-opacity black, since a scrim tinted toward light's warm plum
+    // would wash out against the canvas's near-black `bg`.
+    scrim: Color(0x80000000),
   );
 }
 

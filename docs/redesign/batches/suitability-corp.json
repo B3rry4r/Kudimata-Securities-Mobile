@@ -1,0 +1,317 @@
+{
+  "batch": "suitability-corp",
+  "screens": [
+    {
+      "app_screen": "lib/screens/corporate_actions/agm_vote_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s55",
+          "overlap": 0.167,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s56",
+          "overlap": 0.117,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.1,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/corporate_actions/corporate_actions_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s55",
+          "overlap": 0.242,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.11,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s45",
+          "overlap": 0.11,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Sell step 1 \u00b7 How to sell"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/corporate_actions/corporate_actions_widgets.dart",
+      "mechanical_status": "proposed",
+      "candidate_artboards": [
+        {
+          "id": "s55",
+          "overlap": 0.444,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s58",
+          "overlap": 0.222,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s38",
+          "overlap": 0.222,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "38 \u00b7 Transaction receipt"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/corporate_actions/dividends_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s55",
+          "overlap": 0.194,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s56",
+          "overlap": 0.104,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        },
+        {
+          "id": "s18",
+          "overlap": 0.104,
+          "file": "02 Verification.dc.html",
+          "label": "18 Bank account 9:41 LTE Step 4 of 5 Add your bank account Withdrawals"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/corporate_actions/rights_issue_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s55",
+          "overlap": 0.167,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.128,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s37",
+          "overlap": 0.115,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "37 \u00b7 Withdraw"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/shared/confirm_passcode_sheet.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s18",
+          "overlap": 0.25,
+          "file": "02 Verification.dc.html",
+          "label": "18 Bank account 9:41 LTE Step 4 of 5 Add your bank account Withdrawals"
+        },
+        {
+          "id": "s11",
+          "overlap": 0.25,
+          "file": "02 Verification.dc.html",
+          "label": "11 Checklist hub 9:41 LTE You're almost there 2 of 5 done. Next: take "
+        },
+        {
+          "id": "s08",
+          "overlap": 0.25,
+          "file": "01 Getting In.dc.html",
+          "label": "08 \u00b7 Log in"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/shared/glossary_sheet.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s50",
+          "overlap": 0.105,
+          "file": "03 Home and Markets.dc.html",
+          "label": "50 \u00b7 My alerts, and one that fired"
+        },
+        {
+          "id": "s45",
+          "overlap": 0.105,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Sell step 1 \u00b7 How to sell"
+        },
+        {
+          "id": "s42",
+          "overlap": 0.105,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 1 \u00b7 How to buy"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/shared/state_views.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s23",
+          "overlap": 0.175,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s53",
+          "overlap": 0.158,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s35",
+          "overlap": 0.158,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "35 \u00b7 Wallet"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/suitability/legal_acceptance_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s46",
+          "overlap": 0.146,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Sell step 2 \u00b7 Your price per share"
+        },
+        {
+          "id": "s45",
+          "overlap": 0.146,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Sell step 1 \u00b7 How to sell"
+        },
+        {
+          "id": "s43",
+          "overlap": 0.146,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 2 \u00b7 Your price per share (naming your price)"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/suitability/questionnaire_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s56",
+          "overlap": 0.086,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        },
+        {
+          "id": "s23",
+          "overlap": 0.075,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s57",
+          "overlap": 0.065,
+          "file": "06 Account and Support.dc.html",
+          "label": "57 \u00b7 Data and privacy"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/suitability/risk_disclaimer_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s18",
+          "overlap": 0.095,
+          "file": "02 Verification.dc.html",
+          "label": "18 Bank account 9:41 LTE Step 4 of 5 Add your bank account Withdrawals"
+        },
+        {
+          "id": "s11",
+          "overlap": 0.095,
+          "file": "02 Verification.dc.html",
+          "label": "11 Checklist hub 9:41 LTE You're almost there 2 of 5 done. Next: take "
+        },
+        {
+          "id": "s07",
+          "overlap": 0.095,
+          "file": "01 Getting In.dc.html",
+          "label": "07 \u00b7 What happens next"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/suitability/suitability_result_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s58",
+          "overlap": 0.119,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s57",
+          "overlap": 0.119,
+          "file": "06 Account and Support.dc.html",
+          "label": "57 \u00b7 Data and privacy"
+        },
+        {
+          "id": "s54",
+          "overlap": 0.119,
+          "file": "06 Account and Support.dc.html",
+          "label": "54 \u00b7 Security"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/suitability/terms_and_privacy_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s14",
+          "overlap": 0.24,
+          "file": "02 Verification.dc.html",
+          "label": "14 Your documents 9:41 LTE Step 2 of 5 Your documents Pick one ID to p"
+        },
+        {
+          "id": "s55",
+          "overlap": 0.2,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s51",
+          "overlap": 0.2,
+          "file": "06 Account and Support.dc.html",
+          "label": "51 \u00b7 Account hub"
+        }
+      ]
+    }
+  ]
+}

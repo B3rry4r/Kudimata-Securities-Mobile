@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/colors.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/typography.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/radii.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/motion.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/base.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/styles.css">
+<script src="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#F3EDE3}
+a{color:var(--indicator);text-decoration:none}
+a:hover{color:var(--indicator-press)}
+.hscroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<div style="font-family:var(--font-core);padding:56px 28px 96px;display:flex;flex-direction:column;gap:44px">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:820px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3)">Kudimata Invest · redesign · section 4 of 6</div>
+<div style="font:var(--text-hero);letter-spacing:var(--track-hero);color:var(--ink)">Buy and Sell</div>
+<div style="font:var(--text-body);color:var(--ink-2);text-wrap:pretty">How to buy, then price, then shares, then review, then PIN. Buying now skips the price step. The review states the order type, your price, the commission and the rules that bite: no cancelling once the market opens, unfilled limit orders expire at 4:30pm. Sell mirrors it and asks one extra question, where the money should go.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 1 · How to buy</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s42" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s26 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">How to buy</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">How do you want to buy?</div>
+<div style="font-size:16px;line-height:24px;color:var(--ink-2)">MTN Nigeria, last traded ₦228.50</div>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:14px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:18px;display:flex;gap:14px;cursor:pointer" onClick="{{ nav.s43m }}">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(42,163,107,.12);color:var(--gain)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="arrowUpRight" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Buy now</span>
+<span style="font-size:14px;line-height:20px;color:var(--ink-2)">Takes the cheapest shares on sale right now. If nobody is selling, nothing happens.</span>
+</div>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:18px;display:flex;gap:14px;cursor:pointer" onClick="{{ nav.s43 }}">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="clock" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Name your price</span>
+<span style="font-size:14px;line-height:20px;color:var(--ink-2)">You set the price per share. Your order waits in the queue until someone sells at that price, or the market closes.</span>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From the asset page Buy button. Buy now → <a href="#s43m">43M How many shares (market)</a> · Name your price → <a href="#s43">43 Price per share</a>
+</div>
+</div>
+
+<div id="s42d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s26 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">How to buy</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">How do you want to buy?</div>
+<div style="font-size:16px;line-height:24px;color:rgba(244,242,239,.70)">MTN Nigeria, last traded ₦228.50</div>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:14px">
+<div style="background:#26242A;border-radius:20px;padding:18px;display:flex;gap:14px;cursor:pointer" onClick="{{ nav.s43md }}">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(111,211,164,.16);color:#9DEBC4"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="arrowUpRight" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Buy now</span>
+<span style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">Takes the cheapest shares on sale right now. If nobody is selling, nothing happens.</span>
+</div>
+</div>
+<div style="background:#26242A;border-radius:20px;padding:18px;display:flex;gap:14px;cursor:pointer" onClick="{{ nav.s43d }}">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="clock" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Name your price</span>
+<span style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">You set the price per share. Your order waits in the queue until someone sells at that price, or the market closes.</span>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark. Buy now → <a href="#s43md">43M dark</a> · Name your price → <a href="#s43d">43 dark</a></div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 2 · Your price per share (naming your price)</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s43" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s42 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Buy MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:var(--ink)">What will you pay per share?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">Naming your price. Buyers pay up to ₦226.00, sellers ask from ₦228.50.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums">₦226.00</span>
+<span style="width:2px;height:28px;background:var(--indicator)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:var(--ink-3)">per share</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:var(--ink-3)">Min ₦0.05</span>
+<span style="font-size:13px;color:var(--ink-3)">Max ₦250.00</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:var(--ink-2)">Nearest seller</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums">₦228.50</span></div>
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Below ₦228.50 you wait for a seller to come down to your price.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s43b }}">Continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">One field, min and max shown. Continue → <a href="#s43b">Step 3</a>
+</div>
+</div>
+
+<div id="s43d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s42d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Buy MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#F4F2EF">What will you pay per share?</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">Naming your price. Buyers pay up to ₦226.00, sellers ask from ₦228.50.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦226.00</span>
+<span style="width:2px;height:28px;background:var(--indicator-soft)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:rgba(244,242,239,.50)">per share</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Min ₦0.05</span>
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Max ₦250.00</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:rgba(244,242,239,.70)">Nearest seller</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦228.50</span></div>
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Below ₦228.50 you wait for a seller to come down to your price.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s43bd }}">Continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 3 · How many shares (naming your price)</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s43b" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s43 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Buy MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:var(--ink)">How many shares?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">At your price of ₦226.00 a share.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums">109</span>
+<span style="width:2px;height:28px;background:var(--indicator)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:var(--ink-3)">shares</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:var(--ink-3)">Min 1 share</span>
+<span style="font-size:13px;color:var(--ink-3)">Max 199 with your cash</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:var(--ink-2)">Total to pay</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums">₦24,727.50</span></div>
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Fees of ₦93.50 included. You keep ₦20,473 in your wallet.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s29 }}">Review order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Continue → <a href="#s29">Step 4 Review</a></div>
+</div>
+
+<div id="s43bd" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s43d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Buy MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#F4F2EF">How many shares?</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">At your price of ₦226.00 a share.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:#F4F2EF;font-variant-numeric:tabular-nums">109</span>
+<span style="width:2px;height:28px;background:var(--indicator-soft)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:rgba(244,242,239,.50)">shares</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Min 1 share</span>
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Max 199 with your cash</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:rgba(244,242,239,.70)">Total to pay</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦24,727.50</span></div>
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Fees of ₦93.50 included. You keep ₦20,473 in your wallet.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s29d }}">Review order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 4 · Review, naming your price</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s29" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s43b }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Review order</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">MTN Nigeria</span>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Order type</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">Limit buy</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Number of shares</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">109</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Your price per share</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦226.00</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Estimated amount</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦24,634.00</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Estimated commission</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦93.50<span style="color:var(--indicator);display:inline-flex;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronDown" size="16" hint-size="16px,16px"></x-import></span></span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:18px 0 0">
+<span style="font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--ink)">Total amount</span>
+<span style="font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums">₦24,727.50</span>
+</div>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--indicator-tint);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:7px">
+<span style="font-size:14px;line-height:20px;color:var(--ink-2)">Your order fills at or near ₦226.00. It cannot be cancelled once the market opens.</span>
+<span style="font-size:14px;line-height:20px;color:var(--ink-2)">Anything unfilled expires at 4:30pm. You can place a new order from 10:00am tomorrow.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s29c }}">Place order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Order type, shares, your price, amount, commission, total. Expiry and the no-cancel rule stated. Place order → <a href="#s29c">29C</a> when the market is shut, otherwise <a href="#s30">30 PIN</a>
+</div>
+</div>
+
+<div id="s29d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s43bd }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Review order</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">MTN Nigeria</span>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Order type</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">Limit buy</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Number of shares</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">109</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Your price per share</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦226.00</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Estimated amount</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦24,634.00</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Estimated commission</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦93.50<span style="color:#C9A6EC;display:inline-flex;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronDown" size="16" hint-size="16px,16px"></x-import></span></span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:18px 0 0">
+<span style="font-family:var(--font-display);font-weight:800;font-size:18px;color:#F4F2EF">Total amount</span>
+<span style="font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-.02em;color:#F4F2EF;font-variant-numeric:tabular-nums">₦24,727.50</span>
+</div>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:rgba(161,107,224,.20);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:7px">
+<span style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">Your order fills at or near ₦226.00. It cannot be cancelled once the market opens.</span>
+<span style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">Anything unfilled expires at 4:30pm. You can place a new order from 10:00am tomorrow.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s29cd }}">Place order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark review.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 5 · Market closed sheet, over the review</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s29c" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10);position:relative">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:center;padding:18px 20px 0"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink-3)">Review order</span></div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px;opacity:.35">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">MTN Nigeria</span>
+</div>
+<div style="padding:16px 24px 0;display:flex;justify-content:space-between;opacity:.35"><span style="font-size:15px;color:var(--ink-2)">Order type</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Limit buy</span></div>
+<div style="position:absolute;inset:0;background:var(--scrim)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:28px 28px 38px 38px;box-shadow:var(--shadow-sheet);padding:12px 24px 34px;display:flex;flex-direction:column;gap:18px;align-items:center">
+<span style="width:44px;height:5px;border-radius:999px;background:var(--track)"></span>
+<img src="assets/illustrations/kd-clock.svg" style="height:120px" alt="">
+<div style="display:flex;flex-direction:column;gap:12px;text-align:center">
+<span style="font-family:var(--font-display);font-weight:800;font-size:24px;line-height:30px;letter-spacing:-.02em;color:var(--ink)">The market is closed right now</span>
+<span style="font-size:15px;line-height:23px;color:var(--ink-2)">Your order goes to market when it reopens at 10:00am on Monday, and fills at the price then, not tonight's price.</span>
+<span style="font-size:15px;line-height:23px;color:var(--ink-2)">You can cancel it up to 5 minutes before the market opens.</span>
+</div>
+<span style="width:100%;height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s30 }}">Continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Appears over the review whenever the NGX is shut, before the PIN. Continue → <a href="#s30">30 PIN</a>
+</div>
+</div>
+
+<div id="s29cd" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35);position:relative">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:center;padding:18px 20px 0"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:rgba(244,242,239,.50)">Review order</span></div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px;opacity:.35">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">MTN Nigeria</span>
+</div>
+<div style="padding:16px 24px 0;display:flex;justify-content:space-between;opacity:.35"><span style="font-size:15px;color:rgba(244,242,239,.70)">Order type</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Limit buy</span></div>
+<div style="position:absolute;inset:0;background:var(--scrim)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#26242A;border-radius:28px 28px 38px 38px;box-shadow:var(--shadow-sheet);padding:12px 24px 34px;display:flex;flex-direction:column;gap:18px;align-items:center">
+<span style="width:44px;height:5px;border-radius:999px;background:rgba(255,255,255,.22)"></span>
+<img src="assets/illustrations/kd-clock.svg" style="height:120px" alt="">
+<div style="display:flex;flex-direction:column;gap:12px;text-align:center">
+<span style="font-family:var(--font-display);font-weight:800;font-size:24px;line-height:30px;letter-spacing:-.02em;color:#F4F2EF">The market is closed right now</span>
+<span style="font-size:15px;line-height:23px;color:rgba(244,242,239,.70)">Your order goes to market when it reopens at 10:00am on Monday, and fills at the price then, not tonight's price.</span>
+<span style="font-size:15px;line-height:23px;color:rgba(244,242,239,.70)">You can cancel it up to 5 minutes before the market opens.</span>
+</div>
+<span style="width:100%;height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s30d }}">Continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark closed-market sheet.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 3 (buy now) · How many shares</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s43m" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s42 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Buy MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:var(--ink)">How many shares?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">Buying now at the best price on sale, ₦228.50.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums">109</span>
+<span style="width:2px;height:28px;background:var(--indicator)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:var(--ink-3)">shares</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:var(--ink-3)">Min 1 share</span>
+<span style="font-size:13px;color:var(--ink-3)">Max 197 with your cash</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:var(--ink-2)">Estimated total</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums">₦25,000.00</span></div>
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">The final price can move a little while the order fills.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s29m }}">Review order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Buying now needs no price step. Review → <a href="#s29m">Step 4 (buy now)</a></div>
+</div>
+
+<div id="s43md" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s42d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Buy MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#F4F2EF">How many shares?</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">Buying now at the best price on sale, ₦228.50.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:#F4F2EF;font-variant-numeric:tabular-nums">109</span>
+<span style="width:2px;height:28px;background:var(--indicator-soft)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:rgba(244,242,239,.50)">shares</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Min 1 share</span>
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Max 197 with your cash</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:rgba(244,242,239,.70)">Estimated total</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦25,000.00</span></div>
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">The final price can move a little while the order fills.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s29md }}">Review order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 4 (buy now) · Review</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s29m" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s43m }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Review order</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">MTN Nigeria</span>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Order type</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">Market buy</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Number of shares</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">109</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Best price now</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦228.50</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Estimated amount</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦24,906.50</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Estimated commission</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦93.50<span style="color:var(--indicator);display:inline-flex;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronDown" size="16" hint-size="16px,16px"></x-import></span></span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:18px 0 0">
+<span style="font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--ink)">Total amount</span>
+<span style="font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums">₦25,000.00</span>
+</div>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--indicator-tint);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:7px">
+<span style="font-size:14px;line-height:20px;color:var(--ink-2)">You buy at the best prices on sale right now, so the final price per share can differ slightly.</span>
+<span style="font-size:14px;line-height:20px;color:var(--ink-2)">If nobody is selling, the order fails and nothing leaves your wallet.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s29c }}">Place order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Market-order review: no expiry rule, but the price can move. Place order → <a href="#s29c">29C</a> when the market is shut, otherwise <a href="#s30">30 PIN</a></div>
+</div>
+
+<div id="s29md" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s43md }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Review order</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">MTN Nigeria</span>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Order type</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">Market buy</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Number of shares</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">109</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Best price now</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦228.50</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Estimated amount</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦24,906.50</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Estimated commission</span><span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦93.50<span style="color:#C9A6EC;display:inline-flex;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronDown" size="16" hint-size="16px,16px"></x-import></span></span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:18px 0 0">
+<span style="font-family:var(--font-display);font-weight:800;font-size:18px;color:#F4F2EF">Total amount</span>
+<span style="font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-.02em;color:#F4F2EF;font-variant-numeric:tabular-nums">₦25,000.00</span>
+</div>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:rgba(161,107,224,.20);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:7px">
+<span style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">You buy at the best prices on sale right now, so the final price per share can differ slightly.</span>
+<span style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">If nobody is selling, the order fails and nothing leaves your wallet.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s29cd }}">Place order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark market review.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 6 · PIN, then order placed</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s30" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light · PIN</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:14px 20px 0"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="back" label="back" onClick="{{ nav.s29 }}" hint-size="40px,40px"></x-import></div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">Enter your transaction PIN</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">To approve ₦25,000 for MTNN.</div>
+</div>
+<div style="padding:30px 24px 0;display:flex;gap:16px;justify-content:center">
+<span style="width:16px;height:16px;border-radius:999px;background:var(--indicator)"></span>
+<span style="width:16px;height:16px;border-radius:999px;background:var(--indicator)"></span>
+<span style="width:16px;height:16px;border-radius:999px;background:var(--indicator)"></span>
+<span style="width:16px;height:16px;border-radius:999px;border:1.5px solid var(--indicator)"></span>
+</div>
+<div style="margin-top:auto;padding:0 40px 48px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;justify-items:center">
+<sc-for list="{{ keypad }}" as="k" hint-placeholder-count="12">
+<span style="width:76px;height:76px;display:grid;place-items:center;background:var(--paper);border:1px solid var(--hairline);border-radius:999px;font-family:var(--font-display);font-weight:700;font-size:24px;color:var(--ink);cursor:pointer" onClick="{{ nav.s31 }}">{{ k }}</span>
+</sc-for>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">4 digits → <a href="#s31">31 Order placed</a>
+</div>
+</div>
+
+<div id="s30d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark · PIN</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.5)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:14px 20px 0"><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s29d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span></div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">Enter your transaction PIN</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.7)">To approve ₦25,000 for MTNN.</div>
+</div>
+<div style="padding:30px 24px 0;display:flex;gap:16px;justify-content:center">
+<span style="width:16px;height:16px;border-radius:999px;background:#C9A6EC"></span>
+<span style="width:16px;height:16px;border-radius:999px;background:#C9A6EC"></span>
+<span style="width:16px;height:16px;border-radius:999px;background:#C9A6EC"></span>
+<span style="width:16px;height:16px;border-radius:999px;border:1.5px solid #C9A6EC"></span>
+</div>
+<div style="margin-top:auto;padding:0 40px 48px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;justify-items:center">
+<sc-for list="{{ keypad }}" as="k" hint-placeholder-count="12">
+<span style="width:76px;height:76px;display:grid;place-items:center;background:rgba(255,255,255,.07);border-radius:999px;font-family:var(--font-display);font-weight:700;font-size:24px;color:#F4F2EF;cursor:pointer" onClick="{{ nav.s31d }}">{{ k }}</span>
+</sc-for>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark PIN → <a href="#s31d">31 dark</a>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">s31</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s31" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light · Placed</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:26px;align-items:center;text-align:center">
+<div style="width:100%;background:var(--sun-tint);border-radius:24px;padding:20px 0;display:grid;place-items:center">
+<img src="assets/illustrations/kd-celebrate.svg" style="height:150px" alt="">
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.025em;color:var(--ink)">Order placed</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2);max-width:300px">109 shares of MTN Nigeria for ₦25,000.</div>
+</div>
+<div style="width:100%;background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:6px 18px">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--hairline)"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--gain);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="13" hint-size="13px,13px"></x-import></span><span style="font-size:15px;color:var(--ink)">Sent to the market</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--hairline)"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--indicator);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Spinner" size="12" color="#fff" hint-size="12px,12px"></x-import></span><span style="font-size:15px;color:var(--ink)">Buying your shares</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--track)"></span><span style="font-size:15px;color:var(--ink-2)">Shares settled, Thu 28 Aug</span></div>
+</div>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column;gap:12px">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer">Go to portfolio</span>
+<span style="font-size:14px;font-weight:600;color:var(--indicator);text-align:center;cursor:pointer">View this order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Three-step tracker, no jargon. Portfolio → Section 5
+</div>
+</div>
+
+<div id="s31d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark · Placed</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.5)"><span>9:41</span><span>LTE</span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:26px;align-items:center;text-align:center">
+<div style="width:100%;background:#26242A;border-radius:24px;padding:20px 0;display:grid;place-items:center">
+<img src="assets/illustrations/kd-celebrate.svg" style="height:150px" alt="">
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.025em;color:#F4F2EF">Order placed</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.7);max-width:300px">109 shares of MTN Nigeria for ₦25,000.</div>
+</div>
+<div style="width:100%;background:#26242A;border-radius:20px;padding:6px 18px">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:#2AA36B;color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="13" hint-size="13px,13px"></x-import></span><span style="font-size:15px;color:#F4F2EF">Sent to the market</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--indicator-soft);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Spinner" size="12" color="#fff" hint-size="12px,12px"></x-import></span><span style="font-size:15px;color:#F4F2EF">Buying your shares</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.1)"></span><span style="font-size:15px;color:rgba(244,242,239,.6)">Shares settled, Thu 28 Aug</span></div>
+</div>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column;gap:12px">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer">Go to portfolio</span>
+<span style="font-size:14px;font-weight:600;color:#C9A6EC;text-align:center;cursor:pointer">View this order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark placed state.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Step 7 · Bought, at the real prices</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s44" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s43 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Bought</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;align-items:center;gap:12px">
+<span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:rgba(42,163,107,.12);color:var(--gain)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="26" hint-size="26px,26px"></x-import></span>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center">
+<span style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:var(--ink)">You now own 109 more shares</span>
+<span style="font-size:15px;color:var(--ink-2)">MTN Nigeria · bought at two prices</span>
+</div>
+</div>
+<div style="padding:22px 24px 0">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:6px 18px">
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:14px;color:var(--ink-2)">64 shares at</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums">₦228.50</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:14px;color:var(--ink-2)">45 shares at</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums">₦229.10</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:14px;color:var(--ink-2)">Average price you paid</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums">₦228.75</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:14px;color:var(--ink-2)">Fees, all in</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums">₦93.50</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Left your wallet</span><span style="font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums">₦25,027.25</span></div>
+</div>
+</div>
+<div style="padding:18px 24px 0">
+<div style="background:var(--indicator-tint);border-radius:18px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px">
+<span style="color:var(--indicator);margin-top:2px"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="clock" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;font-size:14px;line-height:20px;color:var(--ink-2)"><span style="font-weight:700;color:var(--ink)">Shares settle Thu 28 Aug.</span> They already show in your portfolio.</div>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer">Done</span>
+<span style="font-size:14px;font-weight:600;color:var(--indicator);text-align:center;cursor:pointer">See receipt</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">What they actually bought, at the real prices paid.
+</div>
+</div>
+
+<div id="s44d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s43d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Bought</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;align-items:center;gap:12px">
+<span style="width:56px;height:56px;display:grid;place-items:center;border-radius:999px;background:rgba(111,211,164,.16);color:#9DEBC4"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="26" hint-size="26px,26px"></x-import></span>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center">
+<span style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#F4F2EF">You now own 109 more shares</span>
+<span style="font-size:15px;color:rgba(244,242,239,.70)">MTN Nigeria · bought at two prices</span>
+</div>
+</div>
+<div style="padding:22px 24px 0">
+<div style="background:#26242A;border-radius:20px;padding:6px 18px">
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:14px;color:rgba(244,242,239,.70)">64 shares at</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦228.50</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:14px;color:rgba(244,242,239,.70)">45 shares at</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦229.10</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:14px;color:rgba(244,242,239,.70)">Average price you paid</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦228.75</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:14px;color:rgba(244,242,239,.70)">Fees, all in</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦93.50</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Left your wallet</span><span style="font-family:var(--font-display);font-weight:800;font-size:17px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦25,027.25</span></div>
+</div>
+</div>
+<div style="padding:18px 24px 0">
+<div style="background:rgba(161,107,224,.20);border-radius:18px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px">
+<span style="color:#C9A6EC;margin-top:2px"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="clock" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;font-size:14px;line-height:20px;color:rgba(244,242,239,.70)"><span style="font-weight:700;color:#F4F2EF">Shares settle Thu 28 Aug.</span> They already show in your portfolio.</div>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;display:flex;flex-direction:column;gap:10px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer">Done</span>
+<span style="font-size:14px;font-weight:600;color:#C9A6EC;text-align:center;cursor:pointer">See receipt</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark bought state.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Orders hub · reached from the home quick actions</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s41" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s22 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Orders</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:16px 24px 0;display:flex;gap:8px">
+<span style="padding:9px 16px;border-radius:999px;background:var(--ink);font-size:14px;font-weight:700;color:#fff;white-space:nowrap">Open</span>
+<span style="padding:9px 16px;border-radius:999px;background:var(--paper);border:1px solid var(--hairline);font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;cursor:pointer">Done</span>
+<span style="padding:9px 16px;border-radius:999px;background:var(--paper);border:1px solid var(--hairline);font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;cursor:pointer">Cancelled</span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:12px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;cursor:pointer">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:999px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:12px;color:#20201E">MT</span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Buy MTNN · 109 shares</span><span style="font-size:13px;color:var(--ink-3)">Your price ₦226.00 · placed 9:20am</span></div>
+<span style="padding:5px 10px;border-radius:999px;background:var(--indicator-tint);font-size:12px;font-weight:700;color:var(--indicator);white-space:nowrap">In queue</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--ink-2)">Filled so far</span><span style="font-size:13px;font-weight:700;color:var(--ink)">40 of 109 shares</span></div>
+<div style="height:8px;border-radius:999px;background:var(--track);overflow:hidden"><span style="display:block;width:37%;height:8px;background:var(--indicator)"></span></div>
+</div>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:999px;background:#A16BE0;font-family:var(--font-display);font-weight:800;font-size:12px;color:#fff">GT</span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Sell GTCO · 400 shares</span><span style="font-size:13px;color:var(--ink-3)">Waiting for the market · opens 10:00am</span></div>
+<span style="padding:5px 10px;border-radius:999px;background:var(--track);font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap">Queued</span>
+</div>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:8px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">What these mean</span>
+<span style="font-size:14px;line-height:21px;color:var(--ink-2)"><span style="font-weight:700;color:var(--ink)">In queue</span> means the market is open and we are waiting for a seller at your price. <span style="font-weight:700;color:var(--ink)">Queued</span> means the market is shut and your order goes in when it opens.</span>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s42 }}">Place a new order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Reached from the Orders quick action on home. Part-fills tracked with a progress bar.
+</div>
+</div>
+
+<div id="s41d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s22d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Orders</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:16px 24px 0;display:flex;gap:8px">
+<span style="padding:9px 16px;border-radius:999px;background:var(--indicator-soft);font-size:14px;font-weight:700;color:#fff;white-space:nowrap">Open</span>
+<span style="padding:9px 16px;border-radius:999px;background:#26242A;font-size:14px;font-weight:600;color:#F4F2EF;white-space:nowrap;cursor:pointer">Done</span>
+<span style="padding:9px 16px;border-radius:999px;background:#26242A;font-size:14px;font-weight:600;color:#F4F2EF;white-space:nowrap;cursor:pointer">Cancelled</span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:12px">
+<div style="background:#26242A;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;cursor:pointer">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:999px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:12px;color:#20201E">MT</span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Buy MTNN · 109 shares</span><span style="font-size:13px;color:rgba(244,242,239,.50)">Your price ₦226.00 · placed 9:20am</span></div>
+<span style="padding:5px 10px;border-radius:999px;background:rgba(161,107,224,.20);font-size:12px;font-weight:700;color:#C9A6EC;white-space:nowrap">In queue</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:rgba(244,242,239,.70)">Filled so far</span><span style="font-size:13px;font-weight:700;color:#F4F2EF">40 of 109 shares</span></div>
+<div style="height:8px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden"><span style="display:block;width:37%;height:8px;background:var(--indicator-soft)"></span></div>
+</div>
+</div>
+<div style="background:#26242A;border-radius:20px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:999px;background:#A16BE0;font-family:var(--font-display);font-weight:800;font-size:12px;color:#fff">GT</span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Sell GTCO · 400 shares</span><span style="font-size:13px;color:rgba(244,242,239,.50)">Waiting for the market · opens 10:00am</span></div>
+<span style="padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.07);font-size:12px;font-weight:700;color:rgba(244,242,239,.70);white-space:nowrap">Queued</span>
+</div>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:8px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">What these mean</span>
+<span style="font-size:14px;line-height:21px;color:rgba(244,242,239,.70)"><span style="font-weight:700;color:#F4F2EF">In queue</span> means the market is open and we are waiting for a seller at your price. <span style="font-weight:700;color:#F4F2EF">Queued</span> means the market is shut and your order goes in when it opens.</span>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s42d }}">Place a new order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark orders hub.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Sell step 1 · How to sell</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s45" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s34 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">How to sell</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">How do you want to sell?</div>
+<div style="font-size:16px;line-height:24px;color:var(--ink-2)">You hold 758 MTN Nigeria shares</div>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:14px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:18px;display:flex;gap:14px;cursor:pointer" onClick="{{ nav.s46m }}">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(42,163,107,.12);color:var(--gain)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="arrowDownLeft" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Sell now</span>
+<span style="font-size:14px;line-height:20px;color:var(--ink-2)">Sells to whoever is paying the most right now, currently ₦226.00. If nobody is buying, nothing happens.</span>
+</div>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:18px;display:flex;gap:14px;cursor:pointer" onClick="{{ nav.s46 }}">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="clock" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Name your price</span>
+<span style="font-size:14px;line-height:20px;color:var(--ink-2)">You set what one share must fetch. It waits in the queue until a buyer pays it, or the market closes.</span>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From the holding page Sell button. Sell now → <a href="#s46m">Sell step 2 (now)</a> · Name your price → <a href="#s46">Sell step 2 (limit)</a>
+</div>
+</div>
+
+<div id="s45d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s34 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">How to sell</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">How do you want to sell?</div>
+<div style="font-size:16px;line-height:24px;color:rgba(244,242,239,.70)">You hold 758 MTN Nigeria shares</div>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:14px">
+<div style="background:#26242A;border-radius:20px;padding:18px;display:flex;gap:14px;cursor:pointer" onClick="{{ nav.s46md }}">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(111,211,164,.16);color:#9DEBC4"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="arrowDownLeft" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Sell now</span>
+<span style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">Sells to whoever is paying the most right now, currently ₦226.00. If nobody is buying, nothing happens.</span>
+</div>
+</div>
+<div style="background:#26242A;border-radius:20px;padding:18px;display:flex;gap:14px;cursor:pointer" onClick="{{ nav.s46d }}">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="clock" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Name your price</span>
+<span style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">You set what one share must fetch. It waits in the queue until a buyer pays it, or the market closes.</span>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark. Sell now → <a href="#s46md">46M dark</a> · Name your price → <a href="#s46d">46 dark</a></div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Sell step 2 · Your price per share</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s46" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s45 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Sell MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:var(--ink)">What must one share fetch?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">Naming your price. You paid ₦217.80 a share on average.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums">₦231.00</span>
+<span style="width:2px;height:28px;background:var(--indicator)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:var(--ink-3)">per share</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:var(--ink-3)">Min ₦0.05</span>
+<span style="font-size:13px;color:var(--ink-3)">Max ₦250.00</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:var(--ink-2)">Best buyer now</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums">₦226.00</span></div>
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Above ₦226.00 your shares wait until a buyer pays your price.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s47 }}">Continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Sell price, one field. Continue → <a href="#s47">Sell step 3</a>
+</div>
+</div>
+
+<div id="s46d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s45d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Sell MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#F4F2EF">What must one share fetch?</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">Naming your price. You paid ₦217.80 a share on average.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦231.00</span>
+<span style="width:2px;height:28px;background:var(--indicator-soft)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:rgba(244,242,239,.50)">per share</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Min ₦0.05</span>
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Max ₦250.00</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:rgba(244,242,239,.70)">Best buyer now</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦226.00</span></div>
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Above ₦226.00 your shares wait until a buyer pays your price.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s47d }}">Continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Sell step 3 · How many shares (naming your price)</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s47" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s46 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Sell MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:var(--ink)">How many shares?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">At your price of ₦231.00 a share.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums">380</span>
+<span style="width:2px;height:28px;background:var(--indicator)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:var(--ink-3)">of 758</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:var(--ink-3)">Min 1 share</span>
+<span style="font-size:13px;color:var(--ink-3)">Max All 758</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:var(--ink-2)">You receive</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums">₦87,463.30</span></div>
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Fees and stamp duty of ₦316.70 taken off. 378 shares left.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s48 }}">Review sale</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Continue → <a href="#s48">Sell step 4</a>
+</div>
+</div>
+
+<div id="s47d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s46d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Sell MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#F4F2EF">How many shares?</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">At your price of ₦231.00 a share.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:#F4F2EF;font-variant-numeric:tabular-nums">380</span>
+<span style="width:2px;height:28px;background:var(--indicator-soft)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:rgba(244,242,239,.50)">of 758</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Min 1 share</span>
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Max All 758</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:rgba(244,242,239,.70)">You receive</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦87,463.30</span></div>
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Fees and stamp duty of ₦316.70 taken off. 378 shares left.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s48d }}">Review sale</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Sell step 4 · Review the sale</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s48" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s47 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Review sale</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">MTN Nigeria</span>
+</div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Order type</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Limit sell</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Shares you are selling</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">380 of 758</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Your price per share</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦231.00</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Fees and stamp duty</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦316.70</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 0 0"><span style="font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--ink)">You receive</span><span style="font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums">₦87,463.30</span></div>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:9px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Where the money goes</span>
+<div style="background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="card" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink)">First Bank ···6835</span><span style="font-size:12px;color:var(--ink-3)">Direct Cash Settlement · 3 working days</span></div>
+<span style="width:20px;height:20px;display:grid;place-items:center;border-radius:999px;background:var(--indicator);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="11" hint-size="11px,11px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--track);color:var(--ink-2)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink)">My Kudimata wallet</span><span style="font-size:12px;color:var(--ink-3)">Ready to invest again, same 3 days</span></div>
+</div>
+</div>
+<div style="padding:14px 24px 0">
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Unfilled sell orders expire at 4:30pm. Nothing leaves your holding until a buyer takes it.</span>
+</div>
+<div style="margin-top:auto;padding:14px 24px 30px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s30 }}">Place sell order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Type, shares, price, fees, what you receive, and where it lands. Place → <a href="#s30">Step 6 PIN</a>
+</div>
+</div>
+
+<div id="s48d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s47d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Review sale</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">MTN Nigeria</span>
+</div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Order type</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Limit sell</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Shares you are selling</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">380 of 758</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Your price per share</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦231.00</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Fees and stamp duty</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦316.70</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 0 0"><span style="font-family:var(--font-display);font-weight:800;font-size:17px;color:#F4F2EF">You receive</span><span style="font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;color:#F4F2EF;font-variant-numeric:tabular-nums">₦87,463.30</span></div>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:9px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Where the money goes</span>
+<div style="background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="card" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF">First Bank ···6835</span><span style="font-size:12px;color:rgba(244,242,239,.50)">Direct Cash Settlement · 3 working days</span></div>
+<span style="width:20px;height:20px;display:grid;place-items:center;border-radius:999px;background:var(--indicator-soft);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="11" hint-size="11px,11px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:rgba(255,255,255,.07);color:rgba(244,242,239,.70)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF">My Kudimata wallet</span><span style="font-size:12px;color:rgba(244,242,239,.50)">Ready to invest again, same 3 days</span></div>
+</div>
+</div>
+<div style="padding:14px 24px 0">
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Unfilled sell orders expire at 4:30pm. Nothing leaves your holding until a buyer takes it.</span>
+</div>
+<div style="margin-top:auto;padding:14px 24px 30px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s30d }}">Place sell order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark sell review.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Sell step 3 (sell now) · How many shares</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s46m" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s45 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Sell MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:var(--ink)">How many shares?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">Selling now to the best buyer, ₦226.00 a share.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums">380</span>
+<span style="width:2px;height:28px;background:var(--indicator)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:var(--ink-3)">of 758</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:var(--ink-3)">Min 1 share</span>
+<span style="font-size:13px;color:var(--ink-3)">Max All 758</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:var(--ink-2)">You should receive</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums">₦85,570.20</span></div>
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Fees of ₦309.80 taken off. Money reaches you in 3 working days.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s48m }}">Review sale</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Selling now needs no price step. Review → <a href="#s48m">Sell step 4 (sell now)</a>
+</div>
+</div>
+
+<div id="s46md" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s45d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Sell MTNN</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#F4F2EF">How many shares?</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">Selling now to the best buyer, ₦226.00 a share.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:66px;background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 18px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:26px;color:#F4F2EF;font-variant-numeric:tabular-nums">380</span>
+<span style="width:2px;height:28px;background:var(--indicator-soft)"></span>
+<span style="flex:1"></span>
+<span style="font-size:15px;color:rgba(244,242,239,.50)">of 758</span>
+</div>
+<div style="display:flex;justify-content:space-between">
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Min 1 share</span>
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Max All 758</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:2px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:rgba(244,242,239,.70)">You should receive</span><span style="font-family:var(--font-display);font-weight:800;font-size:22px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦85,570.20</span></div>
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Fees of ₦309.80 taken off. Money reaches you in 3 working days.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 32px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s48md }}">Review sale</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">Sell step 4 (sell now) · Review</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s48m" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s46m }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Review sale</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">MTN Nigeria</span>
+</div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Order type</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Market sell</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Shares you are selling</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">380 of 758</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Best buyer now</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦226.00</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:15px;color:var(--ink-2)">Fees and stamp duty</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">₦309.80</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 0 0"><span style="font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--ink)">You receive</span><span style="font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums">₦85,570.20</span></div>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:9px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Where the money goes</span>
+<div style="background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="card" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink)">First Bank ···6835</span><span style="font-size:12px;color:var(--ink-3)">Direct Cash Settlement · 3 working days</span></div>
+<span style="width:20px;height:20px;display:grid;place-items:center;border-radius:999px;background:var(--indicator);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="11" hint-size="11px,11px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--track);color:var(--ink-2)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink)">My Kudimata wallet</span><span style="font-size:12px;color:var(--ink-3)">Ready to invest again, same 3 days</span></div>
+</div>
+</div>
+<div style="padding:14px 24px 0">
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">If nobody is buying, the order fails and your shares stay where they are.</span>
+</div>
+<div style="margin-top:auto;padding:14px 24px 30px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s30 }}">Place sell order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Selling now: no expiry rule, price is the best buyer. Place → <a href="#s30">Step 6 PIN</a></div>
+</div>
+
+<div id="s48md" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s46md }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Review sale</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+<span style="width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#F5C542;font-family:var(--font-display);font-weight:800;font-size:18px;color:#20201E">MT</span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">MTN Nigeria</span>
+</div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Order type</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Market sell</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Shares you are selling</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">380 of 758</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Best buyer now</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦226.00</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:15px;color:rgba(244,242,239,.70)">Fees and stamp duty</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦309.80</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 0 0"><span style="font-family:var(--font-display);font-weight:800;font-size:17px;color:#F4F2EF">You receive</span><span style="font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:-.02em;color:#F4F2EF;font-variant-numeric:tabular-nums">₦85,570.20</span></div>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:9px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Where the money goes</span>
+<div style="background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="card" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF">First Bank ···6835</span><span style="font-size:12px;color:rgba(244,242,239,.50)">Direct Cash Settlement · 3 working days</span></div>
+<span style="width:20px;height:20px;display:grid;place-items:center;border-radius:999px;background:var(--indicator-soft);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="11" hint-size="11px,11px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<span style="width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:rgba(255,255,255,.07);color:rgba(244,242,239,.70)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="17" hint-size="17px,17px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF">My Kudimata wallet</span><span style="font-size:12px;color:rgba(244,242,239,.50)">Ready to invest again, same 3 days</span></div>
+</div>
+</div>
+<div style="padding:14px 24px 0">
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">If nobody is buying, the order fails and your shares stay where they are.</span>
+</div>
+<div style="margin-top:auto;padding:14px 24px 30px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s30d }}">Place sell order</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark market-sell review.</div>
+</div>
+
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const go = id => () => { location.hash = ''; location.hash = id; };
+    const nav = {};
+    ["s42","s42d","s43","s43d","s43b","s43bd","s29","s29d","s29c","s29cd","s43m","s43md","s29m","s29md","s30","s31","s30d","s31d","s44","s44d","s41","s41d","s45","s45d","s46","s46d","s47","s47d","s46m","s46md","s48m","s48md","s48","s48d","s22","s22d","s26","s26d","s34"].forEach(id => { nav[id] = go(id); });
+    return { nav, keypad: ['1','2','3','4','5','6','7','8','9','','0','⌫'] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,10 +1,17 @@
-// 07 · Reset your password — email entry, then code + new password. Ported
-// from screens.jsx ResetPasscode (originally mislabeled "reset your
-// passcode" — both the screen copy and the buttons linking to it, on both
-// the login form and the local-unlock screen, called this "Forgot
-// passcode"; relabeled to "Forgot/reset password" since that's what it
-// actually does), extended with a second step. Mid-flow gated screen pushed
-// off Log in, no tab bar.
+// Artboard `s09` (+ dark `s09d`) in `01 Getting In.dc.html` — Reset your
+// password. Ported from screens.jsx ResetPasscode (originally mislabeled
+// "reset your passcode" — both the screen copy and the buttons linking to
+// it, on both the login form and the local-unlock screen, called this
+// "Forgot passcode"; relabeled to "Forgot/reset password" since that's what
+// it actually does). Mid-flow gated screen pushed off Log in, no tab bar.
+//
+// R-20 (docs/redesign/DECISIONS.md): "Account password reset and local
+// passcode reset stay SEPARATE flows. The canvas's combined flow (email code
+// → straight into setting a passcode) is not adopted: it would mean anyone
+// with email access can reset a device credential." This screen ends by
+// signing the investor out and handing them to the real email+password
+// login form (log_in_screen.dart) — never to create_passcode_screen.dart —
+// so a successful reset here can never itself mint a new local passcode.
 //
 // Reconciliation note: the backend concept behind this screen is a real
 // account PASSWORD reset, not the app-local PIN —
@@ -18,13 +25,28 @@
 //     request-password-reset — see lib/data/repositories/auth_repository.dart
 //     and Kudimata-Securities-Backend src/auth/auth.controller.ts /
 //     dto/reset-password.dto.ts for confirmation of the exact body shape).
-// The original mock screen only ever collected an email with no code/new-
-// password fields (its "Send code" button just navigated straight back to
-// Log in), so a second step is added here to actually complete the flow:
-// a numeric code field plus a new-password field, reusing this screen's
-// existing KInput/KButton/KScreenHead/KOnboardTopBar/KOnboardBody shapes —
-// no new shared widgets. The back arrow steps from the code/password step
-// back to the email step before falling back to Log in.
+//
+// `s09` itself draws one screen — illustration, "Reset your password", "We
+// email a link to adebayo@email.com so you can set a new password.", one
+// "Email me a reset link" button — and its own flow note says the next step
+// is a `s04`-style code entry, then straight into a NEW passcode (`s05`).
+// That chained ending is exactly R-20's rejected "combined flow", so it is
+// not built. What ships instead: `s09`'s look for the request step (below),
+// then a second, real step this app adds — a code field plus a new-password
+// field, POSTed to /auth/reset-password — reusing this screen's existing
+// KInput/KButton/KScreenHead/KOnboardTopBar/KOnboardBody shapes, no new
+// shared widgets. `s09` also claims the email is sent as a clickable "link";
+// the real endpoint returns an `EmailOtp` (a code), not a link, so the
+// on-screen copy says "code" — R-34: a claim about system behaviour with no
+// mechanism behind it (a link, when the backend hands back a one-time code)
+// is not shipped as designed, only the accurate version. The back arrow
+// steps from the code/password step back to the email step before falling
+// back to Log in.
+//
+// 2026-08-27 (SCREEN-AGENT-BRIEF.md R-5 audit): this file used to cite
+// "Canvas #s12" — an id from the retired 97-screen canvas, and one that
+// described a different shape entirely (arriving pre-warmed on "step 2 of
+// 2"). Renumbered/corrected throughout below to `s09`.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -70,16 +92,16 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
   bool _codeSent = false;
   bool _busy = false;
 
-  // Canvas #s12 is reached ALREADY on "Reset · step 2 of 2" — there is no
-  // separate email-entry screen in the canvas at all, because both of its
-  // entry points (screen 11's "Forgot your password?" and screen 04's "I
-  // can't access this email") already know the investor's email from
-  // context. otp_screen.dart and log_in_screen.dart now thread that known
-  // email through via GoRouter `extra`; when present, skip the email step
-  // entirely and fire the reset email automatically, same as the canvas
-  // implies. Falls back to the manual email-entry step (this screen's
-  // pre-existing behaviour) when reached with no known email (e.g. a bare
-  // deep link) — same pattern otp_screen.dart's `_email` getter uses.
+  // `s09` shows the investor's email as static text ("We email a link to
+  // adebayo@email.com…") with no email input field anywhere on it — both of
+  // its real entry points (`s08p`'s and `s08`'s "Forgot password?" links)
+  // already know the investor's email from context. otp_screen.dart and
+  // log_in_screen.dart now thread that known email through via GoRouter
+  // `extra`; when present, skip the email step entirely and fire the reset
+  // email automatically, same as the canvas implies. Falls back to the
+  // manual email-entry step (this screen's pre-existing behaviour) when
+  // reached with no known email (e.g. a bare deep link) — same pattern
+  // otp_screen.dart's `_email` getter uses.
   bool _autoStartHandled = false;
   // True once we know the email step was skipped via a known-email `extra` —
   // there's then no real "step 1" to fall back to on a back-tap, so it goes
@@ -188,6 +210,13 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KOnboardTopBar(
+              // `s09` itself shows no step label (just a back arrow) — but
+              // it also draws only one screen, with no in-app code/password
+              // step at all. Since this app must complete the reset over two
+              // real steps the canvas never drew (see file header), a step
+              // label here orients the investor through content the artboard
+              // doesn't depict, rather than copying a "no label" chrome that
+              // only made sense for a single-screen flow.
               stepLabel: _codeSent ? 'Reset · step 2 of 2' : 'Reset · step 1 of 2',
               onBack: _onBack,
             ),
@@ -205,11 +234,22 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
 
   List<Widget> _emailStep() {
     return [
+      // `s09`'s illustration, on the same sun-tinted plate the artboard
+      // draws it on.
+      const KIllustration('email-sent', role: KIlloRole.state, tone: KIlloTone.sun),
+      const SizedBox(height: 20),
       const KScreenHead(
         title: 'Reset your password',
+        // `s09` says "We email a link…" — the real endpoint returns an
+        // EmailOtp (a one-time code), not a link (see file header's R-34
+        // note), so this says "code" to match what actually happens.
         body: "We'll send a code to your email.",
       ),
       const SizedBox(height: 28),
+      // `s09` never draws this field — its real entry points already know
+      // the investor's email (see the `_email` field's own doc comment).
+      // This only renders on a bare deep link with no known email, a case
+      // the artboard doesn't depict but this code path still has to serve.
       KInput(
         key: const ValueKey('reset-email-input'),
         label: 'Email',

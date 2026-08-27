@@ -1,6 +1,7 @@
-// KYC 2 of 8 — CHN · optional (canvas screen 15). NEW screen (2026-08-24,
-// re-sequencing the 5-step phased flow to the canvas's real 8 steps). Sits
-// right after BVN/NIN (step 1), before ID upload (step 3).
+// KYC 2 of 7 — CHN · optional (canvas screen 15). NEW screen (2026-08-24,
+// re-sequencing the 5-step phased flow to the canvas's real steps; renumbered
+// 8->7 steps 2026-08-27 per X-2/bvn_nin.dart's derivation — see there). Sits
+// right after BVN/NIN (step 1), before Documents (step 3).
 //
 // The CHN itself is a real backend field (KycSubmission.chn — added
 // 2026-08-24 alongside this screen), updated via
@@ -13,6 +14,10 @@
 // to null on a fresh draft; nothing to PATCH. "Skip — create one for me"
 // (ghost button) is the same no-op-and-move-on, always available regardless
 // of the radio/input state, per the canvas's own two-CTA design.
+//
+// Step-complete navigation goes to Routes.kycChecklist, not straight to the
+// next collection screen (X-5, SHARED-CHANGES.md 2026-08-27) — the
+// checklist hub is the flow's spine now, re-entered after every step.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -69,7 +74,7 @@ class _ChnScreenState extends State<ChnScreen> {
     }
     if (!_hasChn) {
       // Nothing to persist — chn already defaults to null on the draft.
-      context.go(Routes.kycId);
+      context.go(Routes.kycChecklist);
       return;
     }
     setState(() {
@@ -79,7 +84,7 @@ class _ChnScreenState extends State<ChnScreen> {
     try {
       await _repo.updateDraftFields(chn: _chn.text.trim());
       if (!mounted) return;
-      context.go(Routes.kycId);
+      context.go(Routes.kycChecklist);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -91,7 +96,7 @@ class _ChnScreenState extends State<ChnScreen> {
     }
   }
 
-  void _skip() => context.go(Routes.kycId);
+  void _skip() => context.go(Routes.kycChecklist);
 
   @override
   Widget build(BuildContext context) {
@@ -103,9 +108,9 @@ class _ChnScreenState extends State<ChnScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycBvn),
-              stepLabel: 'Verification · 2 of 8 · optional',
+              stepLabel: 'Verification · 2 of 7 · optional',
             ),
-            const KycStepProgress(total: 8, current: 2),
+            const KycStepProgress(total: 7, current: 2),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

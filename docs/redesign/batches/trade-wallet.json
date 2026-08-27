@@ -1,0 +1,197 @@
+{
+  "batch": "trade-wallet",
+  "screens": [
+    {
+      "app_screen": "lib/screens/portfolio/holding_detail_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s34",
+          "overlap": 0.188,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "34 \u00b7 One holding"
+        },
+        {
+          "id": "s52",
+          "overlap": 0.13,
+          "file": "06 Account and Support.dc.html",
+          "label": "52 \u00b7 Statements and contract notes"
+        },
+        {
+          "id": "s41",
+          "overlap": 0.13,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Orders hub \u00b7 reached from the home quick actions"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/portfolio/order_status_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s41",
+          "overlap": 0.176,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Orders hub \u00b7 reached from the home quick actions"
+        },
+        {
+          "id": "s29",
+          "overlap": 0.162,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 4 \u00b7 Review, naming your price"
+        },
+        {
+          "id": "s39",
+          "overlap": 0.149,
+          "file": "03 Home and Markets.dc.html",
+          "label": "39 \u00b7 Market closed"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/portfolio/portfolio_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s44",
+          "overlap": 0.167,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 7 \u00b7 Bought, at the real prices"
+        },
+        {
+          "id": "s33",
+          "overlap": 0.143,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "33 \u00b7 Portfolio"
+        },
+        {
+          "id": "s50",
+          "overlap": 0.119,
+          "file": "03 Home and Markets.dc.html",
+          "label": "50 \u00b7 My alerts, and one that fired"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/trade/order_fill_progress_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s41",
+          "overlap": 0.225,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Orders hub \u00b7 reached from the home quick actions"
+        },
+        {
+          "id": "s39",
+          "overlap": 0.2,
+          "file": "03 Home and Markets.dc.html",
+          "label": "39 \u00b7 Market closed"
+        },
+        {
+          "id": "s29",
+          "overlap": 0.175,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 4 \u00b7 Review, naming your price"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/trade/price_moved_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s39",
+          "overlap": 0.238,
+          "file": "03 Home and Markets.dc.html",
+          "label": "39 \u00b7 Market closed"
+        },
+        {
+          "id": "s50",
+          "overlap": 0.214,
+          "file": "03 Home and Markets.dc.html",
+          "label": "50 \u00b7 My alerts, and one that fired"
+        },
+        {
+          "id": "s40",
+          "overlap": 0.214,
+          "file": "03 Home and Markets.dc.html",
+          "label": "40 \u00b7 Queued order, and cancelling it"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/trade/trade_flows.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s48",
+          "overlap": 0.12,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Sell step 4 \u00b7 Review the sale"
+        },
+        {
+          "id": "s39",
+          "overlap": 0.115,
+          "file": "03 Home and Markets.dc.html",
+          "label": "39 \u00b7 Market closed"
+        },
+        {
+          "id": "s40",
+          "overlap": 0.106,
+          "file": "03 Home and Markets.dc.html",
+          "label": "40 \u00b7 Queued order, and cancelling it"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/wallet/wallet_flows.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s37",
+          "overlap": 0.157,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "37 \u00b7 Withdraw"
+        },
+        {
+          "id": "s36",
+          "overlap": 0.142,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "36 \u00b7 Add money"
+        },
+        {
+          "id": "s23",
+          "overlap": 0.112,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/wallet/wallet_screens.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s37",
+          "overlap": 0.222,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "37 \u00b7 Withdraw"
+        },
+        {
+          "id": "s35",
+          "overlap": 0.185,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "35 \u00b7 Wallet"
+        },
+        {
+          "id": "s56",
+          "overlap": 0.148,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        }
+      ]
+    }
+  ]
+}

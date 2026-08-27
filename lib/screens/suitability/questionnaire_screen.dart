@@ -91,7 +91,18 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   void _back() {
     if (_index == 0) {
-      context.pop(); // back to the gate that launched suitability
+      // Two entry paths: AppState.tradingEligibilityGap's fallback prompt
+      // (home_screen.dart) `push`es this route, leaving a real screen
+      // beneath it to pop back to. R-8a's primary onboarding path instead
+      // reaches here via otp_screen.dart's `context.go(Routes.questionnaire)`
+      // — a replace, not a push, so there's nothing on the stack to pop and
+      // `context.pop()` alone would silently do nothing. Fall back to OTP
+      // in that case rather than leaving the back control dead.
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(Routes.otp);
+      }
       return;
     }
     setState(() => _index--);

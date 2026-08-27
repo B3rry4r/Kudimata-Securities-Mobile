@@ -22,6 +22,29 @@
 // A single PATCH /users/me call (UserRepository.updateProfile) persists
 // dob/residentialAddress/city/state/phone — no separate submission step,
 // unlike the old KYC screen which staged values into KycFormState first.
+//
+// 2026-08-27 (SCREEN-AGENT-BRIEF.md R-19 audit): this screen's 5 fields
+// were checked field-by-field against the two things now upstream of it —
+// BVN/NIN auto-populate (bvn_nin.dart's `s13` confirm step) and the address
+// step `utility_bill.dart` (`s17`) added under this same ruling.
+//   - Residential address, City, State: `utility_bill.dart` collects the
+//     same three (as Street address / State / LGA) and PATCHes the SAME
+//     fields (residentialAddress/state/city) to the SAME endpoint. An
+//     investor who reaches KYC types these twice. DUPLICATE.
+//   - Date of birth: R-19's own text says "BVN returns name and DOB", which
+//     would make this a duplicate too — but bvn_nin.dart's own file header
+//     records that draftStep1/getDraft's real response has NO resolved
+//     name/DOB/phone (only masked bvn/nin + pass/fail booleans, filed as a
+//     backend gap there), so `s13` ships its confirm rows as "—" per R-34.
+//     Nothing else in the app collects DOB. NOT a duplicate today — the
+//     only place DOB is actually captured, whatever the ruling assumed.
+//   - Phone: `s17` doesn't collect it, nothing upstream does either. NOT a
+//     duplicate — R-19's own conclusion holds here.
+// Net: this screen is a removal CANDIDATE for its 3 address fields (once a
+// human decides how to de-duplicate the two entry points — not this file's
+// call), but DOB and phone are both still live, uniquely-sourced fields.
+// Per the brief this screen is not rewritten or trimmed on that basis; this
+// is a report, filed here for whoever runs the removal pass.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -162,10 +185,15 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Canvas #s10 has no top bar at all — no back arrow, no step
-            // label; content starts directly under the status bar (found in
-            // the 2026-08-23 exactness audit; KOnboardTopBar was an
-            // unrequested addition).
+            // No top bar — no back arrow, no step label; content starts
+            // directly under the status bar (found in the 2026-08-23
+            // exactness audit, against the pre-renumber canvas;
+            // KOnboardTopBar was an unrequested addition). 2026-08-27
+            // (SCREEN-AGENT-BRIEF.md R-5 audit): the "#s10" id that comment
+            // cited is retired — this screen has no artboard at all in the
+            // current canvas (R-19, docs/redesign/DECISIONS.md: superseded
+            // by BVN/NIN auto-populate + `s17`'s address step), so the
+            // layout finding is kept without a now-fictitious id attached.
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -178,10 +206,10 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                       body: 'This keeps your account secure and compliant.',
                     ),
                     const SizedBox(height: 20),
-                    // Canvas #s10: fields sit directly on --bg with a plain
-                    // gap:16px flex column — no card background/border/
-                    // padding around the group. The KCard wrapper here was
-                    // an unrequested addition (found in the 2026-08-23
+                    // Fields sit directly on --bg with a plain gap:16px flex
+                    // column — no card background/border/padding around the
+                    // group. The KCard wrapper here was an unrequested
+                    // addition (found in the 2026-08-23
                     // exactness audit); removed to match.
                     _TappableField(
                         label: 'Date of birth',

@@ -1,49 +1,83 @@
-// Kudimata Invest — Stage 8: Wallet money-movement flows as bottom sheets.
-// Mirrors wallet-screens.jsx (AddMoney / Withdraw) as showKSheet
-// sequences: amount → method/bank → review → KStatusView success. The
-// launching wallet screen stays behind the scrim.
+// Kudimata Invest — Wallet money-movement flows as bottom sheets, rebuilt
+// 2026-08-27 against the 2026-08 redesign canvas: `05 Portfolio and
+// Wallet.dc.html`, artboards s36 (Add money) and s37 (Withdraw) — ids taken
+// from docs/redesign/RULINGS.md per R-5, NOT from any id this file used to
+// cite (this header previously referenced "spec screen 41/42/63" from the
+// old 97-screen canvas; those ids now point at unrelated artboards there).
 //
-// Wired per lib/data/api/README.md. Withdraw's review step calls
-// WalletRepository.withdraw() (POST /transactions/withdraw) same as before.
-// On ApiException from the call itself (e.g. a real 422 for insufficient
-// balance) an error variant of the KStatusView sheet shows, and the review
-// step is left in place (not popped) so the user can retry without
-// re-entering anything.
+// THE FEE QUESTION (docs/redesign/DECISIONS.md C-3 / FACT-CONFLICTS.md):
+// s36 draws "Bank transfer ₦100 to ₦150 · same day" and "Debit card
+// Flutterwave · ₦28 fee, instant". 2026-08-27 (R-37/BR-2): both figures are
+// now real — `WalletRepository.virtualAccount()`/`fund()` carry a real
+// `feeKobo` each, computed server-side by `transactions/deposit-fees.ts`
+// (the single source of truth: ₦100 transfer, ₦150 card, ₦28 of the card
+// figure is Flutterwave's own cut). Nothing below hardcodes any of those
+// numbers — [_feeLabel] renders whatever `feeKobo` the wire response
+// carries, "Free" only if that figure is genuinely zero. `fees.ts`'s own
+// header records what a hardcoded client-side fee cost last time — a
+// quoted "Fees · 1.35%" while the backend charged nothing at all — so this
+// file still never pastes a figure at a call site, even now that the
+// figures are real: every call site reads its own response's `feeKobo`.
 //
-// Add money offers TWO real funding paths (2026-08-23 — restored the card
-// option after "isnt there a way we can offer two options, one for
-// transfer... one for payment gateway"): _AddMoneyChooser picks between
-// them, then either
+// The debit-card method row is the one place a figure still can't be shown
+// before the investor acts: no quote endpoint exists, `fund()`'s response
+// (the only place a card `feeKobo` is served) only exists after the
+// backend has already created a pending Transaction. Per R-34 that row
+// states no card figure ahead of time — filed in BACKEND_GAPS.md. The real
+// card fee is shown as soon as it's known, in the awaiting-payment sheet
+// after `fund()` returns.
+//
+// Add money is ONE sheet (matching s36's single artboard, not a
+// chooser-then-push-to-a-second-sheet pair): two selectable method cards
+// (bank transfer / debit card) with the panel beneath them swapping to
+// match the selection, bank transfer selected by default per s36's own
+// highlighted-border state.
 //   - Bank transfer: WalletRepository.virtualAccount() (GET
-//     /transactions/virtual-account), the investor's own permanent, dedicated
-//     bank account (Flutterwave v4 Virtual Accounts) — _AddMoneySheet just
-//     displays it with a copy button. No amount entry, no review/confirm
-//     step: the investor transfers whatever they want, whenever they want,
-//     from their own banking app, and the wallet balance updates once the
-//     backend's webhook confirms the transfer landed.
+//     /transactions/virtual-account), the investor's own permanent,
+//     dedicated bank account (Flutterwave v4 Virtual Accounts). No amount
+//     entry, no review/confirm step: the investor transfers whatever they
+//     want, whenever they want, from their own banking app, and the wallet
+//     balance updates once the backend's webhook confirms the transfer
+//     landed.
 //   - Card: WalletRepository.fund() (POST /transactions/fund) creates a
 //     pending Transaction and returns a Flutterwave hosted-checkout link,
-//     which _CardFundSheet opens externally (same launchUrl pattern
-//     help_support_screen.dart uses) — the investor completes payment in
-//     their browser/card app, and the balance updates once Flutterwave's
-//     webhook confirms it server-to-server.
-// Withdraw is UNCHANGED — withdrawals still go server-to-bank directly via
-// v3, so its review step keeps the original immediate KStatusView success
-// flow.
+//     opened externally (same launchUrl pattern help_support_screen.dart
+//     uses) — the investor completes payment in their browser/card app, and
+//     the balance updates once Flutterwave's webhook confirms it
+//     server-to-server. s36 draws no content for this branch beyond the
+//     row itself (its chevron points at an undrawn screen) — the amount
+//     field + explainer below is this file's own composition, restyled to
+//     match s36's neighbours, not designer intent.
+//
+// Withdraw is now a SINGLE step matching s37 exactly — no separate Review
+// sheet: amount + destination + fee are all on one screen and the one CTA
+// ("Withdraw ₦X") calls WalletRepository.withdraw() (POST
+// /transactions/withdraw) directly, still gated on the passcode
+// confirmation restored 2026-08-24 (security_screen.dart's "Passcode for
+// withdrawals" row was describing behaviour the app didn't have until then
+// — see [_WithdrawSheetState._confirm] below).
 //
 // The withdraw destination: POST /transactions/withdraw needs a saved
 // `BankAccount.id` (registry.json), not a raw bank code/account number. No
-// in-sheet picker UI exists for choosing among multiple saved accounts (the
-// design's _SelectRow is a single fixed row, not a list) — building one is a
-// bigger UI change than this wiring pass, so _WithdrawSheet fetches the
-// investor's real saved accounts (GET /bank-accounts) and uses the primary
-// one (falling back to the first) as the destination, same as the design's
-// single-row layout implies. See _WithdrawSheetState for the gap this
-// leaves: only ever the primary/first saved account is reachable from this
-// screen; adding/choosing others requires the account-banks screen. When
-// there are NO saved accounts at all, the row routes there instead of
-// sitting inert (2026-08-07 — previously a no-op, so an investor with no
-// bank account had no way forward from this sheet).
+// in-sheet picker UI exists for choosing among multiple saved accounts (s37
+// itself draws a single fixed row, not a list) — building one is a bigger
+// UI change than this pass, so this file fetches the investor's real saved
+// accounts (GET /bank-accounts) and uses the primary one (falling back to
+// the first) as the destination, same as s37's single-row layout implies.
+// Only ever the primary/first saved account is reachable from this screen;
+// adding/choosing others requires the account-banks screen. When there are
+// NO saved accounts at all, the row routes there instead of sitting inert.
+//
+// s37 also draws "Changing it takes a 24-hour security hold" under the
+// destination row — grepped for any such hold anywhere in the backend or
+// bank_accounts_screen.dart and found nothing. Same standing as the fee
+// figures above: omitted rather than asserted, flagged in the build report
+// rather than invented here.
+//
+// R-21 (docs/redesign/DECISIONS.md): the outside-hours "queued withdrawal"
+// variant below has no canvas counterpart at all — it is this file's own
+// composition, restyled to match s37's neighbouring patterns (the big
+// amount + chips + destination-row shape), not designer intent.
 //
 // NGX-only: the Convert (₦ → $) flow was removed — Blue Marina supplies NGX
 // equities only, and Convert existed solely to fund USD stock buys.
@@ -61,7 +95,6 @@ import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart'
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -70,8 +103,8 @@ import 'package:kudimata_invest/theme/tokens.dart';
 // Public flow launchers (cross-stage contract — see BUILD_CONTRACT.md §d).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Add money: amount + method → review → success. Gated on
-/// [tradingEligibilityGap]. browsing the Wallet tab never requires
+/// Add money: one sheet, s36 — method choice + the chosen method's panel.
+/// Gated on [tradingEligibilityGap]. Browsing the Wallet tab never requires
 /// KYC/suitability, only actually funding does (also enforced server-side,
 /// TransactionsService.assertEligibleToTransact, since this check alone is
 /// bypassable).
@@ -81,14 +114,14 @@ Future<void> showAddMoneyFlow(BuildContext context) async {
   await showKSheet<void>(
     context,
     title: 'Add money',
-    child: const _AddMoneyChooser(),
+    child: const _AddMoneySheet(),
   );
 }
 
-/// Withdraw: amount + destination bank → review → success. Same gate as
-/// [showAddMoneyFlow]. Outside roughly 09:00-21:00 on a weekday, spec screen
-/// 63's "outside hours" variant shows instead — see [_isOutsideWithdrawHours]
-/// and [_OutsideHoursWithdrawSheet].
+/// Withdraw: one sheet, s37 — amount + destination + fee, one CTA. Same gate
+/// as [showAddMoneyFlow]. Outside roughly 09:00-21:00 on a weekday, the
+/// R-21 "outside hours" variant shows instead — see
+/// [_isOutsideWithdrawHours] and [_OutsideHoursWithdrawSheet].
 Future<void> showWithdrawFlow(BuildContext context) async {
   if (!await _ensureEligibleToTransact(context)) return;
   if (!context.mounted) return;
@@ -133,7 +166,39 @@ Future<bool> _ensureEligibleToTransact(BuildContext context) async {
 // Shared bits.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// A selectable row inside a hairline card (method / destination).
+/// The fee copy for a deposit — see the file header's "THE FEE QUESTION".
+/// The ONE place either funding method's fee figure is turned into display
+/// copy; every call site passes its own response's real `feeKobo`
+/// (`VirtualAccountDetails.feeKobo` for transfer, `FundResult.feeKobo` for
+/// card). Renders "Free" only if that response figure is genuinely zero.
+String _feeLabel(int feeKobo) => feeKobo > 0 ? _formatFeeNaira(feeKobo) : 'Free';
+
+/// kobo → "₦100.00". Duplicated from `WalletRepository`'s own private
+/// `_formatNaira` rather than exposed cross-file — mirrors that
+/// repository's file header, which documents this as the established
+/// per-file formatting-helper convention (`TransactionRepository`,
+/// `WalletRepository` each keep their own copy already).
+String _formatFeeNaira(int kobo) {
+  final wholeNaira = kobo ~/ 100;
+  final koboRemainder = kobo % 100;
+  final wholeStr = wholeNaira.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]},',
+      );
+  return '₦$wholeStr.${koboRemainder.toString().padLeft(2, '0')}';
+}
+
+/// The withdrawal-fee row's copy — kept as its own constant, NOT
+/// `_feeLabel`/`feeKobo`-driven: `POST /transactions/withdraw` returns a
+/// plain `Transaction` (common/types/transaction.types.ts), which carries
+/// no fee field at all, unlike the two deposit endpoints R-37/BR-2 touched.
+/// "Free" is a verified fact (no withdrawal-fee constant exists anywhere in
+/// the backend), not a guess, and it must stay independent of the deposit
+/// figure now that that one is real and non-zero.
+const String _withdrawalFeeLabel = 'Free';
+
+// A selectable row inside a hairline card (used for the withdraw
+// destination and the outside-hours variant's own destination row).
 class _SelectRow extends StatelessWidget {
   const _SelectRow({
     required this.icon,
@@ -150,9 +215,9 @@ class _SelectRow extends StatelessWidget {
   final String sub;
   final bool trailingChevron;
 
-  /// mockup-raw/s42.html's withdraw-destination row: a standalone 18px
-  /// gain-toned check icon as the row's OWN trailing element (not beside
-  /// [sub], and not a chevron) — the name-match confirmation.
+  /// s37's destination row: a standalone 18px gain-toned check icon as the
+  /// row's OWN trailing element (not beside [sub], and not a chevron) — the
+  /// name-match confirmation.
   final bool trailingCheck;
   final bool first;
   final VoidCallback? onTap;
@@ -213,33 +278,103 @@ class _SelectRow extends StatelessWidget {
   }
 }
 
-// Summary row for review sheets — label left, tabular value right.
+/// s36's two selectable method cards — its own visual language (an
+/// individually bordered, tinted-icon card per option, selected state via a
+/// thicker indicator-coloured border) rather than [_SelectRow]'s single
+/// hairline-divided list, so it is its own local widget rather than a
+/// variant of that one.
+class _FundMethodCard extends StatelessWidget {
+  const _FundMethodCard({
+    required this.icon,
+    required this.title,
+    required this.sub,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String icon;
+  final String title;
+  final String sub;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: KColor.paper,
+          border: Border.all(
+            color: selected ? _accentBorder : KColor.hairline,
+            width: selected ? 1.5 : 1,
+          ),
+          borderRadius: KRadii.cardR,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? KColor.indicatorTint : KColor.track,
+                shape: BoxShape.circle,
+              ),
+              child: KIcon(icon, size: 20, color: selected ? _accentBorder : KColor.ink2),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: KType.cardTitle()),
+                  const SizedBox(height: 2),
+                  Text(sub, style: KType.data(color: KColor.ink3)),
+                ],
+              ),
+            ),
+            KIcon('chevronRight', size: 18, color: selected ? _accentBorder : KColor.ink3),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Summary row for review/fee sheets — label left, tabular value right.
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
     required this.label,
     required this.value,
     this.divider = true,
     this.small = false,
+    this.valueColor,
   });
   final String label;
   final String value;
 
-  /// Whether this row draws its own bottom hairline — the mockup's last row
-  /// in a bordered card has none. Defaults `true` (existing behaviour
-  /// unchanged for every already-shipped call site).
+  /// Whether this row draws its own bottom hairline — s37's last row in a
+  /// bordered card has none. Defaults `true`.
   final bool divider;
 
-  /// mockup-raw/s41.html's info rows use `text-data`/regular weight, not
-  /// this row's original `text-body`/medium — added as an opt-in instead of
-  /// changed in place so already-shipped call sites render unchanged.
+  /// s37's fee/arrival rows use `text-data`/regular weight, not this row's
+  /// original `text-body`/medium — an opt-in so other already-shipped call
+  /// sites are unaffected.
   final bool small;
+
+  /// s37 colours "Free" in the gain tone — null keeps the normal ink colour.
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     final labelStyle = small ? KType.data(color: KColor.ink2) : KType.body(color: KColor.ink2);
     final valueStyle = small
-        ? KType.data(color: KColor.ink)
-        : KType.body(color: KColor.ink, w: KWeight.medium);
+        ? KType.data(color: valueColor ?? KColor.ink)
+        : KType.body(color: valueColor ?? KColor.ink, w: KWeight.medium);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13),
       decoration: BoxDecoration(
@@ -251,6 +386,35 @@ class _SummaryRow extends StatelessWidget {
           Text(label, style: labelStyle),
           Text(value, style: valueStyle.tnum),
         ],
+      ),
+    );
+  }
+}
+
+/// s37/s36's big centred figure — not [KInput]'s `amount:true` mode (that is
+/// a bordered, left-aligned field: correct for the trade-flow amount sheets
+/// it was built for, but visually a different shape from s36/s37's
+/// borderless, centred hero-sized number). A screen-local widget rather
+/// than a shared-widget change, per SCREEN-AGENT-BRIEF.md rule 5 — no other
+/// screen needs this shape.
+class _BigAmountField extends StatelessWidget {
+  const _BigAmountField({required this.controller, required this.onChanged});
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      textAlign: TextAlign.center,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      cursorColor: KColor.indicator,
+      style: KType.hero().tnum,
+      decoration: const InputDecoration(
+        isCollapsed: true,
+        border: InputBorder.none,
+        prefixText: '₦',
       ),
     );
   }
@@ -283,7 +447,13 @@ void _showSuccessSheet(
 /// deliberately `KStatusTone.pending`, not `success`, matching
 /// `_ensureEligibleToTransact`'s own use of the pending tone for an
 /// in-progress, not-yet-true state.
-void _showAwaitingPaymentSheet(BuildContext context) {
+///
+/// [feeKobo] is `FundResult.feeKobo` from the `fund()` call that got the
+/// investor here — the first (and only, per this file's header) point at
+/// which the real card fee is known, so it's surfaced here rather than
+/// nowhere.
+void _showAwaitingPaymentSheet(BuildContext context, {required int feeKobo}) {
+  final feeClause = feeKobo > 0 ? ' — a ${_feeLabel(feeKobo)} card fee is included' : '';
   showKSheet<void>(
     context,
     child: Padding(
@@ -291,7 +461,7 @@ void _showAwaitingPaymentSheet(BuildContext context) {
       child: KStatusView(
         tone: KStatusTone.pending,
         title: 'Complete your payment',
-        message: 'Finish paying in the window that just opened. Your '
+        message: 'Finish paying in the window that just opened$feeClause. Your '
             'balance updates here as soon as we confirm it.',
         primary: 'Done',
         onPrimary: () => Navigator.of(context).pop(),
@@ -300,12 +470,12 @@ void _showAwaitingPaymentSheet(BuildContext context) {
   );
 }
 
-/// Shown over the still-open review sheet when a fund/withdraw call fails
-/// with an [ApiException] (e.g. insufficient balance) — [message] is that
+/// Shown over the still-open sheet when a fund/withdraw call fails with an
+/// [ApiException] (e.g. insufficient balance) — [message] is that
 /// exception's human-readable summary (safe to show directly, per
 /// lib/data/api/api_exception.dart). "Try again" just dismisses this sheet;
-/// the review step behind it keeps its entered amount/method/destination so
-/// the retry doesn't lose any input.
+/// the sheet behind it keeps its entered amount/method/destination so the
+/// retry doesn't lose any input.
 void _showErrorSheet(
   BuildContext context, {
   required String title,
@@ -326,6 +496,16 @@ void _showErrorSheet(
   );
 }
 
+/// s36d/s37d both swap the light artboards' `--indicator` border/icon accent
+/// for the softer `--indicator-soft` in dark (better contrast on the dark
+/// card surface) — `KColor.indicator` alone doesn't reproduce this since it
+/// resolves to a mid-tone purple in dark, not the lighter one the dark
+/// artboards actually draw. `KColor.indicatorSoft` already carries the right
+/// value in both palettes, so this just picks the token the artboards
+/// actually use per theme.
+Color get _accentBorder =>
+    KColor.active.brightness == Brightness.dark ? KColor.indicatorSoft : KColor.indicator;
+
 /// Comma-grouped naira text (e.g. "50,000" or "12,345.67") → integer kobo,
 /// matching trade_flows.dart's `_amountValue` parsing convention.
 int _parseAmountKobo(String amountText) {
@@ -333,95 +513,78 @@ int _parseAmountKobo(String amountText) {
   return (value * 100).round();
 }
 
+/// Same parse, as a naira double — for comparing an entered amount against a
+/// real balance figure (itself a preformatted "₦45,200.00" string).
+double _parseNaira(String text) => _parseAmountKobo(text) / 100.0;
+
 // ─────────────────────────────────────────────────────────────────────────────
-// ADD MONEY — Step 0: choose a funding path (see file header).
+// ADD MONEY — s36: method choice + the chosen method's panel, one sheet.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _AddMoneyChooser extends StatelessWidget {
-  const _AddMoneyChooser();
+enum _FundMethod { bankTransfer, card }
 
+class _AddMoneySheet extends StatefulWidget {
+  const _AddMoneySheet();
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              _SelectRow(
-                icon: 'wallet',
-                title: 'Bank transfer',
-                sub: 'Free · usually under 5 minutes',
-                trailingChevron: true,
-                first: true,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  showKSheet<void>(
-                    context,
-                    title: 'Bank transfer',
-                    child: const _AddMoneySheet(),
-                  );
-                },
-              ),
-              _SelectRow(
-                icon: 'card',
-                title: 'Debit or credit card',
-                sub: 'Instant, via Flutterwave',
-                trailingChevron: true,
-                first: false,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  showKSheet<void>(
-                    context,
-                    title: 'Add money by card',
-                    child: const _CardFundSheet(),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+  State<_AddMoneySheet> createState() => _AddMoneySheetState();
+}
+
+class _AddMoneySheetState extends State<_AddMoneySheet> {
+  // s36 shows Bank transfer already selected (the thicker indicator border)
+  // — matched here as the default rather than an unselected chooser.
+  _FundMethod _method = _FundMethod.bankTransfer;
+
+  late final _repo = WalletRepository(AppScope.read(context).apiClient);
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
+
+  /// s36's plate shows "Providus Bank · Adebayo Okonkwo" — a real
+  /// account-holder name — but `VirtualAccountDetails` (GET
+  /// /transactions/virtual-account) only ever carries accountNumber/bankName,
+  /// no holder-name field (checked against the backend's actual wire type,
+  /// common/types/transaction.types.ts's VirtualAccount). Flutterwave opens
+  /// this account in the signed-in investor's own name, though, so joining
+  /// it with GET /users/me's real fullName is a true fact about this
+  /// specific account, not an invented one — same extra call
+  /// account_screen.dart already makes for its own profile header.
+  late Future<({VirtualAccountDetails account, String holderName})> _bankFuture = _loadBank();
+
+  Future<({VirtualAccountDetails account, String holderName})> _loadBank() async {
+    final (account, profile) = await (_repo.virtualAccount(), _userRepo.me()).wait;
+    return (account: account, holderName: profile.fullName);
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADD MONEY — Card: amount entry → Flutterwave hosted checkout (external).
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CardFundSheet extends StatefulWidget {
-  const _CardFundSheet();
-  @override
-  State<_CardFundSheet> createState() => _CardFundSheetState();
-}
-
-class _CardFundSheetState extends State<_CardFundSheet> {
-  late final TextEditingController _amount = TextEditingController(text: '20,000');
-  bool _busy = false;
-  String? _amountError;
+  // Card branch — s36 draws no content for this state (see file header);
+  // this amount + explainer + submit is this file's own composition.
+  late final TextEditingController _cardAmount = TextEditingController(text: '20,000');
+  bool _cardBusy = false;
+  String? _cardAmountError;
 
   @override
   void dispose() {
-    _amount.dispose();
+    _cardAmount.dispose();
     super.dispose();
   }
 
-  Future<void> _continue() async {
-    final amountKobo = _parseAmountKobo(_amount.text);
+  Future<void> _copy(String accountNumber) async {
+    await Clipboard.setData(ClipboardData(text: accountNumber));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Account number copied')),
+    );
+  }
+
+  Future<void> _continueCard() async {
+    final amountKobo = _parseAmountKobo(_cardAmount.text);
     if (amountKobo <= 0) {
-      setState(() => _amountError = 'Enter an amount to continue');
+      setState(() => _cardAmountError = 'Enter an amount to continue');
       return;
     }
     setState(() {
-      _amountError = null;
-      _busy = true;
+      _cardAmountError = null;
+      _cardBusy = true;
     });
-    final repo = WalletRepository(AppScope.read(context).apiClient);
     try {
-      final result = await repo.fund(amountKobo: amountKobo, method: 'card');
+      final result = await _repo.fund(amountKobo: amountKobo, method: 'card');
       // A checkout link failure on the backend (Flutterwave unreachable/
       // rejected) comes back as an empty string, NOT a thrown ApiException —
       // `Uri.tryParse('')` returns a valid EMPTY Uri, not null, so checking
@@ -433,7 +596,7 @@ class _CardFundSheetState extends State<_CardFundSheet> {
           await _launchExternally(uri);
       if (!mounted) return;
       if (!launched) {
-        setState(() => _busy = false);
+        setState(() => _cardBusy = false);
         _showErrorSheet(
           context,
           title: 'Could not open checkout',
@@ -442,17 +605,17 @@ class _CardFundSheetState extends State<_CardFundSheet> {
         return;
       }
       Navigator.of(context).pop();
-      _showAwaitingPaymentSheet(context);
+      _showAwaitingPaymentSheet(context, feeKobo: result.feeKobo);
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _busy = false);
+      setState(() => _cardBusy = false);
       _showErrorSheet(context, title: 'Could not start payment', message: e.message);
     }
   }
 
   /// launchUrl() can fail two ways: throwing (no app/browser can handle the
-  /// scheme) or just returning false — checking only for a thrown exception,
-  /// as this sheet originally did, misses the second case entirely.
+  /// scheme) or just returning false — checking only for a thrown exception
+  /// misses the second case entirely.
   Future<bool> _launchExternally(Uri uri) async {
     try {
       return await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -463,79 +626,66 @@ class _CardFundSheetState extends State<_CardFundSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KInput(
-          label: 'Amount',
-          controller: _amount,
-          numeric: true,
-          amount: true,
-          prefix: '₦',
-          error: _amountError,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          "You'll pay by card on Flutterwave's secure checkout page — your "
-          'balance updates here once the payment is confirmed.',
-          style: KType.body(color: KColor.ink3),
-        ),
-        const SizedBox(height: 22),
-        KButton(
-          label: 'Continue to payment',
-          loading: _busy,
-          onPressed: _busy ? null : _continue,
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ADD MONEY — Bank transfer: the investor's dedicated funding account (no
-// amount entry, no review/confirm step — see file header).
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _AddMoneySheet extends StatefulWidget {
-  const _AddMoneySheet();
-  @override
-  State<_AddMoneySheet> createState() => _AddMoneySheetState();
-}
-
-class _AddMoneySheetState extends State<_AddMoneySheet> {
-  late final _repo = WalletRepository(AppScope.read(context).apiClient);
-  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
-
-  /// Spec 41's plate shows "Providus Bank · Adebayo Okonkwo" — a real
-  /// account-holder name — but `VirtualAccountDetails` (GET
-  /// /transactions/virtual-account) only ever carries accountNumber/bankName,
-  /// no holder-name field (checked against the backend's actual wire type,
-  /// common/types/transaction.types.ts's VirtualAccount). Flutterwave opens
-  /// this account in the signed-in investor's own name, though, so joining
-  /// it with GET /users/me's real fullName is a true fact about this
-  /// specific account, not an invented one — same one extra call
-  /// account_screen.dart already makes for its own profile header.
-  late Future<({VirtualAccountDetails account, String holderName})> _future = _load();
-
-  Future<({VirtualAccountDetails account, String holderName})> _load() async {
-    final (account, profile) = await (_repo.virtualAccount(), _userRepo.me()).wait;
-    return (account: account, holderName: profile.fullName);
-  }
-
-  Future<void> _copy(String accountNumber) async {
-    await Clipboard.setData(ClipboardData(text: accountNumber));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account number copied')),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+    // The bank-transfer fee IS known ahead of the investor picking anything
+    // — it comes back on the same [_bankFuture] `_buildBankPanel` already
+    // fetches (GET /transactions/virtual-account's real `feeKobo`) — so a
+    // second, lightweight FutureBuilder on that SAME cached future (no
+    // extra network call) lets the method-choice row above show it too, not
+    // just the panel beneath. The card fee has no such source (see file
+    // header) so its row states no figure at all.
     return FutureBuilder<({VirtualAccountDetails account, String holderName})>(
-      future: _future,
+      future: _bankFuture,
+      builder: (context, bankSnapshot) {
+        final transferFeeKobo = bankSnapshot.data?.account.feeKobo;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('How do you want to pay?', style: KType.title()),
+            const SizedBox(height: 6),
+            // s36's own subhead is "Fees and timing differ. Transfer costs
+            // less." — a comparison this file will not repeat: the canvas's
+            // own two rows don't even agree with each other on which method
+            // is cheaper (₦28 card vs ₦100-150 transfer — card reads
+            // cheaper as drawn), and the real card figure isn't shown here
+            // at all (see file header). Rendered as a neutral true
+            // statement instead of a specific comparison this app cannot
+            // back from this row alone.
+            Text('Fees and timing can differ by method.',
+                style: KType.body(color: KColor.ink2)),
+            const SizedBox(height: 16),
+            _FundMethodCard(
+              icon: 'transfer',
+              title: 'Bank transfer',
+              sub: transferFeeKobo == null
+                  ? 'Same day'
+                  : '${_feeLabel(transferFeeKobo)} · same day',
+              selected: _method == _FundMethod.bankTransfer,
+              onTap: () => setState(() => _method = _FundMethod.bankTransfer),
+            ),
+            const SizedBox(height: 12),
+            _FundMethodCard(
+              icon: 'card',
+              title: 'Debit card',
+              // No fee figure here — see file header: this row's data
+              // source (POST /transactions/fund) only exists after the
+              // backend has already created a pending transaction, so a
+              // figure at this point would be invented, not read (R-34).
+              sub: 'Flutterwave · instant',
+              selected: _method == _FundMethod.card,
+              onTap: () => setState(() => _method = _FundMethod.card),
+            ),
+            const SizedBox(height: 20),
+            if (_method == _FundMethod.bankTransfer) _buildBankPanel() else _buildCardPanel(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBankPanel() {
+    return FutureBuilder<({VirtualAccountDetails account, String holderName})>(
+      future: _bankFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -547,20 +697,35 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: KErrorView(
-              onPrimary: () => setState(() => _future = _load()),
+              onPrimary: () => setState(() => _bankFuture = _loadBank()),
             ),
           );
         }
         final data = snapshot.data!;
         final account = data.account;
+        // Empty state: the endpoint answered without throwing but with no
+        // usable account number — the one condition that can genuinely
+        // enter "empty" here, since virtualAccount() is otherwise
+        // idempotent/always-populated by design.
+        if (account.accountNumber.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: KEmptyView(
+              icon: 'wallet',
+              title: 'Account not ready',
+              message: "We couldn't set up your funding account yet. Try again in a moment.",
+              actionLabel: 'Try again',
+              onAction: () => setState(() => _bankFuture = _loadBank()),
+            ),
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Full grape "feature plate" (2026-08-22 "Soft Landing" —
-            // screen-specs.md #41's colour note: same treatment as the
-            // Splash screen, reused for the single most important piece of
-            // data on this sheet — the virtual account number).
+            // Full grape "feature plate" — same treatment as the Splash
+            // screen, reused for the single most important piece of data on
+            // this sheet: the virtual account number.
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -569,92 +734,78 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Your account number'.upper,
+                  Text('Transfer to this account'.upper,
                       style: KType.label(color: KColor.sun)),
                   const SizedBox(height: 10),
-                  // mockup-raw/s41.html line 9: just the number, no inline
-                  // "Copy" pill inside the plate — that action lives in the
-                  // "Copy number" button below (was a duplicate control not
-                  // in the design).
                   Text(
                     account.accountNumber,
-                    // 30px/800/-0.02em — bigger and heavier than
-                    // KType.title's 26px/700/-0.02em role.
                     style: KType.title(color: KColor.featureInk)
                         .copyWith(fontSize: 30, fontWeight: KWeight.black, letterSpacing: -0.6)
                         .tnum,
                   ),
                   const SizedBox(height: 4),
-                  // "Providus Bank · Adebayo Okonkwo" (spec #41) —
+                  // "Providus Bank · Adebayo Okonkwo" (s36) —
                   // VirtualAccountDetails itself has no holder-name field
                   // (checked against the backend's real wire type), but a
                   // Flutterwave virtual account is always opened in the
-                  // signed-in investor's own name, so joining GET /users/me's
-                  // real fullName here is a true fact, not an invented one.
+                  // signed-in investor's own name, so joining GET
+                  // /users/me's real fullName here is a true fact, not an
+                  // invented one.
                   Text('${account.bankName} · ${data.holderName}',
                       style: KType.body(color: KColor.featureInk2)),
-                ],
-              ),
-            ),
-            // mockup-raw/s41.html line 12: "Copy number" / "Share details"
-            // sit directly under the plate, BEFORE the info rows — was
-            // ordered after the footnote, past the info card.
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: KButton(
-                    label: 'Copy number',
-                    variant: KButtonVariant.secondary,
-                    size: KButtonSize.md,
-                    iconLeft: 'card',
-                    onPressed: () => _copy(account.accountNumber),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: KButton(
-                    label: 'Share details',
-                    variant: KButtonVariant.secondary,
-                    size: KButtonSize.md,
-                    iconLeft: 'send',
-                    onPressed: () => SharePlus.instance.share(
-                      ShareParams(
-                        text: 'Send money to my Kudimata Invest account: '
-                            '${account.accountNumber}, ${account.bankName} '
-                            '(${data.holderName}).',
-                        subject: 'My Kudimata Invest funding account',
+                  const SizedBox(height: 14),
+                  // "Copy account number" (s36) — inside the plate, one
+                  // action, no separate "Share details" button underneath
+                  // (that button isn't in s36; dropped for fidelity — see
+                  // build report). s36's light plate sits this on a solid
+                  // paper-white pill with indicator-purple content; s36d's
+                  // dark plate instead uses a translucent white pill with
+                  // plain light text — plain `KColor.paper` would render a
+                  // near-black pill floating on the purple plate in dark, so
+                  // this branches rather than reusing one literal token pair.
+                  Builder(builder: (context) {
+                    final dark = KColor.active.brightness == Brightness.dark;
+                    final pillColor =
+                        dark ? KColor.featureInk.withValues(alpha: 0.10) : KColor.paper;
+                    final contentColor = dark ? KColor.featureInk : KColor.indicator;
+                    return GestureDetector(
+                      onTap: () => _copy(account.accountNumber),
+                      child: Container(
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: pillColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            KIcon('doc', size: 16, color: contentColor),
+                            const SizedBox(width: 8),
+                            Text('Copy account number',
+                                style: KType.cardTitle(color: contentColor)),
+                          ],
+                        ),
                       ),
-                    ),
+                    );
+                  }),
+                  const SizedBox(height: 14),
+                  // s36's one footnote inside the plate — real fee figure
+                  // (R-37/BR-2's `account.feeKobo`, via [_feeLabel]) in
+                  // place of the canvas's ₦100-₦150 claim; timing kept as
+                  // drawn (no ruling blocks the timing clause).
+                  Text(
+                    'This account is yours alone. Transfers are ${_feeLabel(account.feeKobo)} and '
+                    'usually land the same working day.',
+                    style: KType.body(color: KColor.featureInk2).copyWith(fontSize: 13, height: 19 / 13),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            // Info rows (spec 41) — all three are real, fixed facts about
-            // this funding path (a dedicated Flutterwave virtual account),
-            // not placeholders. mockup-raw/s41.html line 16: wrapped in its
-            // own bordered card — was floating loose with no card at all.
-            Container(
-              decoration: BoxDecoration(
-                color: KColor.bg,
-                border: Border.all(color: KColor.hairline, width: 1),
-                borderRadius: KRadii.cardR,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _SummaryRow(label: 'Transfer fee', value: 'Free', small: true),
-                  _SummaryRow(label: 'Arrives', value: 'Usually under 5 minutes', small: true),
-                  _SummaryRow(
-                      label: 'Send from',
-                      value: 'Any account in your name',
-                      small: true,
-                      divider: false),
                 ],
               ),
             ),
             const SizedBox(height: 12),
+            // Not in s36, kept for real fraud-prevention value (flagged in
+            // the build report as an addition beyond the artboard, the same
+            // class of call as R-17's kept Cancel button).
             Text(
               "Money sent from an account that isn't yours is returned — the "
               'names must match.',
@@ -662,7 +813,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
             ),
             const SizedBox(height: 16),
             KButton(
-              label: "I've sent it",
+              label: "I've sent the money",
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],
@@ -670,10 +821,40 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
       },
     );
   }
+
+  Widget _buildCardPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KInput(
+          label: 'Amount',
+          controller: _cardAmount,
+          numeric: true,
+          amount: true,
+          prefix: '₦',
+          error: _cardAmountError,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          "You'll pay by card on Flutterwave's secure checkout page — your "
+          'balance updates here once the payment is confirmed.',
+          style: KType.body(color: KColor.ink3),
+        ),
+        const SizedBox(height: 22),
+        KButton(
+          label: 'Continue to payment',
+          loading: _cardBusy,
+          onPressed: _cardBusy ? null : _continueCard,
+        ),
+      ],
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WITHDRAW — Step 1: amount + destination bank.
+// WITHDRAW — s37: amount + destination + fee, one CTA, one sheet.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _WithdrawSheet extends StatefulWidget {
@@ -685,21 +866,21 @@ class _WithdrawSheet extends StatefulWidget {
 typedef _WithdrawInit = ({String balance, BankAccountSummary? account, String holderName});
 
 class _WithdrawSheetState extends State<_WithdrawSheet> {
-  late final TextEditingController _amount = TextEditingController(text: '20,000');
+  late final TextEditingController _amount = TextEditingController(text: '30,000');
   late final _repo = WalletRepository(AppScope.read(context).apiClient);
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late Future<_WithdrawInit> _init = _load();
+  bool _busy = false;
 
   // GET /wallet-balance + GET /bank-accounts + GET /users/me, fetched
-  // together so the sheet has a single loading/error state (README.md
-  // convention). The withdraw destination: no in-sheet picker exists for
-  // choosing among multiple saved accounts (see file header) — this always
-  // resolves to the investor's primary account, falling back to the first
-  // saved one. `holderName`: a DCS bank account is required to be in the
-  // investor's own name (BankAccountsService enforces this at add-time), so
-  // the signed-in investor's real fullName is a true fact about whichever
-  // account this resolves to, not an invented one — same join
-  // wallet_flows.dart's Add Money sheet already makes.
+  // together so the sheet has a single loading/error state. The withdraw
+  // destination: no in-sheet picker exists for choosing among multiple
+  // saved accounts (see file header) — this always resolves to the
+  // investor's primary account, falling back to the first saved one.
+  // `holderName`: a DCS bank account is required to be in the investor's
+  // own name (BankAccountsService enforces this at add-time), so the
+  // signed-in investor's real fullName is a true fact about whichever
+  // account this resolves to, not an invented one.
   Future<_WithdrawInit> _load() async {
     final (balance, accounts, profile) =
         await (_repo.balance(), _repo.bankAccounts(), _userRepo.me()).wait;
@@ -718,6 +899,19 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
   void dispose() {
     _amount.dispose();
     super.dispose();
+  }
+
+  double _availableNaira(String balance) => _parseNaira(balance);
+
+  void _setAmount(double naira) {
+    setState(() {
+      final whole = naira.truncate();
+      final wholeStr = whole.toString().replaceAllMapped(
+            RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+            (m) => '${m[1]},',
+          );
+      _amount.text = wholeStr;
+    });
   }
 
   @override
@@ -741,61 +935,99 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
         }
         final data = snapshot.data!;
         final account = data.account;
+        final available = _availableNaira(data.balance);
+        final entered = _parseNaira(_amount.text);
+        final overBalance = entered > available && available > 0;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            KInput(
-              // mockup-raw/s42.html line 7: no label prop on this Input.
-              controller: _amount,
-              numeric: true,
-              amount: true,
-              prefix: '₦',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              // Rebuilds "You receive" below as the investor types.
-              onChanged: (_) => setState(() {}),
-              // Spec 42: "₦214,300.00 available · minimum ₦1,000 out" — the
-              // "minimum ₦1,000" half is dropped deliberately: the backend's
-              // real validation (WithdrawDto) only enforces amountKobo >= 1
-              // kobo, no ₦1,000 floor. Showing a specific minimum the
-              // backend doesn't actually enforce would be its own kind of
-              // inexact — a rule a user could disprove by trying ₦500.
-              helper: '${data.balance} available',
+            Center(
+              child: Column(
+                children: [
+                  Text('How much do you want out?'.upper, style: KType.label()),
+                  const SizedBox(height: 8),
+                  _BigAmountField(
+                    controller: _amount,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    overBalance ? 'Only ${data.balance} available now' : '${data.balance} available now',
+                    style: KType.body(color: overBalance ? KColor.loss : KColor.ink2),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 14),
-            // No "To" eyebrow label here (mockup-raw/s42.html) — the
-            // destination row sits directly under the amount input. bg
-            // (not paper) background, 14px/16px padding, per line 8 — was
-            // paper (KCard's default) with 16px horizontal only.
-            KCard(
-              color: KColor.bg,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            const SizedBox(height: 16),
+            // Quick-amount chips — fixed anchors matching s37's own drawn
+            // values, plus a real "All" figure from the fetched balance
+            // (same fixed-value-chip convention trade_flows.dart's
+            // _AmountSheet already uses).
+            Row(
+              children: [
+                Expanded(
+                  child: KPillChip(
+                    label: '₦10,000',
+                    selected: entered == 10000,
+                    onTap: () => _setAmount(10000),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: KPillChip(
+                    label: '₦30,000',
+                    selected: entered == 30000,
+                    onTap: () => _setAmount(30000),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: KPillChip(
+                    label: 'All ${data.balance}',
+                    // Compares truncated wholes, not exact doubles — the
+                    // "All" chip writes a whole-naira figure (see
+                    // [_setAmount]) while [available] carries real kobo, so
+                    // an exact `==` would never highlight as selected once
+                    // the balance has any cents in it.
+                    selected: available > 0 && entered.floor() == available.floor(),
+                    onTap: available > 0 ? () => _setAmount(available) : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text('Going to your bank', style: KType.cardTitle()),
+            const SizedBox(height: 10),
+            // A raw Container (not KCard, which fixes its border to
+            // KColor.hairline) so the resolved-account state can carry s37's
+            // own 1.5px indicator-coloured border; falls back to a plain
+            // hairline for the empty "no saved account" state.
+            Container(
+              decoration: BoxDecoration(
+                color: KColor.paper,
+                border: Border.all(
+                  color: account == null ? KColor.hairline : _accentBorder,
+                  width: account == null ? 1 : 1.5,
+                ),
+                borderRadius: KRadii.cardR,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SelectRow(
-                icon: 'wallet',
-                // "GTB ••••6789 · DCS account" (spec 42) — DCS accounts are
+                icon: 'card',
+                // "GTB ••••6789 · DCS account" (s37) — DCS accounts are
                 // always the investor's own name-matched settlement account,
-                // so the qualifier is accurate for every saved account here,
-                // not just one particular one.
+                // so the qualifier is accurate for every saved account here.
                 title: account == null
                     ? 'No saved bank account'
                     : '${account.bankName} ${account.accountNumberMasked} · DCS account',
-                // "Adebayo Okonkwo" (spec 42) — a DCS account is required to
-                // be in the investor's own name (enforced at add-time), so
-                // the signed-in investor's real fullName is a true fact
-                // about whichever account this resolves to. The standalone
-                // 18px gain check (spec 42's trailing element, not a
-                // chevron) only makes sense once a real, verified account is
-                // resolved; the "no saved account" case keeps the chevron
-                // affordance routing to add one instead.
                 sub: account == null ? 'Tap to add one' : data.holderName,
                 trailingCheck: account != null,
                 trailingChevron: account == null,
                 first: true,
-                // No saved account: routes to the add-bank-account screen
-                // instead of sitting inert. With a saved account, this row
-                // still has no picker for choosing among multiple saved
-                // payout accounts (see file header) — it always targets the
-                // primary/first one.
+                // No saved account: this IS the empty state — routes to the
+                // add-bank-account screen instead of sitting inert.
                 onTap: account == null
                     ? () {
                         Navigator.of(context).pop();
@@ -804,15 +1036,12 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
                     : () {},
               ),
             ),
+            // s37 also draws "Only an account in your own name. Changing it
+            // takes a 24-hour security hold." — the name-match half is real
+            // (enforced at add-time); no such hold exists anywhere in the
+            // backend, so it is left out rather than asserted (see file
+            // header).
             const SizedBox(height: 14),
-            // mockup-raw/s42.html lines 13-16: Fee/Arrives/You-receive
-            // breakdown card — was dropped entirely on a claim that it
-            // needed data this backend can't compute, but Fee is already
-            // established elsewhere in this very file (_WithdrawReview
-            // below) as a real, known fact: ₦0.00, no fee concept exists
-            // anywhere in the Transaction model. "You receive" is therefore
-            // just the entered amount — not fabricated, a direct
-            // consequence of that same known fact.
             Container(
               decoration: BoxDecoration(
                 color: KColor.bg,
@@ -822,141 +1051,57 @@ class _WithdrawSheetState extends State<_WithdrawSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  _SummaryRow(label: 'Fee', value: '₦0.00', small: true),
                   _SummaryRow(
-                      label: 'Arrives', value: 'Within 1 business day', small: true, divider: false),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('You receive', style: KType.cardTitle()),
-                        Text('₦${_amount.text}', style: KType.cardTitle().tnum),
-                      ],
-                    ),
-                  ),
+                      label: 'Withdrawal fee',
+                      value: _withdrawalFeeLabel,
+                      small: true,
+                      valueColor: KColor.gain),
+                  _SummaryRow(
+                      label: 'Money arrives',
+                      value: 'Within 1 working day',
+                      small: true,
+                      divider: false),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-            // Spec 42's "Your passcode confirms this withdrawal" is
-            // RESTORED (2026-08-24): it was previously dropped as a false
-            // security claim because no passcode step existed, and it is
-            // now true — _confirm() requires confirmPasscode() before any
-            // withdraw call.
+            // s37's own footnote is "Money from shares you just sold becomes
+            // available 3 working days after the sale." — the passcode
+            // sentence is not drawn but is kept: it is a true statement
+            // about this screen's real behaviour ([_confirm] below actually
+            // gates on it), not decoration, so dropping it would make the
+            // screen less honest, not more accurate. Flagged in the build
+            // report as an addition beyond the artboard.
             Text(
-              'Your passcode confirms this withdrawal. Money from a sale is '
-              'available after it settles on T+3.',
+              'Your passcode confirms this withdrawal. Money from shares you '
+              'just sold becomes available 3 working days after the sale.',
               style: KType.body(color: KColor.ink3),
             ),
-            const SizedBox(height: 16),
-            // "Cancel" / "Review" (spec 42) — was a single "Withdraw" button
-            // that skipped straight past the review step's own confirmation.
-            // Cancel is a fixed-width ghost button (hint-size "100px,50px"),
-            // not full-width like Review — was stretching both equally.
-            Row(
-              children: [
-                KButton(
-                  label: 'Cancel',
-                  variant: KButtonVariant.ghost,
-                  fullWidth: false,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: KButton(
-                    label: 'Review',
-                    onPressed: account == null
-                        ? null
-                        : () {
-                            Navigator.of(context).pop();
-                            _showWithdrawReview(context,
-                                amount: _amount.text, account: account, holderName: data.holderName);
-                          },
-                  ),
-                ),
-              ],
+            const SizedBox(height: 22),
+            // Single "Withdraw ₦X" CTA (s37 draws no Cancel button — the
+            // sheet is already dismissable by drag/tap-outside, so nothing
+            // is lost by matching that).
+            KButton(
+              label: 'Withdraw ₦${_amount.text}',
+              loading: _busy,
+              onPressed: (_busy || account == null || entered <= 0 || overBalance)
+                  ? null
+                  : () => _confirm(account, data.holderName),
             ),
           ],
         );
       },
     );
   }
-}
 
-void _showWithdrawReview(BuildContext context,
-    {required String amount, required BankAccountSummary account, required String holderName}) {
-  showKSheet<void>(
-    context,
-    title: 'Review',
-    child: _WithdrawReview(amount: amount, account: account, holderName: holderName),
-  );
-}
-
-class _WithdrawReview extends StatefulWidget {
-  const _WithdrawReview({required this.amount, required this.account, required this.holderName});
-  final String amount;
-  final BankAccountSummary account;
-  final String holderName;
-  @override
-  State<_WithdrawReview> createState() => _WithdrawReviewState();
-}
-
-class _WithdrawReviewState extends State<_WithdrawReview> {
-  bool _busy = false;
-
-  String get _destinationLabel =>
-      '${widget.account.bankName} ${widget.account.accountNumberMasked}';
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SummaryRow(label: 'Amount', value: '₦${widget.amount}'),
-        _SummaryRow(label: 'To', value: _destinationLabel),
-        // Fee/Arrives/You receive (spec 42) — Fee is genuinely ₦0.00 (no fee
-        // concept exists anywhere in the backend's Transaction model, so
-        // this isn't a placeholder, it's the real answer), "You receive" is
-        // therefore always the full requested amount.
-        _SummaryRow(label: 'Fee', value: '₦0.00'),
-        _SummaryRow(label: 'Arrives', value: 'Within 1 business day'),
-        _SummaryRow(label: 'You receive', value: '₦${widget.amount}'),
-        const SizedBox(height: 18),
-        // Spec 42's "Your passcode confirms this withdrawal" is RESTORED
-        // (2026-08-24) — see the matching note on the amount step. It is
-        // now a true statement: _confirm() below gates on confirmPasscode().
-        Text(
-          'Your passcode confirms this withdrawal. Money from a sale is '
-          'available after it settles on T+3.',
-          style: KType.body(color: KColor.ink3),
-        ),
-        const SizedBox(height: 22),
-        KButton(
-          label: 'Withdraw',
-          loading: _busy,
-          onPressed: _busy ? null : _confirm,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirm() async {
+  Future<void> _confirm(BankAccountSummary account, String holderName) async {
     // Passcode re-authentication before money leaves the account
-    // (2026-08-24). The design (spec 42) always specified "Your passcode
-    // confirms this withdrawal", but no passcode step existed anywhere in
-    // this flow — the footnote had been dropped as unimplementable, and
-    // security_screen.dart meanwhile displayed an always-on "Passcode for
-    // withdrawals" row describing behaviour the app did not have. Anyone
-    // who reached an unlocked session could move funds out with no
-    // re-authentication at all.
-    //
-    // Placed BEFORE `_busy` is set so a dismissed sheet leaves the button
-    // live rather than stuck in a spinner. Non-blocking on devices that
-    // never set a local passcode (hasPasscode() false) — there is nothing
-    // to verify against there, and hard-failing would strand those
-    // investors with no way to withdraw at all.
+    // (restored 2026-08-24, kept through this rebuild) — placed BEFORE
+    // `_busy` is set so a dismissed sheet leaves the button live rather than
+    // stuck in a spinner. Non-blocking on devices that never set a local
+    // passcode (hasPasscode() false) — there is nothing to verify against
+    // there, and hard-failing would strand those investors with no way to
+    // withdraw at all.
     final store = PasscodeStore();
     if (await store.hasPasscode()) {
       if (!mounted) return;
@@ -970,17 +1115,18 @@ class _WithdrawReviewState extends State<_WithdrawReview> {
     }
     if (!mounted) return;
     setState(() => _busy = true);
-    final repo = WalletRepository(AppScope.read(context).apiClient);
+    final destinationLabel = '${account.bankName} ${account.accountNumberMasked}';
+    final amountLabel = _amount.text;
     try {
-      await repo.withdraw(
-        amountKobo: _parseAmountKobo(widget.amount),
-        bankAccountId: widget.account.id,
+      await _repo.withdraw(
+        amountKobo: _parseAmountKobo(_amount.text),
+        bankAccountId: account.id,
       );
       if (!mounted) return;
       Navigator.of(context).pop();
       _showSuccessSheet(context,
           title: 'Withdrawal started',
-          message: '₦${widget.amount} is on its way to $_destinationLabel.');
+          message: '₦$amountLabel is on its way to $destinationLabel.');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
@@ -990,43 +1136,37 @@ class _WithdrawReviewState extends State<_WithdrawReview> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WITHDRAW — outside-hours variant (spec screen 63, 2026-08-23 "Soft
-// Landing" exactness pass — Flow G was entirely unbuilt until now).
+// WITHDRAW — outside-hours variant (R-21: kept, restyled). No canvas
+// counterpart exists anywhere — this composition follows s37's own patterns
+// (big amount + chips + destination row + two-row fee card) rather than
+// designer intent; recorded here so nobody mistakes this layout for a
+// drawn artboard.
 //
 // REAL BACKEND GAP, flagged rather than faked: WalletRepository.withdraw()
-// (POST /transactions/withdraw) has no queuing/scheduling concept — this
-// file's own header already documents "Withdraw is UNCHANGED — withdrawals
-// still go server-to-bank directly via v3", i.e. no off-hours-vs-daytime
-// branching exists server-side. So this sheet does NOT claim spec 63's
-// literal "Sent to your bank · Tomorrow from 09:00" — that promises a
-// specific processing time nothing server-side actually commits to. It
-// keeps the honest "Within 1 business day" wording the normal withdraw
-// review already uses (_WithdrawReview above), and "Queue it for 09:00"
-// submits the SAME real withdraw() call right away — a transfer initiated
-// at night genuinely does land the next business day anyway, so the framing
-// is honest; only the literal "09:00" clock promise is dropped. Fee is
-// genuinely ₦0.00, same established fact as the normal withdraw flow (no
-// fee concept exists anywhere in this backend's Transaction model) — spec
-// 63's "₦50.00" is mock example data, not a real rate.
+// (POST /transactions/withdraw) has no queuing/scheduling concept —
+// withdrawals go server-to-bank directly regardless of the hour, i.e. no
+// off-hours-vs-daytime branching exists server-side. So this sheet does NOT
+// claim a specific processing time nothing server-side actually commits to
+// (no "Tomorrow from 09:00"). It keeps the same honest "Within 1 working
+// day" wording the in-hours sheet uses, and "Queue it for 09:00" submits
+// the SAME real withdraw() call right away — a transfer initiated at night
+// genuinely does land the next working day anyway, so the framing is
+// honest; only a literal clock promise is avoided. Fee is genuinely free,
+// same established fact as the in-hours withdraw (see [_withdrawalFeeLabel]).
 //
 // Trigger: outside a rough 09:00-21:00 weekday window, client-clock only —
 // same class of heuristic as market_hours.dart's isNgxOpenNow(), not
 // authoritative bank-processing-window data (no such field exists in this
-// API). Spec 63's footer third trigger, "...or with unsettled cash", is
-// shown as CONTEXT inside the sheet (the settling-amount line, whenever
+// API). The "...or with unsettled cash" trigger is shown as CONTEXT inside
+// the sheet (the settling-amount line, whenever
 // [WalletRepository.balanceDetail]'s `pending` is non-null) rather than a
 // second independent trigger — modelling "does THIS entered amount touch
 // unsettled cash" before the amount is even typed would itself be a
 // fabricated distinction.
 //
-// No destination-bank row here, matching s63.html exactly (unlike s42's
-// _WithdrawSheet above, this sheet's markup never shows one) — it resolves
-// to the same primary/first saved account [_WithdrawSheet] does, silently,
-// same documented picker-UI gap as this file's header.
-//
-// "Queue -> 43 Transaction" (spec footer): on success this pushes straight
-// to the real transaction-detail screen instead of a generic success sheet,
-// matching that nav note.
+// On success this pushes straight to the real transaction-detail screen
+// instead of a generic success sheet — the investor gets to see the queued
+// transaction's own real status rather than a sheet asserting one.
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool _isOutsideWithdrawHours() {
@@ -1036,7 +1176,12 @@ bool _isOutsideWithdrawHours() {
   return minutes < 9 * 60 || minutes >= 21 * 60;
 }
 
-typedef _OutsideHoursInit = ({String available, String? pending, BankAccountSummary? account});
+typedef _OutsideHoursInit = ({
+  String available,
+  String? pending,
+  BankAccountSummary? account,
+  String holderName,
+});
 
 class _OutsideHoursWithdrawSheet extends StatefulWidget {
   const _OutsideHoursWithdrawSheet();
@@ -1045,14 +1190,16 @@ class _OutsideHoursWithdrawSheet extends StatefulWidget {
 }
 
 class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> {
-  late final TextEditingController _amount = TextEditingController(text: '20,000');
+  late final TextEditingController _amount = TextEditingController(text: '30,000');
   late final _repo = WalletRepository(AppScope.read(context).apiClient);
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late Future<_OutsideHoursInit> _init = _load();
   bool _busy = false;
   String? _error;
 
   Future<_OutsideHoursInit> _load() async {
-    final (detail, accounts) = await (_repo.balanceDetail(), _repo.bankAccounts()).wait;
+    final (detail, accounts, profile) =
+        await (_repo.balanceDetail(), _repo.bankAccounts(), _userRepo.me()).wait;
     BankAccountSummary? account;
     for (final a in accounts) {
       if (a.primary) {
@@ -1061,7 +1208,12 @@ class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> 
       }
     }
     account ??= accounts.isEmpty ? null : accounts.first;
-    return (available: detail.available, pending: detail.pending, account: account);
+    return (
+      available: detail.available,
+      pending: detail.pending,
+      account: account,
+      holderName: profile.fullName,
+    );
   }
 
   @override
@@ -1077,21 +1229,20 @@ class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> 
     return 'Today · $hh:$mm';
   }
 
+  void _setAmount(double naira) {
+    setState(() {
+      final whole = naira.truncate();
+      final wholeStr = whole.toString().replaceAllMapped(
+            RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+            (m) => '${m[1]},',
+          );
+      _amount.text = wholeStr;
+    });
+  }
+
   Future<void> _confirm(BankAccountSummary account) async {
-    // Passcode re-authentication before money leaves the account
-    // (2026-08-24). The design (spec 42) always specified "Your passcode
-    // confirms this withdrawal", but no passcode step existed anywhere in
-    // this flow — the footnote had been dropped as unimplementable, and
-    // security_screen.dart meanwhile displayed an always-on "Passcode for
-    // withdrawals" row describing behaviour the app did not have. Anyone
-    // who reached an unlocked session could move funds out with no
-    // re-authentication at all.
-    //
-    // Placed BEFORE `_busy` is set so a dismissed sheet leaves the button
-    // live rather than stuck in a spinner. Non-blocking on devices that
-    // never set a local passcode (hasPasscode() false) — there is nothing
-    // to verify against there, and hard-failing would strand those
-    // investors with no way to withdraw at all.
+    // Passcode re-authentication before money leaves the account — same gate
+    // as the in-hours sheet's own [_WithdrawSheetState._confirm].
     final store = PasscodeStore();
     if (await store.hasPasscode()) {
       if (!mounted) return;
@@ -1144,14 +1295,17 @@ class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> 
         }
         final data = snapshot.data!;
         final account = data.account;
+        final available = _parseNaira(data.available);
+        final entered = _parseNaira(_amount.text);
+        final overBalance = entered > available && available > 0;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // s63.html: "Withdraw" + the "Queued for morning" pill share one
-            // row — the sheet is opened untitled and this row built
-            // explicitly, same pattern as trade_flows.dart's market-closed
-            // buy sheet.
+            // "Withdraw" + the "Queued for morning" pill share one row — the
+            // sheet is opened untitled and this row built explicitly, same
+            // pattern as trade_flows.dart's market-closed buy sheet.
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1159,18 +1313,92 @@ class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> 
                 const KStatusPill(status: KStatus.pending, label: 'Queued for morning', small: true),
               ],
             ),
-            const SizedBox(height: 14),
-            KInput(
-              label: 'Amount',
-              controller: _amount,
-              numeric: true,
-              amount: true,
-              prefix: '₦',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              onChanged: (_) => setState(() {}),
-              helper: data.pending != null
-                  ? '${data.available} available · ${data.pending} of it still settling'
-                  : '${data.available} available',
+            const SizedBox(height: 16),
+            Center(
+              child: Column(
+                children: [
+                  Text('How much do you want out?'.upper, style: KType.label()),
+                  const SizedBox(height: 8),
+                  _BigAmountField(
+                    controller: _amount,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    data.pending != null
+                        ? '${data.available} available · ${data.pending} of it still settling'
+                        : '${data.available} available',
+                    style: KType.body(color: overBalance ? KColor.loss : KColor.ink2),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: KPillChip(
+                    label: '₦10,000',
+                    selected: entered == 10000,
+                    onTap: () => _setAmount(10000),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: KPillChip(
+                    label: '₦30,000',
+                    selected: entered == 30000,
+                    onTap: () => _setAmount(30000),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: KPillChip(
+                    label: 'All ${data.available}',
+                    // Compares truncated wholes, not exact doubles — the
+                    // "All" chip writes a whole-naira figure (see
+                    // [_setAmount]) while [available] carries real kobo, so
+                    // an exact `==` would never highlight as selected once
+                    // the balance has any cents in it.
+                    selected: available > 0 && entered.floor() == available.floor(),
+                    onTap: available > 0 ? () => _setAmount(available) : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text('Going to your bank', style: KType.cardTitle()),
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
+                color: KColor.paper,
+                border: Border.all(
+                  color: account == null ? KColor.hairline : _accentBorder,
+                  width: account == null ? 1 : 1.5,
+                ),
+                borderRadius: KRadii.cardR,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _SelectRow(
+                icon: 'card',
+                title: account == null
+                    ? 'No saved bank account'
+                    : '${account.bankName} ${account.accountNumberMasked} · DCS account',
+                sub: account == null ? 'Tap to add one' : data.holderName,
+                trailingCheck: account != null,
+                trailingChevron: account == null,
+                first: true,
+                // No saved account: this is the empty state — routes to add
+                // one instead of leaving the CTA permanently disabled with
+                // no way forward (the in-hours sheet's own fix, carried
+                // here too per R-21's "restyled to match neighbours").
+                onTap: account == null
+                    ? () {
+                        Navigator.of(context).pop();
+                        context.push(Routes.acctBanks);
+                      }
+                    : () {},
+              ),
             ),
             const SizedBox(height: 14),
             Container(
@@ -1182,12 +1410,17 @@ class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> 
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  _SummaryRow(label: 'Requested', value: _requestedAtLabel),
-                  // Honest wording — see this section's header comment for
-                  // why this isn't spec 63's literal "Tomorrow from 09:00".
-                  _SummaryRow(label: 'Sent to your bank', value: 'Within 1 business day'),
-                  _SummaryRow(label: 'Fee', value: '₦0.00'),
-                  _SummaryRow(label: 'You receive', value: '₦${_amount.text}'),
+                  _SummaryRow(label: 'Requested', value: _requestedAtLabel, small: true),
+                  _SummaryRow(
+                      label: 'Sent to your bank',
+                      value: 'Within 1 working day',
+                      small: true),
+                  _SummaryRow(
+                      label: 'Withdrawal fee',
+                      value: _withdrawalFeeLabel,
+                      small: true,
+                      valueColor: KColor.gain,
+                      divider: false),
                 ],
               ),
             ),
@@ -1209,24 +1442,12 @@ class _OutsideHoursWithdrawSheetState extends State<_OutsideHoursWithdrawSheet> 
               Text(_error!, style: KType.body(color: KColor.loss)),
             ],
             const SizedBox(height: 22),
-            Row(
-              children: [
-                Expanded(
-                  child: KButton(
-                    label: 'Cancel',
-                    variant: KButtonVariant.ghost,
-                    onPressed: _busy ? null : () => Navigator.of(context).pop(),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: KButton(
-                    label: 'Queue it for 09:00',
-                    loading: _busy,
-                    onPressed: account == null || _busy ? null : () => _confirm(account),
-                  ),
-                ),
-              ],
+            KButton(
+              label: 'Queue it for 09:00',
+              loading: _busy,
+              onPressed: (_busy || account == null || entered <= 0 || overBalance)
+                  ? null
+                  : () => _confirm(account),
             ),
           ],
         );

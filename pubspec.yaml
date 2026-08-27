@@ -85,8 +85,20 @@ dependencies:
   shared_preferences: ^2.5.5
   local_auth: ^3.0.2
 
+  # R-41 (docs/redesign/DECISIONS.md) — the socket.io client for the
+  # realtime layer (lib/data/realtime/realtime_client.dart). Same JWT auth
+  # as the REST API, mature built-in reconnection/backoff — configured, not
+  # reimplemented. See that file's header for the full write-up.
+  socket_io_client: ^3.1.2
+
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+
+  # Real-backend live gate (integration_test/live_gate_test.dart) — runs
+  # inside the app with real widget finders (not DOM selectors), driven via
+  # `flutter drive` against Chrome. See scripts/live_gate.sh.
+  integration_test:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
