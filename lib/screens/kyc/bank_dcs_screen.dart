@@ -1,5 +1,6 @@
-// KYC 6 of 8 — Bank & Direct Cash Settlement (canvas screen 19). NEW screen
-// (2026-08-24, re-sequencing to the canvas's real 8-step flow).
+// KYC 5 of 7 — Bank & Direct Cash Settlement (canvas screen 19). NEW screen
+// (2026-08-24, re-sequencing to the canvas's real 8-step flow; renumbered
+// 8->7 (was 6 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation).
 //
 // Reuses the app's EXISTING real bank-linking mechanism —
 // BankAccountsRepository (POST /bank-accounts, PATCH .../primary, GET
@@ -136,9 +137,9 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycUtilityBill),
-              stepLabel: 'Verification · 6 of 8',
+              stepLabel: 'Verification · 5 of 7',
             ),
-            const KycStepProgress(total: 8, current: 6),
+            const KycStepProgress(total: 7, current: 5),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

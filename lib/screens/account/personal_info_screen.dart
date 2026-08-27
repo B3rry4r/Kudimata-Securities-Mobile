@@ -1,8 +1,24 @@
-// Stage 9 — Personal info (pushed). Read-only label:value rows (Full name /
-// Date of birth / BVN · NIN / CHN / Account status), then real editable
-// Phone number / Residential address fields inline on the page (matching
-// the canvas's #s49 body exactly — 2026-08-23 exactness pass), then a
-// "Save changes" button. Mirrors `PersonalInfo` in extra-screens.jsx.
+// Stage 9 — Personal info (pushed).
+//
+// R-5 correction (2026-08-27, docs/redesign/DECISIONS.md): this file used
+// to cite "#s49" — that id is from the OLD 97-screen canvas. The real,
+// current artboard is `06 Account and Support.dc.html#s58` ("58 · Personal
+// details"), which draws a materially different shape from what this
+// screen had: an avatar+"Change avatar" row up top, a green "Verified"
+// banner, three LOCKED rows (Legal name/DOB/CHN, each with a reason
+// caption) rather than five plain label:value rows, and each editable
+// field (Phone/Email/Home address) as its own tappable "Change" row rather
+// than inline `KInput`s with one page-level "Save changes" button. Rebuilt
+// against s58 below — see this file's per-section notes for what was and
+// wasn't adopted verbatim.
+//
+// Screen title stays "Personal info", NOT s58's own "Personal details" —
+// suitability_result_screen.dart and dormant_account_screen.dart (both out
+// of this pass's scope) already say "Account › Personal info" verbatim;
+// see account_screen.dart's own note on the same row. SHARED-CHANGE
+// REQUEST filed in the report (a repo-wide rename is a separate, reviewed
+// pass, not a silent one-file drift).
+//
 // 2026-08-24: dropped the "Investor profile · {profile}" card + Retake
 // link (direct product instruction, "we don't need that anymore") — the
 // suitability questionnaire is still reachable from its own account row
@@ -12,29 +28,33 @@
 // phone/dob/residentialAddress) and GET /kyc-submissions/me
 // (KycRepository.me — masked bvn) per lib/data/api/README.md's
 // FutureBuilder convention. Both are fetched together with Future.wait so
-// the screen shows one loading state instead of two staggered ones; see
-// Kudimata-Securities-Backend/.pipeline/fragments/account-personal.json's
-// STUB-account-personal-1 for why dob/residentialAddress/bvn used to be
-// hardcoded literals interleaved with the two real MockData.user fields.
+// the screen shows one loading state instead of two staggered ones.
 //
-// Full name is deliberately NOT editable anywhere on this screen — the
-// canvas's read-only card has no edit affordance on that row, and its own
-// footer note says "a legal-name change opens support at 56" (Help &
-// support). A prior version of this screen let a name change ride along
-// inside a generic "Edit details" sheet; that's now gone (2026-08-23
-// exactness pass) — legal-name changes belong to support, not self-serve.
+// Legal name is deliberately NOT editable anywhere on this screen — s58's
+// own locked row shows a lock glyph and, per its own caption ("Change it at
+// your bank first, then ask us to re-check"), implies a bank-first process.
+// NOT adopted: nothing in this app ties a legal-name correction to "your
+// bank" — the real, existing process is "contact support" (Help & support
+// already carries this), so that caption is used instead of transcribing an
+// unverified claim about how a name change works (R-34/the brief's "claims,
+// not just figures" rule).
+//
+// s58's own bottom "Go to Security" button + "Bank account changes live
+// under Security, and take a 24-hour hold" line has TWO wrong claims for
+// this app: bank accounts live under their own Account-hub row
+// (Routes.acctBanks / bank_accounts_screen.dart), not under Security, and
+// grepping the backend for any bank-account-change hold mechanism found
+// nothing — same null result wallet_flows.dart's header comment already
+// recorded for the withdraw-destination row's identical "24-hour security
+// hold" claim. The footer element ships; its factual claims don't —
+// destination corrected to the real bank-accounts screen, the hold clause
+// dropped.
 //
 // City/state editing (added 2026-08-07, supersedes.json S-9) stays as a
-// secondary "Add city & state" link, shown only while either is missing:
-// they're normally collected once by the post-signup onboarding step
-// (onboarding/personal_details_screen.dart), but that step can fail or be
-// skipped (e.g. a phone-number conflict, or the investor just closing the
-// app mid-flow) with no way back to it — this screen is the only other
-// place in the app that can complete them. Kept out of the canvas's own two
-// inline fields (Phone number / Residential address) so this screen still
-// reads as the design intends when both are already set. dob stays
-// deliberately non-editable here ("contact support") — an existing,
-// unrelated product decision this change doesn't touch.
+// secondary "Add city & state" link, shown only while either is missing —
+// not an s58 row at all, but real: the post-signup onboarding step can be
+// skipped or fail with no way back to it, and this is the only other place
+// in the app that completes them.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -130,6 +150,27 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Personal info',
+      // s58's own pinned-bottom footer — see this file's header note for
+      // why its "Go to Security"/"24-hour hold" copy isn't transcribed
+      // as-is. The element ships (a real, working destination); its two
+      // false claims don't.
+      footer: Padding(
+        padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Bank account changes are made from Bank accounts & DCS.',
+              style: KType.data(color: KColor.ink3),
+            ),
+            const SizedBox(height: 9),
+            KButton(
+              label: 'Go to bank accounts',
+              onPressed: () => context.push(Routes.acctBanks),
+            ),
+          ],
+        ),
+      ),
       child: FutureBuilder<(PersonalInfo, String)>(
         future: _future,
         builder: (context, snapshot) {
@@ -155,7 +196,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   }
 }
 
-class _PersonalInfoBody extends StatefulWidget {
+class _PersonalInfoBody extends StatelessWidget {
   const _PersonalInfoBody({
     super.key,
     required this.info,
@@ -169,135 +210,181 @@ class _PersonalInfoBody extends StatefulWidget {
   final UserRepository repo;
   final VoidCallback onSaved;
 
-  @override
-  State<_PersonalInfoBody> createState() => _PersonalInfoBodyState();
-}
-
-class _PersonalInfoBodyState extends State<_PersonalInfoBody> {
-  late final _phone = TextEditingController(text: _localPhone(widget.info.phone));
-  late final _addr = TextEditingController(
-    text: widget.info.residentialAddress == '—' ? '' : widget.info.residentialAddress,
-  );
-
-  bool _showErrors = false;
-  bool _busy = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _phone.dispose();
-    _addr.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final normalizedPhone = _normalizePhoneToE164(_phone.text);
-    if (normalizedPhone == null) {
-      setState(() => _showErrors = true);
-      return;
-    }
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      await widget.repo.updateProfile(
-        phone: normalizedPhone,
-        residentialAddress: _addr.text.trim().isEmpty ? null : _addr.text.trim(),
-      );
-      widget.onSaved();
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = e.message;
-      });
-    }
-  }
-
-  Future<void> _addCityState() async {
+  Future<void> _addCityState(BuildContext context) async {
     final saved = await showKSheet<bool>(
       context,
       title: 'City & state',
-      child: _CityStateSheet(repo: widget.repo, info: widget.info),
+      child: _CityStateSheet(repo: repo, info: info),
     );
-    if (saved == true) widget.onSaved();
+    if (saved == true) onSaved();
+  }
+
+  Future<void> _changeAvatar(BuildContext context) async {
+    final picked = await showAvatarPicker(context, selected: info.avatarKey);
+    if (picked == null) return;
+    await repo.updateProfile(avatarKey: picked);
+    onSaved();
+  }
+
+  Future<void> _changePhone(BuildContext context) async {
+    final saved = await showKSheet<bool>(
+      context,
+      title: 'Phone number',
+      child: _PhoneEditSheet(repo: repo, info: info),
+    );
+    if (saved == true) onSaved();
+  }
+
+  Future<void> _changeAddress(BuildContext context) async {
+    final saved = await showKSheet<bool>(
+      context,
+      title: 'Residential address',
+      child: _AddressEditSheet(repo: repo, info: info),
+    );
+    if (saved == true) onSaved();
+  }
+
+  /// s58 draws this row with a "Needs an email code" hint and an implied
+  /// change flow. `UserRepository.updateProfile` has no `email` parameter
+  /// at all (checked) — there is no email-change capability anywhere in
+  /// this app yet, real or gated. Filed in BACKEND_GAPS.md; here the row
+  /// still ships (it's real, current data) but "Change" is honest about
+  /// what's actually available, same established pattern as
+  /// data_privacy_screen.dart's "Download my data".
+  void _emailNotAvailable(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Email changes aren't available in the app yet — contact support."),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final info = widget.info;
-    final bvn = widget.bvn;
-
-    // Re-verified against the canvas's real s49.html (2026-08-23 exactness
-    // pass): the read-only card's rows are Full name / Date of birth /
-    // BVN · NIN / CHN / Account status — a coarser, more privacy-conscious
-    // set than the raw field-by-field dump this screen used to show
-    // (separate first/middle/last/city/state rows, and the literal BVN
-    // value rather than a verified/not-verified status).
+    // bvn/dob are blank for exactly one reason: this investor hasn't
+    // submitted KYC yet (BVN comes from the KYC flow itself; DOB from the
+    // post-signup onboarding step that leads into it) — never a data bug.
     final verified = bvn != '—';
-    final rows = <(String, String, bool tabular)>[
-      ('Full name', info.fullName, false),
-      ('Date of birth', info.dob, false),
-      ('BVN · NIN', verified ? 'Verified' : 'Not verified', true),
-      ('CHN', info.cscsNumber, true),
-      (
-        'Account status',
-        info.accountStatus.isEmpty
-            ? '—'
-            : info.accountStatus[0].toUpperCase() + info.accountStatus.substring(1),
-        false,
-      ),
-    ];
-
-    // BVN and date of birth are blank for exactly one reason: this investor
-    // hasn't submitted KYC yet (BVN comes from the KYC flow itself; DOB from
-    // the post-signup onboarding step that leads into it) — never a data
-    // bug. Found live 2026-08-19: the screen just showed blank "—" rows with
-    // no explanation, which reads as broken. Route straight to the KYC
-    // intro instead of the dead-end "contact support" copy, which only
-    // makes sense for an investor who HAS already verified and wants to
-    // correct one of these otherwise-locked fields.
     final missingKyc = bvn == '—' || info.dob == '—';
     final missingCityState = info.city == '—' || info.state == '—';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Read-only rows — a plain label:value line per row (`text-data`
-        // both sides, ink-2 label / ink value), not the label-above-value
-        // stacked/uppercase-caption layout this screen used to render
-        // (2026-08-23 exactness pass — that stacked treatment belongs to a
-        // different part of the design system, not this card).
-        KAccountCard(
+        // s58's own top row: avatar + name + "Change avatar" link. Moved up
+        // from the old "You can change these" card (2026-08-27 exactness
+        // pass against s58) — avatar itself is a real, user-chosen field
+        // not on s58 originally (added 2026-08-24, direct instruction),
+        // kept in this new position rather than dropped.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            for (var i = 0; i < rows.length; i++)
+            if (info.avatarKey != null)
+              KAvatar(avatarKey: info.avatarKey!, size: 56)
+            else
               Container(
-                width: double.infinity,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  border: Border(
-                    top: i == 0
-                        ? BorderSide.none
-                        : BorderSide(color: KColor.hairline, width: 1),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(rows[i].$1, style: KType.data(color: KColor.ink2)),
-                    ),
-                    Text(
-                      rows[i].$2,
-                      style: rows[i].$3 ? KType.data().tnum : KType.data(),
-                    ),
-                  ],
+                  color: KColor.paper,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: KColor.hairline, width: 1),
                 ),
               ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(info.fullName, style: KType.cardTitle()),
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () => _changeAvatar(context),
+                    behavior: HitTestBehavior.opaque,
+                    child: Text(
+                      info.avatarKey != null ? 'Change avatar' : 'Choose an avatar',
+                      style: KType.data(color: KColor.indicator, w: KWeight.semibold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
+        const SizedBox(height: 16),
+        // s58: green "Verified" banner. Real (bvn present means KYC
+        // cleared) — same statusApprovedTint/gain-check treatment
+        // statements_screen.dart's own real green callout uses. s58's own
+        // copy names a specific date ("Verified on 14 March 2026"); no
+        // verification-date field exists anywhere (UserRepository /
+        // KycRepository — checked), so that clause is dropped rather than
+        // invented (R-34).
+        if (verified)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(color: KColor.statusApprovedTint, borderRadius: KRadii.illoR),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: KIcon('check', size: 17, color: KColor.gain),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Text(
+                    'Verified. Locked details come from your BVN and NIN.',
+                    style: KType.data(color: KColor.ink2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (verified) const SizedBox(height: 16),
+        // Locked rows — s58: Legal name / Date of birth / CHN, each with a
+        // lock glyph + a reason caption (2026-08-27 exactness pass; the
+        // prior single-line label:value card also carried a separate
+        // "BVN · NIN" row, folded into the banner above instead, matching
+        // s58 which doesn't draw it as its own row).
+        //
+        // "Account status" isn't an s58 row at all, but it's real and
+        // directly relevant (the freeze feature makes it so) — kept as a
+        // fourth, unlocked row rather than dropped, per the brief's "code
+        // path serves more than the drawn moment" reasoning.
+        KCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              _LockedRow(
+                label: 'Legal name',
+                value: info.fullName,
+                sub: 'Contact support to change this.',
+                first: true,
+              ),
+              _LockedRow(label: 'Date of birth', value: info.dob, sub: 'From your BVN record.'),
+              _LockedRow(
+                label: 'CHN',
+                value: info.cscsNumber,
+                sub: 'Issued by CSCS, stays with you for life.',
+              ),
+              _LockedRow(
+                label: 'Account status',
+                value: info.accountStatus.isEmpty
+                    ? '—'
+                    : info.accountStatus[0].toUpperCase() + info.accountStatus.substring(1),
+                sub: null,
+                showLock: false,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 14),
-        if (missingKyc)
+        // Found live 2026-08-19: blank "—" rows above with no explanation
+        // read as broken. Route straight to the KYC intro rather than a
+        // dead-end "contact support" — that copy only makes sense once
+        // verified, for correcting an otherwise-locked field.
+        if (missingKyc) ...[
           KAccountCard(
             children: [
               KAccountRow(
@@ -308,59 +395,200 @@ class _PersonalInfoBodyState extends State<_PersonalInfoBody> {
                 onTap: () => context.push(Routes.kycIntro),
               ),
             ],
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Text(
-              'To change your date of birth or BVN, contact support.',
-              style: KType.body(color: KColor.ink3),
-            ),
           ),
-        const SizedBox(height: 14),
+          const SizedBox(height: 14),
+        ],
         Text('You can change these'.upper, style: KType.label()),
         const SizedBox(height: 14),
-        // Avatar — added 2026-08-24, direct product instruction ("on
-        // personal info they can choose avatars too"). Not part of the
-        // canvas's own s49 body (avatars weren't a real, user-chosen field
-        // when that screen was drawn) — a same-shape addition to the "You
-        // can change these" section rather than a new screen.
-        KCard(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+        // s58: Phone / Email / Home address, each its own tappable "Change"
+        // row (not inline fields + one page-level Save). s58's own hint
+        // captions ("Needs an SMS code" / "Needs an email code" / "Needs a
+        // recent utility bill") assert verification gates this app doesn't
+        // implement for a post-KYC change — `updateProfile` is a plain
+        // PATCH with no OTP/document step for phone or address, and no
+        // `email` parameter exists at all. Those hints are dropped (R-34's
+        // "claims, not just figures"); "Employment status" (s58's third
+        // field, a Select) stays skipped — no such field exists anywhere in
+        // the backend's User model.
+        _EditableFieldRow(
+          label: 'Phone',
+          value: info.phone.isEmpty ? '—' : '+234 ${_localPhone(info.phone)}',
+          onChange: () => _changePhone(context),
+        ),
+        const SizedBox(height: 10),
+        _EditableFieldRow(
+          label: 'Email',
+          value: info.email.isEmpty ? '—' : info.email,
+          onChange: () => _emailNotAvailable(context),
+        ),
+        const SizedBox(height: 10),
+        _EditableFieldRow(
+          label: 'Home address',
+          value: info.residentialAddress,
+          onChange: () => _changeAddress(context),
+        ),
+        if (missingCityState) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () => _addCityState(context),
+            behavior: HitTestBehavior.opaque,
+            child: Text('Add city & state', style: KType.data(color: KColor.indicator)),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// One locked, label:value row with a lock glyph and a reason caption — s58's
+/// Legal name / Date of birth / CHN shape. [showLock] is false for the
+/// extra "Account status" row (real, kept, but not a BVN-derived fact s58
+/// would show a lock glyph on).
+class _LockedRow extends StatelessWidget {
+  const _LockedRow({
+    required this.label,
+    required this.value,
+    required this.sub,
+    this.first = false,
+    this.showLock = true,
+  });
+
+  final String label;
+  final String value;
+  final String? sub;
+  final bool first;
+  final bool showLock;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border(top: first ? BorderSide.none : BorderSide(color: KColor.hairline, width: 1)),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (info.avatarKey != null) ...[
-                KAvatar(avatarKey: info.avatarKey!, size: 40),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Text(
-                  info.avatarKey != null ? 'Avatar' : 'No avatar chosen',
-                  style: KType.cardTitle(),
-                ),
-              ),
-              GestureDetector(
-                onTap: () async {
-                  final picked = await showAvatarPicker(context, selected: info.avatarKey);
-                  if (picked == null) return;
-                  await widget.repo.updateProfile(avatarKey: picked);
-                  widget.onSaved();
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Text(
-                  info.avatarKey != null ? 'Change' : 'Choose',
-                  style: KType.data(color: KColor.indicator),
-                ),
+              Text(label, style: KType.data(color: KColor.ink3)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: Text(value, style: KType.cardTitle(), textAlign: TextAlign.right)),
+                  if (showLock) ...[
+                    const SizedBox(width: 6),
+                    KIcon('lock', size: 13, color: KColor.ink3),
+                  ],
+                ],
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 14),
-        // Editable fields per the canvas: Phone number, Residential
-        // address. "Employment status" (canvas's third field, a Select) is
-        // skipped — no such field exists anywhere in the backend's User
-        // model (checked UpdateMeDto and the User type interface), so there
-        // is nothing real to collect or display for it yet.
+          if (sub != null) ...[
+            const SizedBox(height: 4),
+            Text(sub!, style: KType.micro(color: KColor.ink3)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One editable field's own bordered row — s58's Phone/Email/Home address
+/// shape (small caption label, bold value, a "Change" link), replacing the
+/// old inline `KInput` + page-level "Save changes" button.
+class _EditableFieldRow extends StatelessWidget {
+  const _EditableFieldRow({required this.label, required this.value, required this.onChange});
+
+  final String label;
+  final String value;
+  final VoidCallback onChange;
+
+  @override
+  Widget build(BuildContext context) {
+    return KCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: KType.micro(color: KColor.ink3)),
+                const SizedBox(height: 2),
+                Text(value, style: KType.cardTitle()),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: onChange,
+            behavior: HitTestBehavior.opaque,
+            child: Text('Change', style: KType.data(color: KColor.indicator, w: KWeight.semibold)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Phone-only edit sheet, opened from the "Change" link on the Phone row.
+/// Same `_normalizePhoneToE164`/`_localPhone` validation this file already
+/// used inline before the s58 rebuild — unchanged logic, new home.
+class _PhoneEditSheet extends StatefulWidget {
+  const _PhoneEditSheet({required this.repo, required this.info});
+
+  final UserRepository repo;
+  final PersonalInfo info;
+
+  @override
+  State<_PhoneEditSheet> createState() => _PhoneEditSheetState();
+}
+
+class _PhoneEditSheetState extends State<_PhoneEditSheet> {
+  late final _phone = TextEditingController(text: _localPhone(widget.info.phone));
+  bool _showErrors = false;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final normalized = _normalizePhoneToE164(_phone.text);
+    if (normalized == null) {
+      setState(() => _showErrors = true);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.repo.updateProfile(phone: normalized);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
         KInput(
           label: 'Phone number',
           prefix: '+234',
@@ -371,29 +599,77 @@ class _PersonalInfoBodyState extends State<_PersonalInfoBody> {
               ? 'Enter a valid phone number'
               : null,
         ),
-        const SizedBox(height: 14),
-        KInput(
-          label: 'Residential address',
-          controller: _addr,
-        ),
-        if (missingCityState) ...[
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: _addCityState,
-            behavior: HitTestBehavior.opaque,
-            child: Text('Add city & state', style: KType.data(color: KColor.indicator)),
-          ),
-        ],
-        const SizedBox(height: 16),
         if (_error != null) ...[
-          Text(_error!, style: KType.micro(color: KColor.loss)),
           const SizedBox(height: 10),
+          Text(_error!, style: KType.micro(color: KColor.loss)),
         ],
-        KButton(
-          label: 'Save changes',
-          loading: _busy,
-          onPressed: _busy ? null : _save,
-        ),
+        const SizedBox(height: 22),
+        KButton(label: 'Save', loading: _busy, onPressed: _busy ? null : _save),
+      ],
+    );
+  }
+}
+
+/// Address-only edit sheet, opened from the "Change" link on the Home
+/// address row. Same field/save logic this file already used inline before
+/// the s58 rebuild — unchanged behaviour (an emptied field is sent as
+/// `null`, i.e. "don't touch", not as a clear — pre-existing, not new here).
+class _AddressEditSheet extends StatefulWidget {
+  const _AddressEditSheet({required this.repo, required this.info});
+
+  final UserRepository repo;
+  final PersonalInfo info;
+
+  @override
+  State<_AddressEditSheet> createState() => _AddressEditSheetState();
+}
+
+class _AddressEditSheetState extends State<_AddressEditSheet> {
+  late final _addr = TextEditingController(
+    text: widget.info.residentialAddress == '—' ? '' : widget.info.residentialAddress,
+  );
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _addr.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.repo.updateProfile(
+        residentialAddress: _addr.text.trim().isEmpty ? null : _addr.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KInput(label: 'Residential address', controller: _addr),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Text(_error!, style: KType.micro(color: KColor.loss)),
+        ],
+        const SizedBox(height: 22),
+        KButton(label: 'Save', loading: _busy, onPressed: _busy ? null : _save),
       ],
     );
   }

@@ -1,0 +1,11 @@
+<svg width="240" height="180" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M40 74l80-40 80 40" fill="#F5C542" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>
+<rect x="52" y="74" width="136" height="66" rx="6" fill="#FFFFFF" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<rect x="70" y="90" width="14" height="50" fill="#F5C542" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<rect x="98" y="90" width="14" height="50" fill="#F5C542" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<rect x="126" y="90" width="14" height="50" fill="#F5C542" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<rect x="154" y="90" width="14" height="50" fill="#F5C542" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<rect x="40" y="140" width="160" height="12" rx="4" fill="#6FD3A4" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></rect>
+<circle cx="120" cy="52" r="15" fill="#FFFFFF" stroke="#2B1A3D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></circle>
+<text x="120" y="59" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="17" fill="#2B1A3D">₦</text>
+<path d="M28 102l2.56 5.44L36 110l-5.44 2.56L28 118l-2.56-5.44L20 110l5.44-2.56z" fill="#A16BE0"></path><path d="M214 88l2.56 5.44L222 96l-5.44 2.56L214 104l-2.56-5.44L206 96l5.44-2.56z" fill="#F5C542"></path></svg>

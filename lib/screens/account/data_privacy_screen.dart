@@ -3,6 +3,43 @@
 // retention doc (#96), a data export, and account closure (#90) — not a
 // document viewer itself.
 //
+// R-5 correction (2026-08-27, docs/redesign/DECISIONS.md): "screen 91"
+// above is the OLD 97-screen canvas's numbering. The real, current artboard
+// is `06 Account and Support.dc.html#s57` ("57 · Data and privacy"),
+// rebuilt against below:
+//  - Added: the "Your data" hero heading + subtitle s57 opens with (this
+//    screen previously jumped straight into the NDPA sentence with no
+//    heading at all).
+//  - NOT relabelled: s57's two toggles are "Market news and tips" (sub
+//    "Email and push") and "Offers from partners" (sub "You can say no,
+//    nothing changes"). This app's two real consent fields
+//    (`improveAppConsent`/`productEmailsConsent`, see below) are anonymous
+//    app-improvement analytics and marketing emails — neither is a
+//    third-party data-sharing consent ("offers from partners" implies
+//    sharing data with partners, a materially different, more
+//    legally-sensitive consent than either real field backs), and the
+//    backend has no push-notification channel at all (checked
+//    notification_preferences_repository.dart's own header — email only).
+//    Relabelling a real toggle to say something it doesn't do would be
+//    actively misleading on an NDPA consent screen — worse than a wrong
+//    figure, same class the brief's R-34 "claims" rule exists for. The
+//    existing accurate labels/descriptions are kept instead.
+//  - Restyled: "How long we keep things"/"Close my account" moved out of
+//    the scrolling body into a pinned footer (`KAccountSubScaffold.footer`)
+//    with a destructive button, matching s57's own pinned "Delete my data"
+//    treatment — this app's real destructive action is account closure
+//    (close_account_screen.dart), not a separate "delete my data" capability.
+//  - NOT transcribed: s57's retention clause says "six years"; this app's
+//    own legal/data-notice content (legal_reference_screens.dart) says "12
+//    years" consistently, several times over, each citing the SEC. Two
+//    different sources disagree on a compliance figure — exactly
+//    C-1/C-4-shaped territory in FACT-CONFLICTS.md — so a new row (C-6) is
+//    filed there and the existing, more-corroborated "12 years" stands
+//    pending a ruling, per R-7.
+//  - "Save choices" button dropped — s57 has no terminal save/done button
+//    at all (every toggle already autosaves; this button only ever closed
+//    the screen, which the header back button already does).
+//
 // Wired 2026-08-24 per lib/data/api/README.md's FutureBuilder convention
 // against NotificationPreferencesRepository (GET/PUT
 // /notification-preferences/me), whose NotificationPreference resource now
@@ -126,10 +163,19 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // s57's own hero heading + subtitle — added, this screen previously
+        // had no heading at all above the NDPA sentence.
+        Text('Your data', style: KType.hero()),
+        const SizedBox(height: 6),
+        Text(
+          'Choose what we may send you, take a copy, or ask us to delete it.',
+          style: KType.body(color: KColor.ink2),
+        ),
+        const SizedBox(height: 12),
         Text(
           'Under the Nigeria Data Protection Act you decide what we may do beyond running '
           'your account.',
-          style: KType.body(color: KColor.ink2),
+          style: KType.data(color: KColor.ink3),
         ),
         const SizedBox(height: 16),
         KAccountCard(
@@ -140,6 +186,10 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
               description: 'Required — KYC, trading, statements, tax',
               first: true,
             ),
+            // s57 draws "Market news and tips"/"Offers from partners" here
+            // — NOT relabelled to that copy; see this file's header note
+            // for why the real fields these toggles control don't match
+            // that framing.
             _switchRow(
               checked: prefs.improveAppConsent,
               label: 'Improve the app',
@@ -159,6 +209,9 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
           children: [
             KAccountRow(
               title: 'How long we keep things',
+              // s57 says "six years" — NOT adopted; see this file's header
+              // note (FACT-CONFLICTS.md C-6) for why the existing, more
+              // corroborated "12 years" stands pending a ruling.
               sub: 'Trading records 12 years, as the SEC requires',
               right: const KRowChevron(),
               first: true,
@@ -170,12 +223,6 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
               right: const KRowChevron(),
               onTap: _exportData,
             ),
-            KAccountRow(
-              title: 'Close my account and delete what you can',
-              titleColor: KColor.loss,
-              right: const KRowChevron(),
-              onTap: _openClose,
-            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -184,13 +231,6 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
           'anyone.',
           style: KType.data(color: KColor.ink3),
         ),
-        const SizedBox(height: 24),
-        // Canvas #91's own button label is "Save choices", not "Done" —
-        // this screen's toggles already save on every tap (optimistic PUT
-        // per-switch, see _toggleImproveApp/_toggleProductEmails above), so
-        // this button's only real job is closing the screen; label
-        // corrected to match without changing that behavior.
-        KButton(label: 'Save choices', onPressed: () => Navigator.of(context).maybePop()),
       ],
     );
   }
@@ -199,6 +239,30 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
   Widget build(BuildContext context) {
     return KAccountSubScaffold(
       title: 'Data & privacy',
+      // s57's own pinned-bottom footer (retention line + a destructive
+      // button) — this app's real destructive action here is account
+      // closure, not a separate "delete my data" capability, so "Close my
+      // account and delete what you can" (close_account_screen.dart) moved
+      // here from the scrolling body to match s57's shape.
+      footer: Padding(
+        padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'We must keep your trading records for 12 years, as the SEC requires, even '
+              'after you close the account. Everything else can go.',
+              style: KType.data(color: KColor.ink3),
+            ),
+            const SizedBox(height: 9),
+            KButton(
+              label: 'Close my account and delete what you can',
+              variant: KButtonVariant.destructive,
+              onPressed: _openClose,
+            ),
+          ],
+        ),
+      ),
       child: FutureBuilder<NotificationPreferences>(
         future: _future,
         builder: (context, snapshot) {

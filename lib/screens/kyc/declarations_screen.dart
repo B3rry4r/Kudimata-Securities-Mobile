@@ -1,5 +1,6 @@
-// KYC 7 of 8 — Declarations · PEP (canvas screen 20). NEW screen (2026-08-24,
-// re-sequencing to the canvas's real 8-step flow).
+// KYC 6 of 7 — Declarations · PEP (canvas screen 20). NEW screen (2026-08-24,
+// re-sequencing to the canvas's real 8-step flow; renumbered 8->7 (was 7 of
+// 8) 2026-08-27 per X-2/bvn_nin.dart's derivation).
 //
 // Two real declarations, per the canvas — NOT one checkbox:
 //   1. PEP question (Yes/No) — wired to the real backend field
@@ -132,9 +133,9 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycBankDcs),
-              stepLabel: 'Verification · 7 of 8',
+              stepLabel: 'Verification · 6 of 7',
             ),
-            const KycStepProgress(total: 8, current: 7),
+            const KycStepProgress(total: 7, current: 6),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

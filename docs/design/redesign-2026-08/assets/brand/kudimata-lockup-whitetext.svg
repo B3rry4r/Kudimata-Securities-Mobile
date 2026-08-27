@@ -1,0 +1,14 @@
+<?xml version="1.0"?><svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 71.79 27.41">
+  <defs>
+    
+    <linearGradient id="linear-gradient" x1="5" y1="25.4" x2="10.01" y2="11.21" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5d1aa3"></stop>
+      <stop offset=".54" stop-color="#7225ae"></stop>
+      <stop offset="1" stop-color="#802db5"></stop>
+    </linearGradient>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <path class="cls-1" d="M3.11,16.5l-3.11,2.72v-7.29l3.11-2.72v7.29ZM7.29,4.51l-3.11,2.72v8.34l3.11-2.72V4.51ZM11.47,0l-3.11,2.72v9.19l3.11-2.72V0ZM11.47,10.23L0,20.26v4.34l11.47-10.03v-4.34ZM8.84,18.21l-1.11.92-1.73,1.51,3.78,3.85,5.27.04-6.21-6.32Z"></path>
+    <text class="cls-2" transform="translate(16.63 14.05)"><tspan class="cls-3" x="0" y="0">K</tspan><tspan x="8.32" y="0">udimata</tspan><tspan x="0" y="10.32">Securities</tspan></text>
+  </g>
+</svg>

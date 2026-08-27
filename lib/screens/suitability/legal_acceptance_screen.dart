@@ -18,12 +18,11 @@
 // longer a second legal-acceptance screen anywhere in onboarding.
 //
 // Fetches every document (GET /legal-documents/content/:kind, called once
-// per kind, all concurrently via `.wait`) and renders a canvas-s05 row-list
-// — name + real "vN · Read" badge, tap opens that one document's
-// plain-English preview (Routes.documentSummary) — NOT the full text of
-// every document inline on this screen (2026-08-24 fix: it used to render
-// every section of every document inline here, a structurally different,
-// much heavier screen than the canvas's checklist-then-link pattern).
+// per kind, all concurrently via `.wait`) and renders every document's full
+// text INLINE on this screen, scroll-gated (see _InlineDocument below) — NOT
+// a tap-to-open row list into a separate preview screen (2026-08-24 fix: the
+// row-list pattern this replaced pushed the now-removed document_summary_screen.dart,
+// which additionally had a real bug — see the inline comment further down).
 // Tapping the primary button posts one acknowledgement per kind IN ORDER (POST
 // /compliance-acknowledgements — there is no combined-kind endpoint, and
 // none is needed); if any one of them fails, the ones after it never fire

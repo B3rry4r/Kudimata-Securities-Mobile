@@ -1,0 +1,197 @@
+{
+  "batch": "kyc",
+  "screens": [
+    {
+      "app_screen": "lib/screens/kyc/_kyc_chrome.dart",
+      "purpose": "Shared KYC chrome: 44px top bar (back chevron + 'Verification · N of 8' step label) and a segmented step-progress bar, reused by every linear KYC step screen.",
+      "route": "UNROUTED",
+      "is_helper": true,
+      "covered_by": null,
+      "coverage_confidence": "likely",
+      "evidence": "Searched 'Step 1 of 5' (found in s12/s13), 'Step 2 of 5' (s14/s17), 'Step 4 of 5' (s18), 'Step 5 of 5' (s19) — confirms the back-chevron + micro-text step-label header pattern is real and repeated verbatim across s12-s19 of 02 Verification.dc.html. Also grepped 'StepProgress'/'segmented' and inspected the raw markup around s12-s19 for a 5px segmented progress bar (the app's KycStepProgress) — none found anywhere; the canvas renders ONLY the text label, no visual bar.",
+      "recommendation": "restyle-only",
+      "why": "The header pattern (back + step label) is a genuine, repeated canvas convention. But the segmented progress-bar sub-widget has no canvas counterpart, and the app now targets 8 steps while the canvas's own header text caps at 'Step 5 of 5' — needs reconciling once the step count question (see chn/next-of-kin/review-submit entries below) is settled."
+    },
+    {
+      "app_screen": "lib/screens/kyc/approved.dart",
+      "purpose": "KYC approved/success screen. Re-confirms real approval status via GET /kyc-submissions/me, shows a celebratory KMilestoneSheet, and (per a restored 2026-08-24 SEC-compliance directive) routes 'Start investing' to the mandatory suitability questionnaire rather than straight to Home.",
+      "route": "/kyc/approved",
+      "is_helper": false,
+      "covered_by": ["s21"],
+      "coverage_confidence": "certain",
+      "evidence": "Searched \"You're verified\" and \"Your NGX account is live\" — both found verbatim in s21 ('Verified') of 02 Verification.dc.html: title \"You're verified\", body \"Your NGX account is live. Buy your first share from ₦5,000.\"",
+      "recommendation": "redesign-to-artboard",
+      "why": "s21 is a near-exact copy match for the approved/verified success state. Gap: s21's own CTAs are plain 'Add money' / 'Browse the market first' with no suitability gate at all — the app's mandatory suitability step has zero artboard representation here. This screen is the key evidence for the suitability attachment point (see top-level field)."
+    },
+    {
+      "app_screen": "lib/screens/kyc/bank_dcs_screen.dart",
+      "purpose": "Add a bank account for withdrawals/dividends and opt into Direct Cash Settlement (DCS); step 6 of 8 in-app.",
+      "route": "/kyc/bank-dcs",
+      "is_helper": false,
+      "covered_by": ["s18", "s18b"],
+      "coverage_confidence": "certain",
+      "evidence": "Searched \"Direct Cash Settlement\" and \"Add your bank account\" — both found verbatim in s18 (title \"Add your bank account\", body \"Withdrawals and dividends are paid here. It must be in your name.\"; DCS panel text \"Pay my sales and dividends straight to this bank account\" / \"Direct Cash Settlement, required by the NGX. Money goes from the exchange to your bank, never through us.\").",
+      "recommendation": "redesign-to-artboard",
+      "why": "Strong content/structure match (bank select, account number, auto-resolved name confirmation, DCS checkbox + explainer). The app is missing the canvas's s18b 'Confirm your bank account' bottom-sheet step that sits between form entry and Continue — the app continues straight through instead."
+    },
+    {
+      "app_screen": "lib/screens/kyc/bvn_nin.dart",
+      "purpose": "Collect BVN + NIN (11 digits each), verify server-side against NIBSS, and create the draft KycSubmission. Step 1 of 8 in-app.",
+      "route": "/kyc/bvn",
+      "is_helper": false,
+      "covered_by": ["s12", "s13"],
+      "coverage_confidence": "certain",
+      "evidence": "Searched \"Your BVN and NIN\" and \"Is this you?\" — both found: s12 title \"Your BVN and NIN\", body \"Used once, to confirm you're you. Both must match your official names.\"; s13 \"Is this you?\" shows a Name/DOB/Phone confirmation table with \"Yes, that's me\" / \"Re-enter BVN\".",
+      "recommendation": "redesign-to-artboard",
+      "why": "Direct content match, but the canvas splits BVN/NIN into TWO screens (s12 entry + s13 confirm-details), while the app screen is a single combined form with no post-verification 'Is this you?' confirmation step at all — a real structural gap, not just a style difference."
+    },
+    {
+      "app_screen": "lib/screens/kyc/checking.dart",
+      "purpose": "Interstitial while the real liveness-verification API call runs server-side; advances on success. Step 4 of 8 in-app.",
+      "route": "/kyc/checking",
+      "is_helper": false,
+      "covered_by": ["s16"],
+      "coverage_confidence": "certain",
+      "evidence": "Searched \"Checking your selfie\" and \"Done on the spot\" — both found verbatim in s16: title \"Checking your selfie\", body \"Done on the spot. If it fails, you just retake it.\", spinner, and CTA \"Next step · Bank account\" (nav.s18).",
+      "recommendation": "redesign-to-artboard",
+      "why": "Copy and layout match closely. Sequencing differs: canvas's s16 goes straight to Bank (address/utility-bill was already collected earlier, at s17/step 2), whereas the app's checking.dart goes to utility-bill next — reflects the two flows' differing step ordering (see kyc_step_sequence)."
+    },
+    {
+      "app_screen": "lib/screens/kyc/chn_screen.dart",
+      "purpose": "Ask whether the investor already has a CHN (CSCS number); collect it if yes, otherwise note one will be auto-assigned. Step 2 of 8 in-app, optional.",
+      "route": "/kyc/chn",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched \"Do you have a CHN\" and \"request one for me\" (this screen's exact copy) across all 8 canvas .dc.html files — zero matches. Searched \"CHN\" alone — the only 4 hits are in '06 Account and Support.dc.html', all a read-only display of an already-assigned CHN ('Verified · CHN 0912455', a locked field on the Personal details/Account card), never a collection question. The canvas's own checklist hub (s11) explicitly enumerates exactly 5 steps (BVN&NIN, Documents, Selfie, Bank, Two questions) and CHN collection is not one of them.",
+      "recommendation": "needs-ruling",
+      "why": "The new canvas appears to have deliberately dropped CHN collection as a KYC step (matches the 20→4 word-count drop noted in the brief — the 4 remaining mentions are all a post-verification read-only display, not a form). A human must decide: cut this screen (CHN silently auto-assigned, matching canvas's leaner 5-step flow) or keep it as an app-only step with no artboard to restyle against."
+    },
+    {
+      "app_screen": "lib/screens/kyc/declarations_screen.dart",
+      "purpose": "Two SEC-required declarations: PEP (politically exposed person) yes/no with who/position follow-up fields, and 'I trade for myself, with my own money' (blocks Continue if unchecked). Step 7 of 8 in-app.",
+      "route": "/kyc/declarations",
+      "is_helper": false,
+      "covered_by": ["s19"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched \"politically exposed\" — found in s19 (\"Are you, a family member, or a close associate a politically exposed person?\"). Searched \"who holds the position\" (the app's PEP follow-up field) — zero matches; canvas's PEP question has only a 'What's a PEP?' link, no who/position sub-fields. Searched \"trade for myself\" — zero matches; canvas's SECOND question is instead \"Do you work for a stockbroker or the NGX?\", not the app's self-declaration.",
+      "recommendation": "redesign-to-artboard",
+      "why": "PEP question is a real match on s19, but the app's actual content diverges on two points the canvas doesn't design: the PEP who/position follow-up fields, and the entire second declaration (canvas: broker/NGX-employment question; app: trade-for-self declaration). No 'risk profile'/'profiling' framing found anywhere on this screen or in s19 — confirmed clean on that rule."
+    },
+    {
+      "app_screen": "lib/screens/kyc/id_upload.dart",
+      "purpose": "Pick one ID type (Driver's licence / International passport / Voter's card / NIN) and upload/photograph it via the presigned S3 flow. Step 3 of 8 in-app.",
+      "route": "/kyc/id",
+      "is_helper": false,
+      "covered_by": ["s14"],
+      "coverage_confidence": "certain",
+      "evidence": "Searched \"Your documents\" and \"Pick one ID to photograph\" — both found verbatim in s14 (title \"Your documents\", body \"Pick one ID to photograph. You'll add a utility bill next.\"). Canvas's ID-type rows: 'NIN slip', 'Driver's licence', 'International passport' — only 3 options. Searched \"Voter's card\" — zero matches anywhere in the canvas.",
+      "recommendation": "redesign-to-artboard",
+      "why": "Strong match on purpose/copy/layout (row-list ID picker, matching the app's 2026-08-20 fix from chips to a sheet picker). Content gap: the app supports a 4th ID type (Voter's card) absent from the canvas, and the canvas's row list IS the picker screen itself (no separate sheet), while the app opens a modal sheet for the same choice."
+    },
+    {
+      "app_screen": "lib/screens/kyc/kyc_form_state.dart",
+      "purpose": "Pure in-memory ChangeNotifier holding cross-screen KYC session state (draft id, next-of-kin fields, selfie-captured timestamp, PEP/trade-for-self fields) — not a UI screen.",
+      "route": "UNROUTED",
+      "is_helper": true,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "N/A — no build()/UI in this file; it is a state-management class with nothing visual to search the canvas for.",
+      "recommendation": "no-action",
+      "why": "Not a design artifact. Its held fields matter only through the screens that read/write them (next_of_kin, declarations, review_submit) — see those entries for the actual coverage gaps."
+    },
+    {
+      "app_screen": "lib/screens/kyc/kyc_intro.dart",
+      "purpose": "KYC intro screen: explains the (now 8-item) checklist, resumes an in-progress draft at the right step if one exists, 'Start verification' CTA.",
+      "route": "/kyc",
+      "is_helper": false,
+      "covered_by": ["s10"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched \"Let's verify your identity\" and \"Takes about 5 minutes\" — both found in s10. App's actual copy differs: \"Verify to start investing\" / \"Eight steps, about six minutes.\" Searched \"Eight steps\"/\"8 steps\" — zero matches anywhere in canvas. s10 has NO inline checklist (illustration + title + Start button only); the app's 8-row checklist card instead corresponds to the canvas's SEPARATE screen s11 'Checklist hub' (shown only after tapping Start, listing 5 items not 8).",
+      "recommendation": "redesign-to-artboard",
+      "why": "s10 is the right intro-screen counterpart, but the app conflates s10 (intro) and s11 (checklist hub) into one screen and inflates the 5-item canvas checklist to 8 items (adding CHN, Declarations, Next of kin rows the canvas hub doesn't have). Needs a ruling on whether to split into two canvas-matching screens or keep merged with the app's larger item count."
+    },
+    {
+      "app_screen": "lib/screens/kyc/liveness.dart",
+      "purpose": "Real in-app camera selfie capture (live preview + shutter) with a web file-picker fallback; uploads and registers the selfie against the KYC draft. Step 4 of 8 in-app.",
+      "route": "/kyc/liveness",
+      "is_helper": false,
+      "covered_by": ["s15"],
+      "coverage_confidence": "certain",
+      "evidence": "Searched \"Fit your face in the oval\" and \"Good light\" — both found verbatim in s15 (title \"Fit your face in the oval\", body \"Good light · no cap · no glasses\", footnote \"Checked automatically · nothing is stored on your phone\").",
+      "recommendation": "redesign-to-artboard",
+      "why": "Near-exact structural and copy match (circular camera frame, dashed guidance ring, single shutter). App additionally has a 'My camera won't work' escape hatch to Routes.kycOutcome not present on s15 — a reasonable app-only addition, not a real mismatch."
+    },
+    {
+      "app_screen": "lib/screens/kyc/next_of_kin.dart",
+      "purpose": "Collect next-of-kin name / relationship / phone / optional email (CSCS-required). Step 8 of 8 (final collection step) in-app; hands off to Review & submit.",
+      "route": "/kyc/next-of-kin",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched \"next of kin\" and \"relationship\" across all 8 canvas .dc.html files — zero matches. Searched \"guardian\" and \"who to contact\" (the app's own framing) — zero matches. The canvas's checklist hub (s11) lists exactly 5 steps and next-of-kin is not among them.",
+      "recommendation": "needs-ruling",
+      "why": "A real, CSCS-required field the backend and app both support is entirely absent from the new canvas's KYC flow. A human must decide whether to design a new artboard for it, fold it elsewhere (e.g. Account/Personal details, alongside CHN's read-only pattern), or accept it as an app-only addition."
+    },
+    {
+      "app_screen": "lib/screens/kyc/outcome_not_approved.dart",
+      "purpose": "Terminal non-approved KYC outcomes: rejected (resubmit if attempts remain, else contact support), flagged (manual review), expired (restart) — with real per-check failure reasons shown when available.",
+      "route": "/kyc/outcome",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched \"couldn't verify you\", \"Resubmit documents\", \"manual review\", \"Contact support\", \"verification expired\", \"submission expired\" — zero matches across all 8 canvas files. The canvas's only post-submission states are s20 (Under review/pending) and s21 (Verified/success) — no rejected/flagged/expired artboard exists anywhere in the redesign.",
+      "recommendation": "needs-ruling",
+      "why": "A materially important real-world state (this file's own extensive backend-status handling shows rejections/flags/expiry are routine) has zero design coverage. It can be restyled onto the app's existing generic error-tone KStatusView without a specific artboard, but a human should confirm that's acceptable or request a dedicated artboard before redesign."
+    },
+    {
+      "app_screen": "lib/screens/kyc/review_submit_screen.dart",
+      "purpose": "Final review-before-submit screen (new, 2026-08-24): summarizes all 8 collected KYC pieces (BVN/NIN, CHN, ID, Selfie, Proof of address, Bank/DCS, Declarations, Next of kin) with per-row Edit/Retake links, then calls finalizeDraft().",
+      "route": "/kyc/review",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched \"Check before you send\" (the screen's actual title) and \"Review and submit\"/\"Review & submit\" — zero matches anywhere in canvas. Searched \"Submit for verification\" (the button label) — zero matches. The canvas's s19 'Two questions' goes straight to s20 'Under review' on 'Finish', with no intervening review-summary screen at all.",
+      "recommendation": "needs-ruling",
+      "why": "The canvas's flow has NO review-before-submit step. This app screen exists specifically because of the extra fields (CHN, bank/DCS as its own step, declarations, next-of-kin) the canvas doesn't collect as separate steps either. Whether it survives, and in what form, depends on the same ruling as chn_screen/next_of_kin/declarations: if those are trimmed to match the canvas's leaner 5-step flow, this screen may shrink or become unnecessary."
+    },
+    {
+      "app_screen": "lib/screens/kyc/submitted.dart",
+      "purpose": "Post-finalize pending/review screen. Polls status every 8s (capped at 10 minutes), shows a real per-signal checklist (BVN/NIN/name/DOB/liveness matched), and routes onward to approved/outcome once a real decision lands.",
+      "route": "/kyc/submitted",
+      "is_helper": false,
+      "covered_by": ["s20"],
+      "coverage_confidence": "certain",
+      "evidence": "Searched \"You're done. We're reviewing\" and \"NGX trading account is being set up\" — both found verbatim in s20 (title \"You're done. We're reviewing\", body \"Your NGX trading account is being set up. Usually 1–2 business days. We'll notify you.\"), including a 3-row checklist card (\"Identity confirmed\" / \"NGX account being created\" (spinner) / \"Ready to trade\") that matches the shape of the app's own verification checklist.",
+      "recommendation": "redesign-to-artboard",
+      "why": "Strong structural match — illustration, title, body copy, progress-checklist card, and CTA all present in s20 and roughly mirrored by the app. Checklist row LABELS differ (canvas's 3 milestone rows vs the app's 5 real per-check signals) — a deliberate, documented divergence (app uses its real signal names rather than the canvas's illustrative labels), not a gap needing a ruling."
+    },
+    {
+      "app_screen": "lib/screens/kyc/utility_bill.dart",
+      "purpose": "Upload a utility bill (proof of address) dated within the last 3 months. Step 5 of 8 in-app, a standalone upload-only screen.",
+      "route": "/kyc/utility-bill",
+      "is_helper": false,
+      "covered_by": ["s17"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched \"Where do you live?\" and \"utility bill\" — both found in s17 (title \"Where do you live?\", body \"A recent utility bill confirms it, any bill under 3 months old.\"). s17 ALSO collects street address + State + LGA select fields inline alongside the file upload; the app's utility_bill.dart is upload-only, with no street/state/LGA fields anywhere in this batch.",
+      "recommendation": "needs-ruling",
+      "why": "The canvas combines structured address fields (street/state/LGA) with the utility-bill upload on ONE screen (s17). The app instead has no address-fields screen anywhere in the KYC flow at all — utility_bill.dart is upload-only, and address fields live in the separate pre-KYC onboarding 'personal details' gate (outside this batch, per kyc_intro.dart's own _personalDetailsComplete check). A human should decide whether address collection should move into this KYC step to match the canvas, or stay where the app currently puts it."
+    }
+  ],
+  "kyc_step_sequence": [
+    {"artboard": "s10", "step": "Intro — \"Let's verify your identity\" / Start", "app_route": "/kyc"},
+    {"artboard": "s11", "step": "Checklist hub (spine of the flow — every step returns here; lists exactly 5 tasks: BVN&NIN, Documents, Selfie, Bank account, Two questions)", "app_route": null},
+    {"artboard": "s12", "step": "Step 1 of 5 — BVN & NIN entry", "app_route": "/kyc/bvn"},
+    {"artboard": "s13", "step": "Step 1 of 5 — \"Is this you?\" (confirm name/DOB/phone from BVN records)", "app_route": null},
+    {"artboard": "s14", "step": "Step 2 of 5 — Your documents (pick + photograph one ID type)", "app_route": "/kyc/id"},
+    {"artboard": "s17", "step": "Step 2 of 5 (same step as s14) — Address (street/state/LGA) + utility-bill upload", "app_route": "/kyc/utility-bill"},
+    {"artboard": "s15", "step": "Selfie check (live camera capture in circular frame)", "app_route": "/kyc/liveness"},
+    {"artboard": "s16", "step": "Checking (interstitial while liveness verifies server-side)", "app_route": "/kyc/checking"},
+    {"artboard": "s18", "step": "Step 4 of 5 — Add bank account + Direct Cash Settlement opt-in", "app_route": "/kyc/bank-dcs"},
+    {"artboard": "s18b", "step": "Confirm-bank-account bottom sheet", "app_route": null},
+    {"artboard": "s19", "step": "Step 5 of 5 — Two questions (PEP; broker/NGX-employment)", "app_route": "/kyc/declarations"},
+    {"artboard": "s20", "step": "Under review (post-Finish, async pending state)", "app_route": "/kyc/submitted"},
+    {"artboard": "s21", "step": "Verified (success — CTAs: Add money / Browse the market first)", "app_route": "/kyc/approved"}
+  ],
+  "suitability_attachment_point": "Attach the suitability quiz immediately after s21 'Verified' (Routes.kycApproved), before its 'Add money'/'Browse the market first' CTAs are allowed to proceed to Home — i.e. as the true last step of the KYC-and-onboarding sequence, gating entry into the rest of the app rather than being wedged into the s10-s19 document-collection steps. Evidence: (1) the app ALREADY wires this exact attachment point today — approved.dart's KMilestoneSheet 'Start investing' button calls context.go(Routes.questionnaire) per a direct, restored 2026-08-24 SEC-compliance product instruction ('please make the suitability mandatory'), so no route restructuring is needed, only restyling s21 to add the gate. (2) The canvas's own s20 'Under review' step is an ASYNC wait (1-2 business days per its copy) with no guarantee the investor is still in the app when it resolves — inserting a synchronous quiz there, or earlier among s10-s19's document-collection steps, would either block on a real KYC-review call or force an investor to answer suitability questions before their identity is even confirmed. s21 'Verified' is the first point after a synchronous, in-session decision is possible. (3) No 'risk profile'/'profiling' framing exists anywhere in the canvas's s10-s21 KYC screens (confirmed via the 'politically exposed'/PEP searches above and a full-text read of s19-s21) — the attachment point introduces the quiz cleanly without inheriting risk-profiling language from the canvas."
+}

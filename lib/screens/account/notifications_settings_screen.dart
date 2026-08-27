@@ -1,39 +1,34 @@
-// Stage 9 — Notifications settings (pushed). Mirrors `Notifications` in
-// settings-screens.jsx; re-verified against screen-specs.md spec 48
-// (2026-08-23 exactness pass — the prior redesign left this screen on the
-// bare token cascade without checking copy).
+// Notifications settings (pushed, restyled 2026-08-27 — no artboard in the
+// redesign-2026-08 canvas; RULINGS.md keeps this as live account
+// infrastructure). Mirrors `Notifications` in settings-screens.jsx.
 //
 // Wired per lib/data/api/README.md's FutureBuilder convention against
 // NotificationPreferencesRepository (GET/PUT /notification-preferences/me).
-// Per dispatcher ruling C-5 / UA-19, the real backend models EMAIL ONLY —
-// exactly THREE booleans (ordersEmail/priceAlertsEmail/accountEmail). Spec
-// 48 mocks five switches ("Order updates", "Money in and out", "Price
-// alerts", "Weekly digest", "Security") plus a Push/Email/SMS "How we reach
-// you" section. That's a real data-model gap, not a mobile oversight —
-// resolved per-item below rather than either faking backend capability that
-// doesn't exist, or silently dropping spec copy:
+// The real backend models EMAIL ONLY — exactly THREE booleans
+// (ordersEmail/priceAlertsEmail/accountEmail). The older mockup this screen
+// was originally built from drew five switches plus a Push/Email/SMS "How we
+// reach you" section; that's a data-model gap, resolved per-item rather than
+// faking backend capability that doesn't exist or silently dropping copy:
 //   - "Order updates" -> ordersEmail. Exact 1:1 match.
 //   - "Price alerts" -> priceAlertsEmail. Exact 1:1 match.
 //   - "Money in and out" + "Security" both collapse onto the ONE remaining
 //     field, accountEmail — the backend has no separate money-vs-security
-//     split. Spec disables "Security" (always-on) but leaves "Money in and
-//     out" real/toggleable; since one field can't be both, this screen
-//     keeps accountEmail a real, interactive toggle (money movement is the
-//     more clearly opt-out-able of the two) and merges both spec
-//     descriptions into one honest label/helper rather than picking one and
-//     silently dropping the other.
-//   - "Weekly digest" has no backend field at all (ties to the DigestCard
-//     AI feature, itself still a static/local preview everywhere else in
-//     this app per docs/redesign/PLAN.md). Shown as a real-looking switch
-//     for visual completeness, consistent with that same stub precedent,
-//     but it is LOCAL STATE ONLY — never sent to the backend, never
-//     persisted across app restarts. Do not wire this to a real field until
-//     the digest-scheduling backend exists.
+//     split, so this screen keeps accountEmail a real, interactive toggle
+//     (money movement is the more clearly opt-out-able of the two) and
+//     merges both descriptions into one honest label/helper rather than
+//     picking one and silently dropping the other.
+//   - "Weekly digest" is REMOVED, not shown even as a preview. It has no
+//     backend field, and the feature it would summarise — the AI portfolio
+//     digest — is itself parked with every entry point removed elsewhere in
+//     the app (R-6, docs/redesign/DECISIONS.md; see home_screen.dart's own
+//     "REMOVED per R-6" note). A switch that opts into an email nobody can
+//     ever receive is a promise nothing keeps, the same defect class R-34
+//     names for a rendered figure with no writer — so it stays off the
+//     screen here too rather than as a decorative, unpersisted toggle. Gap
+//     filed in docs/redesign/BACKEND_GAPS.md for when R-6 is revisited.
 //   - "How we reach you" (Push/Email/SMS) is skipped entirely, not shown in
 //     any form — there is no push-notification or SMS infrastructure
-//     anywhere in this app to even stub honestly (unlike the AI-preview
-//     items above, this would be pure fiction about device capabilities,
-//     not a known-future feature preview).
+//     anywhere in this app to even stub honestly.
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/notification_preferences_repository.dart';
@@ -55,9 +50,6 @@ class _NotificationsSettingsScreenState
   late final _repo =
       NotificationPreferencesRepository(AppScope.read(context).apiClient);
   late Future<NotificationPreferences> _future = _repo.me();
-
-  // Local-only, per this file's header comment — never persisted.
-  bool _weeklyDigest = false;
 
   Future<void> _toggleOrders(NotificationPreferences prefs, bool value) async {
     final previous = prefs.ordersEmail;
@@ -128,7 +120,7 @@ class _NotificationsSettingsScreenState
               // established convention here instead of inventing a new one.
               KAccountCard(
                 children: [
-                  for (var i = 0; i < 4; i++)
+                  for (var i = 0; i < 3; i++)
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       decoration: BoxDecoration(
@@ -145,12 +137,9 @@ class _NotificationsSettingsScreenState
                             checked: prefs.ordersEmail,
                             onChanged: (v) => _toggleOrders(prefs, v),
                           ),
-                        // Canvas order (screen 48): Order updates, Money in
-                        // and out, Price alerts, Weekly digest, Security —
-                        // this row sits second, matching the "Money in and
-                        // out" slot it's merged onto (see this file's
-                        // header comment for why it also carries
-                        // "Security").
+                        // Merged row — see this file's header comment for
+                        // why "Money in and out" and "Security" share the
+                        // one backend field, accountEmail.
                         1 => KSwitch(
                             label: 'Money in and out, and security',
                             description:
@@ -158,17 +147,11 @@ class _NotificationsSettingsScreenState
                             checked: prefs.accountEmail,
                             onChanged: (v) => _toggleAccount(prefs, v),
                           ),
-                        2 => KSwitch(
+                        _ => KSwitch(
                             label: 'Price alerts',
                             description: 'Only names on your watchlist, over 5% in a day',
                             checked: prefs.priceAlertsEmail,
                             onChanged: (v) => _togglePriceAlerts(prefs, v),
-                          ),
-                        _ => KSwitch(
-                            label: 'Weekly digest',
-                            description: 'One written summary of your portfolio, on Sundays',
-                            checked: _weeklyDigest,
-                            onChanged: (v) => setState(() => _weeklyDigest = v),
                           ),
                       },
                     ),

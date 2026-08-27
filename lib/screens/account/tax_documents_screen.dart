@@ -14,24 +14,28 @@
 // ProductCard rendering "—" for constants that already existed elsewhere.
 //
 // GENUINE REMAINING GAP: the "WHT credit note" / "Annual tax summary"
-// DOCUMENT rows. The backend's `StatementKind` TYPE and
-// `StatementsService.generateTaxDocument()` generator both exist now
-// (2026-08-24, confirmed against Kudimata-Securities-Backend directly —
-// `ListStatementsQueryDto.KIND_VALUES` already accepts 'wht_credit_note'/
-// 'annual_tax_summary'), but two things still block wiring this screen's
-// document list to it for real:
-//   1. Nothing on the backend ever CALLS generateTaxDocument() — no
-//      controller endpoint, no scheduled job — so even a correct client
-//      call would always get back an empty list right now.
-//   2. The mobile `StatementKind` enum (statements_repository.dart) only
-//      has `monthly`/`contractNote` — extending it to add these two new
-//      values is a shared-repository change out of this file's ownership
-//      this pass (statements_repository.dart is also consumed by
-//      statements_screen.dart/statement_detail_screen.dart, owned by a
-//      different concurrent cluster) — flagged for a central follow-up
-//      rather than risking a concurrent edit collision on a shared file.
-// Kept as static, honestly-worded "not available yet" copy until both are
-// closed — NOT a live call to a kind that doesn't exist on this enum yet.
+// DOCUMENT rows. Re-checked directly against Kudimata-Securities-Backend
+// (2026-08-27), since a lot changed since this comment was last true:
+//   - `annual_tax_summary` generation is NOW real and wired:
+//     `StatementGeneratorService.generateTaxSummariesForAll` runs on a
+//     `@Cron('30 2 2 1 *')` (02:30 on 2 January, once the tax year has
+//     closed) and creates one real Statement row per investor who received
+//     a dividend that year — matching this screen's own "after your first
+//     full year" copy. No client call is needed to trigger it.
+//   - `wht_credit_note` generation is still genuinely unwired — no cron,
+//     no controller endpoint, no other caller anywhere calls
+//     `StatementsService.generateTaxDocument('wht_credit_note', …)`. That
+//     half of the gap still stands as originally filed.
+//   - Both kinds ARE queryable via `GET /statements?kind=` — the backend's
+//     `ListStatementsQueryDto.KIND_VALUES` already accepts both — but the
+//     mobile `StatementKind` enum (statements_repository.dart) still only
+//     declares `monthly`/`contractNote`. Extending it is a
+//     `lib/data/**` change, off-limits to a screen agent per
+//     SCREEN-AGENT-BRIEF.md rule 5 — filed as a SHARED-CHANGE REQUEST
+//     rather than worked around locally.
+// Kept as static, honestly-worded "not available yet" copy until the shared
+// enum is extended — NOT a live call to a kind this mobile client can't yet
+// ask for.
 import 'package:flutter/material.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';

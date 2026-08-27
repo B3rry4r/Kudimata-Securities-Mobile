@@ -1,8 +1,8 @@
-// Onboarding avatar choice — NEW screen (2026-08-24, direct product
-// instruction: "users should have the option to choose [an avatar] at a
-// strategic point when coming onboard... then it is used everywhere...
-// and those who don't select gets only their name text"). Not part of the
-// canvas (avatars weren't a real, user-chosen field when it was drawn).
+// Artboard `s06b` (+ dark `s06bd`) in `01 Getting In.dc.html` — pick your
+// avatar. NEW screen (2026-08-24, direct product instruction: "users should
+// have the option to choose [an avatar] at a strategic point when coming
+// onboard... then it is used everywhere... and those who don't select gets
+// only their name text").
 //
 // Reached the same way personal_details_screen.dart is — from
 // kyc_intro.dart's `_start()`, right after personal details are confirmed
@@ -12,9 +12,19 @@
 // details should be part of the KYC and not a separate step after login").
 // Same reasoning applies here: this is offered at the one point an investor
 // has already signaled intent to go further (starting verification), not a
-// forced gate on every fresh sign-up. Entirely optional — "Skip" and
-// "Continue" both proceed to KYC; only "Continue" (after picking) or
-// tapping an avatar actually saves anything.
+// forced gate on every fresh sign-up. `s06b` itself draws the back arrow
+// returning to `s06` (Face ID) since in the canvas's own linear flow this
+// sits right after it — this app's real flow reaches this screen via
+// `context.go` from `onboarding/personal`, so "back" returns there instead,
+// the nearest real equivalent of "the step before this one".
+//
+// Entirely optional — both "Skip" (top-right) and "Use this avatar" (with
+// nothing chosen) proceed to KYC without saving anything; only choosing a
+// tile and continuing calls updateProfile. `s06b` itself shows its first
+// tile pre-selected purely to demonstrate the selected-tile styling in the
+// static mock — defaulting a fresh signup to an avatar they never tapped
+// would contradict the "only those who select get one" product direction
+// above, so this screen starts with nothing chosen.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -23,7 +33,6 @@ import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
-import '_pickers.dart';
 
 class OnboardingAvatarScreen extends StatefulWidget {
   const OnboardingAvatarScreen({super.key});
@@ -35,32 +44,22 @@ class OnboardingAvatarScreen extends StatefulWidget {
 class _OnboardingAvatarScreenState extends State<OnboardingAvatarScreen> {
   String? _chosen;
   bool _busy = false;
-  String? _error;
 
-  Future<void> _pick() async {
-    final picked = await showAvatarPicker(context, selected: _chosen);
-    if (picked == null) return;
-    setState(() => _chosen = picked == 'none' ? null : picked);
-  }
+  void _skip() => context.go(Routes.kycIntro);
 
   Future<void> _continue() async {
     if (_chosen == null) {
-      context.go(Routes.kycIntro);
+      _skip();
       return;
     }
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
+    setState(() => _busy = true);
     final userRepo = UserRepository(AppScope.read(context).apiClient);
     try {
       await userRepo.updateProfile(avatarKey: _chosen);
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = e.message;
-      });
+      setState(() => _busy = false);
+      _showErrorSheet(context, message: e.message);
       return;
     }
     if (!mounted) return;
@@ -75,63 +74,70 @@ class _OnboardingAvatarScreenState extends State<OnboardingAvatarScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 20, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  KIconButton(
+                    icon: 'back',
+                    semanticLabel: 'Back',
+                    onPressed: () => context.go(Routes.onboardingPersonal),
+                  ),
+                  GestureDetector(
+                    onTap: _skip,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                      child: Text('Skip', style: KType.data(color: KColor.ink3)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(KSpace.gutter, 18, KSpace.gutter, KSpace.gutter),
+                padding: const EdgeInsets.fromLTRB(KSpace.gutter, 12, KSpace.gutter, KSpace.gutter),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const KScreenHead(
-                      title: 'Choose an avatar',
-                      body: 'Pick a character to represent you, or skip and we\'ll just show your name — you can change this anytime from Personal info.',
+                      title: 'Pick your avatar',
+                      body: 'Just for your profile. You can change it any time.',
                     ),
-                    const SizedBox(height: 24),
-                    Center(
-                      child: GestureDetector(
-                        onTap: _pick,
-                        child: _chosen != null
-                            ? KAvatar(avatarKey: _chosen!, size: 96)
-                            : Container(
-                                width: 96,
-                                height: 96,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: KColor.track,
-                                  border: Border.all(color: KColor.hairline),
-                                ),
-                                child: KIcon('plus', size: 28, color: KColor.ink3),
-                              ),
-                      ),
+                    const SizedBox(height: 22),
+                    GridView.count(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      childAspectRatio: 1,
+                      // `UserRepository.avatarKeys` — real, selectable
+                      // avatars. `s06b` draws a 9th tile ('guide'), which is
+                      // the app's mascot glyph (KAvatar.guide), not one of
+                      // the interchangeable identity avatars
+                      // UserRepository.avatarKeys lists — see this file's
+                      // SHARED-CHANGE REQUEST in the delivery report.
+                      children: [
+                        for (final key in UserRepository.avatarKeys)
+                          _AvatarTile(
+                            avatarKey: key,
+                            selected: _chosen == key,
+                            onTap: () => setState(() => _chosen = key),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Center(
-                      child: GestureDetector(
-                        onTap: _pick,
-                        behavior: HitTestBehavior.opaque,
-                        child: Text(
-                          _chosen != null ? 'Choose a different one' : 'Choose an avatar',
-                          style: KType.data(color: KColor.indicator),
-                        ),
-                      ),
-                    ),
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(_error!, style: KType.micro(color: KColor.loss)),
-                    ],
                   ],
                 ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
-              child: Column(
-                children: [
-                  KButton(
-                    label: _chosen != null ? 'Continue' : 'Skip for now',
-                    loading: _busy,
-                    onPressed: _busy ? null : _continue,
-                  ),
-                ],
+              child: KButton(
+                label: 'Use this avatar',
+                loading: _busy,
+                onPressed: _busy ? null : _continue,
               ),
             ),
           ],
@@ -139,4 +145,47 @@ class _OnboardingAvatarScreenState extends State<OnboardingAvatarScreen> {
       ),
     );
   }
+}
+
+class _AvatarTile extends StatelessWidget {
+  const _AvatarTile({required this.avatarKey, required this.selected, required this.onTap});
+  final String avatarKey;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? KColor.indicator : Colors.transparent,
+            width: 2,
+          ),
+          color: selected ? KColor.indicatorTint : Colors.transparent,
+        ),
+        child: Center(child: KAvatar(avatarKey: avatarKey, size: 72)),
+      ),
+    );
+  }
+}
+
+void _showErrorSheet(BuildContext context, {required String message}) {
+  showKSheet<void>(
+    context,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: KStatusView(
+        tone: KStatusTone.error,
+        title: "Couldn't save your avatar",
+        message: message,
+        primary: 'Try again',
+        onPrimary: () => Navigator.of(context).pop(),
+      ),
+    ),
+  );
 }

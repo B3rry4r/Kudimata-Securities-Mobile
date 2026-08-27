@@ -1,5 +1,11 @@
-// KYC 1 — intro. What we'll verify (identity / document / selfie) and a single
-// purple "Start" primary that enters the linear flow. Mirrors KycIntro.
+// KYC — intro. Artboard s10/s10d (docs/design/redesign-2026-08/02
+// Verification.dc.html) per RULINGS.md — a single scene, headline, body and
+// one "Start" primary. The canvas's own step-by-step checklist lives on a
+// SEPARATE artboard, s11 "Checklist hub" (the flow's spine — every later
+// step returns to it) — s11 has no app route yet; see this screen agent's
+// report for whether it should be absorbed here or built as its own screen.
+// Until it exists, "Start" goes straight into the collection steps, same as
+// before.
 //
 // RESUME (2026-08-20, phased-KYC directive: "so users who goes out and
 // comes back don't have to start all over"): "Start" first checks
@@ -19,13 +25,6 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
-class _KycRow {
-  const _KycRow(this.eyebrow, this.line, this.icon);
-  final String eyebrow;
-  final String line;
-  final String icon; // KIcon name
-}
-
 class KycIntroScreen extends StatefulWidget {
   const KycIntroScreen({super.key});
 
@@ -34,26 +33,6 @@ class KycIntroScreen extends StatefulWidget {
 }
 
 class _KycIntroScreenState extends State<KycIntroScreen> {
-  // 2026-08-24 re-sequencing: the design mockup's own checklist (screen 13)
-  // lists all 8 real steps — CHN, bank/DCS, and the two declarations are now
-  // genuinely built (chn_screen.dart, bank_dcs_screen.dart,
-  // declarations_screen.dart) and wired into the flow between id-upload and
-  // next-of-kin, so this list now matches the mockup verbatim instead of the
-  // narrower 5-item list a prior pass deliberately trimmed it to.
-  static const _rows = [
-    _KycRow('IDENTITY', 'Your BVN and NIN — checked with NIBSS.', 'profile'),
-    _KycRow('CHN', 'Your CSCS number, if you already have one.', 'card'),
-    _KycRow('DOCUMENT', 'A government ID — NIN, international passport, licence or voter\'s card.', 'card'),
-    // Face liveness check — fingerprint/profile motif (no camera icon in
-    // the set). Eyebrow renamed from 'SELFIE' 2026-08-20 ("please don't
-    // use selfie wording for face liveness check").
-    _KycRow('FACE LIVENESS', 'A quick liveness check to match your face.', 'fingerprint'),
-    _KycRow('ADDRESS', 'A utility bill dated in the last three months.', 'card'),
-    _KycRow('BANK & DCS', 'The account your dividends and sale proceeds settle to.', 'wallet'),
-    _KycRow('DECLARATIONS', 'Two short SEC-required questions.', 'profile'),
-    _KycRow('NEXT OF KIN', 'Who to contact if we can\'t reach you.', 'profile'),
-  ];
-
   bool _busy = false;
 
   /// Which route a given backend currentStep (2-5, per
@@ -156,90 +135,57 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
       backgroundColor: KColor.bg,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-              KSpace.gutter, 24, KSpace.gutter, KSpace.gutter),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, KSpace.gutter),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // s10's only header chrome is a single close affordance (no
+              // back chevron, no step strip — this is entered once, before
+              // step 1 exists). Wired to Home, the same exit the old
+              // "Look around first" ghost button gave — s10 doesn't draw a
+              // second button, so that affordance moved into this icon.
+              // Align (not a bare child of this CrossAxisAlignment.stretch
+              // Column) keeps the fixed 40x40 circle from being stretched
+              // into a smeared oval — Container.tighten intersects a fixed
+              // width against the Column's tight full-width constraint and
+              // loses.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: KIconButton(
+                  icon: 'close',
+                  semanticLabel: 'Not now',
+                  onPressed: _busy ? null : () => context.go(Routes.home),
+                ),
+              ),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const KIllustration('kyc-intro', role: KIlloRole.small),
-                      const SizedBox(height: 20),
-                      const KScreenHead(
-                        title: 'Verify to start investing',
-                        body:
-                            'This is required before your CSCS account can open. Eight steps, about six minutes.',
-                      ),
-                      const SizedBox(height: 28),
-                      KCard(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          children: [
-                            for (var i = 0; i < _rows.length; i++)
-                              Container(
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    top: i == 0
-                                        ? BorderSide.none
-                                        : BorderSide(color: KColor.hairline, width: 1),
-                                  ),
-                                ),
-                                padding: const EdgeInsets.all(18),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: KColor.indicatorTint,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: KIcon(_rows[i].icon, size: 20, color: KColor.indicator),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          KEyebrow(_rows[i].eyebrow),
-                                          const SizedBox(height: 4),
-                                          Text(_rows[i].line, style: KType.body(color: KColor.ink)),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const KIllustration('kyc-intro', role: KIlloRole.state, tone: KIlloTone.sun),
+                        const SizedBox(height: 28),
+                        Text(
+                          "Let's verify your identity",
+                          style: KType.hero(color: KColor.ink)
+                              .copyWith(fontSize: 32, height: 38 / 32, letterSpacing: -0.8),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Then we provision your trading account — that part is on us, and takes up to one business day.',
-                        style: KType.body(color: KColor.ink3),
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        Text(
+                          'It keeps your money safe. Takes about 5 minutes.',
+                          style: KType.body(color: KColor.ink2).copyWith(fontSize: 17, height: 26 / 17),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               KButton(
-                label: 'Start verification',
-                iconRight: 'arrowUpRight',
+                label: 'Start',
                 loading: _busy,
                 onPressed: _busy ? null : _start,
-              ),
-              const SizedBox(height: 10),
-              KButton(
-                label: 'Look around first',
-                variant: KButtonVariant.ghost,
-                onPressed: _busy ? null : () => context.go(Routes.home),
               ),
             ],
           ),

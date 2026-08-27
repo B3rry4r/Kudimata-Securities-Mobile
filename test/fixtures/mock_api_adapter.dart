@@ -14,10 +14,28 @@
 // every field read there uses `as T? ?? default`, so an unmodelled endpoint
 // falling through to [_fallback] never crashes a screen, it just renders
 // emptier than the real backend would.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+
+// ── Scenario switches (docs/redesign/DECISIONS.md B-4) ─────────────────────
+//
+// test/shots_all.dart's 152 default captures all construct a bare
+// `MockApiAdapter()`, and every field below defaults to the value that
+// reproduces this file's ORIGINAL hard-coded responses exactly — so those
+// captures are byte-for-byte unchanged by this addition. A screen agent
+// reaching for a sub-state (test/shots_substates.dart) instead constructs
+// e.g. `MockApiAdapter(kyc: MockKyc.draft)` rather than writing a throwaway
+// adapter, which is what B-3/B-4 both report having to do.
+enum MockKyc { approved, draft, rejected, flagged, expired }
+
+enum MockPortfolio { populated, empty }
+
+enum MockMarket { open, closed }
+
+enum MockNetwork { ok, slow, error }
 
 Map<String, dynamic> _asset({
   required String ticker,
@@ -238,6 +256,65 @@ Map<String, dynamic> _portfolioSummary() => {
       'chartSeries': [2380000, 2395000, 2402000, 2410000, 2418650].map((v) => v * 100).toList(),
     };
 
+// Zeroed twin of _portfolioSummary() — MockPortfolio.empty (B-4), matching
+// the real backend's shape for an investor with no holdings at all (an
+// empty allocation/chartSeries, not omitted keys, since every reader below
+// uses `as T? ?? default` and a MISSING key would silently fall back to
+// _portfolioSummary()'s own populated numbers instead of genuinely empty
+// ones).
+Map<String, dynamic> _emptyPortfolioSummary() => {
+      'totalValueKobo': 0,
+      'allTimeReturnKobo': 0,
+      'allTimeReturnPct': 0.0,
+      'allocation': const [],
+      'chartSeries': const [],
+    };
+
+// GET /kyc-submissions/me per MockKyc (B-4) — home_screen.dart's own
+// _initialLoad calls refreshKycGatingState(context) (log_in_screen.dart)
+// BEFORE loading its data, which re-fetches this exact endpoint and
+// overwrites whatever AppState flags a test mounted with. So this is the
+// ONLY lever that actually reaches s23 (Home, not verified) or
+// kyc/outcome_not_approved.dart's rejected/flagged/expired bodies — setting
+// AppState.kycApproved at mount time is not enough on its own.
+Map<String, dynamic> _kycMeResponse(MockKyc kyc) {
+  switch (kyc) {
+    case MockKyc.approved:
+      return {'status': 'approved', 'submittedAt': '2025-11-01T00:00:00.000Z'};
+    case MockKyc.draft:
+      // currentStep/totalSteps drive tradingEligibilityGap's "Complete your
+      // KYC — 3/5 done" copy (app_state.dart) — a real in-progress draft,
+      // not a fresh one, so that copy renders too.
+      return {
+        'status': 'draft',
+        'submittedAt': '2026-03-14T09:00:00.000Z',
+        'currentStep': 3,
+        'totalSteps': 5,
+      };
+    case MockKyc.rejected:
+      return {
+        'status': 'rejected',
+        'submittedAt': '2026-03-01T09:00:00.000Z',
+        'flagReason': 'Document unclear',
+        'flagDetail': "The uploaded ID photo was too blurry to verify against your BVN record.",
+        'attemptCount': 1,
+        'maxAttempts': 3,
+      };
+    case MockKyc.flagged:
+      return {
+        'status': 'flagged',
+        'submittedAt': '2026-03-01T09:00:00.000Z',
+        'flagReason': 'Manual review required',
+        'flagDetail': 'Your submission needs a closer look from our compliance team.',
+      };
+    case MockKyc.expired:
+      return {
+        'status': 'expired',
+        'submittedAt': '2025-09-01T09:00:00.000Z',
+      };
+  }
+}
+
 Map<String, dynamic> _priceAlert({
   required String id,
   required String ticker,
@@ -453,6 +530,33 @@ Map<String, dynamic> _legalDocument(String kind) {
   };
 }
 
+// GET /complaints — one open complaint, so complaint_screen.dart's (s53)
+// "Your open complaint" SLA card has something real to render by default
+// instead of always hitting its (also valid, but less useful for review)
+// empty state. Dates are relative to `now` rather than fixed, so the
+// "Day N of 10" reading always lands mid-window regardless of when the
+// shot is taken.
+Map<String, dynamic> _openComplaint() {
+  final now = DateTime.now().toUtc();
+  final filedAt = now.subtract(const Duration(days: 4));
+  final answerDueAt = filedAt.add(const Duration(days: 10));
+  return {
+    'id': 'C-MOCK-1',
+    'reference': 'KDM-CP-9F2K',
+    'userId': 'U1',
+    'category': 'Money into or out of my account',
+    'orderOrTxnRef': null,
+    'description': 'Withdrawal not received',
+    'attachmentObjectKey': null,
+    'status': 'logged',
+    'filedAt': filedAt.toIso8601String(),
+    'answerDueAt': answerDueAt.toIso8601String(),
+    'timeline': [
+      {'label': 'Complaint logged', 'at': filedAt.toIso8601String(), 'by': 'system'},
+    ],
+  };
+}
+
 // GET /banks — a small realistic subset (bank_dcs_screen.dart's picker).
 final _banks = [
   {'code': '058', 'name': 'Guaranty Trust Bank'},
@@ -467,6 +571,21 @@ final _banks = [
 /// never the full resolved URL) since that's what every repository call
 /// actually passes.
 class MockApiAdapter implements HttpClientAdapter {
+  /// Every param defaults to this file's ORIGINAL hard-coded behaviour — see
+  /// the scenario-switch doc comment above the enums. shots_all.dart's
+  /// unparameterised `MockApiAdapter()` is therefore untouched by this.
+  MockApiAdapter({
+    this.kyc = MockKyc.approved,
+    this.portfolio = MockPortfolio.populated,
+    this.market = MockMarket.open,
+    this.network = MockNetwork.ok,
+  });
+
+  final MockKyc kyc;
+  final MockPortfolio portfolio;
+  final MockMarket market;
+  final MockNetwork network;
+
   @override
   void close({bool force = false}) {}
 
@@ -476,6 +595,33 @@ class MockApiAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    if (network == MockNetwork.error) {
+      // {"error":{code,message}} — the envelope shape ApiClient's own
+      // interceptor parses (api_client.dart's "Error envelope parsing"),
+      // so this comes out the other end as a real ApiException and every
+      // screen's existing KErrorView / snapshot.hasError branch fires.
+      return ResponseBody.fromString(
+        jsonEncode({
+          'error': {
+            'code': 'MOCK_NETWORK_ERROR',
+            'message': 'Mock network error (test/shots_substates.dart network: MockNetwork.error).',
+          },
+        }),
+        500,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    }
+    if (network == MockNetwork.slow) {
+      // A bare Completer, never a Timer — so the request stays pending
+      // forever (holding the screen in its KLoadingView) WITHOUT tripping
+      // flutter_test's "a Timer is still pending" teardown check the way a
+      // real Future.delayed would. This simulates "loading", not literally
+      // "slow" — good enough to capture the loading state, never meant to
+      // resolve.
+      return Completer<ResponseBody>().future;
+    }
     final path = options.path;
     final body = _resolve(path, options.queryParameters);
     return ResponseBody.fromString(
@@ -489,7 +635,18 @@ class MockApiAdapter implements HttpClientAdapter {
 
   dynamic _resolve(String path, Map<String, dynamic> query) {
     if (path == '/wallet-balance') return _walletBalance();
-    if (path == '/portfolio-summary') return _portfolioSummary();
+    if (path == '/portfolio-summary') {
+      return portfolio == MockPortfolio.empty ? _emptyPortfolioSummary() : _portfolioSummary();
+    }
+    if (path == '/market-status') {
+      // Not called by any test/shots_all.dart default capture (nothing
+      // there invokes AppState.refreshMarketStatus) — added purely for
+      // test/shots_substates.dart's 'market_closed' sub-state, so this is
+      // additive-only.
+      return market == MockMarket.closed
+          ? {'open': false, 'mode': 'closed'}
+          : {'open': true, 'mode': 'open'};
+    }
     if (path == '/users/me') return _user();
     if (path == '/assets/trending') return _assets;
     if (path == '/assets') {
@@ -549,7 +706,9 @@ class MockApiAdapter implements HttpClientAdapter {
       final id = path.split('/').last;
       return _transactions.firstWhere((t) => t['id'] == id, orElse: () => _transactions.first);
     }
-    if (path == '/holdings') return _paginated(_holdingsList());
+    if (path == '/holdings') {
+      return _paginated(portfolio == MockPortfolio.empty ? const [] : _holdingsList());
+    }
     if (path.startsWith('/holdings/')) return _holding(path.split('/').last);
     if (path.startsWith('/assets/')) return _assetByTicker(path.split('/').last);
     if (path == '/suitability-result/me') {
@@ -571,9 +730,7 @@ class MockApiAdapter implements HttpClientAdapter {
         'completedAt': '2025-11-02T00:00:00.000Z',
       };
     }
-    if (path == '/kyc-submissions/me') {
-      return {'status': 'approved', 'submittedAt': '2025-11-01T00:00:00.000Z'};
-    }
+    if (path == '/kyc-submissions/me') return _kycMeResponse(kyc);
     // GET (resume)/POST (draftStep1)/PATCH (updateDraftFields) all resolve
     // by path only — see this file's header — so one fixture answers all
     // three for '/kyc-submissions/draft'. Realistic enough for
@@ -590,6 +747,7 @@ class MockApiAdapter implements HttpClientAdapter {
           .map(_legalDocument)
           .toList();
     }
+    if (path == '/complaints') return _paginated([_openComplaint()]);
     if (path == '/banks') return _banks;
     if (path == '/banks/resolve-account-name') return {'accountName': 'ADEBAYO OKONKWO'};
     if (path == '/notification-preferences/me') {

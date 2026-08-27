@@ -1,16 +1,31 @@
-// Screen 88 — "Complaint · tracked" (2026-08-23 "Soft Landing" canvas
-// exactness pass, s88.html; wired to a real backend 2026-08-24). Per the
-// canvas footer note this is reached "from 87 or an email link" — i.e.
-// after a complaint has actually been filed and the backend hands back a
-// reference to track.
+// Account → Complaints · tracked — the "tracked/status view" half of
+// artboard `s53` ("06 Account and Support.dc.html"). Reached after a
+// successful filing, or by tapping complaint_screen.dart's "Your open
+// complaint" card.
+//
+// R-5: this file used to cite the OLD 97-screen canvas's "Screen 88", an id
+// that now points at an unrelated screen. Re-pointed to `s53` per
+// RULINGS.md.
+//
+// s53 doesn't draw a standalone detail screen — it embeds a small "Your open
+// complaint" card inline in the Complaints hub (title, a "Day N of 10" SLA
+// pill, a progress bar, "Raised … · reference … We reply by …"; see
+// RULINGS.md's evidence for this screen). This screen adopts that pill +
+// progress-bar visual language for the common in-window states (logged /
+// reviewing) via [slaProgress] from complaint_screen.dart, so the hub's mini
+// card and this detail screen read as the same idea. The register timeline
+// below it, and the resolved/escalated tones, are real states the artboard
+// never depicts a single moment for — kept per the "artboard depicts one
+// situation, the code path serves several" principle (resolved and
+// escalated complaints exist and must render correctly too).
 //
 // REAL BACKEND, wired: takes the SAME `Complaint` model
 // complaint_repository.dart declares (the repository's own return type from
 // `file()`/`get()`) rather than a parallel view model — complaint_screen.dart
-// now navigates here with the exact object `ComplaintRepository.file()`
-// returns. This screen derives its display-only bits (register timeline
-// steps, status pill tone) from that real model in [_timelineSteps] /
-// [_statusSpec] below, rather than requiring a separate summary type.
+// navigates here with the exact object the backend returns. This screen
+// derives its display-only bits (register timeline steps, SLA pill) from
+// that real model in [_timelineSteps] / [_headerPill] below, rather than
+// requiring a separate summary type.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/data/repositories/complaint_repository.dart';
@@ -63,16 +78,27 @@ class ComplaintTrackedScreen extends StatelessWidget {
   const ComplaintTrackedScreen({super.key, required this.complaint});
   final Complaint complaint;
 
-  /// (status pill tone, its default label) for [complaint.status] — backend
-  /// enum `logged | reviewing | escalated | resolved` mapped onto the
-  /// existing `KStatus` workflow-state vocabulary (feedback.dart) rather
-  /// than adding a 5th, complaint-specific status widget.
-  (KStatus, String) get _statusSpec => switch (complaint.status) {
-        ComplaintStatus.logged => (KStatus.pending, 'Logged'),
-        ComplaintStatus.reviewing => (KStatus.review, 'Under review'),
-        ComplaintStatus.escalated => (KStatus.flagged, 'Escalated'),
-        ComplaintStatus.resolved => (KStatus.approved, 'Resolved'),
-      };
+  /// Header pill. `logged`/`reviewing` (still inside the 10-day answer
+  /// window) get s53's own "Day N of 10" SLA pill, from the same
+  /// [slaProgress] complaint_screen.dart's "Your open complaint" card uses —
+  /// so the hub and this detail screen read as one visual idea. `resolved`/
+  /// `escalated` are real terminal/branch states s53 never draws a moment
+  /// for, so they keep the existing `KStatus` workflow-pill vocabulary
+  /// (feedback.dart) rather than forcing an out-of-window day count.
+  Widget _headerPill() {
+    if (complaint.status == ComplaintStatus.resolved) {
+      return const KStatusPill(status: KStatus.approved, label: 'Resolved', small: true);
+    }
+    if (complaint.status == ComplaintStatus.escalated) {
+      return const KStatusPill(status: KStatus.flagged, label: 'Escalated', small: true);
+    }
+    final (dayLabel, _) = slaProgress(complaint);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: KColor.warmTint, borderRadius: BorderRadius.circular(999)),
+      child: Text(dayLabel, style: KType.micro(color: KColor.warmPress)),
+    );
+  }
 
   /// Register timeline: one "done" row per real entry in
   /// [Complaint.timeline] (backend's append-only log — today that's just
@@ -139,11 +165,12 @@ class ComplaintTrackedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final filed = _formatDate(complaint.filedAt);
     final dueDay = _formatDay(complaint.answerDueAt);
-    final (status, defaultLabel) = _statusSpec;
     final steps = _timelineSteps();
+    final inWindow =
+        complaint.status == ComplaintStatus.logged || complaint.status == ComplaintStatus.reviewing;
     return KAccountSubScaffold(
       title: complaint.reference,
-      headerTrailing: KStatusPill(status: status, label: defaultLabel, small: true),
+      headerTrailing: _headerPill(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -163,6 +190,24 @@ class ComplaintTrackedScreen extends StatelessWidget {
                   'Answer due by $dueDay · 10 business days',
                   style: KType.data(color: KColor.ink2),
                 ),
+                if (inWindow) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: SizedBox(
+                      height: 8,
+                      child: Stack(
+                        children: [
+                          Container(color: KColor.track),
+                          FractionallySizedBox(
+                            widthFactor: slaProgress(complaint).$2,
+                            child: Container(color: KColor.warmPress),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -189,11 +234,13 @@ class ComplaintTrackedScreen extends StatelessWidget {
             // exposes upload-url/file/findAll/findOne (see
             // complaints.controller.ts), and staff-side timeline-append
             // endpoints are explicitly out of scope for this backend pass
-            // (complaints.module.ts's header comment). Pushing a fresh
-            // ComplaintScreen is the same honest stand-in this screen used
-            // before it had a live entry point — it lets the investor file
-            // a new, related complaint today rather than pretending this
-            // button appends to the existing one.
+            // (complaints.module.ts's header comment). Pushing ComplaintScreen
+            // — now the Complaints hub (s53) rather than the bare form
+            // directly, see complaint_screen.dart's header — is the same
+            // honest stand-in this screen used before it had a live entry
+            // point: it lets the investor start a new, related complaint
+            // today rather than pretending this button appends to the
+            // existing one.
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ComplaintScreen()),
             ),
@@ -204,7 +251,8 @@ class ComplaintTrackedScreen extends StatelessWidget {
             variant: KButtonVariant.ghost,
             // Routes.acctHelp already exists — context.go (not push) so
             // this lands on Help & support regardless of whether this
-            // screen was reached from screen 87 or a standalone email link.
+            // screen was reached from filing a complaint or a standalone
+            // email link.
             onPressed: () => context.go(Routes.acctHelp),
           ),
         ],

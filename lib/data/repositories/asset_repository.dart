@@ -89,6 +89,18 @@ class AssetRepository {
     return items.map(_fromJson).toList();
   }
 
+  /// GET /assets/:ticker/order-book — BR-5's simulated depth feed
+  /// (SimulatedNgxBroker#getOrderBook). Returns raw `OrderBook`/
+  /// `OrderBookLevel` (kobo/units ints), unlike this repository's other
+  /// methods which preformat into display strings — see [OrderBook]'s doc
+  /// comment (SHARED-CHANGES.md S-7) for why: the asset-detail screen's
+  /// Order Book tab formats kobo->naira itself, matching
+  /// contract_note_screen.dart's convention.
+  Future<OrderBook> orderBook(String ticker) async {
+    final response = await _client.get('/assets/$ticker/order-book');
+    return OrderBook.fromJson(response.data as Map<String, dynamic>);
+  }
+
   String _classParam(AssetClass c) => switch (c) {
     AssetClass.ngx => 'ngx',
     AssetClass.us => 'us',

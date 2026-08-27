@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/colors.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/typography.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/radii.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/motion.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/illustration.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/base.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/styles.css">
+<script src="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#F3EDE3}
+a{color:var(--indicator);text-decoration:none}
+a:hover{color:var(--indicator-press)}
+</style>
+</helmet>
+
+<div style="font-family:var(--font-core);padding:56px 64px 96px;display:flex;flex-direction:column;gap:48px">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3)">Kudimata Invest · redesign · section 2 of 6</div>
+<div style="font:var(--text-hero);letter-spacing:var(--track-hero);color:var(--ink)">Verification</div>
+<div style="font:var(--text-body);color:var(--ink-2);text-wrap:pretty">The checklist hub (11) is the spine: every step returns to it, so the user always knows where they are and what's left. One question per screen. Entered from Section 1 screen 07 "Start step 1".</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:48px">
+
+<div id="s10" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">10</span><span style="font:var(--text-card-title);color:var(--ink)">Verify your identity</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:14px 20px 0"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="close" label="close" hint-size="40px,40px"></x-import></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:28px">
+<div style="background:var(--sun-tint);border-radius:24px;padding:20px 0;display:grid;place-items:center"><img src="assets/illustrations/kd-id.svg" style="height:150px" alt=""></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:32px;line-height:38px;letter-spacing:-.025em;color:var(--ink)">Let's verify your identity</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">It keeps your money safe. Takes about 5 minutes.</div>
+</div>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s11 }}" hint-size="100%,52px">Start</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From Section 1 · 07 · Start → <a href="#s11">11 Checklist</a></div>
+</div>
+
+<div id="s10d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">10D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:14px 20px 0"><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" ><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="close" size="19" hint-size="19px,19px"></x-import></span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:28px">
+<div style="background:#26242A;border-radius:24px;padding:20px 0;display:grid;place-items:center"><img src="assets/illustrations/kd-id.svg" style="height:150px" alt=""></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:32px;line-height:38px;letter-spacing:-.025em;color:#F4F2EF">Let's verify your identity</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70)">It keeps your money safe. Takes about 5 minutes.</div>
+</div>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s11 }}">Start</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s10">10</a></div>
+</div>
+
+<div id="s11" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">11</span><span style="font:var(--text-card-title);color:var(--ink)">Checklist hub</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:14px 20px 0"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="close" label="close" hint-size="40px,40px"></x-import></div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">You're almost there</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">2 of 5 done. Next: take a selfie.</div>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;gap:16px">
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--gain);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="16" hint-size="16px,16px"></x-import></span><span style="width:2px;flex:1;background:var(--gain);opacity:.4"></span></div>
+<div style="padding-bottom:24px;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">BVN &amp; NIN confirmed</div><div style="font-size:14px;color:var(--ink-3)">Adebayo Okonkwo</div></div>
+</div>
+<div style="display:flex;gap:16px">
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--gain);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="16" hint-size="16px,16px"></x-import></span><span style="width:2px;flex:1;background:var(--hairline)"></span></div>
+<div style="padding-bottom:24px;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Documents uploaded</div><div style="font-size:14px;color:var(--ink-3)">ID · utility bill</div></div>
+</div>
+<div style="display:flex;gap:16px">
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--indicator);color:#fff;font-family:var(--font-display);font-weight:800;font-size:15px">3</span><span style="width:2px;flex:1;background:var(--hairline)"></span></div>
+<div style="padding-bottom:24px;flex:1;display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--indicator)">Take a selfie</div><div style="font-size:14px;color:var(--ink-3)">2 minutes</div></div><span style="color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="18" hint-size="18px,18px"></x-import></span></div>
+</div>
+<div style="display:flex;gap:16px">
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink-2);font-family:var(--font-display);font-weight:800;font-size:15px">4</span><span style="width:2px;flex:1;background:var(--hairline)"></span></div>
+<div style="padding-bottom:24px;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink-2)">Add your bank account</div><div style="font-size:14px;color:var(--ink-3)">For withdrawals and dividends</div></div>
+</div>
+<div style="display:flex;gap:16px">
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink-2);font-family:var(--font-display);font-weight:800;font-size:15px">5</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink-2)">Two quick questions</div><div style="font-size:14px;color:var(--ink-3)">Regulator requires them</div></div>
+</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s15 }}" hint-size="100%,52px">Continue · Take a selfie</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Spine of the flow: every step returns here. Steps: <a href="#s12">12 BVN</a> · <a href="#s14">14 ID</a> · <a href="#s15">15 Selfie</a> · <a href="#s18">18 Bank</a> · <a href="#s19">19 Questions</a></div>
+</div>
+
+<div id="s11d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">11D</span><span style="font:var(--text-card-title);color:var(--ink)">Checklist · dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.5)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:14px 20px 0"><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="close" size="19" hint-size="19px,19px"></x-import></span></div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">You're almost there</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.7)">2 of 5 done. Next: take a selfie.</div>
+</div>
+<div style="padding:26px 24px 0;display:flex;flex-direction:column">
+<sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+<div style="display:flex;gap:16px">
+<div style="display:flex;flex-direction:column;align-items:center"><span style="width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:999px;background:{{ s.dotBg }};color:{{ s.dotInk }};font-family:var(--font-display);font-weight:800;font-size:15px">{{ s.dot }}</span><span style="width:2px;flex:1;background:{{ s.line }}"></span></div>
+<div style="padding-bottom:24px;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:{{ s.titleInk }}">{{ s.title }}</div><div style="font-size:14px;color:rgba(244,242,239,.5)">{{ s.note }}</div></div>
+</div>
+</sc-for>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer">Continue · Take a selfie</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s11">11</a>, the flow spine.</div>
+</div>
+
+<div id="s12" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">12</span><span style="font:var(--text-card-title);color:var(--ink)">BVN &amp; NIN</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="back" label="back" onClick="{{ nav.s11 }}" hint-size="40px,40px"></x-import>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:var(--ink-3)">Step 1 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">Your BVN and NIN</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">Used once, to confirm you're you. Both must match your official names.</div>
+</div>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Input" label="BVN (Bank Verification Number)" numeric="{{ true }}" placeholder="11 digits" helper="Dial *565*0# on your registered line to see it" hint-size="100%,100px"></x-import>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Input" label="NIN (National Identification Number)" numeric="{{ true }}" placeholder="11 digits" helper="On your NIN slip or dial *346#" hint-size="100%,100px"></x-import>
+<div style="display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--hairline);border-radius:16px;padding:14px 16px">
+<span style="color:var(--gain)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="shield" size="20" hint-size="20px,20px"></x-import></span>
+<div style="font-size:14px;line-height:20px;color:var(--ink-2)">Your BVN and NIN can't be used to move money. <a href="#s12">How we protect it</a></div>
+</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s13 }}" hint-size="100%,52px">Confirm BVN</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From <a href="#s11">11</a> · Confirm → <a href="#s13">13 Your details</a></div>
+</div>
+
+<div id="s12d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">12D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" ><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:rgba(244,242,239,.50)">Step 1 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">Your BVN and NIN</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70)">Used once, to confirm you're you. Both must match your official names.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.55)">BVN (Bank Verification Number)</span>
+<div style="height:52px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 16px"><span style="font-size:16px;color:rgba(244,242,239,.45)">11 digits</span></div>
+<span style="font-size:13px;color:rgba(244,242,239,.45)">Dial *565*0# on your registered line to see it</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.55)">NIN (National Identification Number)</span>
+<div style="height:52px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 16px"><span style="font-size:16px;color:rgba(244,242,239,.45)">11 digits</span></div>
+<span style="font-size:13px;color:rgba(244,242,239,.45)">On your NIN slip or dial *346#</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 16px">
+<span style="color:#9DEBC4"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="shield" size="20" hint-size="20px,20px"></x-import></span>
+<div style="font-size:14px;line-height:20px;color:rgba(244,242,239,.70)">Your BVN and NIN can't be used to move money. <a href="#s12">How we protect it</a></div>
+</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s13 }}">Confirm BVN</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s12">12</a></div>
+</div>
+
+<div id="s13" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">13</span><span style="font:var(--text-card-title);color:var(--ink)">Details from BVN</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="back" label="back" onClick="{{ nav.s12 }}" hint-size="40px,40px"></x-import>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:var(--ink-3)">Step 1 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">Is this you?</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">From your BVN and NIN records. If something's wrong, fix it at your bank first.</div>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:6px 18px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:14px;color:var(--ink-3)">Name</span><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Adebayo Okonkwo</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:14px;color:var(--ink-3)">Date of birth</span><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums">14 Mar 1992</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0"><span style="font-size:14px;color:var(--ink-3)">Phone</span><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums">+234 801 234 5678</span></div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--gain)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="16" hint-size="16px,16px"></x-import>Matches the name on your account</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column;gap:12px">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s14 }}" hint-size="100%,52px">Yes, that's me</x-import>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" variant="ghost" size="lg" full-width="{{ true }}" onClick="{{ nav.s12 }}" hint-size="100%,52px">Re-enter BVN</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From <a href="#s12">12</a> · Yes → <a href="#s14">14 Choose ID</a></div>
+</div>
+
+<div id="s13d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">13D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" ><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:rgba(244,242,239,.50)">Step 1 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">Is this you?</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70)">From your BVN and NIN records. If something's wrong, fix it at your bank first.</div>
+</div>
+<div style="background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:6px 18px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:14px;color:rgba(244,242,239,.50)">Name</span><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Adebayo Okonkwo</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:14px;color:rgba(244,242,239,.50)">Date of birth</span><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF;font-variant-numeric:tabular-nums">14 Mar 1992</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0"><span style="font-size:14px;color:rgba(244,242,239,.50)">Phone</span><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF;font-variant-numeric:tabular-nums">+234 801 234 5678</span></div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#9DEBC4"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="16" hint-size="16px,16px"></x-import>Matches the name on your account</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column;gap:12px">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s14 }}">Yes, that's me</span>
+<span style="height:52px;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:16px;color:#C9A6EC;cursor:pointer" onClick="{{ nav.s12 }}">Re-enter BVN</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s13">13</a></div>
+</div>
+
+<div id="s14" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">14</span><span style="font:var(--text-card-title);color:var(--ink)">Your documents</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="back" label="back" onClick="{{ nav.s11 }}" hint-size="40px,40px"></x-import>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:var(--ink-3)">Step 2 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">Your documents</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">Pick one ID to photograph. You'll add a utility bill next.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:16px;background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:18px;cursor:pointer">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">NIN slip</div><div style="font-size:14px;color:var(--ink-3)">Fastest to verify</div></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="18" hint-size="18px,18px"></x-import></span>
+</div>
+<div style="display:flex;align-items:center;gap:16px;background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:18px;cursor:pointer">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Driver's licence</div></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="18" hint-size="18px,18px"></x-import></span>
+</div>
+<div style="display:flex;align-items:center;gap:16px;background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:18px;cursor:pointer">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">International passport</div></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="18" hint-size="18px,18px"></x-import></span>
+</div>
+</div>
+<div style="font-size:14px;line-height:20px;color:var(--ink-3)">Take the photo in daylight. All four corners visible.</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s17 }}" hint-size="100%,52px">Continue</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From <a href="#s11">11</a> · pick + Continue → camera → <a href="#s17">17 Utility bill</a> (same step)</div>
+</div>
+
+<div id="s14d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">14D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" ><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:rgba(244,242,239,.50)">Step 2 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">Your documents</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70)">Pick one ID to photograph. You'll add a utility bill next.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:16px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:18px;cursor:pointer">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">NIN slip</div><div style="font-size:14px;color:rgba(244,242,239,.50)">Fastest to verify</div></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="18" hint-size="18px,18px"></x-import></span>
+</div>
+<div style="display:flex;align-items:center;gap:16px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:18px;cursor:pointer">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Driver's licence</div></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="18" hint-size="18px,18px"></x-import></span>
+</div>
+<div style="display:flex;align-items:center;gap:16px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:18px;cursor:pointer">
+<span style="width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="20" hint-size="20px,20px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">International passport</div></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="18" hint-size="18px,18px"></x-import></span>
+</div>
+</div>
+<div style="font-size:14px;line-height:20px;color:rgba(244,242,239,.50)">Take the photo in daylight. All four corners visible.</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s17 }}">Continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s14">14</a></div>
+</div>
+
+<div id="s15" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">15</span><span style="font:var(--text-card-title);color:var(--ink)">Selfie check</span></div>
+<div style="width:390px;height:880px;background:var(--feature);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.14)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--feature-ink-2)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:14px 20px 0"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="back" label="back" onClick="{{ nav.s11 }}" hint-size="40px,40px"></x-import></div>
+<div style="padding:20px 24px 0;text-align:center;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:var(--feature-ink)">Fit your face in the oval</div>
+<div style="font-size:16px;color:var(--feature-ink-2)">Good light · no cap · no glasses</div>
+</div>
+<div style="flex:1;display:grid;place-items:center">
+<div style="width:250px;height:320px;border-radius:50%;border:3px dashed rgba(255,255,255,.55);background:rgba(255,255,255,.08)"></div>
+</div>
+<div style="padding:0 24px 44px;display:flex;flex-direction:column;align-items:center;gap:16px">
+<span style="width:74px;height:74px;border-radius:999px;background:#fff;border:5px solid rgba(255,255,255,.35);cursor:pointer" onClick="{{ nav.s16 }}"></span>
+<div style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:var(--feature-ink-2)">Checked automatically · nothing is stored on your phone</div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From <a href="#s11">11</a> · capture → <a href="#s16">16 Checking</a></div>
+</div>
+
+<div id="s15d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">15D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.55)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:14px 20px 0"><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" ><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span></div>
+<div style="padding:20px 24px 0;text-align:center;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:#F4F2EF">Fit your face in the oval</div>
+<div style="font-size:16px;color:rgba(244,242,239,.55)">Good light · no cap · no glasses</div>
+</div>
+<div style="flex:1;display:grid;place-items:center">
+<div style="width:250px;height:320px;border-radius:50%;border:3px dashed rgba(201,166,236,.75);background:rgba(161,107,224,.12)"></div>
+</div>
+<div style="padding:0 24px 44px;display:flex;flex-direction:column;align-items:center;gap:16px">
+<span style="width:74px;height:74px;border-radius:999px;background:#fff;border:5px solid rgba(255,255,255,.35);cursor:pointer" onClick="{{ nav.s16 }}"></span>
+<div style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:rgba(244,242,239,.55)">Checked automatically · nothing is stored on your phone</div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s15">15</a></div>
+</div>
+
+<div id="s16" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">16</span><span style="font:var(--text-card-title);color:var(--ink)">Checking</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 24px;gap:28px;text-align:center">
+<div style="width:100%;background:var(--sun-tint);border-radius:24px;padding:20px 0;display:grid;place-items:center"><img src="assets/illustrations/kd-clock.svg" style="height:150px" alt=""></div>
+<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:var(--ink)">Checking your selfie</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2);max-width:280px">Done on the spot. If it fails, you just retake it.</div>
+</div>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Spinner" size="24" hint-size="24px,24px"></x-import>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s18 }}" hint-size="100%,52px">Next step · Bank account</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From <a href="#s15">15</a> · pass → <a href="#s11">11</a> auto-advances · Next → <a href="#s18">18 Bank</a></div>
+</div>
+
+<div id="s16d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">16D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 24px;gap:28px;text-align:center">
+<div style="width:100%;background:#26242A;border-radius:24px;padding:20px 0;display:grid;place-items:center"><img src="assets/illustrations/kd-clock.svg" style="height:150px" alt=""></div>
+<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+<div style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#F4F2EF">Checking your selfie</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70);max-width:280px">Done on the spot. If it fails, you just retake it.</div>
+</div>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Spinner" size="24" hint-size="24px,24px"></x-import>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s18 }}">Next step · Bank account</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s16">16</a></div>
+</div>
+
+<div id="s17" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">17</span><span style="font:var(--text-card-title);color:var(--ink)">Address</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="back" label="back" onClick="{{ nav.s14 }}" hint-size="40px,40px"></x-import>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:var(--ink-3)">Step 2 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">Where do you live?</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">A recent utility bill confirms it, any bill under 3 months old.</div>
+</div>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Input" label="Street address" placeholder="12 Awolowo Road" hint-size="100%,80px"></x-import>
+<div style="display:flex;gap:12px">
+<div style="flex:1;display:flex;flex-direction:column"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Select" label="State" value="Lagos" hint-size="100%,80px"></x-import></div>
+<div style="flex:1;display:flex;flex-direction:column"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Select" label="LGA" value="Ikoyi" hint-size="100%,80px"></x-import></div>
+</div>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.FileUpload" label="Utility bill" helper="JPG or PDF, up to 10MB" hint-size="100%,120px"></x-import>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s11 }}" hint-size="100%,52px">Save &amp; continue</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Part of step 2, after <a href="#s14">14 ID</a> · Save → <a href="#s11">11 Checklist</a>, then <a href="#s15">15 Selfie</a></div>
+</div>
+
+<div id="s17d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">17D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" ><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:rgba(244,242,239,.50)">Step 2 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">Where do you live?</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70)">A recent utility bill confirms it, any bill under 3 months old.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.55)">Street address</span>
+<div style="height:52px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 16px"><span style="font-size:16px;color:rgba(244,242,239,.45)">12 Awolowo Road</span></div>
+
+</div>
+<div style="display:flex;gap:12px">
+<div style="flex:1;display:flex;flex-direction:column"><div style="display:flex;flex-direction:column;gap:7px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.55)">State</span>
+<div style="height:52px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 16px"><span style="font-size:16px;color:#F4F2EF">Lagos</span></div>
+
+</div></div>
+<div style="flex:1;display:flex;flex-direction:column"><div style="display:flex;flex-direction:column;gap:7px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.55)">LGA</span>
+<div style="height:52px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 16px"><span style="font-size:16px;color:#F4F2EF">Ikoyi</span></div>
+
+</div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.55)">Utility bill</span>
+<div style="border:1.5px dashed rgba(255,255,255,.18);border-radius:16px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:8px"><span style="color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="plus" size="20" hint-size="20px,20px"></x-import></span><span style="font-size:14px;font-weight:600;color:#F4F2EF">Add a file</span><span style="font-size:13px;color:rgba(244,242,239,.45)">JPG or PDF, up to 10MB</span></div>
+</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s11 }}">Save &amp; continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s17">17</a></div>
+</div>
+
+<div id="s18" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">18</span><span style="font:var(--text-card-title);color:var(--ink)">Bank account</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="back" label="back" onClick="{{ nav.s11 }}" hint-size="40px,40px"></x-import>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:var(--ink-3)">Step 4 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">Add your bank account</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">Withdrawals and dividends are paid here. It must be in your name.</div>
+</div>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Select" label="Bank" value="First Bank of Nigeria" hint-size="100%,80px"></x-import>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Input" label="Account number" numeric="{{ true }}" placeholder="10 digits" value="3215966835" hint-size="100%,80px"></x-import>
+<div style="display:flex;align-items:center;gap:12px;background:rgba(42,163,107,.10);border-radius:16px;padding:14px 16px">
+<span style="color:var(--gain)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="18" hint-size="18px,18px"></x-import></span>
+<div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">ADEBAYO OKONKWO</div>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:flex-start;gap:12px">
+<span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:7px;background:var(--indicator);color:#fff;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="14" hint-size="14px,14px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Pay my sales and dividends straight to this bank account</span>
+<span style="font-size:13px;line-height:19px;color:var(--ink-2)">Direct Cash Settlement, required by the NGX. Money goes from the exchange to your bank, never through us.</span>
+</div>
+</div>
+<span style="font-size:13px;font-weight:600;color:var(--indicator);cursor:pointer">What is Direct Cash Settlement?</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s18b }}" hint-size="100%,52px">Continue</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From <a href="#s11">11</a> · name resolves automatically · Continue → <a href="#s18b">18B Confirm</a></div>
+</div>
+
+<div id="s18d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">18D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" ><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:rgba(244,242,239,.50)">Step 4 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">Add your bank account</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70)">Withdrawals and dividends are paid here. It must be in your name.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.55)">Bank</span>
+<div style="height:52px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 16px"><span style="font-size:16px;color:#F4F2EF">First Bank of Nigeria</span></div>
+
+</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.55)">Account number</span>
+<div style="height:52px;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 16px"><span style="font-size:16px;color:#F4F2EF">3215966835</span></div>
+
+</div>
+<div style="display:flex;align-items:center;gap:12px;background:rgba(42,163,107,.10);border-radius:16px;padding:14px 16px">
+<span style="color:#9DEBC4"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="18" hint-size="18px,18px"></x-import></span>
+<div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">ADEBAYO OKONKWO</div>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:flex-start;gap:12px">
+<span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:7px;background:var(--indicator-soft);color:#fff;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="14" hint-size="14px,14px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Pay my sales and dividends straight to this bank account</span>
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.70)">Direct Cash Settlement, required by the NGX. Money goes from the exchange to your bank, never through us.</span>
+</div>
+</div>
+<span style="font-size:13px;font-weight:600;color:#C9A6EC;cursor:pointer">What is Direct Cash Settlement?</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s18b }}">Continue</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s18">18</a></div>
+</div>
+
+<div id="s18b" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">18B</span><span style="font:var(--text-card-title);color:var(--ink)">Confirm bank · sheet</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10);position:relative">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:22px 24px 0;opacity:.45">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">Add your bank account</div>
+</div>
+<div style="position:absolute;inset:0;background:var(--scrim)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:28px 28px 38px 38px;box-shadow:var(--shadow-sheet);padding:12px 24px 40px;display:flex;flex-direction:column;gap:20px">
+<span style="width:44px;height:5px;border-radius:999px;background:var(--track);align-self:center"></span>
+<div style="display:flex;flex-direction:column;gap:10px;text-align:center;padding-top:6px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:24px;line-height:30px;letter-spacing:-.02em;color:var(--ink)">Confirm your bank account</div>
+<div style="font-size:16px;line-height:24px;color:var(--ink-2)">Dividends and withdrawals will be paid here.</div>
+</div>
+<div style="background:var(--bg);border:1px solid var(--hairline);border-radius:20px;padding:6px 18px">
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:14px;color:var(--ink-3)">Bank</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">First Bank of Nigeria</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--hairline)"><span style="font-size:14px;color:var(--ink-3)">Account</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums">3215966835</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0"><span style="font-size:14px;color:var(--ink-3)">Name</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">ADEBAYO OKONKWO</span></div>
+</div>
+<div style="font-size:14px;line-height:20px;color:var(--ink-3);text-align:center">Changing it later takes a 24-hour security hold.</div>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s19 }}" hint-size="100%,52px">The details are correct</x-import>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" variant="ghost" size="lg" full-width="{{ true }}" onClick="{{ nav.s18 }}" hint-size="100%,52px">Edit</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Sheet over <a href="#s18">18</a> · Correct → <a href="#s19">19 Questions</a> · Edit → <a href="#s18">18</a></div>
+</div>
+
+<div id="s18bd" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">18BD</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35);position:relative">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:22px 24px 0;opacity:.45">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">Add your bank account</div>
+</div>
+<div style="position:absolute;inset:0;background:var(--scrim)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#26242A;border-radius:28px 28px 38px 38px;box-shadow:var(--shadow-sheet);padding:12px 24px 40px;display:flex;flex-direction:column;gap:20px">
+<span style="width:44px;height:5px;border-radius:999px;background:rgba(255,255,255,.10);align-self:center"></span>
+<div style="display:flex;flex-direction:column;gap:10px;text-align:center;padding-top:6px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:24px;line-height:30px;letter-spacing:-.02em;color:#F4F2EF">Confirm your bank account</div>
+<div style="font-size:16px;line-height:24px;color:rgba(244,242,239,.70)">Dividends and withdrawals will be paid here.</div>
+</div>
+<div style="background:#1A191D;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:6px 18px">
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:14px;color:rgba(244,242,239,.50)">Bank</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">First Bank of Nigeria</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:14px;color:rgba(244,242,239,.50)">Account</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;font-variant-numeric:tabular-nums">3215966835</span></div>
+<div style="display:flex;justify-content:space-between;padding:13px 0"><span style="font-size:14px;color:rgba(244,242,239,.50)">Name</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">ADEBAYO OKONKWO</span></div>
+</div>
+<div style="font-size:14px;line-height:20px;color:rgba(244,242,239,.50);text-align:center">Changing it later takes a 24-hour security hold.</div>
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s19 }}">The details are correct</span>
+<span style="height:52px;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:16px;color:#C9A6EC;cursor:pointer" onClick="{{ nav.s18 }}">Edit</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s18b">18b</a></div>
+</div>
+
+<div id="s19" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">19</span><span style="font:var(--text-card-title);color:var(--ink)">Two questions</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.IconButton" icon="back" label="back" onClick="{{ nav.s11 }}" hint-size="40px,40px"></x-import>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:var(--ink-3)">Step 5 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">Two quick questions</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2)">The regulator requires these. Most people answer no.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-display);font-weight:700;font-size:17px;line-height:24px;color:var(--ink)">Are you, a family member, or a close associate a politically exposed person? <a href="#s19" style="font-weight:600;font-size:15px">What's a PEP?</a></div>
+<div style="display:flex;gap:12px">
+<span style="flex:1;height:52px;display:grid;place-items:center;background:var(--paper);border:1px solid var(--hairline);border-radius:var(--r-input);font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink);cursor:pointer">Yes</span>
+<span style="flex:1;height:52px;display:grid;place-items:center;background:var(--indicator-tint);border:1.5px solid var(--indicator);border-radius:var(--r-input);font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--indicator);cursor:pointer">No</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-display);font-weight:700;font-size:17px;line-height:24px;color:var(--ink)">Do you work for a stockbroker or the NGX?</div>
+<div style="display:flex;gap:12px">
+<span style="flex:1;height:52px;display:grid;place-items:center;background:var(--paper);border:1px solid var(--hairline);border-radius:var(--r-input);font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink);cursor:pointer">Yes</span>
+<span style="flex:1;height:52px;display:grid;place-items:center;background:var(--indicator-tint);border:1.5px solid var(--indicator);border-radius:var(--r-input);font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--indicator);cursor:pointer">No</span>
+</div>
+</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" onClick="{{ nav.s20 }}" hint-size="100%,52px">Finish</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From <a href="#s18b">18B</a> · Finish → <a href="#s20">20 Under review</a></div>
+</div>
+
+<div id="s19d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">19D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" ><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font:var(--text-micro);letter-spacing:var(--track-micro);text-transform:uppercase;color:rgba(244,242,239,.50)">Step 5 of 5</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">Two quick questions</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70)">The regulator requires these. Most people answer no.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-display);font-weight:700;font-size:17px;line-height:24px;color:#F4F2EF">Are you, a family member, or a close associate a politically exposed person? <a href="#s19" style="font-weight:600;font-size:15px">What's a PEP?</a></div>
+<div style="display:flex;gap:12px">
+<span style="flex:1;height:52px;display:grid;place-items:center;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:var(--r-input);font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF;cursor:pointer">Yes</span>
+<span style="flex:1;height:52px;display:grid;place-items:center;background:rgba(161,107,224,.20);border:1.5px solid var(--indicator-soft);border-radius:var(--r-input);font-family:var(--font-display);font-weight:700;font-size:16px;color:#C9A6EC;cursor:pointer">No</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-display);font-weight:700;font-size:17px;line-height:24px;color:#F4F2EF">Do you work for a stockbroker or the NGX?</div>
+<div style="display:flex;gap:12px">
+<span style="flex:1;height:52px;display:grid;place-items:center;background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:var(--r-input);font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF;cursor:pointer">Yes</span>
+<span style="flex:1;height:52px;display:grid;place-items:center;background:rgba(161,107,224,.20);border:1.5px solid var(--indicator-soft);border-radius:var(--r-input);font-family:var(--font-display);font-weight:700;font-size:16px;color:#C9A6EC;cursor:pointer">No</span>
+</div>
+</div>
+</div>
+<div style="margin-top:auto;padding:0 24px 40px;display:flex;flex-direction:column">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s20 }}">Finish</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s19">19</a></div>
+</div>
+
+<div id="s20" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">20</span><span style="font:var(--text-card-title);color:var(--ink)">Under review</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:28px">
+<div style="background:var(--sun-tint);border-radius:24px;padding:20px 0;display:grid;place-items:center"><img src="assets/illustrations/kd-clock.svg" style="height:150px" alt=""></div>
+<div style="display:flex;flex-direction:column;gap:10px;text-align:center;align-items:center">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:var(--ink)">You're done. We're reviewing</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2);max-width:300px">Your NGX trading account is being set up. Usually 1–2 business days. We'll notify you.</div>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:6px 18px">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--hairline)"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--gain);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="13" hint-size="13px,13px"></x-import></span><span style="font-size:15px;color:var(--ink)">Identity confirmed</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--hairline)"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--indicator);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Spinner" size="12" color="#fff" hint-size="12px,12px"></x-import></span><span style="font-size:15px;color:var(--ink)">NGX account being created</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--track)"></span><span style="font-size:15px;color:var(--ink-2)">Ready to trade</span></div>
+</div>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" hint-size="100%,52px">Add money while you wait</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">From <a href="#s19">19</a> · Add money → Section 4 (Wallet) · approval → <a href="#s21">21</a></div>
+</div>
+
+<div id="s20d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">20D</span><span style="font:var(--text-card-title);color:var(--ink)">Dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:28px">
+<div style="background:#26242A;border-radius:24px;padding:20px 0;display:grid;place-items:center"><img src="assets/illustrations/kd-clock.svg" style="height:150px" alt=""></div>
+<div style="display:flex;flex-direction:column;gap:10px;text-align:center;align-items:center">
+<div style="font-family:var(--font-display);font-weight:800;font-size:30px;line-height:36px;letter-spacing:-.02em;color:#F4F2EF">You're done. We're reviewing</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.70);max-width:300px">Your NGX trading account is being set up. Usually 1–2 business days. We'll notify you.</div>
+</div>
+<div style="background:#26242A;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:6px 18px">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--gain);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="13" hint-size="13px,13px"></x-import></span><span style="font-size:15px;color:#F4F2EF">Identity confirmed</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:var(--indicator-soft);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Spinner" size="12" color="#fff" hint-size="12px,12px"></x-import></span><span style="font-size:15px;color:#F4F2EF">NGX account being created</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0"><span style="width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.10)"></span><span style="font-size:15px;color:rgba(244,242,239,.70)">Ready to trade</span></div>
+</div>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" >Add money while you wait</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s20">20</a></div>
+</div>
+
+<div id="s21" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">21</span><span style="font:var(--text-card-title);color:var(--ink)">Verified</span></div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:28px;text-align:center;align-items:center">
+<img src="assets/illustrations/kd-verified.svg" style="height:150px" alt="">
+<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+<div style="font-family:var(--font-display);font-weight:800;font-size:32px;line-height:38px;letter-spacing:-.025em;color:var(--ink)">You're verified</div>
+<div style="font-size:17px;line-height:26px;color:var(--ink-2);max-width:300px">Your NGX account is live. Buy your first share from ₦5,000.</div>
+</div>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column;gap:12px">
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" size="lg" full-width="{{ true }}" hint-size="100%,52px">Add money</x-import>
+<x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Button" variant="ghost" size="lg" full-width="{{ true }}" hint-size="100%,52px">Browse the market first</x-import>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Push notification opens here · Add money → Section 4 · Browse → Section 3 (Markets)</div>
+</div>
+
+<div id="s21d" style="flex:none;width:390px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><span style="font:var(--text-label);letter-spacing:var(--track-label);color:var(--indicator)">21D</span><span style="font:var(--text-card-title);color:var(--ink)">Verified · dark</span></div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.5)"><span>9:41</span><span>LTE</span></div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:28px;text-align:center;align-items:center">
+<div style="width:100%;background:#26242A;border-radius:24px;padding:20px 0;display:grid;place-items:center">
+<img src="assets/illustrations/kd-verified.svg" style="height:170px" alt="">
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+<div style="font-family:var(--font-display);font-weight:800;font-size:32px;line-height:38px;letter-spacing:-.025em;color:#F4F2EF">You're verified</div>
+<div style="font-size:17px;line-height:26px;color:rgba(244,242,239,.7);max-width:300px">Your NGX account is live. Buy your first share from ₦5,000.</div>
+</div>
+</div>
+<div style="padding:0 24px 40px;display:flex;flex-direction:column;gap:12px">
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer">Add money</span>
+<span style="height:52px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.25);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF;cursor:pointer">Browse the market first</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark version of <a href="#s21">21</a>.</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const go = id => () => { location.hash = ''; location.hash = id; };
+    const nav = {};
+    ["s10","s10d","s11","s11d","s12","s12d","s13","s13d","s14","s14d","s15","s15d","s16","s16d","s17","s17d","s18","s18d","s18b","s18bd","s19","s19d","s20","s20d","s21","s21d"].forEach(id => { nav[id] = go(id); });
+    const done = { dot: '✓', dotBg: '#2AA36B', dotInk: '#fff', titleInk: '#F4F2EF', line: 'rgba(255,255,255,.12)' };
+    const steps = [
+      Object.assign({}, done, { title: 'BVN & NIN confirmed', note: 'Adebayo Okonkwo' }),
+      Object.assign({}, done, { title: 'Documents uploaded', note: 'ID · utility bill' }),
+      { dot: '3', dotBg: '#A16BE0', dotInk: '#fff', titleInk: '#C9A6EC', line: 'rgba(255,255,255,.12)', title: 'Take a selfie', note: '2 minutes' },
+      { dot: '4', dotBg: 'rgba(255,255,255,.1)', dotInk: 'rgba(244,242,239,.6)', titleInk: 'rgba(244,242,239,.6)', line: 'rgba(255,255,255,.12)', title: 'Add your bank account', note: 'For withdrawals and dividends' },
+      { dot: '5', dotBg: 'rgba(255,255,255,.1)', dotInk: 'rgba(244,242,239,.6)', titleInk: 'rgba(244,242,239,.6)', line: 'transparent', title: 'Two quick questions', note: 'Regulator requires them' }
+    ];
+    return { nav, steps };
+  }
+}
+</script>
+</body>
+</html>

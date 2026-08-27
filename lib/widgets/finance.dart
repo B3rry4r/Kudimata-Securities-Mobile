@@ -4,6 +4,7 @@
 import 'package:flutter/widgets.dart';
 import '../theme/tokens.dart';
 import 'charts.dart';
+import 'k_icon.dart';
 
 /// Asset row — circular logo · name + ticker · right price + change% · optional
 /// sparkline. Full text always; never truncated.
@@ -165,6 +166,16 @@ class KStatCard extends StatelessWidget {
 }
 
 /// Balance panel — the one rich surface per screen. Solid ink, white text.
+///
+/// 2026-08-27 (Home rebuild, R-32): given an optional prop rather than a
+/// fork per DECISIONS.md's screen-agent rule 5 — s22/s23/s34/s35's "money
+/// card" ('03 Home and Markets.dc.html' lines 56-67, also '05 Portfolio and
+/// Wallet.dc.html' lines 52-67/292-...) is the SAME concept (a headline
+/// balance) on a genuinely different surface: paper + hairline instead of
+/// solid ink, a decorative indicator-tint blob, an optional top-right
+/// illustration, and the balance's minor (cents) part styled smaller/muted.
+/// [light] switches to that surface; [illustration] and the balance-split
+/// styling only apply when it's set.
 class KBalancePanel extends StatelessWidget {
   const KBalancePanel({
     super.key,
@@ -174,6 +185,8 @@ class KBalancePanel extends StatelessWidget {
     this.changeTone = KTrend.gain,
     this.chart,
     this.action,
+    this.light = false,
+    this.illustration,
   });
 
   final String label;
@@ -182,9 +195,12 @@ class KBalancePanel extends StatelessWidget {
   final KTrend changeTone;
   final Widget? chart;
   final Widget? action;
+  final bool light;
+  final Widget? illustration;
 
   @override
   Widget build(BuildContext context) {
+    if (light) return _buildLight(context);
     final changeColor = changeTone == KTrend.loss ? KColor.lossOnInk : KColor.gainOnInk;
     return Container(
       width: double.infinity,
@@ -207,6 +223,86 @@ class KBalancePanel extends StatelessWidget {
           ],
           if (chart != null) ...[const SizedBox(height: 20), chart!],
           if (action != null) ...[const SizedBox(height: 20), action!],
+        ],
+      ),
+    );
+  }
+
+  /// Splits "₦457,580.34" into a bold main span + a smaller, muted decimal
+  /// span — canvas's own two-<span> treatment (money-coins card, all three
+  /// screens it appears on).
+  List<TextSpan> _balanceSpans() {
+    final dot = balance.lastIndexOf('.');
+    if (dot == -1) return [TextSpan(text: balance)];
+    return [
+      TextSpan(text: balance.substring(0, dot)),
+      TextSpan(
+        text: balance.substring(dot),
+        style: TextStyle(fontSize: 23, color: KColor.ink3, fontWeight: KWeight.regular),
+      ),
+    ];
+  }
+
+  Widget _buildLight(BuildContext context) {
+    final changeColor = changeTone == KTrend.loss ? KColor.loss : KColor.gain;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: KColor.paper,
+        borderRadius: KRadii.featureR,
+        border: Border.all(color: KColor.hairline, width: 1),
+        boxShadow: KShadow.card,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned(
+            right: -80,
+            top: -80,
+            child: Container(
+              width: 190,
+              height: 190,
+              decoration: BoxDecoration(color: KColor.indicatorTint, shape: BoxShape.circle),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(label.upper, style: KType.label(color: KColor.ink3)),
+                          const SizedBox(width: 8),
+                          KIcon('eye', size: 15, color: KColor.ink3),
+                        ],
+                      ),
+                    ),
+                    ?illustration,
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text.rich(
+                  TextSpan(
+                    style: KType.hero(color: KColor.ink).copyWith(fontSize: 42, height: 46 / 42).tnum,
+                    children: _balanceSpans(),
+                  ),
+                ),
+                if (change != null) ...[
+                  const SizedBox(height: 8),
+                  Text(change!, style: KType.body(color: changeColor, w: KWeight.medium).tnum),
+                ],
+                if (chart != null) ...[const SizedBox(height: 20), chart!],
+                if (action != null) ...[const SizedBox(height: 20), action!],
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -1,7 +1,8 @@
-// Search (pushed) — back chevron + KSearchPill, recent chips, live results and
-// a NudgeCard. Ported from extra-screens.jsx `Search`. Per the canvas (#s31),
-// there is no "Trending" section on this screen at all — that existed in an
-// earlier port and has been removed; Markets owns trending.
+// Search (pushed) — back chevron + KSearchPill, live local-filter results
+// list (AssetRow), and a real "Popular this week" trending-ticker chip row.
+// Artboard: s25 / s25d (docs/design/redesign-2026-08/03 Home and
+// Markets.dc.html) — id per docs/redesign/RULINGS.md, never from a code
+// comment (R-5).
 //
 // Wired to GET /assets (AssetRepository.byAssetClass(null), fetched once —
 // not a server-side search endpoint) for the local string-filter list. Per
@@ -9,17 +10,18 @@
 // is local-filter-only: no debounce, no query param ever leaves the widget,
 // filtering is a synchronous getter over the already-fetched list.
 //
-// Bug fix: the mock version hardcoded `.where((a) => a.assetClass ==
-// AssetClass.ngx)`, so US stocks/ETFs could never appear in search even
-// though they're in scope and reachable from Markets/asset-detail. Fetching
-// the full universe via byAssetClass(null) (instead of a single NGX-only
-// list) fixes that — the local filter below no longer narrows by class.
-//
-// "Recent" chips are real, locally-persisted search history (shared_preferences
-// — plain on-device key-value storage, not a backend concern) rather than the
-// old hardcoded MTNN/GTCO/ZENITHBANK literals. The last up-to-5 unique terms
-// the investor actually selected are stored newest-first; a fresh install has
-// none, so the section is simply omitted until the investor searches once.
+// 2026-08-27 redesign to s25: the canvas draws no "Recent" search-history
+// section and no footer CTA at all — it draws exactly header, results, and
+// a "Popular this week" chip row. The old locally-persisted 'Recent' chips
+// (shared_preferences) and the "Browse all of the market" footer button are
+// both dropped to match; recents was a local convenience with no design
+// backing and no backend tie, unlike Cancel on the Orders hub (R-17), so
+// nothing here needed a ruling to remove. "Popular this week" is wired to
+// the real GET /assets/trending (AssetRepository.trending()) rather than
+// the canvas's illustrative MTNN/GTCO/ZENITHBANK/AIRTELAFRI literals — a
+// designed chip row with no data source would be exactly the R-34 defect
+// (a figure with nothing writing it), so it reads from the real trending
+// list instead of transcribing the mock tickers.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -29,11 +31,6 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
-const _recentsKey = 'kudimata.search.recents';
-const _maxRecents = 5;
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -45,43 +42,15 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _controller = TextEditingController();
   String _query = '';
-  List<String> _recents = const [];
 
   late final _repo = AssetRepository(AppScope.read(context).apiClient);
   late Future<List<Asset>> _assetsFuture = _repo.byAssetClass(null);
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRecents();
-  }
+  late final Future<List<Asset>> _trendingFuture = _repo.trending();
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadRecents() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList(_recentsKey) ?? const [];
-    if (!mounted) return;
-    setState(() => _recents = saved);
-  }
-
-  /// Records [term] as the newest recent search — de-duped case-insensitively,
-  /// capped at [_maxRecents], newest first. Called when the investor selects
-  /// a search result (see [_open]).
-  Future<void> _addRecent(String term) async {
-    final trimmed = term.trim();
-    if (trimmed.isEmpty) return;
-    final updated = [
-      trimmed,
-      ..._recents.where((r) => r.toLowerCase() != trimmed.toLowerCase()),
-    ].take(_maxRecents).toList();
-    setState(() => _recents = updated);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_recentsKey, updated);
   }
 
   KTrend _k(Trend t) => t == Trend.gain ? KTrend.gain : KTrend.loss;
@@ -96,7 +65,6 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _open(String ticker) {
-    _addRecent(ticker);
     context.push(Routes.assetDetail(ticker));
   }
 
@@ -109,11 +77,10 @@ class _SearchScreenState extends State<SearchScreen> {
         bottom: false,
         child: Column(
           children: [
-            // header row: back + search pill. Canvas (#s31): padding
-            // "14px 20px 6px", gap:12 between the back button and the pill —
-            // was an asymmetric 8/8/20/8 padding with a 10px gap.
+            // s25: "display:flex;align-items:center;gap:10px;padding:14px
+            // 20px 0" — gap 10 (not 12), bottom 0 (not 6).
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
               child: Row(
                 children: [
                   KIconButton(
@@ -121,7 +88,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     semanticLabel: 'Back',
                     onPressed: () => context.pop(),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: KSearchPill(
                       placeholder: 'Search companies',
@@ -133,79 +100,30 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             Expanded(child: _content(hasQuery)),
-            // Canvas footer: ghost "Browse all of the market", pinned below
-            // the scrolling content (margin-top:auto), NOT swapped out once
-            // there's a query — the canvas's own query-state frame (#s31,
-            // pre-filled "dang") still shows this button.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
-              child: KButton(
-                label: 'Browse all of the market',
-                variant: KButtonVariant.ghost,
-                fullWidth: true,
-                onPressed: () {
-                  context.pop();
-                  context.go(Routes.markets);
-                },
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  /// Canvas (#s31) stacks, top to bottom: a "Results" section (only present
-  /// once there's a query — the annotation is explicit: "empty search →
-  /// this screen with the nudge only"), then "Recent" chips, then the
-  /// NudgeCard — all in ONE scrolling column, not two mutually-exclusive
-  /// screens. There is no "Trending" section anywhere on this screen (that
-  /// was invented by an earlier port) — Results replaces it once the
-  /// investor types something.
+  /// s25 stacks, top to bottom: results (only meaningfully present once
+  /// there's a query — an empty query has nothing to filter) then "Popular
+  /// this week". Both a query with zero matches and the trending fetch
+  /// itself are non-happy states this screen owns (R-30 — the canvas
+  /// designs none of them).
   Widget _content(bool hasQuery) {
     return ListView(
-      padding: const EdgeInsets.only(top: 14, bottom: 24),
+      padding: const EdgeInsets.only(bottom: 24),
       children: [
-        if (hasQuery) ...[
-          _resultsSection(),
-          const SizedBox(height: 24),
-        ],
-        // Fresh install / no searches yet → omit the section entirely
-        // rather than show stale hardcoded tickers.
-        if (_recents.isNotEmpty) ...[
-          const Padding(padding: _gut, child: KEyebrow('Recent')),
-          const SizedBox(height: 10),
-          Padding(
-            padding: _gut,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final r in _recents)
-                  KPillChip(
-                    label: r,
-                    onTap: () {
-                      _controller.text = r;
-                      setState(() => _query = r);
-                    },
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-        Padding(
-          padding: _gut,
-          child: KNudgeCard(
-            tone: KNudgeTone.grape,
-            title: 'Not sure what to search for?',
-            body: "Try a sector — banking, telecoms, cement — and we'll show the companies in it.",
-          ),
-        ),
+        if (hasQuery) _resultsSection(),
+        _popularSection(),
       ],
     );
   }
 
+  /// s25: "padding:18px 12px 0" straight into AssetRow results — no
+  /// "Results" eyebrow, no card/border wrapper. Just-in-time top hairline
+  /// dividers between rows, same convention as every other flat list here.
   Widget _resultsSection() {
     return FutureBuilder<List<Asset>>(
       future: _assetsFuture,
@@ -236,46 +154,96 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           );
         }
-        return Column(
-          children: [
-            const Padding(padding: _gut, child: KEyebrow('Results')),
-            const SizedBox(height: 8),
-            Padding(padding: _gut, child: _card(results)),
-          ],
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 18, 12, 0),
+          child: Column(
+            children: [
+              for (var i = 0; i < results.length; i++)
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: i == 0
+                          ? BorderSide.none
+                          : BorderSide(color: KColor.hairline, width: 1),
+                    ),
+                  ),
+                  child: KAssetRow(
+                    name: results[i].name,
+                    ticker: results[i].sector == null
+                        ? results[i].ticker
+                        : '${results[i].ticker} · ${results[i].sector}',
+                    initialsSource: results[i].ticker,
+                    price: results[i].price,
+                    change: results[i].change,
+                    trend: _k(results[i].trend),
+                    logoColor: results[i].logoColor ?? KColor.ink,
+                    onTap: () => _open(results[i].ticker),
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _card(List<Asset> assets) {
-    return KCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Column(
-        children: [
-          for (var i = 0; i < assets.length; i++)
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: i == 0
-                      ? BorderSide.none
-                      : BorderSide(color: KColor.hairline, width: 1),
+  /// s25: "padding:24px 24px 0", eyebrow "Popular this week" + a wrapped
+  /// chip row (gap 10), each chip navigating straight to asset detail.
+  /// Backed by the real GET /assets/trending — see the file header for why
+  /// this isn't the canvas's literal illustrative tickers.
+  Widget _popularSection() {
+    return FutureBuilder<List<Asset>>(
+      future: _trendingFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const KEyebrow('Popular this week'),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (var i = 0; i < 4; i++)
+                      const KSkeleton(width: 84, height: 36, radius: 999),
+                  ],
                 ),
-              ),
-              child: KAssetRow(
-                name: assets[i].name,
-                ticker: assets[i].sector == null
-                    ? assets[i].ticker
-                    : '${assets[i].ticker} · ${assets[i].sector}',
-                initialsSource: assets[i].ticker,
-                price: assets[i].price,
-                change: assets[i].change,
-                trend: _k(assets[i].trend),
-                logoColor: assets[i].logoColor ?? KColor.ink,
-                onTap: () => _open(assets[i].ticker),
-              ),
+              ],
             ),
-        ],
-      ),
+          );
+        }
+        // Error or an empty trending list: this is a secondary, decorative
+        // rail (not the screen's primary content, unlike the results list
+        // above), so the whole section — eyebrow included — degrades to
+        // nothing rather than a full-screen error; there is no other
+        // content on this screen for a KErrorView to sit beside without
+        // crowding out the search box the investor came here to use.
+        if (snapshot.hasError || (snapshot.data?.isEmpty ?? true)) {
+          return const SizedBox.shrink();
+        }
+        final trending = snapshot.data!;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const KEyebrow('Popular this week'),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  for (final asset in trending)
+                    KPillChip(label: asset.ticker, onTap: () => _open(asset.ticker)),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

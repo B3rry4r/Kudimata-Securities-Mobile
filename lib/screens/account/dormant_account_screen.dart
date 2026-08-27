@@ -1,4 +1,6 @@
-// Screen 89 — Dormant account (2026-08-23, account-lifecycle/legal cluster).
+// Dormant account (pushed, restyled 2026-08-27 — no artboard in the
+// redesign-2026-08 canvas; kept and restyled per RULINGS.md as a real
+// account-lifecycle edge state with a live auto-redirect from login).
 // Shown when a signed-in investor's account has gone dormant after 12
 // months of no sign-in — trading pauses, but holdings/dividends are
 // untouched. Ported from the design canvas's
@@ -48,9 +50,9 @@ class _DormantAccountScreenState extends State<DormantAccountScreen> {
           child: Column(
             children: [
               Expanded(
-                // #s89's own markup centers the StatusView+card in the
-                // available flex:1 space above a fixed-bottom button block —
-                // preserved here, but via a scrollable min-height container
+                // The StatusView+card center in the available flex:1 space
+                // above a fixed-bottom button block, via a scrollable
+                // min-height container rather than a bare Center
                 // instead of a bare Center, so short viewports scroll
                 // instead of RenderFlex-overflowing (real bug this test
                 // caught; content still centers normally once there's room).

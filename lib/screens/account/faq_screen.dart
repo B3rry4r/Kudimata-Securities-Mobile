@@ -1,14 +1,29 @@
-// Stage 9 — Article & Glossary (screen 57) / FAQ fallback (pushed).
+// Account → FAQs / "Settlement" article — no artboard. RULINGS.md
+// (docs/redesign/evidence/account.json): searched the whole 56-artboard
+// canvas for "frequently asked" and "FAQ" — zero matches. No glossary/
+// article-style screen exists in the current canvas either (also searched
+// "glossary", "T+3", "Direct Cash Settlement" — no hits outside this
+// screen's own subject matter). Ruling: `restyle-only` — basic customer-
+// education content is not an obviously dropped feature, kept and brought
+// onto the new design system's tokens.
 //
-// Design canvas screen 57 ("Article & Glossary") is a single-article reader:
-// a category label + LanguageSwitch in the header, the question as a large
-// title, a body paragraph with inline tappable glossary terms, a Glossary
-// card defining every term used, two quick-nav pill chips, and a "This
-// didn't answer it" button back to Help & support. The canvas gives full,
-// real content for exactly ONE article — "When does money from a sale
-// arrive?" (header category "Settlement", terms T+3 / Direct Cash
-// Settlement / CSCS) — reached from help_support_screen.dart's matching FAQ
-// row. This screen renders that real article when it's the one tapped.
+// R-5: an earlier pass framed this screen's "Settlement" reader as a
+// literal build of an older, pre-redesign spec doc's "screen 57" — an id
+// from a superseded artifact, not the current canvas (which draws no such
+// artboard at all, per the ruling above). Reframed below: this is real,
+// grounded educational content the app itself already needs (glossary
+// terms T+3 / Direct Cash Settlement / CSCS are used across trade flows,
+// asset detail and the suitability questionnaire — see glossary_sheet.dart),
+// not a canvas transcription.
+//
+// This screen is a single-article reader: a title, a body paragraph with
+// inline tappable glossary terms (via the shared glossary sheet — R-6:
+// their static definitions stay reachable; only the credit-metered "explain
+// further" half is gated), a Glossary card defining every term used, two
+// quick-nav pill chips, and a "This didn't answer it" button back to
+// Help & support. It renders real content for exactly ONE article —
+// "When does money from a sale arrive?" — reached from
+// help_support_screen.dart's matching FAQ row.
 //
 // Routing constraint: this app has exactly one route for FAQ content
 // (Routes.acctFaq -> FaqScreen, app_router.dart) and per-screen agents may
@@ -16,11 +31,10 @@
 // route, differentiated by `extra` (the question text) — read here via
 // GoRouterState.of(context).extra, the same no-new-route pattern already
 // used by reset_passcode_screen.dart / log_in_screen.dart / otp_screen.dart.
-// The other 3 FAQ rows (and any other real screen 57 article the canvas
-// doesn't specify content for) fall back to the general static Q&A list
-// below — a real, honest resource, just not the canvas's per-article
-// glossary format, since inventing glossary terms/definitions for those
-// questions wouldn't be grounded in anything.
+// The other 3 FAQ rows fall back to the general static Q&A list below — a
+// real, honest resource, just not the single-article glossary format, since
+// inventing glossary terms/definitions for those questions wouldn't be
+// grounded in anything.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -29,8 +43,8 @@ import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
-/// The one FAQ question help_support_screen.dart wires to the real,
-/// canvas-specified Article & Glossary content.
+/// The one FAQ question help_support_screen.dart wires to the real
+/// "Settlement" article below, rather than the general FAQ list fallback.
 const kSettlementArticleQuestion = 'When does money from a sale arrive?';
 
 class _Faq {
@@ -122,11 +136,11 @@ class _FaqScreenState extends State<FaqScreen> {
   }
 }
 
-/// Design canvas screen 57, rendered for real: header category "Settlement"
-/// + LanguageSwitch, the question as the article title, a body paragraph
-/// with two inline glossary terms, a Glossary definitions card, two quick
-/// pill chips (canvas gives them no onClick — left inert rather than
-/// invented), and "This didn't answer it" back to Help & support.
+/// The one real article: header category "Settlement" + LanguageSwitch, the
+/// question as the article title, a body paragraph with two inline glossary
+/// terms, a Glossary definitions card, two quick pill chips (no real
+/// destination modelled yet — left inert rather than invented), and "This
+/// didn't answer it" back to Help & support.
 class _SettlementArticle extends StatefulWidget {
   const _SettlementArticle();
 
@@ -215,9 +229,8 @@ class _SettlementArticleState extends State<_SettlementArticle> {
             ),
           ),
           const SizedBox(height: 14),
-          // Canvas gives these two chips no onClick — quick-nav affordances
-          // with no real destination modelled yet, left inert rather than
-          // wired to a guess.
+          // Quick-nav affordances with no real destination modelled yet —
+          // left inert rather than wired to a guess.
           Wrap(
             spacing: 8,
             runSpacing: 8,

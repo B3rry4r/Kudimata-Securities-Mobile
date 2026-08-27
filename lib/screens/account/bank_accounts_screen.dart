@@ -1,5 +1,7 @@
-// Stage 9 — Bank accounts (pushed). Linked-bank list (with a Primary tag) + an
-// add action. Mirrors `BankAccounts` in extra-screens.jsx.
+// Bank accounts (pushed, restyled 2026-08-27 — no artboard in the
+// redesign-2026-08 canvas; kept and restyled per RULINGS.md as core
+// regulated-broker functionality). Linked-bank list (with a Primary tag) +
+// an add action.
 //
 // Wired per lib/data/api/README.md: GET /bank-accounts
 // (BankAccountsRepository.list()) replaces the old hardcoded `_banks` list
@@ -36,8 +38,8 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
   late final _userRepo = UserRepository(AppScope.read(context).apiClient);
   late Future<(List<BankAccountSummary> accounts, String holderName)> _future = _load();
 
-  // Canvas #s64's per-account "Adebayo Okonkwo · added 14 Mar 2026" line
-  // isn't a field on BankAccount at all — every linked account MUST be in
+  // A per-account "added 14 Mar 2026" line isn't a field on BankAccount at
+  // all — every linked account MUST be in
   // the investor's own name (this screen's own footer text says so, and
   // it's enforced server-side against BVN) — so the holder name is just
   // this investor's own registered name, fetched once alongside the list
@@ -65,7 +67,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
       child: _AccountActionsSheet(account: account),
     );
     if (action == null || !mounted) return;
-    // Withdraw-mandate (screen 65) is its own confirm screen, not an
+    // Withdraw-mandate is its own confirm screen (withdraw_mandate_screen.dart), not an
     // immediate repo call like the other two actions — see
     // withdraw_mandate_screen.dart's header comment for why it doesn't
     // call setPrimary()/remove() directly.
@@ -107,9 +109,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
             );
           }
           final (accounts, holderName) = snapshot.data ?? const (<BankAccountSummary>[], '');
-          // screen-specs.md spec 64 (2026-08-23 exactness pass, re-verified
-          // against the canvas mockup's real #s64 markup): the primary
-          // account renders as its own self-contained card — icon, name,
+          // The primary account renders as its own self-contained card — icon, name,
           // "DCS active" pill, the mandate explainer, then inline "See the
           // mandate" / "Withdraw mandate" buttons INSIDE the card, not a
           // shared row list that opens an action sheet on tap. Non-primary
@@ -189,10 +189,10 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
 
 enum _RowAction { setPrimary, remove, withdrawMandate }
 
-/// A plain colour-filled circle icon, no border — matches #s64's exact
-/// markup (`border-radius:50%;background:...`) rather than the shared
-/// KIconBubble (hairline-border variant used elsewhere), since this screen's
-/// two account cards use different bubble colours per status.
+/// A plain colour-filled circle icon, no border — a filled-circle variant
+/// rather than the shared KIconBubble (hairline-border variant used
+/// elsewhere), since this screen's two account cards use different bubble
+/// colours per status.
 class _StatusIconBubble extends StatelessWidget {
   const _StatusIconBubble({required this.bg, required this.iconColor});
   final Color bg;
@@ -211,7 +211,7 @@ class _StatusIconBubble extends StatelessWidget {
 }
 
 /// The account carrying the DCS mandate — its own card with the explainer
-/// and inline "See the mandate" / "Withdraw mandate" buttons, per #s64.
+/// and inline "See the mandate" / "Withdraw mandate" buttons.
 class _PrimaryAccountCard extends StatelessWidget {
   const _PrimaryAccountCard({
     required this.account,
@@ -355,7 +355,7 @@ class _AccountActionsSheet extends StatelessWidget {
             first: true,
             onTap: () => Navigator.of(context).pop(_RowAction.setPrimary),
           ),
-        // "Withdraw mandate" (screen 65) only makes sense on the account
+        // "Withdraw mandate" only makes sense on the account
         // that actually carries the mandate.
         if (account.primary)
           KAccountRow(

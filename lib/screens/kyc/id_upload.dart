@@ -1,8 +1,28 @@
-// KYC 3 — ID upload (step 3 of 8). ID-type chips + a file dropzone wired to
-// the real presigned-upload flow (registry.json "KycDocument": POST
-// /kyc-documents/upload-url -> presigned S3 PUT -> POST /kyc-documents;
-// see lib/data/repositories/kyc_document_repository.dart). NIN itself
-// moved to bvn_nin.dart (step 1) — 2026-08-20 phased-KYC directive.
+// KYC 3 — ID upload, part of the merged "Documents" step (step 3 of 7 —
+// shares this number with utility_bill.dart's address/proof-of-address half;
+// renumbered 8->7 2026-08-27 per X-2/bvn_nin.dart's derivation). Artboard
+// s14/s14d ("Your documents",
+// 02 Verification.dc.html) draws a row-list ID-type picker — NOT a
+// dropdown/sheet — where the three rows themselves ARE the picker; tapping
+// one selects it, then Continue drives the real presigned-upload flow
+// (registry.json "KycDocument": POST /kyc-documents/upload-url -> presigned
+// S3 PUT -> POST /kyc-documents; see
+// lib/data/repositories/kyc_document_repository.dart). NIN itself moved to
+// bvn_nin.dart (step 1) — 2026-08-20 phased-KYC directive; this screen only
+// asks the investor to PHOTOGRAPH one of the three, it doesn't collect the
+// NIN number again.
+//
+// Rebuilt from the earlier sheet-picker + separate dropzone layout to match
+// s14's actual structure (2026-08-27 redesign pass) — see the row list
+// below. Three options only, not four: s14 draws NIN slip / Driver's
+// licence / International passport, with no Voter's card row anywhere
+// (confirmed: zero "Voter's card" matches in the canvas). This isn't just a
+// design gap — Kudimata-Securities-Backend's own `documentKind` enum
+// (registry.json) is `nin|passport|drivers_licence|proof_of_address|
+// liveness_selfie`; there has never been a `voters_card` value, so the
+// previous 4th chip could never have registered successfully server-side.
+// Dropping it matches both the artboard and reality; not a BACKEND_GAPS.md
+// entry since nothing here needs a backend change.
 //
 // Registers the uploaded document IMMEDIATELY (POST /kyc-documents), unlike
 // the old flow — a real draft KycSubmission already exists by this point
@@ -21,9 +41,10 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 import '_kyc_chrome.dart';
 
 class _IdType {
-  const _IdType(this.id, this.label);
+  const _IdType(this.id, this.label, {this.subtitle});
   final String id;
   final String label;
+  final String? subtitle;
 }
 
 class IdUploadScreen extends StatefulWidget {
@@ -34,53 +55,19 @@ class IdUploadScreen extends StatefulWidget {
 }
 
 class _IdUploadScreenState extends State<IdUploadScreen> {
-  // Order matches the canvas mockup's ID-type chips (screen 16: Driver's
-  // licence, Passport, Voter's card, NIN slip) — only the on-screen
-  // affordance changed (a picker sheet, not a chip row; see _pickType's
-  // doc comment). Two labels corrected 2026-08-24 per direct product
-  // feedback ("NIN not NIN slip", "ID type is International passport"):
-  // canvas literally says "Passport"/"NIN slip", but "International
-  // Passport" is the correct official document name (distinct from a
-  // domestic-only ID), and "NIN slip" specifically means the printed slip
-  // — the KYC check itself verifies the NIN number, not that particular
-  // physical document, so the plainer "NIN" is the accurate label.
+  // Order + copy matches s14's three rows exactly, with one label kept as
+  // direct product feedback overrode it 2026-08-24 ("NIN not NIN slip" —
+  // the KYC check verifies the NIN number, not the physical slip, so the
+  // plainer label is the accurate one; canvas literally says "NIN slip").
+  // "International passport" and "Driver's licence" already match the
+  // canvas verbatim.
   static const _types = [
+    _IdType('nin', 'NIN', subtitle: 'Fastest to verify'),
     _IdType('licence', "Driver's licence"),
     _IdType('passport', 'International passport'),
-    _IdType('voters_card', "Voter's card"),
-    _IdType('nin', 'NIN'),
   ];
 
-  String _type = 'licence';
-
-  /// Opens the ID-type list in its own sheet instead of a row of pill chips
-  /// (2026-08-20 fix — reported: "the UI doesn't properly show users that
-  /// you have to select rather she felt she had to upload all"). A `Wrap`
-  /// of same-looking selectable chips reads ambiguously as "pick some/all
-  /// of these", especially once a 4th option was added; a single compact
-  /// field showing ONE chosen value (same pattern bank_accounts_screen.dart
-  /// already uses for its bank picker) makes "pick exactly one" obvious.
-  Future<void> _pickType() async {
-    final picked = await showKSheet<String>(
-      context,
-      title: 'ID type',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < _types.length; i++)
-            _IdTypeRow(
-              label: _types[i].label,
-              selected: _type == _types[i].id,
-              first: i == 0,
-              onTap: () => Navigator.of(context).pop(_types[i].id),
-            ),
-        ],
-      ),
-    );
-    if (picked == null) return;
-    setState(() => _type = picked);
-  }
-
+  String? _type;
   KFileInfo? _file;
   bool _uploading = false;
   String? _uploadError;
@@ -91,7 +78,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
   // id_upload.dart's local chip ids are 'nin' | 'passport' | 'licence';
   // KycSubmission.documentType (and KycDocument.documentKind) is
   // enum(nin,passport,drivers_licence,...) — map 'licence' accordingly.
-  String get _documentKind => _type == 'licence' ? 'drivers_licence' : _type;
+  String _documentKindFor(String type) => type == 'licence' ? 'drivers_licence' : type;
 
   @override
   Widget build(BuildContext context) {
@@ -103,9 +90,9 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycChn),
-              stepLabel: 'Verification · 3 of 8',
+              stepLabel: 'Verification · 3 of 7',
             ),
-            const KycStepProgress(total: 8, current: 3),
+            const KycStepProgress(total: 7, current: 3),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -114,57 +101,51 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const KScreenHead(
-                      title: 'Upload your ID',
-                      body: 'All four corners visible, no glare.',
-                    ),
-                    const SizedBox(height: 20),
-                    const KEyebrow('ID type'),
-                    const SizedBox(height: 10),
-                    GestureDetector(
-                      onTap: _pickType,
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        height: 50,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: KColor.paper,
-                          borderRadius: BorderRadius.circular(KRadii.input),
-                          border: Border.all(color: KColor.hairline, width: 1),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _types.firstWhere((t) => t.id == _type).label,
-                                style: KType.body(color: KColor.ink, w: KWeight.medium),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            KIcon('chevronRight', size: 20, color: KColor.ink3),
-                          ],
-                        ),
-                      ),
+                      title: 'Your documents',
+                      body: "Pick one ID to photograph. You'll add a utility bill next.",
                     ),
                     const SizedBox(height: 24),
-                    KFileUpload(
-                      label: 'Upload your ID',
-                      hint: 'JPG or PDF · up to 10 MB',
-                      prompt: _uploading ? 'Uploading…' : 'Tap to upload, or take a photo',
-                      helper: _uploading ? 'Uploading your document…' : null,
-                      error: _uploadError ??
-                          (_showErrors && _file == null
-                              ? 'Upload your ID document to continue'
-                              : null),
-                      disabled: _uploading,
-                      file: _file,
-                      onPick: _uploading ? null : _pickAndUpload,
-                      onRemove: _uploading
-                          ? null
-                          : () => setState(() {
-                                _file = null;
-                                _uploadError = null;
-                              }),
+                    for (var i = 0; i < _types.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 14),
+                      _IdTypeCard(
+                        icon: 'doc',
+                        label: _types[i].label,
+                        subtitle: _types[i].subtitle,
+                        selected: _type == _types[i].id,
+                        disabled: _uploading,
+                        onTap: _uploading
+                            ? null
+                            : () => setState(() {
+                                  _type = _types[i].id;
+                                  _uploadError = null;
+                                }),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'Take the photo in daylight. All four corners visible.',
+                      style: KType.body(color: KColor.ink3).copyWith(height: 20 / 14, fontSize: 14),
                     ),
+                    if (_showErrors && _type == null) ...[
+                      const SizedBox(height: 10),
+                      Text('Select an ID type to continue',
+                          style: KType.micro(color: KColor.loss).copyWith(letterSpacing: 0.02 * 10)),
+                    ],
+                    if (_uploadError != null) ...[
+                      const SizedBox(height: 10),
+                      Text(_uploadError!,
+                          style: KType.micro(color: KColor.loss).copyWith(letterSpacing: 0.02 * 10)),
+                    ],
+                    if (_uploading) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          const KSpinner(size: 16),
+                          const SizedBox(width: 10),
+                          Text('Uploading your document…', style: KType.body(color: KColor.ink3)),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -174,6 +155,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
                   KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
               child: KButton(
                 label: 'Continue',
+                loading: _uploading,
                 onPressed: _uploading ? null : _continue,
               ),
             ),
@@ -183,7 +165,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
     );
   }
 
-  // ID type chip picker + file dropzone:
+  // Row select + Continue drives the upload:
   //   1. POST /kyc-documents/upload-url {documentKind, documentName}
   //      -> {uploadUrl, objectKey}                      (KycDocumentRepository)
   //   2. PUT the picked file's bytes to `uploadUrl` directly — a bare
@@ -193,7 +175,19 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
   //   3. POST /kyc-documents {kycSubmissionId, objectKey, documentName,
   //      documentKind} — the draft from step 1 already exists, so this
   //      registers immediately rather than deferring to a later bulk call.
-  Future<void> _pickAndUpload() async {
+  Future<void> _continue() async {
+    final type = _type;
+    if (type == null) {
+      setState(() => _showErrors = true);
+      return;
+    }
+    if (_file != null) {
+      // Already uploaded this session (e.g. Continue tapped again after a
+      // successful upload, before navigation lands) — just advance.
+      context.go(Routes.kycUtilityBill);
+      return;
+    }
+
     final draftId = AppScope.read(context).kycForm.draftId;
     if (draftId == null) {
       setState(() => _uploadError = 'Something went wrong — please restart verification.');
@@ -218,7 +212,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
       _uploadError = null;
     });
 
-    final documentKind = _documentKind;
+    final documentKind = _documentKindFor(type);
     try {
       final uploadUrl = await _repo.requestUploadUrl(
         documentKind: documentKind,
@@ -243,6 +237,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
         _file = KFileInfo(name: picked.name, size: picked.size);
         _uploading = false;
       });
+      context.go(Routes.kycUtilityBill);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -262,7 +257,6 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
         'nin' => 'NIN',
         'passport' => 'International passport',
         'drivers_licence' => "Driver's licence",
-        'voters_card' => "Voter's card",
         _ => kind,
       };
 
@@ -272,30 +266,30 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
     if (lower.endsWith('.pdf')) return 'application/pdf';
     return 'image/jpeg';
   }
-
-  void _continue() {
-    if (_file == null) {
-      setState(() => _showErrors = true);
-      return;
-    }
-    context.go(Routes.kycLiveness);
-  }
 }
 
-/// One row in the ID-type picker sheet — same shape as
-/// bank_accounts_screen.dart's own _BankOptionRow, duplicated rather than
-/// shared per this codebase's per-screen small-widget convention.
-class _IdTypeRow extends StatelessWidget {
-  const _IdTypeRow({
+/// One ID-type row — s14's own picker IS this list (no separate modal
+/// sheet): a tinted icon plate, title (+ optional subtitle), and a trailing
+/// glyph that reads chevron-right when unselected and check when selected
+/// (the design draws only the static chevron; the check/border highlight is
+/// added here since a "pick one of three, then Continue" flow needs a real
+/// visible selection state — R-30's spirit, not a design deviation).
+class _IdTypeCard extends StatelessWidget {
+  const _IdTypeCard({
+    required this.icon,
     required this.label,
     required this.selected,
-    required this.first,
+    required this.disabled,
     required this.onTap,
+    this.subtitle,
   });
+
+  final String icon;
   final String label;
+  final String? subtitle;
   final bool selected;
-  final bool first;
-  final VoidCallback onTap;
+  final bool disabled;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -303,14 +297,44 @@ class _IdTypeRow extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          border: first ? null : Border(top: BorderSide(color: KColor.hairline, width: 1)),
+          color: KColor.paper,
+          borderRadius: BorderRadius.circular(KRadii.card),
+          border: Border.all(
+            color: selected ? KColor.indicator : KColor.hairline,
+            width: selected ? 1.5 : 1,
+          ),
         ),
         child: Row(
           children: [
-            Expanded(child: Text(label, style: KType.cardTitle())),
-            if (selected) const KIcon('check', size: 18),
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: KColor.indicatorTint,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: KIcon(icon, size: 20, color: KColor.indicator),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label,
+                      style: KType.cardTitle().copyWith(color: disabled ? KColor.ink3 : KColor.ink)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!, style: KType.body(color: KColor.ink3).copyWith(fontSize: 14)),
+                  ],
+                ],
+              ),
+            ),
+            KIcon(selected ? 'check' : 'chevronRight',
+                size: 18, color: selected ? KColor.indicator : KColor.ink3),
           ],
         ),
       ),

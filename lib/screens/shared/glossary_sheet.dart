@@ -12,10 +12,17 @@
 // cost a credit even though the static read doesn't: "glossary is not
 // free please... they take a cost so it should still count on the
 // credits".
+//
+// D-3 (SHARED-CHANGES.md, 2026-08-27 removals pass, R-6): the AI-credits
+// line is parked behind kAiCreditsEnabled (lib/app/feature_flags.dart) —
+// tier 2 ("Explain further") is gated by it below. Tier 1, the static
+// definition, is NOT gated: it stays reachable everywhere this sheet opens
+// (trade flows, FAQ, asset detail, the suitability questionnaire).
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/app/feature_flags.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/glossary.dart';
 import 'package:kudimata_invest/data/repositories/ai_repository.dart';
@@ -23,11 +30,13 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
-/// Opens the glossary sheet for [term].
+/// Opens the glossary sheet for [term]. The static definition (tier 1)
+/// always renders; the credit-metered "Explain further" button (tier 2)
+/// additionally requires [kAiCreditsEnabled] (D-3 — parked, not deleted).
 ///
-/// [allowAiFollowUp] false hides the credit-metered "Explain further"
-/// button entirely, making this a purely static, free, offline lookup.
-/// Used where an AI call would be inappropriate rather than merely
+/// [allowAiFollowUp] false hides the "Explain further" button entirely,
+/// making this a purely static, free, offline lookup regardless of the
+/// flag. Used where an AI call would be inappropriate rather than merely
 /// unnecessary — currently the suitability questionnaire (2026-08-24:
 /// "do that as a hand written glossary not an ai call"). Charging an
 /// investor a credit, or making a network call, to understand a MANDATORY
@@ -123,7 +132,7 @@ class _GlossaryExplainBodyState extends State<_GlossaryExplainBody> {
               height: 48,
               child: Center(child: KSpinner(size: 24)),
             ),
-          ] else if (widget.allowAiFollowUp) ...[
+          ] else if (widget.allowAiFollowUp && kAiCreditsEnabled) ...[
             if (_aiState == _AiState.error && _errorMessage != null) ...[
               Text(_errorMessage!, style: KType.body(color: KColor.loss)),
               const SizedBox(height: 10),

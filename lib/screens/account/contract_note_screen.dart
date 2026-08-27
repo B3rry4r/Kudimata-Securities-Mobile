@@ -1,4 +1,25 @@
-// Contract note document (design screen 66).
+// Contract note document.
+//
+// ARTBOARD MAPPING — RESOLVED AS RESTYLE-ONLY, not built-to-s38 (R-5 note
+// below explains why). This screen's task named artboard s38
+// (`docs/design/redesign-2026-08/05 Portfolio and Wallet.dc.html`), which
+// RULINGS.md rates only "likely" for this file. Direct inspection of the
+// real s38 markup shows it is the WALLET TRANSACTION RECEIPT — hero
+// checkmark, "Bought MTN Nigeria · 109 shares", a single lump "Fees, all
+// in ₦93.50" row, Email receipt/Done buttons — not an itemised order
+// contract note. That screen already exists and is already built faithful
+// to s38, almost line-for-line: `wallet/wallet_screens.dart`'s
+// `TransactionDetailScreen` (RULINGS.md also lists it against s38, with its
+// own matching evidence). Rebuilding this file into a second, competing
+// copy of the same artboard would duplicate that screen and would also
+// contradict this screen's own real, distinct purpose — an itemised
+// per-ORDER breakdown (commission / exchange fees / VAT), which is data
+// s38's Txn-level "Fees, all in" figure doesn't carry at all. So: no
+// artboard actually covers this screen's real content, and it is treated as
+// restyle-only (bring onto tokens/component idiom, keep the layout) rather
+// than rebuilt to s38. Flagged for the coordinator rather than decided
+// unilaterally, per DECISIONS.md R-4's "an agent that believes the design
+// is wrong halts and says so."
 //
 // 2026-08-24 REWRITE — reported live: "CONTRACT NOTE NOT SHOWING INSTEAD
 // SHOWING ME LOGOS AND DOCUMENT SIZE... DOWNLOAD NOT WORKING".
@@ -15,15 +36,23 @@
 //     settlement-date / contractNoteRef (see the backend's
 //     src/orders/fees.ts and the Order model), so the itemised breakdown is
 //     real stored data rather than a client-side guess at order time.
+//     Confirmed directly against `ContractNoteResponse`
+//     (Kudimata-Securities-Backend src/common/types/order.types.ts) — every
+//     field this screen renders (commissionKobo/exchangeFeesKobo/vatKobo/
+//     totalKobo/executingBroker/downloadUrl included) is really on the
+//     wire for GET /orders/contract-note/:ref, unlike the bare `Order` type
+//     BACKEND_GAPS.md's buy/sell-flow entries describe as fee-less — that
+//     gap is about a different endpoint, not this one.
 //   - `Statement.periodOrTradeRef` now carries that same KDM-CN-xxxx
 //     reference, so a note resolves 1:1 to its order via
 //     GET /orders/contract-note/:ref.
 //   - The PDF is really rendered and stored, so the download is a real
 //     presigned URL rather than a promise.
 //
-// Layout follows design 66: issuer + reference, executed-through, client /
-// trade dates, the itemised money rows, the emphasised total, the footer
-// disclosure, and the fee-explainer line beneath the card.
+// Layout: issuer + reference, executed-through, client/trade dates, the
+// itemised money rows, the emphasised total, the footer disclosure, and the
+// fee-explainer line beneath the card — unchanged by this pass, since
+// restyle-only means keeping the existing layout, not reinventing it.
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 

@@ -50,10 +50,11 @@ class KOnboardTopBar extends StatelessWidget {
               child: GestureDetector(
                 onTap: onBack ?? () => Navigator.of(context).maybePop(),
                 behavior: HitTestBehavior.opaque,
-                child: SizedBox(
+                child: Container(
                   width: 40,
                   height: 40,
-                  child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
+                  decoration: BoxDecoration(color: KColor.track, shape: BoxShape.circle),
+                  child: Center(child: KIcon('back', size: 19, color: KColor.ink)),
                 ),
               ),
             ),

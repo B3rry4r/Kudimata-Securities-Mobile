@@ -1,0 +1,389 @@
+{
+  "batch": "onboarding",
+  "screens": [
+    {
+      "app_screen": "lib/screens/onboarding/_pickers.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s58",
+          "overlap": 0.015,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s55",
+          "overlap": 0.015,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s54",
+          "overlap": 0.015,
+          "file": "06 Account and Support.dc.html",
+          "label": "54 \u00b7 Security"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/avatar_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s58",
+          "overlap": 0.267,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s55",
+          "overlap": 0.267,
+          "file": "06 Account and Support.dc.html",
+          "label": "55 \u00b7 Corporate actions"
+        },
+        {
+          "id": "s51",
+          "overlap": 0.267,
+          "file": "06 Account and Support.dc.html",
+          "label": "51 \u00b7 Account hub"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/biometric_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s06",
+          "overlap": 0.263,
+          "file": "01 Getting In.dc.html",
+          "label": "06 \u00b7 Face ID"
+        },
+        {
+          "id": "s54",
+          "overlap": 0.211,
+          "file": "06 Account and Support.dc.html",
+          "label": "54 \u00b7 Security"
+        },
+        {
+          "id": "s39",
+          "overlap": 0.158,
+          "file": "03 Home and Markets.dc.html",
+          "label": "39 \u00b7 Market closed"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/confirm_passcode_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s44",
+          "overlap": 0.125,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 7 \u00b7 Bought, at the real prices"
+        },
+        {
+          "id": "s11",
+          "overlap": 0.125,
+          "file": "02 Verification.dc.html",
+          "label": "11 Checklist hub 9:41 LTE You're almost there 2 of 5 done. Next: take "
+        },
+        {
+          "id": "s04",
+          "overlap": 0.125,
+          "file": "01 Getting In.dc.html",
+          "label": "04 \u00b7 Verify email"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/create_passcode_screen.dart",
+      "mechanical_status": "proposed",
+      "candidate_artboards": [
+        {
+          "id": "s54",
+          "overlap": 0.417,
+          "file": "06 Account and Support.dc.html",
+          "label": "54 \u00b7 Security"
+        },
+        {
+          "id": "s05",
+          "overlap": 0.333,
+          "file": "01 Getting In.dc.html",
+          "label": "05 \u00b7 Create passcode"
+        },
+        {
+          "id": "s04",
+          "overlap": 0.25,
+          "file": "01 Getting In.dc.html",
+          "label": "04 \u00b7 Verify email"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/document_summary_screen.dart",
+      "mechanical_status": "uncovered",
+      "candidate_artboards": [
+        {
+          "id": "s53",
+          "overlap": 0.091,
+          "file": "06 Account and Support.dc.html",
+          "label": "53 \u00b7 Complaints"
+        },
+        {
+          "id": "s37",
+          "overlap": 0.091,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "37 \u00b7 Withdraw"
+        },
+        {
+          "id": "s56",
+          "overlap": 0.045,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/legal_preview_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s51",
+          "overlap": 0.25,
+          "file": "06 Account and Support.dc.html",
+          "label": "51 \u00b7 Account hub"
+        },
+        {
+          "id": "s24",
+          "overlap": 0.15,
+          "file": "03 Home and Markets.dc.html",
+          "label": "24 \u00b7 Markets"
+        },
+        {
+          "id": "s14",
+          "overlap": 0.15,
+          "file": "02 Verification.dc.html",
+          "label": "14 Your documents 9:41 LTE Step 2 of 5 Your documents Pick one ID to p"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/locked_out_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s23",
+          "overlap": 0.217,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s09",
+          "overlap": 0.174,
+          "file": "01 Getting In.dc.html",
+          "label": "09 \u00b7 Reset password"
+        },
+        {
+          "id": "s58",
+          "overlap": 0.13,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/log_in_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s04",
+          "overlap": 0.175,
+          "file": "01 Getting In.dc.html",
+          "label": "04 \u00b7 Verify email"
+        },
+        {
+          "id": "s08",
+          "overlap": 0.15,
+          "file": "01 Getting In.dc.html",
+          "label": "08 \u00b7 Log in"
+        },
+        {
+          "id": "s58",
+          "overlap": 0.125,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/onboarding_scaffold.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s33",
+          "overlap": 0.182,
+          "file": "05 Portfolio and Wallet.dc.html",
+          "label": "33 \u00b7 Portfolio"
+        },
+        {
+          "id": "s06",
+          "overlap": 0.182,
+          "file": "01 Getting In.dc.html",
+          "label": "06 \u00b7 Face ID"
+        },
+        {
+          "id": "s03",
+          "overlap": 0.182,
+          "file": "01 Getting In.dc.html",
+          "label": "03 \u00b7 What\u2019s your name?"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/otp_screen.dart",
+      "mechanical_status": "proposed",
+      "candidate_artboards": [
+        {
+          "id": "s04",
+          "overlap": 0.318,
+          "file": "01 Getting In.dc.html",
+          "label": "04 \u00b7 Verify email"
+        },
+        {
+          "id": "s58",
+          "overlap": 0.182,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s54",
+          "overlap": 0.136,
+          "file": "06 Account and Support.dc.html",
+          "label": "54 \u00b7 Security"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/personal_details_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s58",
+          "overlap": 0.188,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s13",
+          "overlap": 0.125,
+          "file": "02 Verification.dc.html",
+          "label": "13 Details from BVN 9:41 LTE Step 1 of 5 Is this you? From your BVN an"
+        },
+        {
+          "id": "s57",
+          "overlap": 0.104,
+          "file": "06 Account and Support.dc.html",
+          "label": "57 \u00b7 Data and privacy"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/reset_passcode_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s04",
+          "overlap": 0.188,
+          "file": "01 Getting In.dc.html",
+          "label": "04 \u00b7 Verify email"
+        },
+        {
+          "id": "s56",
+          "overlap": 0.156,
+          "file": "06 Account and Support.dc.html",
+          "label": "56 \u00b7 Request a statement"
+        },
+        {
+          "id": "s09",
+          "overlap": 0.156,
+          "file": "01 Getting In.dc.html",
+          "label": "09 \u00b7 Reset password"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/sign_up_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s58",
+          "overlap": 0.164,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        },
+        {
+          "id": "s11",
+          "overlap": 0.145,
+          "file": "02 Verification.dc.html",
+          "label": "11 Checklist hub 9:41 LTE You're almost there 2 of 5 done. Next: take "
+        },
+        {
+          "id": "s07",
+          "overlap": 0.145,
+          "file": "01 Getting In.dc.html",
+          "label": "07 \u00b7 What happens next"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/splash_screen.dart",
+      "mechanical_status": "proposed",
+      "candidate_artboards": [
+        {
+          "id": "s01",
+          "overlap": 0.462,
+          "file": "01 Getting In.dc.html",
+          "label": "01 \u00b7 Splash"
+        },
+        {
+          "id": "s51",
+          "overlap": 0.385,
+          "file": "06 Account and Support.dc.html",
+          "label": "51 \u00b7 Account hub"
+        },
+        {
+          "id": "s02",
+          "overlap": 0.385,
+          "file": "01 Getting In.dc.html",
+          "label": "02 \u00b7 Welcome"
+        }
+      ]
+    },
+    {
+      "app_screen": "lib/screens/onboarding/welcome_slider_screen.dart",
+      "mechanical_status": "weak",
+      "candidate_artboards": [
+        {
+          "id": "s44",
+          "overlap": 0.167,
+          "file": "04 Buy and Sell.dc.html",
+          "label": "Step 7 \u00b7 Bought, at the real prices"
+        },
+        {
+          "id": "s23",
+          "overlap": 0.167,
+          "file": "03 Home and Markets.dc.html",
+          "label": "23 \u00b7 Home, first time (verification not finished)"
+        },
+        {
+          "id": "s58",
+          "overlap": 0.139,
+          "file": "06 Account and Support.dc.html",
+          "label": "58 \u00b7 Personal details"
+        }
+      ]
+    }
+  ]
+}

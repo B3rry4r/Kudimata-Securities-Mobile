@@ -1,9 +1,10 @@
-// Kudimata Securities — ThemeData built from KPalette.light (2026-08-22
-// "Soft Landing" redesign — light-only, see main.dart's header comment).
-// Two faces (Nunito for display, Nunito Sans for body/core); warm paper
-// surfaces, plum ink text, grape purple the interactive seed. Custom widgets
-// read colours from KColor (the active palette); this theme covers the
-// Material defaults and keeps them in sync via the same palette.
+// Kudimata Securities — ThemeData built from KPalette (2026-08-22 "Soft
+// Landing" redesign; dark added per R-13, docs/redesign/DECISIONS.md — see
+// tokens.dart's header and KPalette.dark's doc comment for where its values
+// come from). Two faces (Nunito for display, Nunito Sans for body/core);
+// warm paper surfaces, plum ink text, grape purple the interactive seed.
+// Custom widgets read colours from KColor (the active palette); this theme
+// covers the Material defaults and keeps them in sync via the same palette.
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'tokens.dart';
@@ -12,6 +13,8 @@ class KTheme {
   KTheme._();
 
   static ThemeData light() => _build(KPalette.light);
+
+  static ThemeData dark() => _build(KPalette.dark);
 
   static ThemeData _build(KPalette p) {
     final base = ThemeData(useMaterial3: true, brightness: p.brightness);

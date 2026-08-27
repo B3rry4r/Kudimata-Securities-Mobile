@@ -17,9 +17,16 @@ class KEyebrow extends StatelessWidget {
 
 /// Screen title + optional body — the standard header block (ScreenHead).
 class KScreenHead extends StatelessWidget {
-  const KScreenHead({super.key, required this.title, this.body});
+  const KScreenHead({super.key, required this.title, this.body, this.trailing});
   final String title;
   final String? body;
+
+  /// Optional trailing content after the title (e.g. Portfolio's `s33` header
+  /// carries a circular "statements" icon button beside the title). Added as
+  /// a prop rather than a second bespoke header widget — same "extend, don't
+  /// fork a shared component" convention [KDetailHeader.trailing] already
+  /// documents below.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +34,15 @@ class KScreenHead extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(title, style: KType.title()),
+        if (trailing == null)
+          Text(title, style: KType.title())
+        else
+          Row(
+            children: [
+              Expanded(child: Text(title, style: KType.title())),
+              trailing!,
+            ],
+          ),
         if (body != null) ...[
           const SizedBox(height: 12),
           ConstrainedBox(

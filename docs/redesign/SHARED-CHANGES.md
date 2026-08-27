@@ -1,0 +1,147 @@
+# Shared-change queue
+
+Screen agents may not edit `lib/widgets/**`, `lib/data/**`, `lib/theme/**` or
+`lib/router/**` while a wave is running (brief rule 5). They file requests here
+instead, and a **serial pre-step between waves** applies them.
+
+This exists because forbidding an agent to edit shared code without giving it a
+legal alternative is what produces forks — the sibling backend has
+`S3PresignerService` in four modules and `AuthenticatedRequest` in twenty-five,
+each one an agent correctly obeying its fence and taking the only other option.
+
+## Open requests
+
+| # | from | file | change | status |
+|---|---|---|---|---|
+| S-1 | wave 2 · welcome | `lib/widgets/mobile.dart` | `KOnboardingSlideFrame` and `KOnboardingSlideContent` are now **dead code** — the 3-slide carousel they served was removed by R-14. Delete both, and check for other callers first. | ✅ applied — see Applied section |
+| S-2 | wave 2 · sign up | `lib/data/repositories/auth_repository.dart` | `AuthRepository.signUp` needs an optional `phone` parameter. Blocked on the backend gaining a phone field (filed in `BACKEND_GAPS.md`). Until then the sign-up phone input stays **disabled**, not silently discarded. | blocked on backend |
+
+| S-4 | wave 3 · approved | `lib/widgets/` (illustration) | `KIllustration` **always** draws its tinted plate. `s21`-light draws the illustration bare; `s21d`-dark plates it. Needs an optional `plate` control so light/dark can differ. Affects every status screen, not just this one. | ✅ applied — see Applied section |
+| S-5 | wave 3 · approved | `lib/widgets/buttons.dart` | `KButton`'s ghost variant renders **borderless**; `s21d` draws an outlined ghost. Needs a border option on the ghost variant. | ✅ applied — see Applied section |
+| S-6 | wave · bvn/nin | `lib/data/repositories/kyc_repository.dart` | `KycSubmissionStatus` needs optional `resolvedName`/`resolvedDob`/`resolvedPhone` (or similar) fields, parsed from `draftStep1`'s response, plus a name-match boolean — s13 "Details from BVN" needs them to show what the BVN/NIN check actually returned instead of `—`. Blocked on the backend gaining those fields first (filed in `BACKEND_GAPS.md`, "s13 — Details from BVN"). | blocked on backend |
+| S-7 | asset detail (`s26`/`s27`) | `lib/data/models.dart` + `lib/data/repositories/asset_repository.dart` | The backend now serves a real simulated order book (BR-5, `SimulatedNgxBroker#getOrderBook`) at `GET /assets/:ticker/order-book` — `{ ticker, bids: [{priceKobo, units}], asks: [{priceKobo, units}], asOf }`, bids best-first (highest price), asks best-first (lowest), 5 levels a side, every bid strictly below every ask. Mobile has no model or repository method for it yet. Needed: an `OrderBook`/`OrderBookLevel` model mirroring `Kudimata-Securities-Backend/src/common/types/asset.types.ts` 1:1 (keep `priceKobo`/`units` as raw ints, not preformatted strings — the screen formats kobo→naira itself the way `contract_note_screen.dart`/`dividends_screen.dart` already do, not the way `AssetRepository._fromJson` preformats `Asset.price`), plus `AssetRepository.orderBook(String ticker)` calling that endpoint. Once this lands, `asset_detail_screen.dart`'s `_OrderBookTab` needs re-dispatch to wire a `FutureBuilder` (loading/error/empty-when-both-sides-empty/populated) driving the bid/ask rows and best-buy/best-sell cells s27 draws, currently blocked on this. **Not included:** s26/s27's "Easy to sell" / "Hard to sell quickly" liquidity call-out banner — grepped `SimulatedNgxBroker` end to end and it computes no liquidity tier at all, and the book is always exactly 5 levels a side (so level-count can't signal it either); any easy/hard threshold from spread or summed units would be an invented judgment call, not a real mechanism (R-34/DECISIONS.md's CLAIMS extension). That banner stays an omission even after this request lands, pending a product ruling on what "easy" vs "hard to sell" actually means. | ✅ applied — see Applied section |
+
+## Harness follow-ups
+
+| # | raised by | change | status |
+|---|---|---|---|
+| H-1 | wave 3 · rejection | Now that `MockKyc` supports `rejected`/`flagged`/`expired`, add those as **sub-states** in `test/shots_substates.dart` for `outcome_not_approved`. The agent had to use a throwaway test because the standing harness's KYC fixture is always `approved` — the fixtures now exist, the specs just aren't declared. | ✅ applied — see Applied section |
+
+## Cross-screen follow-ups
+
+Changes one screen's rebuild makes necessary in *another* screen's file. An agent
+correctly refuses to reach outside its scope, so these land here.
+
+| # | raised by | target | change | status |
+|---|---|---|---|---|
+| X-1 | wave 2 · sign up | `lib/screens/onboarding/otp_screen.dart` | Hardcodes `stepLabel: 'Step 1 of 4'`. Sign-up now occupies steps 1–3 of the canvas sequence, so OTP is **"Step 4 of 4"**. | ✅ fixed by the OTP agent in the same wave |
+| S-3 | wave 2 · login | `lib/screens/onboarding/onboarding_scaffold.dart` | `KOnboardTopBar`'s back button renders as a bare icon; artboards (`s08p` and others) draw it on a **round tinted chip**. Cosmetic, but it is shared onboarding chrome many screens depend on — apply once, serially, not per-screen. | ✅ applied — see Applied section |
+| X-2 | wave · bvn/nin | every other `lib/screens/kyc/*.dart` with a `stepLabel`/`KycStepProgress` (`chn_screen.dart` "2 of 8", `id_upload.dart` "3 of 8", `liveness.dart`/`checking.dart` "4 of 8", `utility_bill.dart` "5 of 8", `bank_dcs_screen.dart` "6 of 8", `declarations_screen.dart` "7 of 8", `next_of_kin.dart` "8 of 8") | This screen now shows **"1 of 7"**, not "1 of 8" — see `bvn_nin.dart`'s header comment for the derivation: the old 8 already excluded the dropped review step; the real change R-9 forces is merging `id_upload.dart`'s ID step and `utility_bill.dart`'s address/utility-bill step into ONE step (`s11`'s checklist lists them as a single "Documents uploaded · ID · utility bill" item). So the real sequence is BVN&NIN(1) → CHN(2) → Documents: ID+address(3) → Selfie(4) → Bank & DCS(5) → Two questions/Declarations(6) → Next of kin(7). Every other KYC screen's `stepLabel`/`KycStepProgress` needs renumbering to this 7-step scheme in one pass, not screen-by-screen (same reasoning as X-1). | ✅ applied — see Applied section |
+| X-3 | s14/s17 · id_upload + utility_bill | `lib/screens/kyc/review_submit_screen.dart` (calls `KycRepository.finalizeDraft`) | R-19 (DECISIONS.md) required `utility_bill.dart` (s17) to collect street address/State/LGA alongside the upload. Rather than staging them into `kyc_form_state.dart` — read/written by several other KYC screens outside this pass's scope — the screen saves them straight to the already-real `PATCH /users/me` (`UserRepository.updateProfile`: `residentialAddress`/`state`, plus `city` carrying the LGA value — see utility_bill.dart's header comment for that mapping). That means the data lands on the user's profile but `finalizeDraft`'s own optional `address`/`city`/`state` params are still never populated from `review_submit_screen.dart`, so the KYC *submission* record itself stays addressless even though the profile now has it. Not blocking — nothing is discarded — but worth a decision on whether compliance review needs address on the submission too, which would mean this screen's saved values (or `kyc_form_state.dart` fields carrying them) also feeding that call. | open |
+
+## Removals pass — rulings that delete or hide, and have no home in a wave
+
+**A structural gap, found 2026-08-27.** Waves are organised around *building*
+screens, so a ruling that says *remove this* has nobody assigned to it. Several
+were ruled, recorded, and never executed — which is exactly how a ruling
+evaporates. Discovered when an agent was told `review_submit_screen.dart` had
+been dropped per R-9, checked, and found it still there.
+
+These need one dedicated pass, run serially like the shared-change queue:
+
+| # | ruling | action | status |
+|---|---|---|---|
+| D-1 | R-9 | **Drop `review_submit_screen.dart`** — submission moves to the last collection step. Note X-3 just wired the address into its `finalizeDraft` call, so that wiring must move with it, not be lost. | ✅ applied — see Applied section |
+| D-2 | R-16 | **Drop `watchlist_screen.dart`** — keep the `+` toggle on asset detail; "My alerts" (`s50`) gets a permanent Account-menu row so saved assets still have a reader. | ✅ applied — see Applied section |
+| D-3 | R-6 | **Park the AI-credits line** — remove entry points for `plans_screen`, `refer_earn_screen`, `explain_screen` and the glossary's metered "Explain further" half, behind one flag. Keep the code and the repositories. The glossary's **static definitions must stay reachable** — trade flows, FAQ, asset detail and the suitability questionnaire all use them. | ✅ applied — see Applied section |
+| D-4 | R-8 | **`document_summary_screen.dart` is superseded** by opening files in the phone viewer. Confirm nothing else routes to it before removing. | ✅ applied — see Applied section |
+| D-5 | B-2 | **Hide the Order Book tab** behind the same check that renders its empty state — pending the owner's ruling, since the whole market-data layer is simulated. | awaiting ruling — NOT touched this pass |
+
+**Why this is its own pass, not wave work:** every one of these touches routes,
+nav entries or entry points that several screens reference. Done inside a wave by
+an agent scoped to one screen, each would be a scope violation or a half-removal
+leaving a dead route behind.
+
+## Corrections to the queue itself
+
+The build queue and the task briefs derived from it have been wrong three times.
+Each was caught because an agent verified against the artboard instead of trusting
+its assignment. Recorded so the errors do not recur, and because **the queue is
+evidently the weakest link in this pipeline** — not the agents working from it.
+
+| # | the error | how it surfaced | fix |
+|---|---|---|---|
+| Q-1 | `RULINGS.md` maps **both** `contract_note_screen.dart` and `wallet_screens.dart#TransactionDetailScreen` to **`s38`**. `s38` is the wallet transaction receipt, and the wallet screen is the true match. | The statements agent fetched `s38`'s real markup, saw it was already built elsewhere, and **halted rather than building a duplicate** that would have destroyed contract-note's itemised commission/exchange/VAT breakdown. | `contract_note_screen.dart` is **restyle-only**, no artboard. Its purpose — a per-order fee breakdown — has no canvas counterpart. |
+| Q-2 | A brief asserted `review_submit_screen.dart` had already been dropped per R-9 and told the agent to find the new `finalizeDraft` call site. | The agent checked, found the screen still present, and wired the address there instead. | The removals pass then executed R-9 properly, moving both the screen's role and the address wiring into `next_of_kin.dart`. |
+| Q-3 | A brief gave the search screen's path as `lib/screens/markets/search_screen.dart`. | The real file is `lib/screens/home/search_screen.dart`; the agent traced the actual route rather than trusting the path. | — |
+
+**Why this keeps happening:** the queue was assembled mechanically from a
+word-overlap matcher that under-matched badly (12 title matches out of 97), then
+patched from evidence files and rulings. It is good enough to dispatch from and
+not good enough to trust. Every screen agent must keep verifying its artboard
+against the markup before building — that check is what caught all three.
+
+## Removal candidates found mid-build
+
+| # | screen | finding |
+|---|---|---|
+| D-6 | `lib/screens/account/tax_documents_screen.dart` | `Routes.acctTax` is registered and the screen is wired to it, but a full `lib/` grep found **zero navigation call sites**. A dead-end route: reachable only by typing the path. Not deleted — removals are a serial pass and this needs a ruling on whether tax documents *should* be reachable (annual tax summary generation is real and cron-scheduled; `wht_credit_note` is not wired anywhere). |
+
+## New screens discovered mid-build
+
+Artboards with no app counterpart, found while building neighbouring screens.
+These are additions to `BUILD-QUEUE.json`, not rulings.
+
+| # | artboard | screen | why it is separate |
+|---|---|---|---|
+| N-1 | `s11` | KYC checklist hub | Functionally distinct from `s10`: `s10` is a one-shot entry with resume logic, `s11` is re-entered after **every** completed step. Merging them into `kyc_intro.dart` would break the resume path. Needs its own screen and route. Found by the `s10`/`s12` agent. |
+
+## Applied
+
+| # | change | what was actually done |
+|---|---|---|
+| X-2 | KYC renumbering to 7 steps | Renumbered `stepLabel`/`KycStepProgress` in `chn_screen.dart` (2 of 7), `id_upload.dart` + `utility_bill.dart` (both 3 of 7, merged Documents step), `liveness.dart` + `checking.dart` (both 4 of 7), `bank_dcs_screen.dart` (5 of 7), `declarations_screen.dart` (6 of 7), `next_of_kin.dart` (7 of 7). `bvn_nin.dart` (1 of 7) was already done. Header comments updated to stop citing the stale "of 8" numbering. `KycStepProgress`'s `total` is passed explicitly at every call site (no hidden default to fix). Verified on rendered PNGs: `17_kyc_bvn` through `25_kyc_next_of_kin` all show correct "N OF 7" labels and correctly-filled progress segments, with `19_kyc_id`/`22_kyc_utility_bill` both showing "3 OF 7" with 3 segments filled. |
+| S-1 | delete dead code | Grepped `lib/` and `test/` for `KOnboardingSlideFrame`/`KOnboardingSlideContent` — no real callers, only a stale comment mention in `illustration.dart` (left as-is, it's prose not code). Deleted both classes from `lib/widgets/mobile.dart`. `flutter analyze` clean. |
+| S-3 | back-button chip | `KOnboardTopBar` (`lib/screens/onboarding/onboarding_scaffold.dart`) back icon now sits on a 40×40 `KColor.track`-filled circle, icon size 19 (was 22), matching artboard `s08p`'s literal `border-radius:999px;background:var(--track)`. Verified on `14_login` and `04_otp`, light and dark. |
+| S-4 | `KIllustration` plate control | Added `plate` bool (default `true`) to `KIllustration` (`lib/widgets/illustration.dart`); `false` skips the tinted `Container` and renders the SVG bare. Threaded through `KStatusView` as `illustrationPlate` (`lib/widgets/feedback.dart`, default `true`). `approved.dart` now passes `illustrationPlate: isDark` per s21 (bare, light) / s21d (plated, dark). Verified on `28_kyc_approved` light (bare) and dark (plated card). |
+| S-5 | ghost button border | Added `ghostBorder` bool (default `false`) to `KButton` (`lib/widgets/buttons.dart`); when true and variant is `ghost`, draws `KColor.ink.withValues(alpha: 0.25)` border (matches s21d's `rgba(255,255,255,.25)`). Threaded through `KStatusView` as `secondaryGhostBorder`. `approved.dart` passes `secondaryGhostBorder: isDark`. Verified on `28_kyc_approved`: light ghost borderless, dark ghost outlined. |
+| H-1 | KYC outcome sub-states | Added 3 `SubStateSpec` entries to `test/shots_substates.dart` for `outcome_not_approved.dart` (route `Routes.kycOutcome`): `kyc_outcome__rejected` (`MockKyc.rejected`), `kyc_outcome__flagged` (`MockKyc.flagged`), `kyc_outcome__expired` (`MockKyc.expired`), each with `kycApproved`/`suitabilityComplete` false. All 6 (×2 themes) rendered successfully via `shots.sh`. |
+| D-1 | drop `review_submit_screen.dart` | Deleted the file. Moved its `_submit`/`_showErrorSheet` logic (including the X-3 address wiring — `UserRepository.personalInfo()` fetched fresh right before submit, `residentialAddress`/`city`/`state` sent into `finalizeDraft`) into `next_of_kin.dart`, now the last collection step; its button reads "Submit for verification" and shows a loading state. Removed `Routes.kycReview`, its `GoRoute`, its entry in the pre-auth `gated` set, and the `review_submit_screen.dart` import in `app_router.dart`. Updated `test/shots_all.dart`, `test/shots_kyc.dart`, `test/route_walk_test.dart` to drop the now-gone route/capture. Verified: `flutter analyze` clean, `flutter test` 11/11, and read `next_of_kin.dart`'s finalized `_submit` method back to confirm `address`/`city`/`state` are still passed into `_kycRepo.finalizeDraft(...)`. |
+| D-2 | drop `watchlist_screen.dart` | Deleted the file, its `GoRoute`, its import, and `Routes.watchlist` (constant + its capture in `test/shots_all.dart` and `test/shots.dart`, its entry in `test/route_walk_test.dart`). Left `asset_detail_screen.dart`'s `+ watchlist` toggle untouched. Added a permanent **"My alerts"** row to `account_screen.dart`'s menu, pointing at `Routes.priceAlerts` (`price_alerts_screen.dart`, already reads `WatchlistRepository` alongside `PriceAlertRepository` — confirmed by reading the file) — keeps `s50` reachable and gives the saved-assets data a reader now that `watchlist_screen.dart` is gone. |
+| D-3 | park the AI-credits line | Added `lib/app/feature_flags.dart` with a single `const bool kAiCreditsEnabled = false;`. Gated: `account_screen.dart`'s "Plans & credits" row, its compact credit-meter tap row, and "Refer & earn" row; `asset_detail_screen.dart`'s `onExplain` callback (passing `null` hides `KProductCard`'s Explain affordance entirely — no widget edit needed); `glossary_sheet.dart`'s "Explain further" button (`widget.allowAiFollowUp && kAiCreditsEnabled`). Confirmed by grep that these were the ONLY external entry points into `plans_screen.dart`/`refer_earn_screen.dart`/`explain_screen.dart` — their mutual cross-links (e.g. `refer_earn_screen.dart` → `Routes.acctPlans`) are internal to the now-unreachable cluster and left as-is. The glossary's static tier (`glossaryDefinition`) is untouched and unconditional. Screens, routes and repositories all still exist and still render in `shots_all.dart`. Gate `hardcoded_signals` flagged the new const (`'kAiCreditsEnabled' - constant stands in for a runtime signal`) — this is the flag's intended shape (R-6: "reversible in one edit", no backend on/off signal exists or should exist for a pending product decision), so accepted it in `scripts/gates/baseline.json` with owner + reason rather than silencing the gate. |
+| D-4 | drop `document_summary_screen.dart` | Grepped every reference first: zero live `context.push`/`context.go` callers anywhere in `lib/` — the only real caller was the `GoRoute` itself, and the router's own comment already said it was "built but never wired in, found unreachable during the exactness audit." Deleted the file, its `GoRoute` (and the `DocumentSummaryArgs` extra-handling inside it), its import, `Routes.documentSummary`, and its entry in the pre-auth `gated` set and in `test/shots_all.dart`. Updated two stale comments in `legal_preview_screen.dart` and `legal_acceptance_screen.dart` that described the now-removed screen/route as still live. |
+| S-7 | order book model + repository | Added `OrderBook`/`OrderBookLevel` (`lib/data/models.dart`, raw `priceKobo`/`units` ints, `fromJson` on both — mirrors `Kudimata-Securities-Backend/src/common/types/asset.types.ts` 1:1) and `AssetRepository.orderBook(String ticker)` (`GET /assets/:ticker/order-book`). Re-dispatched `asset_detail_screen.dart`'s `_OrderBookTab` in the same pass (in-scope per this agent's exception to rule 5): now a `StatefulWidget` with a `FutureBuilder` driving loading (`KLoadingView`) / error (`KErrorView`, retry re-fetches) / populated (`_OrderBookTable`: bid/ask rows best-first each side, best-buy/best-sell cells) / empty (`_OrderBookEmptyState`, only when both `bids`/`asks` come back empty — not observed against the real backend, which always returns 5 a side). Liquidity banner stays omitted per R-34/D-5. Verified on rendered PNGs (light + dark) via a throwaway test (`test/tmp_order_book_evidence_test.dart`, deleted after) seeding a real 5-level-a-side response through a wrapper adapter, since `test/fixtures/mock_api_adapter.dart` (off-limits) has no handler for the new endpoint yet — the standing `shots_substates.dart` sub-state still shows the "Depth unavailable" empty state for that reason, a fixture gap not a wiring one. `docs/redesign/BACKEND_GAPS.md`'s s26/s27 entry updated to note this. Gates: 64 fail/28 warn/1 accepted, unchanged (zero new). `flutter analyze` on the 3 touched files: clean. |
+
+Gate/test counts, before → after this removals pass: `python3 scripts/gates/run.py` — 65 fail / 28 warn / 0 accepted → 65 fail / 28 warn / **1 accepted** (the D-3 flag, baselined, zero new fails). `flutter test` — 11/11 → 11/11. `flutter analyze` — clean before and after (8 pre-existing info-level findings in `trade_flows.dart`, unrelated). `bash scripts/design/shots.sh` — **72 screens** (down from the prior 76; `26_kyc_review`, `36_watchlist`, `11_document_summary` no longer exist) + 13 sub-states (unchanged), 0 unrenderable.
+
+---
+
+## Process note — worktree isolation, from wave 2
+
+Wave 2 ran four agents against **one working tree**. One agent's mid-edit compile
+error in `log_in_screen.dart` (`_LoginAvatar` undefined) broke `flutter test` and
+`shots.sh` **for every other agent in the wave**, none of whom had touched that
+file.
+
+They coped — the affected agent used a throwaway render test for its evidence and
+cleaned up — but the failure mode is clear: a shared working tree means any
+agent's transient broken state blocks everyone else's verification, and an agent
+that cannot run the gates cannot prove its own work.
+
+**Intended fix: worktree isolation** — each agent gets its own checkout and its
+own gate run, merged on completion.
+
+**Not adopted at wave 3, deliberately.** The merge-back flow is unvalidated, and
+introducing an unproven multi-branch merge on a 14-screen regulatory wave risks
+losing work — a worse failure than the one it prevents. Wave 2's actual cost was
+agents falling back to throwaway render tests: annoying, not damaging, and every
+one of them still produced its evidence.
+
+**Instead, wave 3 was dispatched in halves** to shrink the window in which any one
+broken file blocks the others. That worked: `flutter analyze` clean, 11/11 tests,
+zero cross-agent breakage.
+
+Worktrees remain the right answer for a larger fan-out and should be validated on
+a small, low-stakes wave before being trusted with one. This note is written down
+rather than quietly dropped, because a process document that says one thing while
+practice does another is the same defect as a code comment that lies.

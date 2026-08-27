@@ -6,6 +6,20 @@
 // stay on kyc-submitted/kyc-approved's existing "we're reviewing" view,
 // which is accurate copy for them.
 //
+// NO ARTBOARD — R-10 (docs/redesign/DECISIONS.md): "Rejected / flagged /
+// expired outcomes keep their existing behaviour ... but the screen is
+// authored fresh against the redesign's patterns rather than waiting for an
+// artboard. The layout is ours; that is recorded here so nobody later
+// mistakes it for designer intent." This layout is therefore an original
+// composition, not a transcription of a canvas artboard. It matches the
+// *pattern* of the redesign's other KYC outcome screens instead — same bare
+// `KColor.bg` scaffold, same centred `KStatusView` (illustration plate,
+// title, message, stacked buttons), same button styles — as drawn by
+// `s20`/`s20d` "Under review" and `s21`/`s21d` "Verified" in
+// `docs/design/redesign-2026-08/02 Verification.dc.html`, and as built in
+// this app by `submitted.dart` (s20) and `approved.dart` (s21). No new
+// visual idiom is introduced here.
+//
 // Reached from kyc-submitted (initial post-submit check) and kyc-approved
 // (its defensive re-check — see that file's header) via
 // `context.go(Routes.kycOutcome)`. This screen re-fetches the status itself

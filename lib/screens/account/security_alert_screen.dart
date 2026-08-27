@@ -1,4 +1,6 @@
-// Security alert (screen 51, 2026-08-22 "Soft Landing" — audit P0). Reached
+// Security alert (pushed, restyled 2026-08-27 — no artboard in the
+// redesign-2026-08 canvas; kept and restyled per RULINGS.md as an
+// already-shipped, security-critical screen). Reached
 // from a push notification about an unrecognised sign-in, or from the
 // Notifications list. Device/location/time here are placeholder example
 // values: no real device-fingerprinting/new-device-detection feed exists on
@@ -57,9 +59,6 @@ class _SecurityAlertScreenState extends State<SecurityAlertScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KColor.bg,
-      // Canvas #s51's own header title is literally "Security" (the "51 ·
-      // Security alert" caption above the phone frame is the gallery
-      // label, not on-screen copy) — 2026-08-23 exactness pass.
       appBar: KDetailHeader(title: 'Security'),
       body: SafeArea(
         top: false,
@@ -77,8 +76,7 @@ class _SecurityAlertScreenState extends State<SecurityAlertScreen> {
                 // primary/secondary vertically, not side-by-side, precisely
                 // because `primary`'s label below is too long to share a row
                 // at any width (see security.dart's header comment on this).
-                // Canvas footer says this button also "returns to 50", but
-                // the only real freeze capability this app has
+                // The only real freeze capability this app has
                 // (UserRepository.freeze() / POST /users/me/freeze) revokes
                 // EVERY session immediately, not just the flagged device's —
                 // there's no narrower "sign out just that one device" API.
@@ -96,11 +94,10 @@ class _SecurityAlertScreenState extends State<SecurityAlertScreen> {
                 secondary: KButton(
                   label: 'That was me',
                   variant: KButtonVariant.secondary,
-                  // Canvas footer: "either action returns to 50" (Security)
-                  // — go(), not pop(), since this screen's other real entry
-                  // point is a push notification tap, which may not have
-                  // Security anywhere on the stack to pop back to
-                  // (2026-08-23 exactness pass). Routes.acctSecurity is a
+                  // Both actions return to Security — go(), not pop(), since
+                  // this screen's other real entry point is a push
+                  // notification tap, which may not have Security anywhere
+                  // on the stack to pop back to. Routes.acctSecurity is a
                   // top-level GoRoute (not nested in a tab shell), so go()
                   // here is safe from any entry point.
                   onPressed: _freezing ? null : () => context.go(Routes.acctSecurity),

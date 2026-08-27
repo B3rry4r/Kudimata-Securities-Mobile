@@ -168,6 +168,8 @@ class KStatusView extends StatelessWidget {
     this.onSecondary,
     this.secondaryVariant = KButtonVariant.secondary,
     this.extra,
+    this.illustrationPlate = true,
+    this.secondaryGhostBorder = false,
   });
 
   final KStatusTone tone;
@@ -178,6 +180,15 @@ class KStatusView extends StatelessWidget {
   final VoidCallback? onPrimary;
   final String? secondary;
   final VoidCallback? onSecondary;
+
+  /// Passed through to [KIllustration]'s `plate` control. Defaults to `true`
+  /// — every existing call site is unaffected. See SHARED-CHANGES.md S-4.
+  final bool illustrationPlate;
+
+  /// Passed through to the [secondary] button's `ghostBorder` when
+  /// [secondaryVariant] is `ghost`. Defaults to `false` — every existing
+  /// call site is unaffected. See SHARED-CHANGES.md S-5.
+  final bool secondaryGhostBorder;
 
   /// Variant for the [secondary] button. Most two-button StatusView patterns
   /// in the design canvas (e.g. screens 58, 59, 09, 26, 79, 89, 92) use
@@ -211,6 +222,7 @@ class KStatusView extends StatelessWidget {
             illustrationName ?? defaultName,
             role: KIlloRole.state,
             tone: plateTone,
+            plate: illustrationPlate,
           ),
         ),
         const SizedBox(height: 22),
@@ -233,7 +245,12 @@ class KStatusView extends StatelessWidget {
           if (primary != null) KButton(label: primary!, onPressed: onPrimary),
           if (primary != null && secondary != null) const SizedBox(height: 10),
           if (secondary != null)
-            KButton(label: secondary!, onPressed: onSecondary, variant: secondaryVariant),
+            KButton(
+              label: secondary!,
+              onPressed: onSecondary,
+              variant: secondaryVariant,
+              ghostBorder: secondaryVariant == KButtonVariant.ghost && secondaryGhostBorder,
+            ),
         ],
       ],
     );

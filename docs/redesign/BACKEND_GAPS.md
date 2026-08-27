@@ -1,563 +1,474 @@
-# Backend gaps — what's needed for the redesigned UI to be 100% real
-
-## Status (2026-08-24, updated same day) — backend AND mobile now wired end-to-end for most of this
-
-Two passes today. First closed the additive backend half of this doc
-(`Kudimata-Securities-Backend` commit `1d78d59`); a second pass (commits
-`089d62d`, `429525d`, `c10e6e1` on the backend, `0781df0` on mobile) fixed
-a real correctness bug the user caught, added the last KYC piece, redid
-every transactional email, and — critically — **wired the Flutter app to
-all of it**. This doc was previously "backend real, mobile still mock" for
-everything below; that's now closed for most items.
-
-- **Done end-to-end (backend + mobile wired)**: dividends (history,
-  summary, e-mandate — `dividends_screen.dart`), corporate actions (rights
-  issues + AGM voting — `corporate_actions_screen.dart` and children),
-  price alerts (full CRUD — `price_alerts_screen.dart`), complaints (file +
-  track, real presigned upload — `complaint_screen.dart` +
-  `complaint_tracked_screen.dart`), order cancel + real reference number
-  (`orders_repository.dart`, `trade_flows.dart`'s `SalePlacedScreen`),
-  dormancy (auto-detected at login, routes to the Dormant screen —
-  `log_in_screen.dart`), account closure request
-  (`close_account_screen.dart`), the two new consent toggles
-  (`data_privacy_screen.dart`). All 10 transactional emails rewritten to
-  the new canvas designs, plus the 2 that didn't exist (dividend-paid,
-  document-ready).
-- **DCS fix (user caught this before it shipped anywhere real)**: the
-  first version of sell-proceeds-to-bank-account only checked *ownership*
-  of the destination bank account, not that it was the investor's actual
-  DCS-mandated account. Per how DCS really works (and the design's own
-  "withdrawals can only ever go to a DCS account" copy), there is exactly
-  one lawful destination — corrected server-side to require
-  `BankAccount.primary === true`, with tests for accept/reject cases. Sell
-  proceeds still only credit the wallet, not an actual bank payout — see
-  below, unchanged from the original scoping.
-- **§13 phased-KYC — now mostly done.** All 3 missing real steps built
-  (CHN, Bank & DCS-during-KYC reusing the real bank-linking endpoints, PEP
-  declarations) plus a new Review & submit screen, and the whole flow
-  re-sequenced from 5 to the canvas's real 8 steps. Screen 24 "NGX account
-  under review" deliberately not built — no real backend state exists to
-  justify it. Two small real gaps remain: the PEP "who/position" detail
-  fields and the "trade for myself" checkbox have no backend column (only
-  the yes/no PEP flag persists), and Review's optional note field has
-  nowhere to send its value.
-- **Still a real gap, not silently closed**:
-  - Price-alert *notification delivery* has no scheduler wired anywhere
-    (alerts save for real, they just won't fire yet — app-wide job
-    infrastructure doesn't exist).
-  - Sell-to-bank-account payout still only credits the wallet — the
-    destination is now correctly validated as the real DCS account, but
-    actually redirecting the payout needs the withdrawal module's
-    tier-limit/Flutterwave logic, deliberately not risked without live
-    testing.
-  - `order_status_screen.dart` still can't show a cancel button for real —
-    it sources from `GET /transactions`, which has no link back to
-    `Order`. The new investor-scoped `GET /orders` closes the backend half
-    of this; the screen itself needs a follow-up to actually use it.
-  - `Routes.reset`/`preAuthOnly` router bug (§8) — unfixed, frontend-only.
-  - §3, §4, §9, §11, §12, §14 are entirely untouched. §9 (account closure)
-    is now request-only, same as originally scoped — no real closure
-    workflow exists past the request landing with staff.
-
----
-
-Every screen in this app is built to match the design canvas exactly,
-regardless of whether the backend can support its real actions yet — per
-explicit product direction, the UI is never held back to fit the current
-API. This document is the other half of that deal: every place a screen's
-real action isn't backed by a real endpoint, honestly flagged in-code
-(grep for "REAL GAP" / "backend gap" / "not available yet" across
-`lib/screens/`), consolidated here so it can be scoped as real backend work.
-
-Each entry says what's missing, why it matters, and which screen(s) need
-it. Nothing here should be read as "the UI is faked" — every screen either
-shows real data where real data exists, or tells the investor honestly that
-an action isn't wired yet (never a silent fake success).
-
-## How to read "code gap" vs "data gap"
-
-- **Code gap** — no endpoint/entity exists at all; needs real backend
-  engineering (new tables, new controllers, business logic).
-- **Data gap** — the endpoint/mechanism already exists and is generic
-  enough to cover this, it just needs new *content* published through it
-  (e.g. a new legal document, a new `kind` value). Much cheaper to close.
-
----
-
-## 1. Corporate actions — code gap, no data model at all
-
-Screens: Corporate actions hub (#81), Rights issue (#82), AGM voting (#83),
-Dividends & e-mandate (#84).
-
-Confirmed via `Kudimata-Securities-Backend/.pipeline/registry.json`: zero
-matches for rights/AGM/resolution/vote/dividend-ledger. Nothing in
-`lib/data/models.dart` or any repository has a concept of a corporate
-action.
-
-Needed:
-- **Rights issue** entity: issuer, ratio, subscription price, entitlement
-  per holder, subscription window, status. A subscribe/lapse action that
-  places a real CSCS-side instruction — "Take up" currently shows an
-  honest "not available yet" rather than faking an order.
-- **AGM** entity: meeting, resolutions (ordered list, each with a
-  description), a per-shareholder eligible-vote count. A proxy-vote
-  submission endpoint (per-resolution For/Against/Abstain) and a
-  "send me the notice by email" action.
-- **Dividend ledger**: `TxnType` (`lib/data/models.dart`) has no
-  `dividend` value at all — this blocks the dividend row on the
-  per-broker statement (#76) AND every "paid to you this year" figure on
-  #84. This is probably the single highest-leverage fix in this whole
-  document — it's a real, already-happening business event (Kudimata
-  pays dividends today) that the data model simply doesn't represent.
-- **E-dividend mandate** (registrar-level) — confirmed via the canvas's
-  own copy to be a genuinely different mechanism from the existing DCS
-  bank mandate (`bank_accounts_screen.dart`): it's for dividends declared
-  *before* an e-mandate existed, held by a share registrar, not the CSCS.
-  Needs its own registrar-integration entity and a mandate-signing action
-  — do not conflate with the existing DCS mandate flow.
-
-Judgment call already made and worth ratifying: the AGM screen's canvas
-slice only showed 2 of the 5 resolutions it references — the other 3 were
-filled in with standard NGX AGM order-of-business items as a placeholder.
-**Verify against the real canvas before treating that content as final.**
-
-## 2. Complaints / ticketing — code gap
-
-Screens: File a complaint (#87), Complaint · tracked (#88).
-
-Confirmed via the backend's own registry — no complaint/ticket resource,
-and `account-help.json`'s fragment declares no reads/actions for it either.
-
-Needed: `POST /complaints {category, reference?, description,
-attachmentObjectKey?} -> Complaint {id, reference, status, filedAt,
-answerDueAt}`, a `GET /complaints/:id` (or timeline sub-resource) for the
-tracked view, and a category taxonomy (the app currently mirrors
-`help_support_screen.dart`'s existing FAQ topics as a placeholder: order/
-trade, money movement, verification, fees, other — worth confirming against
-whatever the SEC-facing complaints register actually needs). File-attach
-also needs an upload endpoint/object-key convention, same shape as the
-existing KYC document uploads.
-
-"Send complaint" currently shows an honest "isn't available yet" snackbar.
-`ComplaintTrackedScreen` is fully built and routed but has no live entry
-point until this exists.
-
-## 3. Tax documents — data gap (probably), needs a decision
-
-Screen: Tax documents (#85).
-
-Judgment call made and flagged for review: reuse `statements_repository.dart`'s
-existing `Statement` resource (already per-user, already has real
-download-URL plumbing) by adding new `kind` values (e.g.
-`wht_credit_note`, `annual_tax_summary`) — **not**
-`legal_documents_repository.dart`'s `LegalDocument`, which is a small
-global unscoped list of legal agreements, the wrong shape for per-investor
-generated tax records. No speculative call was made against either
-repository since neither `kind` exists yet; the screen ships as a static
-shell with honest "not available yet" copy. This also depends on item 1's
-dividend-ledger gap — a real "tax documents" summary needs real dividend/
-WHT data to summarize.
-
-## 4. Per-broker statements — code gap, deeper than expected
-
-Screen: Statement · per broker (#76).
-
-Confirmed directly against `prisma/schema.prisma`: Order/Holding have no
-`brokerId`/`brokerCode` field anywhere. The app is single-broker today —
-"Blue Marina" is presentational co-branding copy only, not a real data
-dimension (this was already known from the original redesign pass's
-decisions, re-confirmed here). A real per-broker statement breakdown needs
-a broker dimension added to trades/holdings, plus a structured per-broker
-response shape (account number, holdings, movements, subtotal) from
-`statements_repository.dart`. Until then, `StatementDetailScreen` shows
-only real metadata (title/date/size) plus one honest "not available yet"
-block.
-
-## 5. Price alerts — code gap
-
-Screen: Price alerts (#86).
-
-`WatchlistRepository`'s `WatchlistItem` has no threshold field.
-`NotificationPreferencesRepository`'s `NotificationPreference` is exactly
-three email-only booleans (`ordersEmail`/`priceAlertsEmail`/`accountEmail`)
-with no per-asset granularity. Needed: a new resource, e.g.
-`PriceAlert { id, userId, ticker, thresholdPct?, thresholdPriceKobo?,
-active }` with `GET/POST/PATCH/DELETE /price-alerts`, plus a
-quote-monitoring job to actually fire the notification when a threshold is
-crossed. Every threshold/preset on the current screen is local UI state
-only, reset on next visit; "Save alerts" shows an honest preview-only
-message rather than persisting anything fake.
-
-## 6. Sell order gaps — code gap, on an existing endpoint
-
-Screens: Sell (#77-79).
-
-`POST /orders` (`OrderPlacementRepository.placeOrder`):
-- **No proceeds-destination field.** The canvas's "straight to bank via
-  DCS" option is fully built in the UI but disabled with an honest note —
-  only "wallet" (the real current behavior) is selectable. Needs a
-  destination parameter on order placement.
-- **No order reference returned.** The endpoint currently returns nothing
-  usable as a reference number; the canvas's "Reference · KDM-SL-9021" row
-  was dropped from `SalePlacedScreen` rather than faked. Recommend the
-  endpoint return the created order's id/reference in its response.
-- **No order-cancel endpoint** (pre-existing gap, re-confirmed via
-  `order_status_screen.dart`'s own comment) — blocks #80's "Cancel the
-  unfilled N" button.
-- **No partial-fill data model.** Orders collapse to 3 states (completed/
-  pending/failed); there's no fills array with per-fill price/time/
-  contract-note. `OrderFillProgressScreen` (#80) is fully built and
-  parameterized but genuinely unwired — nothing constructs it because
-  there's no real fill data to pass in. Needs an API shape roughly like
-  `{filledUnits, totalUnits, fills: [{units, price, at, contractNoteId}]}`.
-
-## 7. Withdraw outside market hours — data gap, cosmetic
-
-Screen: Withdraw · outside hours (#63).
-
-`POST /transactions/withdraw` has no off-hours branching server-side, so
-the built screen avoids the canvas's literal "Tomorrow from 09:00" promise
-in favor of the existing app's honest "Within 1 business day" wording. Fee
-is genuinely ₦0.00 today, not the canvas's mock ₦50.00 — real copy, not a
-gap, just noting the divergence from the mockup is intentional (real data
-beats mockup fiction).
-
-## 8. Account lifecycle states — code gap, nothing triggers these screens yet
-
-Screens: Dormant account (#89), Locked out (#92).
-
-Both screens are fully built and match the canvas, but **nothing in the
-app can currently route a user to either of them**:
-- **Dormancy**: `PersonalInfo.accountStatus` is the only account-state
-  signal that exists (a raw string like `'active'`/`'suspended'`) — no
-  `'dormant'` value or 12-month-idle detection anywhere. Needs a real
-  dormancy signal from the backend plus a router-level check on sign-in.
-  "Reactivate my account" has no dedicated backend action either — the
-  screen pushes the real Personal info screen as the closest working
-  action, per the canvas's own "Reactivate re-confirms personal details"
-  note, but that's a judgment call, not a verified reactivation flow.
-- **Lockout**: `PasscodeStore` has no failed-attempt counter or lockout
-  timestamp — `log_in_screen.dart`'s unlock flow just shows "Incorrect
-  passcode" on every wrong try, with no branch that ever reaches a lockout
-  state. Needs attempt-counting + a lockout timer, either client-side
-  (simplest) or server-enforced (more secure against a reinstalled app
-  resetting local state).
-- **Pre-existing bug surfaced while building #92, not introduced by it**:
-  `Routes.reset` (used by both this screen's "Reset with my email" and
-  `log_in_screen.dart`'s own existing "Forgot your password?" button) is
-  gated `preAuthOnly` in `app_router.dart`'s `_gateRedirect` — it redirects
-  straight to Home whenever `AppState.signedIn` is true. A locally-locked-
-  out investor still has a valid signed-in *session* (only the local
-  passcode is locked), so this button currently cannot work for exactly
-  the case it exists for. Needs a router fix independent of any backend
-  work.
-
-## 9. Account closure — code gap
-
-Screen: Close your account (#90).
-
-"Request closure" has no backing endpoint anywhere. Needs a real
-`POST /users/me/close` (or similar) with whatever real-world workflow
-account closure requires (pending settlement checks, CSCS transfer/
-liquidation instructions, a cooling-off period). The screen's
-share/company count summary currently sums one page (100 items) of
-holdings client-side since there's no dedicated summary endpoint for this
-context — fine for now, but note it doesn't handle >100 holdings.
-
-## 10. Data & privacy — partial code gap
-
-Screen: Data & privacy (#91).
-
-- "Improve the app" / "Product emails" toggles have no backing consent-
-  preferences endpoint — only the existing email-channel
-  `NotificationPreferences` exists, unrelated to these. Currently local-
-  state only.
-- "Download my data" (the canvas's #93, a data-export email flow) is
-  unbuilt anywhere in the backend — a real DSAR-style export endpoint
-  would be needed.
-
-## 11. Legal / consent reference screens — mostly a data gap, good news
-
-Screens: Partner disclosures (#94), Referral terms (#95), Data notice ·
-NDPA (#96), Account closure terms (#97).
-
-The good news: `LegalDocumentsRepository` is already generic — `GET
-/legal-documents` (any `kind`), `GET /legal-documents/content/:kind`, and a
-presigned download URL. `ComplianceRepository.acknowledge({kind})` is
-generic too. **Two of these four already wire to real content** — Partner
-disclosures and Data notice reuse `getContent('client_agreement')` /
-`getContent('privacy_policy')` respectively, confirmed against the actual
-LEGAL.zip document text (Blue Marina Securities sub-broker role; NDPA
-rights/retention language).
-
-The other two are genuine content gaps, not code gaps:
-- **Referral terms (#95)**: no backing document exists anywhere (checked
-  both LEGAL.zip and the backend). Also worth flagging: the canvas's own
-  copy says referral rewards are "credits, never cash" — this is factually
-  wrong against the app's real shipped mechanic (a flat ₦1,000 cash reward
-  per `refer_earn_screen.dart`). The screen correctly ships the real
-  copy, not the canvas's copy — but the canvas itself should probably be
-  corrected upstream so this doesn't recur.
-- **Account closure terms (#97)**: no backing document exists yet either.
-  The screen's stated "10 business days" figure and #95's "14 days'
-  notice" figure are both the canvas's own numbers, **unverified against
-  the real legal pack** — flag for legal/compliance sign-off before
-  treating either as authoritative, and publish both documents through
-  the existing `LegalDocument` mechanism once approved (a `kind: 'other'`
-  reference doc is enough — no new endpoint needed).
-
-## 12. AI comprehension layer — pre-existing, carried forward from the original redesign
-
-Screens: Explain this investment, DigestCard (Home/Portfolio), Generating
-text, Credit meter/gate/plans, Glossary terms, Document summary.
-
-Every screen here is UI-complete and has been shipped since the original
-"Soft Landing" pass — every "AI-generated" string is honestly commented as
-static/local content. No LLM integration, no credit metering/billing, no
-translation backend (the English/Pidgin `KLanguageSwitch` is cosmetic/
-local-state only) exists anywhere. This is a genuinely separate, much
-larger project than a UI redesign pass — flagged here again only because
-it's still outstanding, not because anything changed about it this pass.
-
----
-
-## 13. KYC is a 5-step flow, not the canvas's real 8-step/10-screen flow — the biggest structural gap in this document
-
-Screens: BVN & NIN (#14), CHN (#15), Bank & DCS (#19), Declarations · PEP
-(#20), Review & submit (#22), NGX account under review (#24).
-
-This is deliberate — a documented 2026-08-20 "phased KYC" product/backend
-directive (`kyc_form_state.dart`, `kyc_repository.dart` headers) — not
-sloppiness, and the backend's `KycSubmission` draft schema genuinely only
-has 5 steps today. But it means four real pieces of investor identity/
-compliance data described by the canvas are **never collected anywhere**:
-
-- **CHN** (#15) — never collected.
-- **Bank & Direct Cash Settlement** (#19) — never collected. The canvas
-  describes DCS as "Required by the NGX"; there is no field or screen for
-  it in this app at all, and DCS is later *referenced* as if it exists
-  (the bank-accounts screen's "DCS active" pill maps onto the unrelated
-  `primary` flag as a workaround — see the original redesign's own
-  decision log).
-- **Declarations · PEP** (#20) — the SEC-required politically-exposed-
-  person declaration is simply absent from onboarding.
-- **Review & submit** (#22) — doesn't exist; the last real KYC step
-  submits directly with no review interstitial.
-- **NGX account under review** (#24) — no distinct interstitial exists
-  between "submitted" and the final approved/rejected outcome; the app
-  jumps straight from a generic pending state to the full outcome.
-
-Closing this needs real backend schema work (extending `KycSubmission`
-with these fields/steps) and new screens/routes wired to them — a
-genuinely larger piece of work than any other single item in this
-document, and worth scoping as its own project rather than folding into
-smaller fixes.
-
-## 14. Smaller data gaps found during the full re-audit (screens 1-59)
-
-- **Dividend yield** on Asset detail (#33) — no backend field; renders `—`.
-  Same root cause as gap §1's dividend-ledger absence.
-- **Glossary route** — the canvas's `T+3` and similar inline
-  `KGlossaryTerm`s are meant to link to an Article & Glossary destination
-  per-term; only one article (Settlement/T+3) was built this pass (the
-  only one the canvas gives full content for). Other glossary terms
-  (elsewhere in the app) remain no-ops. Needs either more canvas-sourced
-  article content or a real glossary content resource.
-- **FAQ article content** — Article & Glossary (#57) was built for real,
-  but only for the one question ("When does money from a sale arrive?")
-  the canvas provides full article content for. The other 3 FAQ questions
-  ("Why is my order still filling?", "My verification was not approved",
-  "Fees, in full") still fall back to the general FAQ list — needs real
-  article copy written for each, then wired the same way.
-- **Suitability `computedAt`** — Personal info's "Investor profile" card
-  should show "Answered {date}" per the canvas; `SuitabilityResult` has no
-  timestamp field reaching the client. Small addition to
-  `suitability_repository.dart`'s response shape.
-- **Referral stats mismatch** — the canvas's Refer & earn stats show
-  "Friends joined / Still verifying / Explanations earned"; this backend's
-  `ReferralAccount` only has `referredCount` and `earningsTotalKobo` (it
-  pays cash, not AI-credits, and has no verifying-vs-joined split). The
-  screen shows the two real fields rather than inventing the other two —
-  a real product-model mismatch between the canvas's assumptions and how
-  referrals actually work here, worth reconciling upstream.
-- **Order cancellation** — STALE, partially fixed: `PATCH
-  /orders/:id/cancel` now exists (investor-only, own pending order) and
-  `OrdersRepository.cancel()` calls it correctly — but the Orders screen
-  itself (`order_status_screen.dart`) still can't use it: it sources its
-  list from `GET /transactions`, which carries no `orderId` field, so
-  there's nothing valid to pass `cancel()`. Needs an investor-scoped `GET
-  /orders` list wired into this screen instead (see that screen's own
-  header comment for the full trail). Left here as a reminder that this
-  exact doc drifted out of sync with reality once already ("no cancel
-  endpoint exists" was stale even before this rewrite) — re-verify
-  against the code before trusting any gap claim in this file.
-- **Test-fixture gap, not a product gap**: `test/fixtures/mock_api_adapter.dart`
-  has no `/statements` mock, so the Statements screen's own screenshot
-  shows its (correctly-styled) error state rather than real-looking data.
-  Harmless for production, worth fixing so future screenshot audits of
-  this screen are actually useful.
-- **NGX All-Share index row** on Markets (#32/#60) — canvas shows a live
-  "104,562.18 · +0.84% today · Open · closes 14:30" index figure. No real
-  NGX index feed exists anywhere in this app (`AssetRepository` only has
-  per-instrument quotes); rendering a number here would be a fabricated
-  market index, not a data-shape gap that can be closed by wiring
-  existing fields. Deliberately not built — needs a real index data
-  source (an NGX data vendor, most likely) before it can ship.
-- **Portfolio change label says "all-time", canvas says "today"** — the
-  Home/Portfolio `BalancePanel`'s change line
-  (`HoldingsRepository.summary()`) is genuinely computed as all-time
-  unrealized return, not day-over-day change (see that repository's own
-  doc comment) — there is no daily-change aggregate on the backend to
-  wire instead. Rendering "today" over an all-time figure would misstate
-  what the number means, so the label stays honest rather than matching
-  the canvas's exact word. Needs a real daily-change aggregate
-  (`PortfolioSummary` gaining a second figure) to close for real.
-- **2026-08-24 rebuild — Home/Markets/Asset-detail structural fixes**: an
-  earlier "full re-audit" pass (commit `27b829a`) found real, concrete
-  deviations from the canvas on these three screens and documented them
-  as accepted exceptions ("prior approved decision", "regression risk")
-  instead of fixing them. They were not actually approved for this
-  canvas — rebuilt this pass to match s29/s30 (Home verified/not
-  verified), s32/s60 (Markets open/closed) and s33 (Asset detail)
-  structurally. See git log for the full diff; the two gaps immediately
-  above (NGX index, portfolio change label) are what's left after that
-  rebuild — both are real data-availability gaps, not deferred fixes.
-  Also fixed in the same pass: `KProductCard`'s risk/fee/liquidity/
-  minimum cells were rendering "—" as if unmodelled — they're real,
-  product-wide constants (1.35% fee, T+3, ₦5,000 minimum) already used
-  correctly elsewhere; and the asset-detail hero price line was missing
-  the absolute change figure even though the backend already returns
-  `changeAbsKobo` — the mobile `Asset` model just never parsed it. Added
-  a real `Asset.sector` backend column (NGX sector classification) so
-  Markets' category chips and the asset-detail subtitle are genuinely
-  wired instead of omitted.
-
-## Priority read, if useful for scoping
-
-Roughly highest-leverage-first, independent of screen numbering:
-
-1. **Phased-KYC completion** (§13) — CHN, Bank & DCS, PEP declarations,
-   and a review step are entirely uncollected today. This is compliance-
-   adjacent (PEP, DCS) and by far the largest single scope item in this
-   document — worth scoping as its own project, separately from the
-   smaller items below.
-2. **Dividend ledger** (§1) — unblocks real data on #33, #76, #84, and
-   indirectly #85; it's also just a real, already-happening business event
-   the data model can't currently represent at all.
-4. **Router fix for the `Routes.reset` / `preAuthOnly` bug** (§8) — not
-   backend work, a one-line router fix, but blocks a real safety-critical
-   flow (locked-out investors resetting access) today, independent of
-   whether #92 itself ever ships.
-5. **Sell order destination + reference number** (§6) — small additions
-   to an endpoint that already exists.
-6. **Legal content for #95/#97** (§11) — a content/legal-review task, not
-   an engineering one; cheap once written.
-7. Corporate actions, complaints, price alerts, dormancy/lockout,
-   closure, tax documents, and the smaller §14 data gaps — each a real,
-   standalone feature; sequence by product priority.
-
-## 16. 2026-08-24 full-app exactness sweep — every screen re-checked against the canvas
-
-Triggered by the user's blunt "THE DESIGNS ACROSS ALL SCREENS HAS NOT BEEN
-MATCHED TO DESIGN SPEC... EVERYTHING SHOULD MATCH." Not a re-audit that
-documents deviations and moves on (that's what produced the Home/Markets/
-Asset-detail problem this same day) — 11 parallel passes, each owning a
-disjoint set of screens/files, each required to FIX real deviations
-directly and verify with `flutter analyze`, not just report them.
-
-**Real bugs found and fixed** (selected — see git log for the full list,
-every commit is scoped and self-describing):
-- **Orders screen was permanently empty** — sourced from `GET
-  /transactions`, which no code path ever populates for a buy/sell. Now
-  uses the real, investor-scoped `GET /orders` (added earlier the same
-  day) — real list, real StatusPill states, a working Cancel button.
-- **Holding detail's "Dividends received" / "Your orders in {ticker}"**
-  were marked as gaps and omitted; both are real now (same `GET /orders`
-  fix, plus `GET /dividends` already carrying a per-payout ticker) — wired
-  in.
-- **Wallet's transaction list had no icon/colour case for `dividend`**
-  transactions (added earlier the same day) — would have silently
-  rendered a real dividend payout with the wrong icon.
-- **Terms & disclosures (canvas s05, `legal_acceptance_screen.dart`)** was
-  a structurally different, much heavier screen than the canvas — every
-  document's full text rendered inline, not the canvas's compact
-  tappable row-list. Rebuilt to match; also fixed the mock screenshot
-  fixture, which had no case for `/legal-documents/content/:kind` at all
-  (blank titles, "V · READ" badges — a fixture gap, not a real-backend
-  one).
-- **KYC "Checking your details" (s23)** had no real per-signal checklist,
-  just a generic pending message — now uses the real
-  `KycVerificationSignals` the backend already returns.
-- **Bank accounts (s64)** rows were missing the account holder's name and
-  real "added {date}" — both existed on the backend already
-  (`createdAt`), just never parsed/fetched.
-- **Contract note (s66)** was missing the entire "Executed through Blue
-  Marina" band the canvas shows — real partner (confirmed against the
-  actual Client Agreement), real logo asset, just never imported/built.
-- **Rights issue (s82)** was missing the real wallet-balance helper text
-  and used generic explain-panel copy instead of the real ticker/cost
-  figures.
-- **Tax documents (s85)** dividend summary card was a static "not tracked
-  yet" notice written before the Dividends module existed — now pulls
-  real `GET /dividends/summary`.
-- **Complaint tracked (s88)** silently dropped the canvas's third,
-  not-yet-reached timeline stage ("Escalate to the SEC") instead of
-  showing it inactive — restored, with a real (not fabricated) date
-  derived from the complaint's own SLA deadline.
-- **Suitability result (s28)** copy claimed this product offers "NGX-
-  listed ETFs and bonds" — this app carries no fixed-income instruments
-  at all (`AssetClass` is ngx/us/etf only). Removed the false claim.
-- Partner-disclosures logo row (s94), a wrong button label ("Done" →
-  "Save choices" on s91), and two stale/inaccurate code comments
-  (dormancy backend, order cancellation) that were undermining features
-  that actually already work — all fixed.
-- **Next of kin (s21)** — added the missing optional Email field, real
-  end-to-end: `NextOfKin.email` on the backend (additive, no migration —
-  the field is stored in a schema-less `nextOfKin` Json column), both KYC
-  submission DTOs, `KycFormState`, and the screen itself.
-- Search results (s31) now show the real sector under each ticker.
-
-**Genuine remaining gaps, confirmed real (not fixed, need real
-backend/product work)**:
-- **DCS sell-proceeds payout redirect** — `Order.destinationBankAccountId`
-  is stored and validated, but `OrdersService` still always credits the
-  wallet regardless; nothing redirects the actual payout. Needs the same
-  transfer logic `TransactionsService` already uses for withdrawals,
-  reused inside order settlement. `OrderPlacementRepository.placeOrder()`
-  on mobile doesn't send the field yet either — not worth closing until
-  the backend side is real.
-- **Order partial-fill data model doesn't exist** — no `filledUnits`/
-  `fills[]`/per-fill contract notes anywhere on `Order`.
-  `order_fill_progress_screen.dart` (s80) is built and ready but has no
-  route and no real data source.
-- **AGM meeting date/venue** — canvas's copy names a real date/venue;
-  `AgmMeeting` has neither field.
-- **Tax document generation has no trigger** — `generateTaxDocument()`
-  exists server-side but nothing calls it (no controller endpoint, no
-  scheduled job) — `wht_credit_note`/`annual_tax_summary` requests will
-  always come back empty even once wired. `statements_repository.dart`'s
-  `StatementKind` enum also needs the two new values added on mobile.
-- **Transaction has no short reference field** (unlike `Order`, which got
-  one earlier this day) — transaction-detail's "Reference" row shows a
-  raw UUID.
-- **Withdrawal fee is genuinely ₦0.00** — no fee logic exists server-side
-  for withdrawals; canvas's "₦50.00" is unbacked example copy, not a real
-  figure to match.
-- **Contract note is only reachable from Statements** — canvas also wants
-  it reachable from Orders (#44) and Holding detail (#39); those
-  entry-point links don't exist yet. Its own fee/commission/VAT breakdown
-  is also unavailable — `Order` has no persisted fee fields (the 1.35%
-  shown at placement is computed client-side and never saved).
-- **Personal info's "Investor profile" card** omits "Answered {date}" —
-  `SuitabilityResult` has no `computedAt` reaching the client.
-- **Watchlist rows** show just the ticker, not canvas's "TICKER · added
-  {date}" — no date-added field on the watchlist API.
-- **Referral stats** show 2 of the canvas's 3 example fields — real
-  product-model mismatch (`ReferralAccount` pays real cash with no
-  verifying-vs-joined split; canvas assumes an AI-credit reward with a
-  3-stat breakdown). Worth reconciling upstream, not a wiring bug.
-
-Every one of the above was independently verified against the actual
-code (not assumed from a prior doc's claim) — several entries in this
-file were themselves found to be stale during this pass and corrected
-(see the "Order cancellation" and dormancy-backend entries above).
+# Backend gaps — redesign 2026-08
+
+Per DECISIONS.md's authority declaration: a screen is built to match its
+artboard even where the current API can't yet back every figure it draws.
+Each entry below names the artboard, the missing field, and what the screen
+does instead of fabricating it.
+
+## s24 — Markets
+
+**NGX All-Share index change.** The mood card ("Market mood today") draws
+"32 up · 14 down · NGX All-Share +1.4%" — a real, published NGX index
+figure. `AssetRepository`/the backend only carry per-instrument quotes, no
+market-index feed, so there is nothing to source that number from.
+
+Built: the card itself, with real up/down counts computed from the loaded
+asset list (`lib/screens/markets/markets_screen.dart`, `_MarketMoodCard`).
+Not built: the "NGX All-Share +X%" clause — left off rather than shown as a
+fabricated figure. Needs a real NGX index data source (or a broker-feed
+equivalent) before it can ship.
+
+## s26/s27 — Asset detail
+
+**Dividend yield.** s26's About tab draws a "Dividend yield 6.20%" figure —
+a real per-asset trailing-dividend-over-price calculation. `Dividend`
+records exist (`DividendsModule`) but no endpoint computes a per-asset
+yield from them yet.
+
+Built: the "Dividend yield" cell itself
+(`lib/screens/markets/asset_detail_screen.dart`, `_AboutTab`). Not built:
+the figure — renders `—` rather than a fabricated percentage. Needs a
+yield-computing endpoint (or a client-side computation fed real trailing
+dividend + price data) before it can ship.
+
+**Order book / depth data (R-18) — RESOLVED end to end, 2026-08-27.** s27
+draws a full order-book tab: an "Easy to sell"/"Hard to sell" liquidity
+call-out, live bid/ask rows keyed to `{{ book }}`, and best-buy/best-sell
+price cells. The backend serves this (BR-5, `SimulatedNgxBroker
+#getOrderBook`, `GET /assets/:ticker/order-book`) — 5 levels a side,
+bids/asks best-first, every bid strictly below every ask. S-7
+(`SHARED-CHANGES.md`) landed the mobile side: `OrderBook`/`OrderBookLevel`
+(`lib/data/models.dart`, raw kobo/unit ints) and
+`AssetRepository.orderBook` (`lib/data/repositories/asset_repository.dart`).
+`asset_detail_screen.dart`'s `_OrderBookTab` now fetches via `FutureBuilder`
+and renders real bid/ask rows and best-buy/best-sell cells (loading /
+error / populated, plus an empty state for the case both sides come back
+with zero levels — not observed against the real backend, which always
+returns 5 a side, but a real possible response shape). Verified on rendered
+PNGs (light + dark) via a throwaway test seeding a real 5-level-a-side
+response — the standing `test/shots_substates.dart` sub-state still shows
+the empty "Depth unavailable" state because `test/fixtures/mock_api_adapter.dart`
+(off-limits to a screen agent) has no handler for the new endpoint yet and
+falls back to `{}`; that's a test-fixture gap, not a product one.
+
+**Still a genuine gap:** the liquidity call-out banner. `SimulatedNgxBroker`
+computes no liquidity tier at all, and the book is always exactly 5 levels a
+side, so level-count can't stand in for one either — any "easy"/"hard to
+sell" threshold derived from spread or summed units would be invented, not
+real (R-34/D-5). Needs either a backend-computed liquidity signal or a
+product ruling on what the threshold means before it can ship.
+
+## s03b — Sign up: phone number (R-11)
+
+**Phone number at sign-up.** #s03 re-splits sign-up into a 3-step wizard
+(name → email+phone → password); #s03b's "How do we reach you?" step draws
+a real phone-number field alongside email, prefixed `+234`, with helper copy
+"Use the line registered to your BVN". `AuthRepository.signUp` only sends
+`{email, password, firstName, middleName?, lastName}` — Kudimata-Securities-Backend's
+`POST /auth/signup` (AuthSession resource, registry.json) has no phone
+column or parameter anywhere in the signup path.
+
+Built: the field itself, exactly where and how #s03b draws it (label,
+`+234` prefix, placeholder). Per R-11, it is not wired to a dead write —
+it's rendered fully **disabled** (the underlying `TextField` has
+`enabled: false`, so nothing can be typed into it at all) with an
+honest helper line explaining it isn't collected yet, instead of the
+canvas's "Use the line registered to your BVN" copy (kept for once the
+field is real). Not built: any submission of a phone number — there is
+nowhere real to send it yet.
+
+Needs: a `phone` column on the investor/auth record plus
+`POST /auth/signup` accepting an optional `phone`. Once that exists, this
+screen's SHARED-CHANGE REQUEST (see the sign_up_screen.dart build report)
+covers what changes on the mobile side: `AuthRepository.signUp` gains an
+optional `phone` parameter, and this field flips from disabled to a normal
+controlled input.
+
+## Welcome (`Routes.welcome`) — Landing Video Concept v3
+
+**Asset gap, not a data gap.** DECISIONS.md R-14: the welcome screen is the
+Landing Video Concept, treatment V3 — a 6-second muted looping video behind
+"Dream. Invest. Live.". No such footage exists yet.
+
+Built: V3's exact layout (mark, gradient panel, headline, sub-line, CTAs,
+"Kudimata Securities Ltd · SEC registered" line, 430px bottom scrim) with V1's
+illustrated frame (`assets/illustrations/kd-celebrate.svg` + two decorative
+rings over a radial-gradient panel) standing in for the video, structured as
+one swappable widget (`_LandingBackground` in
+`lib/screens/onboarding/welcome_slider_screen.dart`) so dropping the real loop
+in later is a media swap, not a rebuild.
+
+Needs: footage shot to v3's brief — 6s, muted, looping, H.264, under 1.5MB,
+first frame shipped as a static poster for slow connections. Storyboard: 0.0s
+hands/phone/Kudimata open (close crop, screen glow on the fingers) → 2.0s face
+lifts, small smile (eye line off camera, no acting, no thumbs up) → 4.5s walks
+out of frame, light fills it (ends bright and empty so the loop point is
+invisible). One person, handheld, warm daylight, plain wall behind, calm top
+third, nothing important below the waist (bottom 430px is scrim-covered), no
+text in frame.
+
+## s06b — Pick your avatar
+
+**Ninth avatar option ("guide").** The grid draws 9 tiles — adebayo, bisi,
+chiamaka, emeka, folake, ngozi, tunde, kudi, guide. `UserRepository.avatarKeys`
+(`lib/data/repositories/user_repository.dart`) only lists 8 — it omits
+`'guide'`, which the app already treats as a special mascot identity
+(`KAvatar.guide`) rather than one of the interchangeable user avatars. The
+asset itself already exists (`assets/illustrations/avatars/guide.svg`) and
+renders fine through the generic `KAvatar(avatarKey: 'guide')` path used here.
+
+Built: the 3×3-shaped grid with all 8 real, selectable avatars, tappable and
+correctly highlighted on selection. Not built: a 9th "guide" tile — omitted
+rather than letting an investor pick an identity `UserRepository.avatarKeys`
+doesn't recognise as a real profile avatar. Needs a product decision (is
+"guide" meant to be a selectable personal avatar, or should the canvas's grid
+be 8?) before `avatarKeys` — off-limits to a screen agent, per
+SCREEN-AGENT-BRIEF.md rule 5 (`lib/data/**`) — is touched.
+
+## s13 — Details from BVN
+
+**Resolved name/date-of-birth/phone from the BVN & NIN check.** Ruling R-19
+adopts BVN/NIN auto-populate: s13 "Is this you?" shows the investor's name,
+date of birth and phone exactly as the BVN/NIN verification returned them,
+for a read-only confirm-or-go-back step, plus a "Matches the name on your
+account" checkmark. `POST /kyc-submissions/draft`'s response
+(`KycSubmissionStatus`, `lib/data/repositories/kyc_repository.dart`) carries
+none of this — only masked `bvn`/`nin` strings and pass/fail
+`verificationSignals` booleans (`nin`/`bvn`/`name`/`dob`/`liveness`), never
+the resolved values themselves or a real name-match result.
+
+Built (`lib/screens/kyc/bvn_nin.dart`'s `_buildConfirm`): the card, its three
+labelled rows, and both buttons ("Yes, that's me" / "Re-enter BVN"). Not
+built: the row values, which render `—` rather than the canvas's mock
+"Adebayo Okonkwo" / "14 Mar 1992" / "+234 801 234 5678" (R-34 — a figure
+with no data source is omitted, never invented), and the "Matches the name
+on your account" checkmark line, omitted entirely since it asserts a
+computed match with nothing to compute it from.
+
+Needs: `POST /kyc-submissions/draft` (and/or `GET /kyc-submissions/draft`)
+to additionally return the BVN/NIN provider's resolved name, date of birth
+and phone, plus a boolean/computed flag for whether the resolved name
+matches the account's own name on file. See `SHARED-CHANGES.md` for the
+matching `KycSubmissionStatus` model change this also needs, since
+`lib/data/**` is off-limits to a screen agent.
+
+## s38 — Wallet: Transaction receipt
+
+**Per-transaction fee.** s38 draws a real, non-zero "Fees, all in ₦93.50" row
+on the receipt. `Txn`/`TransactionRepository`
+(`lib/data/repositories/transaction_repository.dart`) carries no fee field of
+any kind, and no endpoint anywhere computes one per transaction.
+
+Built: the rest of the detail-rows card exactly as s38 draws it (Requested,
+Settlement where it applies, Reference — reordered to match s38's own
+Reference-last layout). Not built: the Fee row — per R-34, the figure is
+omitted rather than invented, and since there is no real value to put beside
+a "Fee" label, the row itself is dropped rather than shown with nothing next
+to it (the previous version of this screen showed a hardcoded "₦0.00" here,
+which is exactly the fabricated-figure defect R-34 exists to prevent — this
+pass removes that literal too). Needs: a `fee` (or equivalent) field on the
+transaction/receipt read model, populated from whatever actually assessed the
+charge at execution time, before this row can ship.
+
+## s17 — Address + utility bill (R-19)
+
+**No dedicated LGA field anywhere.** s17 "Where do you live?" draws three
+address fields alongside the upload: Street address, State, LGA. Grepped
+both `User` (registry.json, backed by `UserRepository.updateProfile`/
+`PATCH /users/me`) and `KycSubmission` (`KycRepository.finalizeDraft`) —
+neither has an `lga` column or parameter. Both only carry
+`address`/`city`/`state`.
+
+Built: all three fields for real — Street address and State go to
+`updateProfile`'s `residentialAddress`/`state`. LGA is sent through
+`updateProfile`'s `city` parameter rather than dropped or disabled: this
+app's own existing address collection
+(`onboarding/personal_details_screen.dart`) already uses an LGA name
+("Ikeja") as its `city` field's own example value, so this reuses the
+closest existing real field for a value the investor actually chose, rather
+than inventing a column or discarding the input. Flagged here so a human
+can correct the mapping if `city` is meant to mean something narrower than
+LGA.
+
+Needs: a product/backend decision — either accept `city`-as-LGA as the
+permanent mapping, or add a real `lga` column to `User` (and, if compliance
+wants it on the submission record too, to `KycSubmission`/
+`FinalizeKycDraftRequest` — see `SHARED-CHANGES.md` X-3 for the related gap
+that `finalizeDraft` never receives address/city/state at all today).
+
+## s52 — Statements & documents / s56 — Request a statement
+
+**Broker filter/dimension.** s52 draws "All brokers"/"Blue Marina"/
+"Meristem" filter chips over the document list. No broker dimension exists
+anywhere on this backend — confirmed directly against
+`statements.service.ts`: `Statement` carries `{id, userId, kind, title,
+periodOrTradeRef, fileSizeBytes, generatedAt, fileObjectKey}`, no broker
+field at all, and this app is single-broker today (same standing gap
+`statement_detail_screen.dart` and `holding_detail_screen.dart` already
+established).
+
+Built: the search pill and a real filter-chip row, backed by something
+real instead of a fabricated broker dimension — distinct calendar years
+actually present in the investor's own document list. Not built: the
+broker chips themselves, and any "broker" clause in the search
+placeholder copy. Needs: a `brokerId`/`brokerCode` dimension on
+trades/holdings/statements before a real broker filter can ship.
+
+**`s56` "Request a statement" — custom date range and per-broker
+generation.** s56 is a dedicated screen: period presets (This month/This
+year/Choose dates), a from/to date-range picker, and an all-brokers-vs-one
+selector, emailing the result. Checked directly against
+`statements.service.ts` and `statements.controller.ts`: the only real
+generator endpoint is `POST /statements/generate-monthly` (current month
+only, no date-range or broker parameter of any kind). There is also no
+email-dispatch endpoint for statements.
+
+Built: `statements_screen.dart`'s footer button keeps s56's exact label
+("Request a statement") and icon, wired to the one real action that
+exists — generate the current month, in place, no navigation to a new
+screen. Not built: `s56` itself, since it has nothing real to submit to,
+and building a screen whose every control writes nowhere would be the
+same defect class as a fabricated figure. Needs: a
+custom-date-range statement generator endpoint, a broker dimension (see
+above) for the broker selector to mean anything, and an email-dispatch
+endpoint, before `s56` can be built as its own screen.
+
+## s41 — Orders hub
+
+**Partial-fill progress ("Filled so far").** s41's first order card draws a
+"Filled so far · 40 of 109 shares" row plus a progress bar for a
+partially-filled pending order. `Order` (`lib/data/models.dart`) carries no
+filled-units field at all — only `units` (the full ordered quantity) and a
+coarse `status` ('pending'/'approved'/'rejected'/'cancelled'), nothing that
+distinguishes "0 of 109 filled" from "40 of 109 filled".
+
+Built: the order card itself, with real ticker/side/units, real limit price
+(`limitPrice`) or value, real placed time, and the real status pill. Not
+built: the "Filled so far" row and progress bar — omitted per R-34 (a figure
+with no data source is omitted, never invented) rather than shown as a
+fabricated fraction. Needs a per-order filled-quantity field (or a fills
+sub-resource) from the broker/order layer before this can ship.
+
+**No ticker-agnostic "place a new order" entry point.** s41's footer button
+navigates straight to a buy/sell chooser (`nav.s42`) with no asset context.
+The app's real trade entry points (`showBuyFlow`/`showSellFlow` in
+`asset_detail_screen.dart`) both require a specific `Asset`, and R-33's
+`s42`/`s45` chooser screens are unbuilt as of this pass — there is no route
+that starts a trade without a ticker already chosen.
+
+Built: the footer button, styled and positioned exactly as s41 draws it,
+routing to Markets (`Routes.markets`) so the investor picks an asset first —
+the closest real, working equivalent. Needs: either a ticker-agnostic
+"choose what to trade" screen (asset picker → s42/s45), or a product decision
+that Markets is the intended landing spot for this button.
+
+## s03c — Terms and Disclosures
+
+**Legal document files were never actually uploaded to S3.** R-8 (DECISIONS.md)
+requires each of the 4 real documents to open in the phone's native file
+viewer via `LegalDocumentsRepository.downloadUrl(id)` (a presigned S3 GET
+URL) — built and wired on this screen. But every `LegalDocument.fileObjectKey`
+today is a placeholder that was never actually uploaded (already flagged
+once, in `lib/screens/account/legal_screen.dart`'s own history comment, as
+the reason that screen was switched to an in-app renderer instead — a
+workaround R-8 no longer permits for this screen). `downloadUrl` itself
+succeeds (the presigned-URL endpoint doesn't validate the key exists), so the
+phone's file viewer opens and then 404s (S3 `NoSuchKey`) — nothing on the
+client can detect this in advance.
+
+Built: the row tap → `downloadUrl` → `launchUrl(..., externalApplication)`
+flow, with an honest snackbar on any exception, plus a real empty state for a
+document whose `fileObjectKey` is unset. Not built (can't be, client-side):
+detection of a *populated-but-dead* key — that needs the 4 real files
+actually uploaded to their `fileObjectKey`s server-side.
+
+## s36 — Add money
+
+**Deposit fee fields on the funding endpoints.** s36 draws priced funding —
+"Bank transfer ₦100 to ₦150 · same day" and "Debit card Flutterwave · ₦28
+fee, instant". Per DECISIONS.md C-3 / the R-4 amendment, neither figure is
+real: no deposit or card-funding fee constant exists anywhere in the
+backend. `GET /transactions/virtual-account` (`VirtualAccountDetails`) and
+`POST /transactions/fund` (`FundResult`) carry no fee field at all — not
+even an explicit zero — so there is nothing on either response to source a
+figure from, real or otherwise.
+
+Built: both method rows and the funding-account plate, with their fee copy
+computed from a single `_depositFeeLabel` constant in
+`lib/screens/wallet/wallet_flows.dart` rather than pasted per call site —
+currently "Free", because that is what is actually charged today (verified
+against the repository, not guessed). Not built: any live fee figure, since
+none exists to read. `fees.ts`'s own header records what shipping a
+client-side fee guess cost last time (a quoted "Fees · 1.35%" while the
+backend charged nothing) — this screen does not repeat it.
+
+Also not built: s37's "Changing it takes a 24-hour security hold" line on
+the withdraw destination row — grepped the backend and
+`bank_accounts_screen.dart` for any such hold and found nothing, so it is
+omitted rather than asserted (same standing as the fee figures).
+
+Needs: real `feeKobo` (or equivalent) fields on
+`GET /transactions/virtual-account` and `POST /transactions/fund`, per the
+provisional rate card in FACT-CONFLICTS.md (flat bank-transfer fee, live
+Flutterwave pass-through for card) once that rate card is actually ruled —
+it is currently marked PROVISIONAL there, not production-ready. Once a real
+figure exists on the wire, `_depositFeeLabel` is the only place in this file
+that needs to change to render it.
+
+## s29/s29m/s43b/s43m/s44, s47/s46m/s48/s48m — buy/sell fees are unreachable
+anywhere in this flow
+
+Per R-34/C-1, `trade_flows.dart` no longer carries a client-side fee
+constant (it used to, `_kBuyFeeRate`/`_kSellFeeRate`, both now deleted — see
+`fees.ts`'s own header for what that cost last time). Checked directly
+against the backend for this pass, not assumed: there is genuinely nowhere
+in this flow a real fee/commission/total/proceeds figure can be read from
+today, at any step —
+
+- **No preview/quote endpoint.** `POST /orders` places a real order; there
+  is no side-effect-free "what would this cost" endpoint anywhere under
+  `src/orders/`.
+- **The order-creation response has no fee fields.** Even though a market
+  order fills synchronously and `OrdersService.create` computes real fees
+  for it in the same request (`recordContractNote`, called before the
+  response returns), the wire type it responds with —
+  `Order` in `Kudimata-Securities-Backend/src/common/types/order.types.ts`
+  — declares no `commissionKobo`/`exchangeFeesKobo`/`vatKobo`/`totalKobo`
+  field at all. `OrdersService.toDto` only ever spreads the fields that
+  type declares, so even a fixed version of the one bug below wouldn't
+  surface them without a type change too.
+- **The one endpoint that does compute them needs a reference the client
+  never receives.** `GET /orders/contract-note/:ref` returns the full fee
+  breakdown, but keys on `Order.contractNoteRef` — a field the `Order` wire
+  type also doesn't expose, so there is no way to reach it from a freshly
+  placed order's response.
+- **Smaller wiring bug found along the way, left as-is (out of scope for a
+  screen agent to fix a backend file):** `OrdersService.create` (around
+  line 265-302) fetches `created` from Prisma, then runs
+  `recordContractNote(created)` into a separate local `priced` variable for
+  a market order — but returns `this.toDto(created)`, the pre-fee row, not
+  `priced`. Even a type change alone wouldn't fix this without also fixing
+  the return value.
+
+Built: every row the canvas draws — Order type, shares, price, consideration
+("Estimated amount", a real `units × price` figure, not a fee), and the
+fee/total/proceeds rows themselves, all present with their labels intact.
+Not built: a numeric value for any fee/commission/total/proceeds row —
+each renders `"Added when your order fills"` (a real, honest statement:
+Kudimata does calculate and charge these, just not anywhere this client can
+read) instead of a computed or invented figure. The placed screen (s31)
+similarly omits the canvas's "for ₦25,000" clause, keeping the share count.
+
+Needs: `POST /orders`'s response — and `GET /orders/:id`/`GET /orders`, so
+a later "view this order" read gets the same figures — to include
+`commissionKobo`/`exchangeFeesKobo`/`vatKobo`/`totalKobo` on the wire type,
+plus the `created`-vs-`priced` return-value fix above. A true pre-placement
+preview endpoint would be needed to show fees before the PIN step at all,
+which no artboard in this section actually requires (every review screen's
+"Place order" button is also the placement action) — so the minimum fix is
+the response-shape one, not a new endpoint.
+
+**s44 ("Bought, at the real prices") is not built.** It needs a per-leg
+fill breakdown ("64 shares at ₦228.50 / 45 shares at ₦229.10 / Average
+price you paid") on top of the fee total above. `Order` stores one
+`price`/`units` pair per order, never several fill legs, so there is
+nothing to source a multi-price breakdown from even once the fee gap above
+is closed. This flow's terminal screen is s31 ("Order placed"/tracker),
+which every signal it draws (order created, order status, a settlement
+estimate) can actually back.
+
+**Sell proceeds always go to the wallet — the bank-payout side of a sell is
+real but incomplete.** `Order.destinationBankAccountId` exists and is
+stored, but `OrdersService.applyWalletSideEffect` credits the wallet for
+every sell regardless of what it's set to — the actual bank payout needs
+`TransactionsService`'s transfer logic, not wired into `OrdersService`
+today (see that method's own comment). Built: the review screen's "Where
+the money goes" section shows the wallet as the only selectable option and
+the investor's real primary bank account as a visibly disabled row with an
+honest "Not available yet" note, rather than letting the selection succeed
+and silently not move the money. `OrderPlacementRepository.placeOrder`
+also doesn't accept a `destinationBankAccountId` parameter yet, so nothing
+here calls the endpoint with one set.
+
+**No live bid/ask depth feed.** The price-entry step (s43/s46) draws a
+distinct buyer-pays/seller-asks spread ("Nearest seller"/"Best buyer now")
+implying an order book. `SimulatedNgxBroker` is the only `BrokerAdapter`
+and gives one plausible-per-ticker quote, not a book (the same root cause
+already used to justify hiding the asset-detail Order Book tab — see
+DECISIONS.md's B-2). Built: the one real quote (`Asset.price`) stands in
+for both roles rather than inventing a spread. The artboards' specific
+per-tick min/max price bounds ("Min ₦0.05 / Max ₦250.00") have no backend
+source either (no NGX tick-size data anywhere in this app) and are also
+omitted, replaced with basic "price must be positive" input validation.
+
+## Notifications settings — Weekly digest (no artboard, restyle-only screen)
+
+**Weekly digest email preference.** An older mockup this screen was built
+from drew a "Weekly digest" switch alongside Order updates / Price alerts /
+Security. `NotificationPreferences` has no field for it —
+`ordersEmail`/`priceAlertsEmail`/`accountEmail` are the only three booleans
+the backend models — and there is no scheduling job that could ever send a
+digest email regardless.
+
+Not built: the switch is omitted rather than shown as inert local state.
+It previously existed as a client-only `bool` that never called the API and
+reset on every app restart — indistinguishable, from the user's seat, from
+a real preference that silently does nothing. Removed 2026-08-27 alongside
+the redesign's R-6 parking of the AI-credits product line (the digest it
+would summarise is the same `POST /ai/portfolio-digest` feature whose Home
+entry point `home_screen.dart` already removed).
+
+Needs, only if/when R-6 is revisited: a persisted `weeklyDigestEmail`
+field on `NotificationPreferences`, plus a real digest-scheduling job. Until
+both exist, no switch for this belongs on the screen.
+
+## s54 — Security: "Alert me on new logins"
+
+`s54` draws a toggle, default off, sub "By email and push": **"Alert me on
+new logins."** Grepped this app and the backend for any new-login/new-device
+notification preference or dispatch path and found nothing —
+`NotificationPreferences` has no such field, and there is no push channel
+anywhere in this backend at all (its own repository header says so).
+
+Not built: the toggle is omitted rather than shown as inert local state
+(the same defect class flagged for the removed "Weekly digest" switch
+above). Needs a real `newLoginAlert`-shaped preference field plus a login
+event that actually dispatches on it (and, separately, a push channel,
+since s54's own sub-copy specifically claims "email and push") before this
+row can ship.
+
+## s58 — Personal details: no email-change capability
+
+`s58` draws an "Email" row with a "Change" affordance and a "Needs an email
+code" hint, implying an OTP-verified email-change flow.
+`UserRepository.updateProfile` has no `email` parameter at all — there is
+no email-change capability anywhere in this app, gated or otherwise.
+
+Built: the Email row itself, showing the investor's real current address
+(`personal_info_screen.dart`). Not built: the change flow — tapping
+"Change" surfaces an honest "not available yet, contact support" message,
+the same established pattern `data_privacy_screen.dart`'s "Download my
+data" and `statements_screen.dart`'s request flow already use for a real,
+known, unbuilt capability. Needs: a `PATCH /users/me` (or dedicated
+endpoint) that accepts `email`, plus whatever verification step the
+product wants in front of it (s58 implies an email OTP) before this can be
+self-serve.
+
+## s51 — Account hub: unregistered icon glyphs
+
+`s51` uses `Icon name="users"` for the Personal details row and
+`Icon name="flag"` for Corporate actions. Neither name exists in
+`lib/widgets/k_icon.dart`'s registry (checked — `KIconBubble` silently
+falls back to a generic `card` glyph for any unregistered name, which would
+misrepresent both rows rather than help them). `lib/widgets/**` is frozen
+for the duration of this wave (screen-agent brief, rule 5), so this screen
+agent could not add the glyphs itself.
+
+Built: both rows, with an adjacent available substitute instead
+(`profile` for Personal details, `transfer` for Corporate actions —
+`account_screen.dart`'s `_menuRows` doc comment records the exact
+substitution). SHARED-CHANGE REQUEST: add `users` and `flag` (and,
+separately, `logout`, which s51 also references for its own Log out
+button's leading icon and which `account_screen.dart`'s ghost-button Log
+out currently renders without) to `lib/widgets/k_icon.dart`'s glyph
+registry.

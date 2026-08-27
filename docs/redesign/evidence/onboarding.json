@@ -1,0 +1,181 @@
+{
+  "batch": "onboarding",
+  "screens": [
+    {
+      "app_screen": "lib/screens/onboarding/_pickers.dart",
+      "purpose": "Provides the two reusable picker bottom-sheets (Nigerian state-of-residence, phone country-code) and the underlying country/state datasets that personal_details_screen.dart's form fields open.",
+      "route": "UNROUTED",
+      "is_helper": true,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "File-local widget helpers (showStatePicker/showCountryCodePicker sheets + hardcoded country/state data), not a routed screen. Searched all 6 new canvas files for 'state of residence' and 'country code' picker copy — no matching sheet artboard anywhere; the only 'Personal details' hit is the Account-settings row in 06 Account and Support.dc.html (#s58), which doesn't depict a picker sheet either.",
+      "recommendation": "no-action",
+      "why": "Helper/shared-widget file, not a user-facing screen — no design coverage is meaningful here."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/avatar_screen.dart",
+      "purpose": "Lets a newly-verified investor optionally pick a character avatar (or skip, keeping just their name) right after starting KYC, before verification begins.",
+      "route": "Routes.onboardingAvatar ('/onboarding/avatar')",
+      "is_helper": false,
+      "covered_by": ["s06b"],
+      "coverage_confidence": "likely",
+      "evidence": "New canvas '06B · Pick your avatar' (01 Getting In.dc.html #s06b): title 'Pick your avatar', body 'Just for your profile. You can change it any time.', 3x3 grid of avatar circles, 'Skip' top-right, 'Use this avatar' primary button — matches the app screen's avatar grid + Skip/Continue pattern closely (searched 'avatar' and 'Choose an avatar' across all 6 canvas files; only this one artboard hits).",
+      "recommendation": "redesign-to-artboard",
+      "why": "Same purpose and interaction as #s06b, but the canvas places avatar directly between Face ID (06) and 'What happens next' (07) — i.e. inside the linear pre-KYC onboarding — while the app defers it (and a personal-details step the canvas has no equivalent of) until the investor explicitly starts KYC from kyc_intro.dart. A reordered/relocated gated step, not just a visual difference — flag for the router-owning agent."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/biometric_screen.dart",
+      "purpose": "Offers to enable Face ID/fingerprint unlock right after passcode creation; either 'Enable' or 'Not now' signs the investor in and lands on Home.",
+      "route": "Routes.biometric ('/biometric')",
+      "is_helper": false,
+      "covered_by": ["s06"],
+      "coverage_confidence": "certain",
+      "evidence": "New canvas '06 · Face ID' (#s06): title 'Unlock with your face', body 'Faster than typing your passcode.', buttons 'Turn on Face ID' / 'Maybe later' — the app screen's KStatusView title 'Unlock with your face', message 'Skip the passcode next time... Your face never leaves your phone', buttons 'Turn on Face ID' / 'Not now' match almost verbatim.",
+      "recommendation": "redesign-to-artboard",
+      "why": "Near-verbatim copy and layout match to #s06; identical position in the flow (immediately after passcode) in both canvas and app."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/confirm_passcode_screen.dart",
+      "purpose": "Has the investor re-enter their just-chosen passcode to confirm it before it's saved; a mismatch shows an inline error and clears the dots.",
+      "route": "Routes.confirmPasscode ('/passcode/confirm')",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched all 6 new canvas files for 'confirm passcode', 'enter it again', 're-enter' and 'passcode again' — no distinct confirm-passcode artboard exists anywhere. The new canvas's '05 · Create passcode' (#s05) is the only passcode-entry screen in the whole redesign and has no create/confirm split at all — its Continue path goes straight from typing 4 digits to '06 Face ID'.",
+      "recommendation": "needs-ruling",
+      "why": "Same widget pattern as #s05 (dots + keypad) reused for re-entry, so it isn't visually 'missing' — but the canvas shows only ONE passcode step (no confirmation re-entry) and uses a 4-digit code where the app uses 6 digits everywhere (create/confirm/login). Whether the confirm step and the extra 2 digits survive the redesign is a product question, not a styling one."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/create_passcode_screen.dart",
+      "purpose": "Has the investor pick a new local passcode via a numeric keypad, then hands off to the confirm step.",
+      "route": "Routes.createPasscode ('/passcode/create')",
+      "is_helper": false,
+      "covered_by": ["s05"],
+      "coverage_confidence": "likely",
+      "evidence": "New canvas '05 · Create passcode' (#s05): title 'Create a passcode', body about opening the app on this phone, dot progress + 3x4 keypad — matches the app screen's title/keypad layout. But #s05's dot row shows only 4 dots (a 4-digit code) and its Continue goes straight to '06 Face ID' with no confirm screen, while the app collects 6 digits and always routes to a separate confirm_passcode_screen.dart afterward.",
+      "recommendation": "needs-ruling",
+      "why": "Layout matches #s05, but passcode length (4 vs 6 digits) and step count (1 canvas screen vs the app's create+confirm pair) are functional differences needing a product ruling before this is just 'restyled'."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/document_summary_screen.dart",
+      "purpose": "Renders a single legal document's parsed heading/body text in-app, read-only, for review before or after accepting it.",
+      "route": "Routes.documentSummary ('/document-summary')",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched all 6 new canvas files for 'plain english', 'plain-English', and any in-app document-detail copy — none found. The new canvas's only document-list artboard (01 Getting In.dc.html #s03c, 'Terms and Disclosures') states outright that each row 'opens the real PDF or Word file in the phone viewer' — an external OS-level file viewer, not an in-app rendered text screen.",
+      "recommendation": "needs-ruling",
+      "why": "The new canvas's stated mechanism (open the real PDF/DOCX in the phone's own viewer) appears to replace in-app document rendering entirely, so this screen's whole approach may be intentionally superseded rather than merely unstyled — needs a ruling on whether in-app rendering is still wanted at all."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/legal_preview_screen.dart",
+      "purpose": "Lets a not-yet-signed-up visitor read the legal documents — individually (LegalPreviewScreen) or as one scrollable list of all of them (LegalBundlePreviewScreen) — before creating an account.",
+      "route": "Routes.legalPreviewPath ('/legal-preview/:kind') and Routes.legalBundlePreview ('/legal-preview')",
+      "is_helper": false,
+      "covered_by": ["s03c"],
+      "coverage_confidence": "likely",
+      "evidence": "New canvas 'Reference · Terms and Disclosures, opened from the checkbox' (#s03c): 'Eight documents. Tap one to open the file', reachable from the password screen's agree checkbox, caption notes 'Also reachable from Account → Terms' — matching this screen's dual pre-signup/in-account reachability. But #s03c lists 8 documents (Terms of Business, Risk Disclosure Statement, Privacy Policy, Fees and Charges, Best Execution Policy, Conflicts of Interest Policy, Complaints Procedure, Custody and Client Assets) opened as real PDF/DOCX files, versus the app's 4 (terms_of_service, privacy_policy, risk_disclosure, client_agreement) rendered in-app via DocumentSummaryScreen.",
+      "recommendation": "needs-ruling",
+      "why": "Purpose and reachability match #s03c closely, but the document set (8 vs 4) and rendering mechanism (external file viewer vs in-app parsed text) differ enough to be a content/scope question, not a pure restyle."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/locked_out_screen.dart",
+      "purpose": "Shows a 15-minute lockout screen after too many wrong local-passcode attempts, offering 'Reset with my email' or 'Talk to support'.",
+      "route": "Routes.lockedOut ('/locked-out') — registered in app_router.dart, but grep of lib/ shows no caller anywhere navigates to it; functionally unreachable.",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched all 6 new canvas files for 'too many', 'locked out', 'lockout', 'tries used', 'unlocks at' — zero matches anywhere. This screen's own header comment confirms it was built to match an OLDER (66/97-screen) canvas's screen 92, not this new redesign-2026-08 canvas, and that no failed-attempt counter exists anywhere in the app to ever trigger it.",
+      "recommendation": "no-action",
+      "why": "Genuinely uncovered in the new canvas AND unreachable in the live app (no attempt counter exists, no caller navigates here) — dead code on both counts, not worth a coverage ruling."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/log_in_screen.dart",
+      "purpose": "The single returning-user entry point: a local passcode/biometric unlock for a trusted device, or a real email+password (with optional step-up OTP) form for a new device.",
+      "route": "Routes.login ('/login')",
+      "is_helper": false,
+      "covered_by": ["s08", "s08p"],
+      "coverage_confidence": "likely",
+      "evidence": "New canvas '08 · Log in' (#s08): 'Welcome back, Adebayo', passcode dots + keypad with a fingerprint key — matches the app's local-unlock mode ('Welcome back', KPasscodeDots+KKeypad with a biometric shortcut). '08P · Sign in with password' (#s08p): email + password fields, 'Forgot password?' link — matches the app's email-login mode. Canvas dots are 4-digit vs the app's 6 (same divergence as the passcode screens). The app also has a third mode — a step-up OTP challenge ('Verify it's you', reusing KOtpCells) for accounts with two-factor enabled — with no canvas counterpart at all (searched 'step-up', 'verify it', 'two-factor' — no hits).",
+      "recommendation": "redesign-to-artboard",
+      "why": "Core two modes match #s08/#s08p well; the step-up OTP mode is real, necessary security functionality with no artboard — restyle it onto the same design system rather than dropping it, and reconcile the 4-vs-6-digit passcode question app-wide."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/onboarding_scaffold.dart",
+      "purpose": "Shared onboarding chrome and controls (step-label top bar, passcode dots, numeric keypad, OTP cells, scrollable body) reused by every onboarding screen — not a screen in its own right.",
+      "route": "UNROUTED",
+      "is_helper": true,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Pure widget-library file (KOnboardTopBar / KPasscodeDots / KKeypad / KOtpCells / KOnboardBody); no route, no independent UI of its own — it only supplies pieces other onboarding screens (already covered individually above) assemble.",
+      "recommendation": "no-action",
+      "why": "Helper/shared-widget file, not a user-facing screen."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/otp_screen.dart",
+      "purpose": "Has a freshly-signed-up investor enter the 6-digit code emailed to them to verify their address.",
+      "route": "Routes.otp ('/otp')",
+      "is_helper": false,
+      "covered_by": ["s04"],
+      "coverage_confidence": "certain",
+      "evidence": "New canvas '04 · Verify email' (#s04): title 'Enter the code we emailed you', 'Sent to adebayo@email.com · Change', 6-cell code entry, 'Resend in 00:42', single 'Verify' button — matches the app's 'Check your email' / 6-digit OTP cells / 'Resend code in 00:42 · Change email' / 'Verify email' button almost exactly.",
+      "recommendation": "redesign-to-artboard",
+      "why": "Very close copy and structure match to #s04; only drift is an extra 'I can't access this email' button in the app with no counterpart in the new #s04 (the app's own code comment cites an OLDER canvas's nav.s12 for that button, which doesn't exist in this new canvas file)."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/personal_details_screen.dart",
+      "purpose": "Collects date of birth, residential address, city, state of residence, and phone number via an editable form, reached when the investor starts KYC.",
+      "route": "Routes.onboardingPersonal ('/onboarding/personal')",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched all 6 new canvas files for 'date of birth', 'residential address', 'state of residence', and 'personal details' — the only DOB-bearing screen is 02 Verification.dc.html #s13 'Is this you?' (KYC step 1 of 5), a READ-ONLY auto-populated confirmation card (Name/Date of birth/Phone only — no address or city fields, sourced from BVN/NIN) with 'Yes, that's me' / 'Re-enter BVN' — not an editable manual-entry form. The only other 'Personal details' hit is #s58 in 06 Account and Support.dc.html, which is the post-onboarding Account-settings screen, not part of this onboarding flow.",
+      "recommendation": "needs-ruling",
+      "why": "The new canvas's KYC flow appears to replace manual DOB/address/city/state/phone entry with an auto-populated, read-only BVN/NIN confirmation (#s13, which lacks address/city fields entirely) — a scope change, not a restyle; needs a ruling on whether manual entry of these fields is still required at all."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/reset_passcode_screen.dart",
+      "purpose": "Lets a signed-out (or locally-locked-out) investor request an account password reset by email, then enter a code and set a new password.",
+      "route": "Routes.reset ('/reset')",
+      "is_helper": false,
+      "covered_by": ["s09"],
+      "coverage_confidence": "likely",
+      "evidence": "New canvas '09 · Reset password' (#s09): title 'Reset your password', body 'We email a link to adebayo@email.com so you can set a new password', single 'Email me a reset link' button whose caption states the flow continues 'code → 04-style entry → new passcode (05)' — matches the app's step-1 email screen ('Reset your password' / \"We'll send a code to your email\") closely. But the app's step 2 is a distinct code+new-password KInput form (not #s04's OTP-cell UI), and it ends by returning to email+password Log in — not by creating a new local passcode (#s05) as the canvas's caption implies.",
+      "recommendation": "needs-ruling",
+      "why": "Step 1 matches #s09's purpose well, but the canvas's implied step-2 mechanism (reuse OTP-cell code entry, then go straight into passcode creation) conflates account-password reset with local-passcode reset — this screen's own header comment documents that the app deliberately keeps those two concepts separate at the backend level, so the sequencing gap needs a ruling, not a restyle."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/sign_up_screen.dart",
+      "purpose": "Collects the new investor's name, email, and password in one screen and creates the account.",
+      "route": "Routes.signup ('/signup')",
+      "is_helper": false,
+      "covered_by": ["s03", "s03b", "s03p"],
+      "coverage_confidence": "likely",
+      "evidence": "New canvas splits sign-up into three screens: '03 · What's your name?' (#s03, first/last name only), '03B · Email and phone' (#s03b, email + phone number), '03P · Create a password' (#s03p, password + repeat password + 'I agree to... Terms and Disclosures' checkbox opening #s03c) — versus the app's single combined screen (first/middle/last name, email, password, confirm password, then a 'By continuing...' legal link below the button) with no phone field anywhere.",
+      "recommendation": "needs-ruling",
+      "why": "Canvas reintroduces a phone-number field at signup that the app deliberately removed (this screen's own header comment: 'there is no backend counterpart for a phone sign-up'), splits one screen into three, and moves terms acceptance into an inline checkbox before OTP verification rather than the app's dedicated post-OTP terms screen — all flow/scope changes, not a restyle."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/splash_screen.dart",
+      "purpose": "Launch screen shown briefly on cold start; decides and routes to the local-unlock screen (returning investor) or the welcome flow (first-time).",
+      "route": "Routes.splash ('/')",
+      "is_helper": false,
+      "covered_by": ["s01"],
+      "coverage_confidence": "certain",
+      "evidence": "New canvas '01 · Splash' (#s01): centered mark, 'Kudimata Invest' wordmark, spinner, 'Kudimata Securities Ltd · SEC registered' caption — matches the app's splash screen almost verbatim (same wordmark, spinner, and SEC-registered caption on a full-bleed feature-tint background).",
+      "recommendation": "redesign-to-artboard",
+      "why": "Near-exact copy and layout match to #s01; identical purpose and position (first screen, decides where to route)."
+    },
+    {
+      "app_screen": "lib/screens/onboarding/welcome_slider_screen.dart",
+      "purpose": "A 3-slide illustrated carousel introducing the app to a first-time investor, ending in 'Get started' (sign up) / 'I already have an account' (log in).",
+      "route": "Routes.welcome ('/welcome')",
+      "is_helper": false,
+      "covered_by": ["s02"],
+      "coverage_confidence": "likely",
+      "evidence": "New canvas '02 · Welcome' (#s02) is a SINGLE static screen (one growth illustration, \"Own a piece of Nigeria's biggest companies.\" / 'From ₦5,000. Explained in plain words.', 3 static (non-swipeable) dots, 'Create account' / 'Sign in' buttons) — not a swipeable multi-slide carousel. The app screen is a 3-slide PageView with entirely different copy per slide ('Investing, explained as you go' / 'Follow what you own' / 'Verified once, invested for good') and different button labels ('Get started' / 'I already have an account').",
+      "recommendation": "needs-ruling",
+      "why": "Same slot in the flow (right after Splash, before Sign up/Log in) but the canvas depicts one static welcome screen while the app implements a 3-slide carousel with different copy and CTAs — likely the canvas intends to drop the carousel for one static screen, but that's a scope call, not a routine restyle."
+    }
+  ]
+}

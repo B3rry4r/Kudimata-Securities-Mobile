@@ -1,6 +1,10 @@
-// 00 · Splash — centered brand lockup, the launch screen. After a brief beat it
-// routes to the returning-user unlock or the sign-up flow. Ported from shared.jsx
-// Splash. Root gated screen: builds its own Scaffold, no tab bar.
+// 01 · Splash — centered brand lockup, the launch screen. After a brief beat it
+// routes to the returning-user unlock or the sign-up flow. Root gated screen:
+// builds its own Scaffold, no tab bar.
+//
+// Artboard: docs/design/redesign-2026-08/01 Getting In.dc.html, `s01`/`s01d`
+// (2026-08 redesign, per RULINGS.md — the id comes from the ruling sheet, not
+// from any older comment that may once have lived here; see DECISIONS.md R-5).
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -74,45 +78,43 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 2026-08-22 "Soft Landing" — the one full-bleed feature-tinted (grape)
-    // screen in the whole app; everything else sits on --bg/--paper. See
-    // docs/redesign/screen-specs.md screen 01.
+    // The one full-bleed feature-tinted (grape) screen in the whole app;
+    // everything else sits on --bg/--paper. `KColor.feature` already
+    // flattens to the ordinary dark card colour in dark mode per
+    // DECISIONS.md R-26, so no separate dark branch is needed here.
     return Scaffold(
       backgroundColor: KColor.feature,
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const KMark(size: 86, white: true),
-                  const SizedBox(height: 22),
-                  // Mockup #s01: ONE uniform string, weight 800, 28px,
-                  // -0.02em, solid --feature-ink — not split into a
-                  // bold/translucent pair like the Wordmark component
-                  // renders elsewhere. Splash spells this out by hand.
-                  Text(
-                    'Kudimata Invest',
-                    style: KType.hero(color: KColor.featureInk).copyWith(
-                      fontSize: 28,
-                      fontWeight: KWeight.black,
-                      letterSpacing: -0.56,
+            // `s01`: mark + wordmark centered in the remaining space, no
+            // subtitle — the artboard draws only the lockup, not the old
+            // "Own a piece of Nigeria's biggest companies" strap line.
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const KMark(size: 92, white: true),
+                    const SizedBox(height: 24),
+                    // `s01`: ONE uniform string, weight 800, 30px, -0.02em,
+                    // solid --feature-ink — not split into a bold/
+                    // translucent pair like the Wordmark component renders
+                    // elsewhere. Splash spells this out by hand.
+                    Text(
+                      'Kudimata Invest',
+                      style: KType.hero(color: KColor.featureInk).copyWith(
+                        fontSize: 30,
+                        fontWeight: KWeight.black,
+                        letterSpacing: -0.6,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "Own a piece of Nigeria's biggest companies",
-                    textAlign: TextAlign.center,
-                    style: KType.body(color: KColor.featureInk2),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 40,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 44),
               child: Column(
                 children: [
                   KSpinner(size: 20, color: KColor.featureInk2),

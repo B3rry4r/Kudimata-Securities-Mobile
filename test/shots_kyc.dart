@@ -39,7 +39,9 @@ const _routes = <String, (String, bool, bool, bool)>{
   '19_bank_dcs': (Routes.kycBankDcs, false, false, false),
   '20_declarations': (Routes.kycDeclarations, false, false, false),
   '21_next_of_kin': (Routes.kycNextOfKin, false, false, false),
-  '22_review_submit': (Routes.kycReview, false, false, false),
+  // D-1 (2026-08-27 removals pass, R-9): review_submit_screen.dart dropped
+  // — next_of_kin above is now the last collection step and submits
+  // directly, so '22_review_submit' no longer exists.
   '23_24_submitted_pending': (Routes.kycSubmitted, true, false, false),
   '25_approved': (Routes.kycApproved, true, false, false),
   '26_outcome_not_approved': (Routes.kycOutcome, true, false, false),

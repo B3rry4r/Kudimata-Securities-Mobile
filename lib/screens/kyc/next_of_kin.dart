@@ -1,19 +1,35 @@
-// KYC 8 of 8 — next of kin (2026-08-24 re-sequencing: was step 5 of 5/final;
-// there's now a Review & submit screen after this one). Name / relationship
-// / phone.
+// KYC 7 of 7 — next of kin (2026-08-24 re-sequencing: was step 5 of 5/final;
+// renumbered 8->7 (was 8 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation).
+// Name / relationship / phone.
 //
-// Continue no longer finalizes the draft directly — it stashes these three
-// fields on KycFormState (the draft itself has nowhere to hold them until
-// finalize is actually called) and hands off to Review & submit
-// (review_submit_screen.dart), which is the one screen that now calls
-// POST /kyc-submissions/draft/finalize (2026-08-20, phased-KYC directive —
-// was POST /kyc-submissions, the all-at-once call, before that) — requires
-// steps 2-5 (id document, liveness, utility bill, ready-to-finalize)
-// already done, computes the real vendorDecision from everything
-// accumulated across the earlier steps, and leaves 'draft' for good.
+// D-1 (SHARED-CHANGES.md, 2026-08-27 removals pass, R-9): this is now the
+// LAST collection step — the standalone Review & submit screen
+// (review_submit_screen.dart) was dropped, and submission moves here.
+// Continue stashes these three fields on KycFormState (same as before), then
+// calls POST /kyc-submissions/draft/finalize directly
+// (KycRepository.finalizeDraft — 2026-08-20 phased-KYC directive; was POST
+// /kyc-submissions, the all-at-once call, before that) — requires steps 2-5
+// (id document, liveness, utility bill, ready-to-finalize) already done,
+// computes the real vendorDecision from everything accumulated across the
+// earlier steps, and leaves 'draft' for good.
+//
+// X-3 (SHARED-CHANGES.md): a compliance officer reviewing a submission must
+// see the residential address AS IT WAS WHEN SUBMITTED, not whatever the
+// profile says later. utility_bill.dart (s17) already collects
+// street address/city/state and PATCHes them onto the investor's own
+// profile (UserRepository.updateProfile) rather than staging them into the
+// shared KycFormState. So — same as review_submit_screen.dart used to do —
+// this screen re-fetches that profile (UserRepository.personalInfo(), the
+// exact resource utility_bill.dart just wrote to) right before Submit
+// fires, and sends its residentialAddress/city/state straight into
+// finalizeDraft. That captures the value AT SUBMISSION TIME. This wiring
+// MOVED here with the submission call; it must not be lost.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
+import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -47,6 +63,10 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
   String? _relationship;
   bool _showErrors = false;
   bool _prefilled = false;
+  bool _submitting = false;
+
+  late final _kycRepo = KycRepository(AppScope.read(context).apiClient);
+  late final _userRepo = UserRepository(AppScope.read(context).apiClient);
 
   @override
   void dispose() {
@@ -94,18 +114,57 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
   bool get _valid =>
       _name.text.trim().isNotEmpty && _relationship != null && _phone.text.trim().isNotEmpty;
 
-  void _continue() {
+  /// D-1: submits the draft directly — this is the last collection step.
+  /// See this file's header comment (X-3) for why the profile address is
+  /// re-fetched here rather than read off KycFormState.
+  Future<void> _submit() async {
     if (!_valid) {
       setState(() => _showErrors = true);
       return;
     }
-    AppScope.read(context).kycForm.setNextOfKin(
-          name: _name.text.trim(),
-          relationship: _relationship!,
-          phone: _phone.text.trim(),
-          email: _email.text.trim().isEmpty ? null : _email.text.trim(),
-        );
-    context.go(Routes.kycReview);
+    final app = AppScope.read(context);
+    final form = app.kycForm;
+    form.setNextOfKin(
+      name: _name.text.trim(),
+      relationship: _relationship!,
+      phone: _phone.text.trim(),
+      email: _email.text.trim().isEmpty ? null : _email.text.trim(),
+    );
+
+    setState(() => _submitting = true);
+    // X-3: best-effort — a failed fetch shouldn't block submission, it just
+    // leaves the address unset on finalizeDraft (same as never having
+    // collected it).
+    PersonalInfo? info;
+    try {
+      info = await _userRepo.personalInfo();
+    } on ApiException {
+      info = null;
+    }
+    String? realOrNull(String? v) => (v == null || v == '—') ? null : v;
+    try {
+      await _kycRepo.finalizeDraft(
+        nextOfKinName: form.nextOfKinName ?? '',
+        nextOfKinRelationship: form.nextOfKinRelationship ?? '',
+        nextOfKinPhone: form.nextOfKinPhone ?? '',
+        nextOfKinEmail: form.nextOfKinEmail,
+        address: realOrNull(info?.residentialAddress),
+        city: realOrNull(info?.city),
+        state: realOrNull(info?.state),
+      );
+      if (!mounted) return;
+      form.reset();
+      app.setKycSubmitted(true);
+      context.go(Routes.kycSubmitted);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      _showErrorSheet(context, message: e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      _showErrorSheet(context, message: 'Something went wrong. Please try again.');
+    }
   }
 
   @override
@@ -118,9 +177,9 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycDeclarations),
-              stepLabel: 'Verification · 8 of 8',
+              stepLabel: 'Verification · 7 of 7',
             ),
-            const KycStepProgress(total: 8, current: 8),
+            const KycStepProgress(total: 7, current: 7),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -185,10 +244,11 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
               padding: const EdgeInsets.fromLTRB(
                   KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
               child: KButton(
-                // Review & submit (screen 22) is the new final step — this
-                // one hands off to it rather than submitting directly.
-                label: 'Review and submit',
-                onPressed: _continue,
+                // D-1: this is now the final step — submits directly rather
+                // than handing off to a Review & submit screen.
+                label: 'Submit for verification',
+                loading: _submitting,
+                onPressed: _submitting ? null : _submit,
               ),
             ),
           ],
@@ -196,6 +256,24 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
       ),
     );
   }
+}
+
+/// Shown when the finalize call fails — moved from review_submit_screen.dart
+/// (D-1, dropped per R-9) along with the submit call itself.
+void _showErrorSheet(BuildContext context, {required String message}) {
+  showKSheet<void>(
+    context,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: KStatusView(
+        tone: KStatusTone.error,
+        title: 'Submission failed',
+        message: message,
+        primary: 'Try again',
+        onPrimary: () => Navigator.of(context).pop(),
+      ),
+    ),
+  );
 }
 
 /// "Relationship" field's closed/collapsed state — same visual chrome as

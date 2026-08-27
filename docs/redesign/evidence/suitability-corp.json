@@ -1,0 +1,219 @@
+{
+  "batch": "suitability-corp",
+  "screens": [
+    {
+      "app_screen": "lib/screens/corporate_actions/agm_vote_screen.dart",
+      "purpose": "AGM detail: fetches the caller's most-relevant AGM meeting (open, not yet voted) and lets them cast a For/Against/Abstain vote per resolution, then shows a 'Voted' status once submitted.",
+      "route": "/corporate-actions/agm (Routes.corpActionsAgm, app_router.dart:340)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched '06 Account and Support.dc.html' (the only file where 'rights issue'/'AGM' text appears) for >=2 distinctive phrases from this screen: 'Abstain' -> 0 matches anywhere in the whole canvas (all *.dc.html); 'resolution' -> 0 matches anywhere in the canvas. The only AGM-related content in the entire canvas is inside artboard s55 ('06 Account and Support.dc.html' lines 823-834): a settled-history row reading 'GTCO annual meeting / You voted by proxy · 4 Jul' — a read-only summary row on the corporate-actions hub, not a voting screen. There is no ballot UI (For/Against/Abstain chips), no per-resolution list, and no 'X shares = X votes' copy anywhere in the canvas.",
+      "recommendation": "needs-ruling",
+      "why": "Corporate actions survive the redesign per the word-count evidence (34 old / 29 new for corporate-action terms) and s55 explicitly represents AGM participation as a hub list item, so the FEATURE is clearly meant to survive. But the actual vote-casting screen (resolutions + For/Against/Abstain + eligible-vote-count copy) has no artboard anywhere in the 8-file canvas. A human must decide whether to design a new artboard for this (using s55's card language) or restyle the existing Flutter screen as-is against design tokens."
+    },
+    {
+      "app_screen": "lib/screens/corporate_actions/corporate_actions_screen.dart",
+      "purpose": "Corporate-actions hub: lists pending decisions (open rights issues + open AGM votes needing an answer) and settled/history items (already-elected/voted/closed), plus a link to Dividends.",
+      "route": "/corporate-actions (Routes.corpActions, app_router.dart:335)",
+      "is_helper": false,
+      "covered_by": ["s55"],
+      "coverage_confidence": "certain",
+      "evidence": "Artboard s55 in '06 Account and Support.dc.html' (lines 792-841) has header title 'Corporate actions', headline 'One decision waiting' / 'Companies you own sometimes ask you to choose something' (matches the app's `_headline()` copy shape: 'Companies you own are doing things...'), a decision card (rights issue, Take it up/Skip it), and a 'Recent' section listing settled items (MTN dividend paid, GTCO AGM 'You voted by proxy') — matching this screen's pending-vs-settled split and its _SettledCard/'Done for you' pattern. The artboard's own designer annotation (line 840) reads: 'Rights issue with the cost, the deadline and the consequence of doing nothing, plus dividends, proxy votes and the unclaimed-dividend mandate' — explicitly describing this hub's scope.",
+      "recommendation": "redesign-to-artboard",
+      "why": "Direct, high-confidence match on title, structure (pending decision card + recent/settled list), and even the designer's own annotation describing the same feature set this screen implements."
+    },
+    {
+      "app_screen": "lib/screens/corporate_actions/corporate_actions_widgets.dart",
+      "purpose": "Screen-local shared widgets for this cluster: KCorpActionScaffold (detail-header + scroll body), KFactRow (label/value row), KDecisionCard (tappable 'needs a decision' card on the hub). Not a screen itself.",
+      "route": "UNROUTED",
+      "is_helper": true,
+      "covered_by": ["s55"],
+      "coverage_confidence": "likely",
+      "evidence": "KDecisionCard's own doc comment cites '#s81' (an old-canvas id, now s55 in the new canvas) as its visual source; its rendered shape (status pill + deadline eyebrow + title + body) matches s55's decision-card block (lines 806-822). KFactRow's doc comment cites an old '#s82' fact table with no equivalent artboard in the new canvas (see rights_issue_screen.dart finding below).",
+      "recommendation": "no-action",
+      "why": "Pure helper file — its fate follows whatever the human decides for the screens that use it (corporate_actions_screen.dart, agm_vote_screen.dart, rights_issue_screen.dart)."
+    },
+    {
+      "app_screen": "lib/screens/corporate_actions/dividends_screen.dart",
+      "purpose": "Dividends detail: 'Paid to you this year' total via Direct Cash Settlement, an 'Unclaimed from before Kudimata' card with an e-dividend mandate sign action, and a per-dividend history list (ticker, pay date, WHT%, net amount).",
+      "route": "/corporate-actions/dividends (Routes.corpActionsDividends, app_router.dart:343)",
+      "is_helper": false,
+      "covered_by": ["s55 (partial, footer note + one list row only)"],
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas for 'e-mandate' (2 hits, both in s55), 'e-dividend' (0), 'withholding'/'WHT' (0), 'dividend history' (0), 'Paid to you this year' (0), 'unclaimed' (2 hits, both in s55). s55's only dividend content is: a single 'Recent' row 'MTN Nigeria dividend / ₦4,548 paid to your bank · 12 Jul' (line 827) and a footer note 'Unclaimed dividends from before you joined? Set up an e-mandate and we chase them for you.' (line 837). There is no dedicated dividends screen anywhere in the canvas showing a paid-this-year total, WHT breakdown, or a dividend history table.",
+      "recommendation": "needs-ruling",
+      "why": "The feature (dividends + e-mandate) is clearly meant to survive per s55's footer note and the word-count evidence, but no artboard shows the actual detail screen this Flutter file renders (summary card, unclaimed card with sign action, history table with WHT%). A human must decide whether to design a dedicated artboard or restyle in place."
+    },
+    {
+      "app_screen": "lib/screens/corporate_actions/rights_issue_screen.dart",
+      "purpose": "Rights-issue detail: shows entitlement/rights price/cost/close-date facts, then a numeric input letting the investor choose HOW MANY of their entitled shares to take up (partial subscription allowed), with 'Take up N for ₦X' / 'Let it lapse' actions.",
+      "route": "/corporate-actions/rights-issue (Routes.corpActionsRightsIssue, app_router.dart:338)",
+      "is_helper": false,
+      "covered_by": ["s55 (partial — summary card only)"],
+      "coverage_confidence": "none",
+      "evidence": "Searched canvas for 'entitlement' -> 0 matches anywhere. 'lapse' -> 0 matches. 'Take up' (with a following number) -> 0 matches (only the fixed-label 'Take it up' / 'Skip it' buttons exist, lines 818-819/869-870). s55's rights-issue block is a fixed-shape summary: 'You can buy 300 new shares at ₦38.00 each... Cost if you take it all ₦11,400 / Closes Fri 30 Aug' with two binary buttons — no numeric quantity input for partial subscription.",
+      "recommendation": "needs-ruling",
+      "why": "The canvas models rights-issue participation as a BINARY decision (take it all up, or skip), while the current app lets the investor choose a partial quantity to subscribe. This is a real mechanics difference, not just styling — a human must decide whether to keep partial-subscription capability (restyled) or adopt the canvas's simpler all-or-nothing model, which would be a product/compliance decision, not a design one."
+    },
+    {
+      "app_screen": "lib/screens/shared/confirm_passcode_sheet.dart",
+      "purpose": "Shared bottom sheet: confirm the user's existing 6-digit passcode (dots + numeric keypad) before a sensitive action. Reused by security_screen.dart and wallet_flows.dart (withdraw/send confirmation), not specific to suitability or corporate actions.",
+      "route": "UNROUTED (modal via showModalBottomSheet)",
+      "is_helper": true,
+      "covered_by": ["s08 (pattern match, full-screen not sheet)"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched canvas for the visual pattern this sheet renders: passcode dots + 0-9 keypad grid with a fingerprint key. Found in '01 Getting In.dc.html' artboard s08 ('Log in', lines 805-838): 4 progress dots + a 3-column numeric keypad (1-9, fingerprint, 0, back) — the identical component shape (KPasscodeDots + KKeypad) this sheet reuses. The canvas also demonstrates the 'confirm as a sheet' form factor elsewhere (s18b 'Confirm bank · sheet', '02 Verification.dc.html' line 566), establishing that bottom-sheet confirmations are a known pattern in this design system, just not specifically for passcode.",
+      "recommendation": "restyle-only",
+      "why": "The exact passcode dots + keypad component exists in the design system (s08) and sheet-form-factor confirmations exist elsewhere (s18b); no new artboard is needed — this is a component reuse/restyle job, not a design gap."
+    },
+    {
+      "app_screen": "lib/screens/shared/glossary_sheet.dart",
+      "purpose": "Shared 'explain this term' bottom sheet: shows a hand-written static definition (free, instant) plus an optional credit-metered 'Explain further' AI follow-up. Backs every KGlossaryTerm/onTapStat tap app-wide (asset_detail_screen.dart, trade_flows.dart, faq_screen.dart, questionnaire_screen.dart).",
+      "route": "UNROUTED (modal via showKSheet)",
+      "is_helper": true,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched the whole canvas (all 8 *.dc.html files) for: 'glossary' (case-insensitive) -> 0 matches in any file; 'What does this mean' -> 0 matches; 'Explain further' -> 0 matches; 'Still don't understand' -> 0 matches. This confirms the word-count hint (7 old / 0 new) at the mechanism level, not just the word 'glossary': the tap-a-term-to-explain sheet pattern itself has zero representation anywhere in the new canvas.",
+      "recommendation": "needs-ruling",
+      "why": "This mechanism is load-bearing beyond this batch (used by trade flows, FAQ, asset detail, and the surviving suitability questionnaire's 'Investment Horizon' term) and its removal or redesign affects those other screens too. Since the questionnaire is explicitly ruled to survive and currently depends on this sheet for its one jargon term, a human must decide whether to design a glossary/explain pattern for the new canvas or keep this component unstyled-but-functional."
+    },
+    {
+      "app_screen": "lib/screens/shared/state_views.dart",
+      "purpose": "Shared library of KEmptyView / KErrorView / KLoadingView / KCentered state widgets used across nearly every screen in the app for loading, error, and empty states.",
+      "route": "UNROUTED (widget library, no screen/route of its own)",
+      "is_helper": true,
+      "covered_by": ["pattern present across many artboards, e.g. s23, s53, s35 (no single dedicated artboard)"],
+      "coverage_confidence": "likely",
+      "evidence": "Searched for the specific error/empty copy this file hardcodes: \"Couldn't load\" -> not found verbatim, but the file's own doc comments already cite canvas artboards by id for specific variants (e.g. 'canvas screen 59 \"Offline & error\"' for the ghost-variant secondary button, and design-system readme language about the 'medallion' pattern the redesign moved away from). The empty/loading/error PATTERN (illustrated plate + title + body + one/two buttons) recurs structurally across the canvas's own list/hub screens (e.g. s23 'Home, first time', s53 Complaints, s35 Wallet all show illustration-plus-copy-plus-button compositions consistent with this file's KEmptyView/KErrorView shape).",
+      "recommendation": "restyle-only",
+      "why": "This is generic UI infrastructure, not a distinct screen concept — the design system's illustration/plate/button conventions are well-established throughout the canvas, so this file needs its tokens/illustrations aligned to the new design system rather than a dedicated artboard."
+    },
+    {
+      "app_screen": "lib/screens/suitability/legal_acceptance_screen.dart",
+      "purpose": "Shared, parameterized legal-document acceptance scaffold: fetches N legal documents, renders each one's FULL TEXT inline, scroll-gates a single checkbox until the investor reaches the bottom, then posts one acknowledgement per document kind in order. Currently instantiated only by terms_and_privacy_screen.dart for ['terms_of_service','privacy_policy','client_agreement'].",
+      "route": "UNROUTED itself (backs /suitability/terms via terms_and_privacy_screen.dart)",
+      "is_helper": true,
+      "covered_by": ["s03p (checkbox+link), s03c (document list) — structural mismatch, see why"],
+      "coverage_confidence": "likely",
+      "evidence": "Canvas artboard s03p ('01 Getting In.dc.html' lines 288-331, 'Create a password') has one checkbox: 'I have read and agree to the Terms and Disclosures', linking to artboard s03c (lines 930-988, 'Reference · Terms and Disclosures, opened from the checkbox'). s03c is a TAP-TO-OPEN list of 8 downloadable documents (Terms of Business, Risk Disclosure Statement, Privacy Policy, Fees and Charges, Best Execution Policy, Conflicts of Interest Policy, Complaints Procedure, Custody and Client Assets) each opening 'the real PDF or Word file in the phone viewer' (per its own annotation, line 988), with a single 'I agree to all of these' button.",
+      "recommendation": "needs-ruling",
+      "why": "The 'one checkbox covers multiple documents' PRINCIPLE matches, but the mechanism differs structurally: canvas = tap-to-open-external-file list of 8 named policy documents with the checkbox living on a DIFFERENT screen (password creation, s03p); app = exactly 3 document kinds rendered as full inline text with a scroll-to-bottom gate on their own screen. The document sets also don't match 1:1 (canvas names 'Terms of Business', 'Fees and Charges', 'Best Execution Policy', 'Conflicts of Interest Policy', 'Complaints Procedure', 'Custody and Client Assets' — none of which exist as `LegalDocument` kinds in this codebase's compliance model, which only knows terms_of_service/privacy_policy/risk_disclosure/client_agreement). A human must decide which document set and which interaction pattern (inline-scroll vs tap-to-open) is correct going forward."
+    },
+    {
+      "app_screen": "lib/screens/suitability/questionnaire_screen.dart",
+      "purpose": "The suitability quiz itself: 4 single-select radio questions (Investment Experience, Investment Objective, Investment Horizon, Risk Tolerance), each with exactly 3 options ordered least-to-most risk-oriented, verbatim from the firm's real SEC-facing compliance intake. Submits POST /suitability-result on completion.",
+      "route": "/suitability (Routes.questionnaire, app_router.dart)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched canvas for the exact question/option text: 'Investment Experience', 'Investment Objective', 'Investment Horizon', 'Risk Tolerance', 'Capital Preservation', 'Aggressive Growth' -> 0 matches anywhere in any of the 8 canvas files. The closest STRUCTURAL analog is artboard s27 (cited in this file's own code comments as its layout source: 'the canvas mockup's #s27 block' for the header/progress-bar order, and 'Canvas: title/options/ExplainTrigger column padding' / 'canvas footer row') — but s27 is not present as a literal id in the new 2026-08 canvas (grep for id=\"s27\" returns nothing in any *.dc.html file), meaning the code comments reference an OLDER canvas than the one being evaluated here.",
+      "recommendation": "needs-ruling",
+      "why": "Per the product owner's ruling, this quiz SURVIVES as the last step of KYC or another reasonable point. The new canvas's verification flow ends with artboard s19 ('Two quick questions', 'Step 5 of 5' — PEP/regulator screening) immediately before s20 'Under review' and s21 'Verified', which is a plausible insertion point (same step-progress convention, same single-question-per-screen-or-two-per-screen shape), but no artboard shows THIS quiz's actual 4 questions. A human must decide exactly where in the new KYC step sequence the quiz lands and whether a new artboard is designed for it or it's restyled using the existing radio-option-card component (already used elsewhere in the canvas, e.g. verification screens) against the s19-style step header."
+    },
+    {
+      "app_screen": "lib/screens/suitability/risk_disclaimer_screen.dart",
+      "purpose": "Statutory Risk Disclaimer screen (Rule 76 compliance): renders the legal-team-authored risk_disclosure document verbatim, scroll-gates an NDPA-referencing checkbox, and on accept marks risk-disclosure-accepted + suitability-complete and signs the user in. CURRENTLY DOES NOT display any risk category/profile — see profiling_language below.",
+      "route": "/suitability/risk-disclaimer (Routes.riskDisclaimer, app_router.dart:232)",
+      "is_helper": false,
+      "covered_by": null,
+      "coverage_confidence": "none",
+      "evidence": "Searched canvas for 'risk disclosure'/'Risk Disclosure' (case-insensitive) -> only 2 hits, both just the DOCUMENT NAME as a row label inside s03c's tap-to-open list ('Risk Disclosure Statement... PDF · 180 KB', lines 949/1010) — not a dedicated scroll-gated acceptance screen. Searched 'NDPA' -> 0 matches. Searched 'scroll to' / 'Accept & Proceed' -> 0 matches. No artboard anywhere shows a dedicated, scroll-gated, single-document disclosure-acceptance screen matching this file's structure.",
+      "recommendation": "needs-ruling",
+      "why": "This is a statutory requirement (Rule 76) that must exist somewhere in the rebuilt app, but the canvas treats 'Risk Disclosure Statement' as just one more downloadable PDF in a list rather than a dedicated gated-read screen. A human must decide whether the statutory gate (scroll-to-bottom + explicit checkbox, separate from the other documents) is preserved as its own screen (restyled) or folded into the s03c-style document list — the latter would likely fail the 'investor demonstrably read it' compliance intent this screen exists for."
+    },
+    {
+      "app_screen": "lib/screens/suitability/suitability_result_screen.dart",
+      "purpose": "Post-questionnaire screen. CURRENTLY shows only a generic 'Assessment complete' success message (illustration + title + body + 'You can retake this any time' note) and a Continue button to the Risk Disclaimer — see profiling_language below for what was removed and why.",
+      "route": "/suitability/result (Routes.suitabilityResult, app_router.dart:230)",
+      "is_helper": false,
+      "covered_by": ["s21 (structural pattern only, not a dedicated match)"],
+      "coverage_confidence": "none",
+      "evidence": "Searched canvas for 'Assessment complete' -> 0 matches. Searched 'suitability'/'Suitability' -> 0 matches anywhere. The closest STRUCTURAL analog found: artboard s21 'Verified' ('02 Verification.dc.html' lines 736-751) — illustration banner + title ('You're verified') + body copy + two stacked buttons (primary + ghost) — the same generic completion-screen shape this Flutter screen now uses ('Assessment complete' + body + Continue/Change-an-answer). This is a pattern match on shape only, not a dedicated artboard for suitability completion.",
+      "recommendation": "needs-ruling",
+      "why": "The screen's content was already stripped of profiling language by direct product instruction (2026-08-24) to become 'a simple completion or success screen' — which is exactly what generic completion artboards like s21 look like. A human should confirm whether reusing/restyling s21's generic completion pattern (illustration + title + body + 2 buttons) is the intended treatment, since no artboard was purpose-built for this exact step."
+    },
+    {
+      "app_screen": "lib/screens/suitability/terms_and_privacy_screen.dart",
+      "purpose": "Thin config wrapper: instantiates legal_acceptance_screen.dart with kinds=[terms_of_service, privacy_policy, client_agreement], title 'Terms & agreements', 'Step 2 of 4', checkbox 'I have read and agree to all three documents', then routes to Create Passcode.",
+      "route": "/suitability/terms (Routes.termsOfService, app_router.dart:247)",
+      "is_helper": false,
+      "covered_by": ["s03c/s03p (see legal_acceptance_screen.dart finding — same structural mismatch)"],
+      "coverage_confidence": "likely",
+      "evidence": "Same evidence as legal_acceptance_screen.dart above: s03p's checkbox links to s03c's 8-document tap-to-open list. Additionally, this screen's own 'Step 2 of 4' label conflicts with the canvas's step numbering: in the new canvas, 'Step 2 of 4' (s03b) is 'How do we reach you?' (email/phone) and 'Step 3 of 4' (s03p) is 'Create a password' with the terms checkbox — the canvas's onboarding ORDER (email/phone -> password+terms-checkbox -> verify email -> ...) differs from this app's current order (OTP verify -> terms/privacy screen -> create passcode).",
+      "recommendation": "needs-ruling",
+      "why": "Beyond the document-set/interaction-pattern mismatch already flagged on legal_acceptance_screen.dart, this screen's position IN THE FLOW ('Step 2 of 4' before passcode creation) doesn't line up with where the canvas places its own terms-acceptance moment (folded into the password-creation step, Step 3 of 4, with documents reached via a link rather than owning its own screen). A human must decide the correct onboarding step order before this can be redesigned-to-artboard."
+    }
+  ],
+  "profiling_language": [
+    {
+      "location": "lib/screens/suitability/risk_disclaimer_screen.dart:176-193 (comment block, code REMOVED 2026-08-24)",
+      "status": "REMOVED from the live UI, but documented in a comment as the exact copy that used to render",
+      "quote": "you have been categorized as a [Conservative / Moderate / Aggressive] investor. Investing in assets outside of your designated risk profile can lead to severe financial distress.",
+      "note": "Comment explicitly flags this as NOT silently dropped: 'that field is the one element the compliance doc explicitly requires ON THIS SCREEN... the app no longer shows the investor their categorisation anywhere, which compliance should sign off before go-live.' The direct product instruction that triggered removal: \"There is still an investor profile on the risk legal doc view on kyc please remove that container\"."
+    },
+    {
+      "location": "lib/screens/suitability/suitability_result_screen.dart:91-104 (comment block, code REMOVED 2026-08-24)",
+      "status": "REMOVED from the live UI, but documented in a comment as the exact copy that used to render",
+      "quote": "this screen used to announce the computed profile (\"YOUR PROFILE / Conservative\" + rationale) and carry a \"What this unlocks\" card whose second row read \"Only Nigerian shares for now — no foreign stocks\".",
+      "note": "Direct product instruction that triggered removal (quoted verbatim in the code comment): \"WHY ARE WE STILL PROFILING???? AND WHY ARE WE SAYING ONLY NIGERIAN SHARES FOR NOW??? A SIMPLE COMPLETION OR SUCCESS SCREEN IS ENOUGH.\" Current live copy is generic: 'Assessment complete' / \"Thanks — that helps us keep what you see here suited to you. There's one short notice to read, then you're ready to invest.\""
+    },
+    {
+      "location": "lib/screens/suitability/questionnaire_screen.dart:49-80",
+      "status": "LIVE — question/option wording, not a result display",
+      "quote": "The Risk Tolerance question's own options are the document's literal (Conservative)/(Moderate)/(Aggressive) labels... 'If my investment portfolio drops by 20% in a month, I will: Panic and liquidate all assets immediately (Conservative) / Do nothing and wait for recovery (Moderate) / View it as a buying opportunity and invest more (Aggressive)'",
+      "note": "This is question INPUT wording (asking the investor to self-assess), not a classification shown back to them — does not present a computed risk profile, so it is the questionnaire itself, which the product owner ruled SURVIVES."
+    },
+    {
+      "location": "lib/data/repositories/suitability_repository.dart:1-84 (LIVE, backend-facing only)",
+      "status": "LIVE — computation still happens, but the result is not displayed anywhere in the UI",
+      "quote": "The backend (Kudimata-Securities-Backend src/suitability-result/scoring.ts) derives a real risk profile from the submitted answers... GET /suitability-result/me -> SuitabilityResult { profile, rationale }",
+      "note": "`SuitabilityResult.profile` is fetched and threaded through (suitability_result_screen.dart passes it into `RiskDisclaimerArgs(profile: result.profile)`), but as of the 2026-08-24 removals documented above, NO screen currently reads or displays that `profile` value anywhere. The classification is computed and persisted server-side but invisible to the user in the app's current state — this already matches the 'we are not profiling anything' framing at the UI layer, though the underlying scoring model/field still exists."
+    }
+  ],
+  "suitability_quiz_shape": {
+    "step_count": 4,
+    "questions": [
+      {
+        "prompt": "Investment Experience",
+        "options": [
+          "No experience (Beginner)",
+          "Limited experience (Have bought basic stocks/mutual funds)",
+          "Extensive experience (Active trader, familiar with derivatives/leverage)"
+        ]
+      },
+      {
+        "prompt": "Investment Objective",
+        "options": [
+          "Capital Preservation (Low risk, safety of principal)",
+          "Balanced Growth (Medium risk, capital growth + income)",
+          "Aggressive Growth (High risk, maximum capital appreciation)"
+        ]
+      },
+      {
+        "prompt": "Investment Horizon",
+        "options": [
+          "Short-term (Less than 1 year)",
+          "Medium-term (1 to 3 years)",
+          "Long-term (More than 3 years)"
+        ],
+        "note": "Carries a 'What does this mean?' glossary-sheet link (static, hand-written definition, no AI) because the term is jargon."
+      },
+      {
+        "prompt": "If my investment portfolio drops by 20% in a month, I will:",
+        "options": [
+          "Panic and liquidate all assets immediately (Conservative)",
+          "Do nothing and wait for recovery (Moderate)",
+          "View it as a buying opportunity and invest more (Aggressive)"
+        ]
+      }
+    ],
+    "interaction": "Linear, one question per screen, single-select radio cards (no pre-selected default), a slim step-progress bar (i.e. 'Question N of 4'), Back/Next buttons, Next disabled until the current question has an answer. Submits all 4 answers as one POST /suitability-result on the last question, then navigates to the (now profile-free) result screen.",
+    "source_of_truth": "Wording is verbatim from the firm's real SEC-facing compliance intake document ('My observations on KSL papers.docx'), replacing a previous invented 7-question set on 2026-08-24 — this is the authoritative shape to rebuild, not the old 7-question version."
+  },
+  "glossary_finding": {
+    "designed_in_new_canvas": false,
+    "evidence": "Grepped all 8 files under docs/design/redesign-2026-08/*.dc.html, case-insensitive, for 'glossary' -> zero matches in any file (confirms the word-count hint: 7 old / 0 new). Also searched for the MECHANISM independent of the word 'glossary' — 'What does this mean', 'Explain further', 'Still don't understand' — zero matches for all three anywhere in the canvas. There is no dedicated glossary index/list screen anywhere in the current app either (no glossary_screen.dart exists); the app's only 'glossary' surface is lib/screens/shared/glossary_sheet.dart, a tap-a-term bottom sheet used app-wide (asset detail, trade flows, FAQ, and this batch's questionnaire_screen.dart for its one jargon term, 'Investment Horizon').",
+    "conclusion": "The glossary sheet MECHANISM (not just the word) is genuinely absent from the new design system. Since the surviving suitability questionnaire currently depends on it for one term, and other surviving screens (trade flows, FAQ, asset detail) also depend on it, this needs a ruling: either the new design system needs a defined 'explain a term' pattern designed, or the existing sheet ships restyled-but-not-redesigned."
+  }
+}

@@ -1,4 +1,5 @@
-// KYC 4 — liveness selfie (step 4 of 8). On mobile: a framed selfie capture
+// KYC 4 — liveness selfie (step 4 of 7; renumbered 8->7 2026-08-27 per
+// X-2/bvn_nin.dart's derivation). On mobile: a framed selfie capture
 // — a live front-camera preview inside a circle with a dashed guidance
 // ring (or the captured photo once taken), plus a round shutter button. On
 // web: a file picker instead (2026-08-19) — package:camera's web support is
@@ -138,9 +139,9 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
           children: [
             KycTopBar(
               onBack: () => context.go(Routes.kycId),
-              stepLabel: 'Verification · 4 of 8',
+              stepLabel: 'Verification · 4 of 7',
             ),
-            const KycStepProgress(total: 8, current: 4),
+            const KycStepProgress(total: 7, current: 4),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {

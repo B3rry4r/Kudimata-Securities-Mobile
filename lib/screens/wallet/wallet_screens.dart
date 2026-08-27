@@ -1,9 +1,18 @@
-// Kudimata Invest — Stage 8: Wallet screens. Mirrors wallet-screens.jsx:
-// WalletScreen (root tab — naira BalancePanel, action row, recent
-// transactions) and TransactionDetailScreen (pushed; KStatusView-style summary +
-// detail rows). NGX-only: no USD wallet / Convert flow in the UI (HIDE phase —
-// TxnType.convert stays as dead code below). The money-movement flows
-// (Add money / Withdraw) live in wallet_flows.dart as bottom-sheet sequences.
+// Kudimata Invest — redesign 2026-08, wallet screens. Built against
+// `docs/design/redesign-2026-08/05 Portfolio and Wallet.dc.html`:
+// WalletScreen -> s35 (wallet home tab), TransactionDetailScreen -> s38
+// ("Receipt"). Both artboard ids come from RULINGS.md, per
+// SCREEN-AGENT-BRIEF.md R-5 — this file used to cite a since-deleted
+// `mockup-raw/s40.html` / `screen-specs.md` (the OLD 97-screen canvas); those
+// citations are gone now, not re-pointed, since the rebuild below reads the
+// current artboard directly.
+//
+// NGX-only: no USD wallet / Convert flow in the UI. `TxnType.convert` has no
+// dedicated case in `_TxnRow` below (removed — see that class) since
+// DECISIONS.md flags it as unreachable: nothing in this backend can ever
+// produce a convert-type Txn. The money-movement flows (Add money /
+// Withdraw) live in wallet_flows.dart as bottom-sheet sequences — a separate
+// file this pass does not touch.
 //
 // WalletScreen is wired per lib/data/api/README.md's FutureBuilder
 // convention: WalletRepository.balance() (GET /wallet-balance) replaces the
@@ -14,6 +23,7 @@
 // one-future-per-screen shape.
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -161,7 +171,7 @@ class _WalletBody extends StatelessWidget {
   });
   final String balance;
 
-  /// "₦X held for a pending order" (spec 40, loss-toned) — real data
+  /// "₦X held for a pending order" (loss-toned) — real data
   /// (backend pendingBalanceKobo), but 2026-08-24 direct feedback: "showing
   /// wallet funding activity for an account that hasn't been credited is
   /// just confusing... not everyone is going to understand ₦20,000 held for
@@ -178,20 +188,36 @@ class _WalletBody extends StatelessWidget {
       // Tab root: clear the floating KBottomNav (~70px + 12 margin + safe area).
       padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 100),
       children: [
-        const KScreenHead(title: 'Wallet'),
+        // s35's header carries a trailing "doc" icon beside the title,
+        // reaching the statements list ("doc icon → statements (Section
+        // 6)") — same trailing-icon convention as Portfolio's `s33` header
+        // (portfolio_screen.dart's `_StatementsButton`); kept as a
+        // screen-local twin rather than importing across screen files.
+        KScreenHead(
+          title: 'Wallet',
+          trailing: _StatementsButton(onTap: () => context.push(Routes.acctStatements)),
+        ),
         const SizedBox(height: 16),
 
-        // Naira wallet — the one rich ink surface on this screen.
+        // s35's money card is the light/paper treatment (icon + illustration
+        // + trust line via KBalancePanel's `light: true` mode — the same
+        // shape home_screen.dart already uses for its own money card), NOT
+        // the filled-ink `KBalancePanel` this screen used before. Label is
+        // s35's own "Cash available", and the action slot carries s35's
+        // exact trust-line copy verbatim.
         KBalancePanel(
-          label: 'Available to invest',
+          label: 'Cash available',
           balance: balance,
+          light: true,
+          illustration: SvgPicture.asset('assets/illustrations/money-coins.svg', height: 64),
+          action: Text(
+            'Ready to invest now. Held with our custodian, never lent out.',
+            style: KType.body(color: KColor.ink3).copyWith(fontSize: 14, height: 20 / 14),
+          ),
         ),
-        // mockup-raw/s40.html line 9: padding-top 14, not 12.
-        const SizedBox(height: 14),
+        // s35 line 302: button row sits 20px below the money card.
+        const SizedBox(height: 20),
 
-        // mockup-raw/s40.html: Add money / Withdraw render as actual full-
-        // width Buttons (primary + secondary, icon-left) — was rendering as
-        // stacked icon-over-label tiles instead.
         Row(
           children: [
             Expanded(
@@ -212,22 +238,26 @@ class _WalletBody extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        // s35 line 306: the "Money in and out" row sits 22px below the
+        // button row.
+        const SizedBox(height: 22),
 
-        // "Recent activity" (spec 40) — was "Recent". The eyebrow's trailing
-        // link deliberately stays "Orders", not spec's literal "See all":
+        // s35's section title is "Money in and out" (a card-title-weight
+        // heading, not an uppercase eyebrow) with a trailing "All" link.
+        // The link deliberately stays "Orders", not s35's literal "All":
         // TransactionRepository.list() already fetches every transaction
         // this API returns for the card below (no further pages exist to
-        // reveal), so a "See all" pointing at the buy/sell-only Orders
-        // screen would show STRICTLY LESS than what's already on screen —
-        // an actively misleading link, not just an inexact label. "Orders"
-        // is honest about what that shortcut actually is.
+        // reveal), so a link claiming to show "All" would in fact point at
+        // the buy/sell-only Orders screen — STRICTLY LESS than what's
+        // already on screen, an actively misleading destination rather than
+        // just an inexact label. "Orders" is honest about what that
+        // shortcut actually is.
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const KEyebrow('Recent activity'),
+              Text('Money in and out', style: KType.section()),
               GestureDetector(
                 onTap: () => context.push(Routes.orderStatus),
                 behavior: HitTestBehavior.opaque,
@@ -243,7 +273,10 @@ class _WalletBody extends StatelessWidget {
           KEmptyView.transactions(onAction: () => showAddMoneyFlow(context))
         else
           KCard(
-            // mockup-raw/s40.html line 18: card padding is "4px 18px".
+            // s35 line 310: card padding is "0 24px" outer / "13px 0" per
+            // row — modelled here as a symmetric 18/4 KCard inset, this
+            // app's established convention for this exact row shape
+            // (matches order_status_screen.dart's own list cards).
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             child: Column(
               children: [
@@ -252,18 +285,36 @@ class _WalletBody extends StatelessWidget {
               ],
             ),
           ),
-        const SizedBox(height: 14),
-        // mockup-raw/s40.html line 26 — was missing entirely. Mockup's
-        // literal copy names a specific bank/masked account ("GTB
-        // ••••6789") — that's example data for the mockup's one seeded
-        // user, not something this screen fetches; naming a fixed bank for
-        // every real investor would be fabricating their account details,
-        // so this keeps the sentence generic instead.
-        Text(
-          'Withdrawals go only to your DCS account, usually within one business day.',
-          style: KType.data(color: KColor.ink3),
-        ),
+        // No further element after the transactions card — s35 ends here.
+        // A previous pass added a generic withdrawal-destination disclaimer
+        // sentence below the card; s35 draws no such line (checked directly
+        // against the artboard markup), so it's removed rather than kept as
+        // an uncited addition. The money card's own trust line above is s35's
+        // real, designed reassurance copy for this screen.
       ],
+    );
+  }
+}
+
+// s35's trailing "doc" header icon, reaching the statements list — a
+// screen-local twin of Portfolio's `_StatementsButton`
+// (portfolio_screen.dart), same shape (40x40 track-tinted circle, "doc"
+// glyph). Kept local rather than shared per SCREEN-AGENT-BRIEF.md rule 5.
+class _StatementsButton extends StatelessWidget {
+  const _StatementsButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: KColor.track, shape: BoxShape.circle),
+        child: KIcon('doc', size: 19, color: KColor.ink),
+      ),
     );
   }
 }
@@ -274,27 +325,32 @@ class _TxnRow extends StatelessWidget {
   final Txn txn;
   final bool first;
 
-  // Map ledger type to a glyph from the fixed KIcon set. mockup-raw/s40.html
-  // line 19: the fund-in row uses icon "arrowDown", not "arrowDownLeft".
-  // mockup-raw/s40.html line 20: the dividend row uses icon "wallet" in a
-  // sun-tint circle, distinct from a plain fund-in (arrowDown/indicator).
+  // Map ledger type to a glyph from the fixed KIcon set (s35: fund-in row
+  // uses "arrowDown", dividend uses "wallet" in a sun-tint circle, distinct
+  // from a plain fund-in).
+  //
+  // `TxnType.convert` has no dedicated case — removed per DECISIONS.md's
+  // dead-code list ("wallet_screens.dart's TxnType.convert"): this is an
+  // NGX-only product with no Convert flow anywhere in the backend, so
+  // nothing can ever construct a Txn with this type. The wildcard below
+  // exists only to satisfy Dart's exhaustive-switch check over the shared
+  // `TxnType` enum (lib/data/models.dart, off-limits to edit here); it is
+  // not a designed row and is never expected to render.
   String get _icon => switch (txn.type) {
         TxnType.fund => 'arrowDown',
         TxnType.withdraw => 'arrowUp',
-        TxnType.buy => 'markets',
-        TxnType.sell => 'markets',
-        TxnType.convert => 'transfer',
+        TxnType.buy || TxnType.sell => 'markets',
         TxnType.dividend => 'wallet',
+        _ => 'wallet',
       };
 
-  // Colored icon circle per ledger type (2026-08-22 "Soft Landing" —
-  // screen-specs.md #40: "Icon (arrowDown, markets, wallet — each in a
-  // colored circle: indicator-tint, track, sun-tint respectively)").
+  // Colored icon circle per ledger type (indicator-tint / track / sun-tint).
   (Color, Color) get _iconColors => switch (txn.type) {
         TxnType.fund => (KColor.indicatorTint, KColor.indicator),
         TxnType.buy || TxnType.sell => (KColor.track, KColor.ink2),
-        TxnType.withdraw || TxnType.convert => (KColor.sunTint, KColor.sunPress),
+        TxnType.withdraw => (KColor.sunTint, KColor.sunPress),
         TxnType.dividend => (KColor.sunTint, KColor.sunPress),
+        _ => (KColor.sunTint, KColor.sunPress),
       };
 
   @override
@@ -304,8 +360,8 @@ class _TxnRow extends StatelessWidget {
       onTap: () => context.push(Routes.transactionDetail(txn.id)),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        // mockup-raw/s40.html row: "13px 0" — 0 horizontal (the card above
-        // already carries the 18px horizontal inset).
+        // s35 row: "13px 0" — 0 horizontal (the card above already carries
+        // the 18px horizontal inset).
         padding: const EdgeInsets.symmetric(vertical: 13),
         decoration: BoxDecoration(
           border: first
@@ -314,25 +370,25 @@ class _TxnRow extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // s35: 40x40 rounded-square medallion (12px radius), icon 18 —
+            // was a 34px circle with a 16px icon.
             Container(
-              width: 34,
-              height: 34,
+              width: 40,
+              height: 40,
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-              // mockup-raw/s40.html: icon size 16, not 18.
-              child: KIcon(_icon, size: 16, color: fg),
+              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+              child: KIcon(_icon, size: 18, color: fg),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 13),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(txn.title, style: KType.cardTitle().copyWith(height: 20 / 15)),
-                  const SizedBox(height: 2),
+                  Text(txn.title, style: KType.cardTitle().copyWith(fontSize: 15, height: 20 / 15)),
+                  const SizedBox(height: 1),
                   Text(txn.subtitle,
-                      style: KType.micro(color: KColor.ink3)
-                          .copyWith(letterSpacing: 0.04 * 10, height: 15 / 10)),
+                      style: KType.data(color: KColor.ink3).copyWith(fontSize: 13, height: 18 / 13)),
                 ],
               ),
             ),
@@ -341,7 +397,7 @@ class _TxnRow extends StatelessWidget {
                 style: KType.cardTitle(
                   color: txn.incoming ? KColor.gain : KColor.ink,
                   w: KWeight.semibold,
-                ).copyWith(height: 20 / 15).tnum),
+                ).copyWith(fontSize: 15, height: 20 / 15).tnum),
           ],
         ),
       ),
@@ -371,8 +427,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   bool _receiptBusy = false;
 
 
-  // "On its way"/"Completed"/"Failed" per screen-specs.md #43 — mapped onto
-  // the shared workflow-state vocabulary (KStatus), not a bespoke pill.
+  // "On its way"/"Completed"/"Failed" — mapped onto the shared workflow-state
+  // vocabulary (KStatus), not a bespoke pill. s38 only draws the completed
+  // ("Bought MTN Nigeria") case — a static green checkmark badge, no pill at
+  // all — and no artboard variant covers pending/failed (checked: no
+  // `s38b`/`s38p`/`s38c` id anywhere in the canvas or reverse-sweep.json's
+  // state-variant list). Real transactions can land in any of the three
+  // states, so this keeps the illustration+KStatusPill treatment below to
+  // generalise across all of them, rather than hardcoding s38's one drawn
+  // state and leaving pending/failed with nothing to render.
   (KStatus, String) _status(TxnStatus s) => switch (s) {
         TxnStatus.completed => (KStatus.approved, 'Completed'),
         TxnStatus.pending => (KStatus.review, 'On its way'),
@@ -405,7 +468,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   Widget get _notFoundScaffold => Scaffold(
         backgroundColor: KColor.bg,
-        appBar: const KDetailHeader(title: 'Transaction'),
+        appBar: const KDetailHeader(title: 'Receipt'),
         body: Center(
           child: Text('Transaction not found', style: TextStyle(color: KColor.ink2)),
         ),
@@ -419,7 +482,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             backgroundColor: KColor.bg,
-            appBar: const KDetailHeader(title: 'Transaction'),
+            appBar: const KDetailHeader(title: 'Receipt'),
             body: const KLoadingView(),
           );
         }
@@ -435,7 +498,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           }
           return Scaffold(
             backgroundColor: KColor.bg,
-            appBar: const KDetailHeader(title: 'Transaction'),
+            appBar: const KDetailHeader(title: 'Receipt'),
             body: KErrorView(
               onPrimary: () => setState(() => _future = _repo.byId(widget.id)),
             ),
@@ -446,48 +509,77 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (txn == null) return _notFoundScaffold;
 
         final (statusEnum, statusLabel) = _status(txn.status);
-        // mockup-raw/s43.html line 11: the hero amount is hardcoded
-        // `color:var(--ink)` — always plain ink, not gain-toned for an
-        // incoming transaction. The trend cue here is the StatusPill/sign,
-        // not the figure's colour.
+        // s38's hero amount is hardcoded `color:var(--ink)` — always plain
+        // ink, not gain-toned for an incoming transaction. The trend cue
+        // here is the StatusPill/sign, not the figure's colour.
         final amountColor = KColor.ink;
 
-        // Spec 43's exact rows are Reference/Requested/Fee/Settlement — Type
-        // and Status are dropped here since the amount+StatusPill above
-        // already convey both without repeating them as rows. Fee is
-        // genuinely ₦0.00 (no fee concept exists anywhere in this backend's
-        // Transaction model). Settlement only shown for withdraw/sell — the
-        // two types whose proceeds actually route via Direct Cash
-        // Settlement (see screen-specs.md #19's DCS explainer); a `fund`
-        // transaction is money coming IN by bank transfer, not a DCS payout,
-        // so asserting DCS there would be wrong, not just imprecise.
+        // s38's own row set (Shares cost / Fees, all in / Date / Shares
+        // settle / Reference) is written for one specific case — a
+        // completed BUY. This model covers fund/withdraw/buy/sell/dividend
+        // alike, so the row labels stay generic (Requested, not "Date";
+        // Settlement, not "Shares settle") the way this screen already
+        // generalised Fee/Settlement below — but the ORDER now matches s38:
+        // Reference is the LAST row, not the first.
+        //
+        // R-34 (DECISIONS.md) applies to the Fee row: s38 draws "Fees, all
+        // in ₦93.50", a real non-zero figure — but nothing in this backend's
+        // Transaction model writes a per-transaction fee (confirmed: no
+        // `fee`/`Fee` field anywhere in Txn or TransactionRepository). Per
+        // R-34, the figure is omitted rather than invented — no hardcoded
+        // ₦0.00 either, since that's still an assertion this screen has no
+        // wire data for — and the row itself drops, since a "Fee" label
+        // with nothing to put beside it isn't a real row. Filed in
+        // BACKEND_GAPS.md (s38 — Wallet: Transaction receipt).
+        //
+        // Settlement only shown for withdraw/sell — the two types whose
+        // proceeds actually route via Direct Cash Settlement; a `fund`
+        // transaction is money coming IN by bank transfer, not a DCS
+        // payout, so asserting DCS there would be wrong, not just imprecise.
         final rows = <(String, String)>[
-          ('Reference', txn.id),
           ('Requested', txn.date),
-          ('Fee', '₦0.00'),
           if (txn.type == TxnType.withdraw || txn.type == TxnType.sell)
             ('Settlement', 'Direct Cash Settlement'),
+          ('Reference', txn.id),
         ];
 
         return Scaffold(
           backgroundColor: KColor.bg,
-          appBar: const KDetailHeader(title: 'Transaction'),
+          // s38's header carries a trailing "download" icon beside "Receipt"
+          // — routed to the same real receipt action as the "Get receipt"
+          // button below (GET /transactions/:id/receipt), not a second,
+          // disconnected control.
+          appBar: KDetailHeader(
+            title: 'Receipt',
+            trailing: GestureDetector(
+              onTap: _receiptBusy ? null : _getReceipt,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: KColor.track, shape: BoxShape.circle),
+                child: KIcon('download', size: 19, color: KColor.ink),
+              ),
+            ),
+          ),
           body: SafeArea(
             top: false,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(KSpace.gutter, 20, KSpace.gutter, 24),
               children: [
-                // mockup-raw/s43.html lines 9-14: illustration → hero amount
-                // → StatusPill → body sentence, all centred, OUTSIDE any
-                // card — was reordering to pill-then-amount and wrapping
-                // both inside the same card as the detail rows below.
+                // s38: illustration → hero amount → StatusPill → body
+                // sentence, all centred, OUTSIDE any card.
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Money-in-transit illustration, warm-plated per
-                    // screen-specs.md #43's colour note — distinct from the
-                    // grape/sun plates used elsewhere, for neutral/
-                    // in-progress money-movement states.
+                    // s38 itself draws a static green checkmark badge here
+                    // (it only designs the completed state) — this keeps the
+                    // warm-plated money-in-transit illustration instead,
+                    // since it reads correctly across all three real
+                    // statuses (completed/pending/failed) via the
+                    // KStatusPill below, not just the one s38 draws. See
+                    // `_status`'s doc comment.
                     const KIllustration('wallet-fund', role: KIlloRole.small, tone: KIlloTone.warm),
                     const SizedBox(height: 10),
                     Text(txn.amount, style: KType.hero(color: amountColor).tnum),
@@ -495,12 +587,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     KStatusPill(status: statusEnum, label: statusLabel),
                     if (txn.subtitle.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      // Spec 43's body sentence ("Withdrawal to GTB
-                      // ••••6789. Money usually lands the same business
-                      // day.") — using the backend's own preformatted
-                      // subtitle rather than reconstructing a specific
-                      // delivery-time claim per type that this screen has
-                      // no real way to verify for every transaction kind.
+                      // Using the backend's own preformatted subtitle rather
+                      // than reconstructing a specific delivery-time claim
+                      // per type that this screen has no real way to verify
+                      // for every transaction kind.
                       Text(txn.subtitle,
                           style: KType.body(color: KColor.ink2), textAlign: TextAlign.center),
                     ],
@@ -508,7 +598,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 ),
                 const SizedBox(height: 18),
                 // Detail-rows card — separate from the amount/pill section
-                // above per mockup-raw/s43.html lines 15-22.
+                // above, per s38.
                 KCard(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
                   child: Column(
@@ -521,32 +611,57 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
+                // s38's co-branding callout ("Executed by Blue Marina
+                // Securities Ltd, NGX dealing member, on behalf of Kudimata
+                // Securities") — verified against the signed Client
+                // Agreement (orders.service.ts:93,
+                // statement-generator.service.ts:30), so kept verbatim
+                // rather than treated as an unverified canvas claim.
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: KColor.indicatorTint,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('EXECUTED BY', style: KType.label(color: KColor.indicator)),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Blue Marina Securities Ltd, NGX dealing member, on behalf of Kudimata Securities.',
+                        style: KType.body(color: KColor.ink2).copyWith(fontSize: 14, height: 20 / 14),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
                 // GET /transactions/:id/receipt. Backend note: receipt
                 // generation is still a stub (placeholder presigned URL, no
                 // real PDF yet) — wired anyway so the plumbing is correct
                 // end-to-end; see transaction_repository.dart's receiptUrl().
-                // Labelled "Get receipt", not spec 43's literal "Download
-                // receipt" — nothing downloads yet (see _getReceipt's own
-                // comment on this), and that label would repeat the exact
-                // false promise already found and fixed once this session.
-                // Variant/icon kept as spec's secondary + download glyph
-                // (was inverted with the button below — ghost/secondary
-                // were swapped).
+                // Labelled "Get receipt", not s38's literal "Email receipt":
+                // receiptUrl()'s own doc comment confirms no email is ever
+                // sent from this endpoint, and this exact false promise was
+                // already reported and fixed once on this screen (see
+                // _getReceipt's comment) — repeating it under a new label
+                // would reintroduce the same bug. No icon (s38 draws none on
+                // this button; the download glyph now lives on the header
+                // instead, matching s38's own icon placement).
                 KButton(
                   label: 'Get receipt',
                   variant: KButtonVariant.secondary,
-                  iconLeft: 'download',
                   loading: _receiptBusy,
                   onPressed: _receiptBusy ? null : _getReceipt,
                 ),
                 const SizedBox(height: 10),
-                // Spec 43's second button — this route is always reached via
-                // a push from Wallet (see app_router.dart), so a plain pop
-                // genuinely does return to Wallet, not just "back" in the
-                // abstract.
+                // s38's second button is "Done", filled primary, returning
+                // to Wallet — this route is always reached via a push from
+                // Wallet (see app_router.dart), so a plain pop genuinely
+                // does return there.
                 KButton(
-                  label: 'Back to wallet',
-                  variant: KButtonVariant.ghost,
+                  label: 'Done',
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -567,11 +682,10 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // mockup-raw/s43.html detail rows: "12px 0" padding, text-data (14px)
-    // for both label and value, value at regular weight — was 14px padding
-    // and text-body (15px)/medium weight.
+    // s38 detail rows: "13px 0" padding, text-data (14px) for both label
+    // and value, value at regular weight.
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 13),
       decoration: BoxDecoration(
         border: last
             ? null

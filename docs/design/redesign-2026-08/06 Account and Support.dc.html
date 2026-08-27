@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/colors.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/typography.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/radii.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/motion.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/tokens/base.css">
+<link rel="stylesheet" href="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/styles.css">
+<script src="_ds/kudimata-design-system-b88dc96c-642d-4cb1-af7e-06764002af55/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#F3EDE3}
+a{color:var(--indicator);text-decoration:none}
+a:hover{color:var(--indicator-press)}
+.hscroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<div style="font-family:var(--font-core);padding:56px 28px 96px;display:flex;flex-direction:column;gap:44px">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:820px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3)">Kudimata Invest · redesign · section 6 of 6</div>
+<div style="font:var(--text-hero);letter-spacing:var(--track-hero);color:var(--ink)">Account, records and support</div>
+<div style="font:var(--text-body);color:var(--ink-2);text-wrap:pretty">Everything a regulated broker owes the customer, in plain words: statements per executing broker, complaints with a visible clock and the SEC route, security they can actually operate, and corporate actions that say what happens if they ignore them.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">51 · Account hub</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s51" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:18px 24px 0;font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-.02em;color:var(--ink)">You</div>
+<div style="display:flex;flex-direction:column;padding-bottom:26px">
+<div style="padding:16px 24px 0">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:22px;padding:18px;display:flex;align-items:center;gap:14px">
+<img src="assets/illustrations/avatars/adebayo.svg" style="width:56px;height:56px;border-radius:999px" alt="">
+<div style="flex:1;display:flex;flex-direction:column;gap:3px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Adebayo Okonkwo</span>
+<span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--gain)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="13" hint-size="13px,13px"></x-import>Verified · CHN 0912455</span>
+</div>
+</div>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s52 }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Statements and contract notes</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">One per broker, monthly</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s54 }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="shield" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Security</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Face ID, passcode, devices</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s58 }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="users" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Personal details</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Name, contact, address</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s55 }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--warm-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="flag" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Corporate actions</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">1 waiting: Zenith rights issue</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s53 }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="alert" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Complaints</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Raise one, or track yours</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ openTerms }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Terms and disclosures</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">All eight documents</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s57 }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="settings" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Data and privacy</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Consents, export, deletion</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="padding:22px 24px 0">
+<span style="height:48px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;background:rgba(208,80,63,.08);border:1px solid var(--loss);font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--loss);cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="logout" size="17" hint-size="17px,17px"></x-import>Log out</span>
+</div>
+<div style="padding:14px 24px 0;text-align:center"><span style="font-size:12px;line-height:18px;color:var(--ink-3)">Kudimata Securities Ltd · SEC registered · v3.1</span></div>
+</div>
+<div style="display:flex;justify-content:space-around;align-items:center;padding:14px 8px 26px;border-top:1px solid var(--hairline);background:var(--paper)">
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="home" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Home</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="markets" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Markets</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="portfolio" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Portfolio</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Wallet</span></div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Reached from the avatar in the navbar. Statements → <a href="#s52">52</a> · Security → <a href="#s54">54</a> · Complaints → <a href="#s53">53</a> · Corporate actions → <a href="#s55">55</a> · Data and privacy → <a href="#s57">57</a> · Terms → 01 Getting In #s03c · Personal details → <a href="#s58">58</a>.</div>
+</div>
+
+<div id="s51d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="padding:18px 24px 0;font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-.02em;color:#F4F2EF">You</div>
+<div style="display:flex;flex-direction:column;padding-bottom:26px">
+<div style="padding:16px 24px 0">
+<div style="background:#26242A;border-radius:22px;padding:18px;display:flex;align-items:center;gap:14px">
+<img src="assets/illustrations/avatars/adebayo.svg" style="width:56px;height:56px;border-radius:999px" alt="">
+<div style="flex:1;display:flex;flex-direction:column;gap:3px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Adebayo Okonkwo</span>
+<span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#9DEBC4"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="13" hint-size="13px,13px"></x-import>Verified · CHN 0912455</span>
+</div>
+</div>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s52d }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Statements and contract notes</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">One per broker, monthly</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s54d }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="shield" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Security</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Face ID, passcode, devices</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s58d }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="users" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Personal details</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Name, contact, address</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s55d }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(240,122,69,.14);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="flag" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Corporate actions</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">1 waiting: Zenith rights issue</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s53d }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="alert" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Complaints</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Raise one, or track yours</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ openTerms }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Terms and disclosures</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">All eight documents</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s57d }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="settings" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Data and privacy</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Consents, export, deletion</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="padding:22px 24px 0">
+<span style="height:48px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;background:rgba(255,179,168,.12);border:1px solid rgba(255,179,168,.45);font-family:var(--font-display);font-weight:700;font-size:15px;color:#FFB3A8;cursor:pointer"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="logout" size="17" hint-size="17px,17px"></x-import>Log out</span>
+</div>
+<div style="padding:14px 24px 0;text-align:center"><span style="font-size:12px;line-height:18px;color:rgba(244,242,239,.50)">Kudimata Securities Ltd · SEC registered · v3.1</span></div>
+</div>
+<div style="display:flex;justify-content:space-around;align-items:center;padding:14px 8px 26px;border-top:1px solid rgba(255,255,255,.08);">
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="home" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Home</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="markets" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Markets</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="portfolio" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Portfolio</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="wallet" size="21" hint-size="21px,21px"></x-import><span style="font-size:11px;font-weight:600">Wallet</span></div>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark account hub.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">52 · Statements and contract notes</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s52" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s51 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Statements</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:12px">
+<div style="height:44px;background:var(--paper);border:1px solid var(--hairline);border-radius:999px;display:flex;align-items:center;gap:10px;padding:0 16px">
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="search" size="18" hint-size="18px,18px"></x-import></span>
+<span style="font-size:15px;color:var(--ink-3)">Search by month, broker or company</span>
+</div>
+<div class="hscroll" style="display:flex;gap:8px;overflow-x:auto">
+<span style="flex:none;padding:8px 14px;border-radius:999px;background:var(--indicator);font-size:13px;font-weight:700;color:#fff;white-space:nowrap">All brokers</span>
+<span style="flex:none;padding:8px 14px;border-radius:999px;background:var(--paper);border:1px solid var(--hairline);font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;cursor:pointer">Blue Marina</span>
+<span style="flex:none;padding:8px 14px;border-radius:999px;background:var(--paper);border:1px solid var(--hairline);font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;cursor:pointer">Meristem</span>
+<span style="flex:none;padding:8px 14px;border-radius:999px;background:var(--paper);border:1px solid var(--hairline);font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;cursor:pointer">2026</span>
+</div>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:9px">
+<span style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3)">Ready to download · 12</span>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">August 2026 · all brokers</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Statement · PDF · 210 KB</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">August 2026 · Blue Marina</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Statement · PDF · 96 KB</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Contract note · MTNN buy</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">25 Aug · Blue Marina · PDF · 42 KB</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Contract note · GTCO sell</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">28 Jun · Meristem · PDF · 40 KB</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">July 2026 · all brokers</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Statement · PDF · 188 KB</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="padding:18px 24px 0">
+<div style="background:rgba(42,163,107,.12);border-radius:18px;padding:14px 16px;display:flex;align-items:flex-start;gap:11px">
+<span style="color:var(--gain);margin-top:1px"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="17" hint-size="17px,17px"></x-import></span>
+<span style="flex:1;font-size:13px;line-height:19px;color:var(--ink-2)">Contract notes appear within 24 hours of a trade, issued by the broker who executed it.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;border-top:1px solid var(--hairline)">
+<span style="height:52px;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s56 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="plus" size="18" hint-size="18px,18px"></x-import>Request a statement</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Search and broker filter for when the list grows. Request → <a href="#s56">56 Request a statement</a></div>
+</div>
+
+<div id="s52d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s51d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Statements</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:12px">
+<div style="height:44px;background:#26242A;border-radius:999px;display:flex;align-items:center;gap:10px;padding:0 16px">
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="search" size="18" hint-size="18px,18px"></x-import></span>
+<span style="font-size:15px;color:rgba(244,242,239,.50)">Search by month, broker or company</span>
+</div>
+<div class="hscroll" style="display:flex;gap:8px;overflow-x:auto">
+<span style="flex:none;padding:8px 14px;border-radius:999px;background:var(--indicator-soft);font-size:13px;font-weight:700;color:#fff;white-space:nowrap">All brokers</span>
+<span style="flex:none;padding:8px 14px;border-radius:999px;background:#26242A;font-size:13px;font-weight:600;color:#F4F2EF;white-space:nowrap;cursor:pointer">Blue Marina</span>
+<span style="flex:none;padding:8px 14px;border-radius:999px;background:#26242A;font-size:13px;font-weight:600;color:#F4F2EF;white-space:nowrap;cursor:pointer">Meristem</span>
+<span style="flex:none;padding:8px 14px;border-radius:999px;background:#26242A;font-size:13px;font-weight:600;color:#F4F2EF;white-space:nowrap;cursor:pointer">2026</span>
+</div>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:9px">
+<span style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:rgba(244,242,239,.50)">Ready to download · 12</span>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">August 2026 · all brokers</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Statement · PDF · 210 KB</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">August 2026 · Blue Marina</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Statement · PDF · 96 KB</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Contract note · MTNN buy</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">25 Aug · Blue Marina · PDF · 42 KB</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Contract note · GTCO sell</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">28 Jun · Meristem · PDF · 40 KB</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="doc" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">July 2026 · all brokers</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Statement · PDF · 188 KB</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="padding:18px 24px 0">
+<div style="background:rgba(111,211,164,.16);border-radius:18px;padding:14px 16px;display:flex;align-items:flex-start;gap:11px">
+<span style="color:#9DEBC4;margin-top:1px"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="17" hint-size="17px,17px"></x-import></span>
+<span style="flex:1;font-size:13px;line-height:19px;color:rgba(244,242,239,.70)">Contract notes appear within 24 hours of a trade, issued by the broker who executed it.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="height:52px;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s56d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="plus" size="18" hint-size="18px,18px"></x-import>Request a statement</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark statements.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">56 · Request a statement</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s56" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s52 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Request a statement</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:var(--ink)">Which period?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">We build it and email you a PDF, usually within an hour.</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;gap:8px">
+<span style="flex:1;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--paper);border:1px solid var(--hairline);font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;cursor:pointer">This month</span>
+<span style="flex:1;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--paper);border:1px solid var(--hairline);font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;cursor:pointer">This year</span>
+<span style="flex:1;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);border:1.5px solid var(--indicator);font-size:14px;font-weight:700;color:var(--indicator);white-space:nowrap;cursor:pointer">Choose dates</span>
+</div>
+<div style="display:flex;gap:10px">
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:13px;font-weight:600;color:var(--ink-3)">From</span>
+<div style="height:56px;background:var(--paper);border:1.5px solid var(--indicator);border-radius:14px;display:flex;align-items:center;padding:0 14px"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">1 Jan 2026</span></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:13px;font-weight:600;color:var(--ink-3)">To</span>
+<div style="height:56px;background:var(--paper);border:1px solid var(--hairline);border-radius:14px;display:flex;align-items:center;padding:0 14px"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">26 Aug 2026</span></div>
+</div>
+</div>
+<span style="font-size:13px;color:var(--ink-3)">Earliest available: 14 March 2026, the day you joined.</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Which broker?</span>
+<div style="background:var(--paper);border:1.5px solid var(--indicator);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">All brokers, one document</span><span style="font-size:13px;color:var(--ink-3)">Recommended</span></div>
+<span style="width:20px;height:20px;display:grid;place-items:center;border-radius:999px;background:var(--indicator);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="11" hint-size="11px,11px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Blue Marina only</span><span style="font-size:13px;color:var(--ink-3)">Or pick one broker</span></div>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--hairline)">
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Sent to adebayo@email.com. Statements older than six years are archived, ask support for those.</span>
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s52 }}">Email me this statement</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Period presets or exact dates, all brokers or one, emailed as a PDF. Also the destination of the doc icon on Portfolio (Section 5, screen 33).</div>
+</div>
+
+<div id="s56d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s52d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Request a statement</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:#F4F2EF">Which period?</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">We build it and email you a PDF, usually within an hour.</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;gap:8px">
+<span style="flex:1;height:44px;display:grid;place-items:center;border-radius:12px;background:#26242A;font-size:14px;font-weight:600;color:#F4F2EF;white-space:nowrap;cursor:pointer">This month</span>
+<span style="flex:1;height:44px;display:grid;place-items:center;border-radius:12px;background:#26242A;font-size:14px;font-weight:600;color:#F4F2EF;white-space:nowrap;cursor:pointer">This year</span>
+<span style="flex:1;height:44px;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);border:1.5px solid var(--indicator-soft);font-size:14px;font-weight:700;color:#C9A6EC;white-space:nowrap;cursor:pointer">Choose dates</span>
+</div>
+<div style="display:flex;gap:10px">
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.50)">From</span>
+<div style="height:56px;background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:14px;display:flex;align-items:center;padding:0 14px"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">1 Jan 2026</span></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:13px;font-weight:600;color:rgba(244,242,239,.50)">To</span>
+<div style="height:56px;background:#26242A;border-radius:14px;display:flex;align-items:center;padding:0 14px"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">26 Aug 2026</span></div>
+</div>
+</div>
+<span style="font-size:13px;color:rgba(244,242,239,.50)">Earliest available: 14 March 2026, the day you joined.</span>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Which broker?</span>
+<div style="background:#26242A;border:1.5px solid var(--indicator-soft);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">All brokers, one document</span><span style="font-size:13px;color:rgba(244,242,239,.50)">Recommended</span></div>
+<span style="width:20px;height:20px;display:grid;place-items:center;border-radius:999px;background:var(--indicator-soft);color:#fff"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="11" hint-size="11px,11px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Blue Marina only</span><span style="font-size:13px;color:rgba(244,242,239,.50)">Or pick one broker</span></div>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;display:flex;flex-direction:column;gap:9px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Sent to adebayo@email.com. Statements older than six years are archived, ask support for those.</span>
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s52d }}">Email me this statement</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark request.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">53 · Complaints</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s53" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s51 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Complaints</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:var(--ink)">Something went wrong?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">Tell us and we answer within 10 working days.</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--warm-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="alert" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Money missing or delayed</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Deposits, withdrawals, dividends</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="markets" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">A trade went wrong</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Wrong price, wrong shares, failed order</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="users" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">How I was treated</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Staff, adviser or agent</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="settings" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Something else</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Anything not listed</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="padding:26px 24px 0;font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Your open complaint</div>
+<div style="padding:10px 24px 0">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="flex:1;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Withdrawal not received</span>
+<span style="padding:5px 10px;border-radius:999px;background:var(--warm-tint);font-size:12px;font-weight:700;color:var(--warm-press);white-space:nowrap">Day 4 of 10</span>
+</div>
+<div style="height:8px;border-radius:999px;background:var(--track);overflow:hidden"><span style="display:block;width:40%;height:8px;background:var(--warm-press)"></span></div>
+<span style="font-size:13px;line-height:19px;color:var(--ink-2)">Raised 22 Aug · reference KD-C-8841. We reply by 5 September.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--hairline)">
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">If we miss the 10 working days, you can take it to the SEC. We will show you how.</span>
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer">File a complaint</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Categories in plain words, the live SLA countdown, and the SEC escalation route stated up front.</div>
+</div>
+
+<div id="s53d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s51d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Complaints</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:#F4F2EF">Something went wrong?</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">Tell us and we answer within 10 working days.</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(240,122,69,.14);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="alert" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Money missing or delayed</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Deposits, withdrawals, dividends</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="markets" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">A trade went wrong</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Wrong price, wrong shares, failed order</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="users" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">How I was treated</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Staff, adviser or agent</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="settings" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Something else</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Anything not listed</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="padding:26px 24px 0;font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Your open complaint</div>
+<div style="padding:10px 24px 0">
+<div style="background:#26242A;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="flex:1;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Withdrawal not received</span>
+<span style="padding:5px 10px;border-radius:999px;background:rgba(240,122,69,.14);font-size:12px;font-weight:700;color:#F07A45;white-space:nowrap">Day 4 of 10</span>
+</div>
+<div style="height:8px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden"><span style="display:block;width:40%;height:8px;background:#F07A45"></span></div>
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.70)">Raised 22 Aug · reference KD-C-8841. We reply by 5 September.</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;display:flex;flex-direction:column;gap:9px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">If we miss the 10 working days, you can take it to the SEC. We will show you how.</span>
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer">File a complaint</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark complaints.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">54 · Security</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s54" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s51 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Security</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Face ID to open the app</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Faster than a passcode</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:var(--indicator);display:flex;align-items:center;padding:3px;justify-content:flex-end;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Ask for PIN on every trade</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Recommended</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:var(--indicator);display:flex;align-items:center;padding:3px;justify-content:flex-end;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Alert me on new logins</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">By email and push</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:var(--track);display:flex;align-items:center;padding:3px;justify-content:flex-start;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="lock" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Change passcode</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Last changed in June</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="card" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Change transaction PIN</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">24-hour hold after a change</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="padding:24px 24px 0;font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Where you are signed in</div>
+<div style="padding:10px 24px 0;display:flex;flex-direction:column;gap:9px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(42,163,107,.12);color:var(--gain)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">This phone, Lagos</span><span style="font-size:13px;color:var(--ink-3)">Infinix Note 30 · now</span></div>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="logout" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">iPhone 13, Abuja</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">Last seen 14 Aug · tap to sign out</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="margin-top:auto;padding:14px 24px 26px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--hairline)">
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Freezing stops all trading and withdrawals until you unfreeze. Your shares stay yours.</span>
+<span style="height:52px;display:grid;place-items:center;background:var(--paper);border:1px solid var(--loss);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--loss);cursor:pointer">Freeze my account</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Toggles, PIN rules, signed-in devices, and the freeze switch with what it actually does.</div>
+</div>
+
+<div id="s54d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s51d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Security</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Face ID to open the app</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Faster than a passcode</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:var(--indicator-soft);display:flex;align-items:center;padding:3px;justify-content:flex-end;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Ask for PIN on every trade</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Recommended</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:var(--indicator-soft);display:flex;align-items:center;padding:3px;justify-content:flex-end;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Alert me on new logins</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">By email and push</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:rgba(255,255,255,.07);display:flex;align-items:center;padding:3px;justify-content:flex-start;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+</div>
+<div style="padding:24px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="lock" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Change passcode</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Last changed in June</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="card" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Change transaction PIN</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">24-hour hold after a change</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="padding:24px 24px 0;font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Where you are signed in</div>
+<div style="padding:10px 24px 0;display:flex;flex-direction:column;gap:9px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(111,211,164,.16);color:#9DEBC4"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">This phone, Lagos</span><span style="font-size:13px;color:rgba(244,242,239,.50)">Infinix Note 30 · now</span></div>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="logout" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">iPhone 13, Abuja</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">Last seen 14 Aug · tap to sign out</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;display:flex;flex-direction:column;gap:9px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Freezing stops all trading and withdrawals until you unfreeze. Your shares stay yours.</span>
+<span style="height:52px;display:grid;place-items:center;border:1px solid rgba(255,179,168,.5);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#FFB3A8;cursor:pointer">Freeze my account</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark security.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">58 · Personal details</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s58" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s51 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Personal details</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;align-items:center;gap:14px">
+<img src="assets/illustrations/avatars/adebayo.svg" style="width:56px;height:56px;border-radius:999px" alt="">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Adebayo Okonkwo</span>
+<span style="font-size:13px;font-weight:700;color:var(--indicator);cursor:pointer">Change avatar</span>
+</div>
+</div>
+<div style="padding:18px 24px 0">
+<div style="background:rgba(42,163,107,.12);border-radius:16px;padding:13px 15px;display:flex;align-items:flex-start;gap:11px">
+<span style="color:var(--gain);margin-top:1px"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="17" hint-size="17px,17px"></x-import></span>
+<span style="flex:1;font-size:13px;line-height:19px;color:var(--ink-2)">Verified on 14 March 2026. Locked details come from your BVN and NIN.</span>
+</div>
+</div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;flex-direction:column;gap:5px;padding:14px 0;border-bottom:1px solid var(--hairline)">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="font-size:14px;color:var(--ink-3)">Legal name</span>
+<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Adebayo Okonkwo<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="lock" size="13" hint-size="13px,13px"></x-import></span></span>
+</div>
+<span style="font-size:12px;line-height:17px;color:var(--ink-3)">Change it at your bank first, then ask us to re-check.</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:5px;padding:14px 0;border-bottom:1px solid var(--hairline)">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="font-size:14px;color:var(--ink-3)">Date of birth</span>
+<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">14 Mar 1992<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="lock" size="13" hint-size="13px,13px"></x-import></span></span>
+</div>
+<span style="font-size:12px;line-height:17px;color:var(--ink-3)">From your BVN record.</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:5px;padding:14px 0;border-bottom:1px solid var(--hairline)">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="font-size:14px;color:var(--ink-3)">CHN</span>
+<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">0912455<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="lock" size="13" hint-size="13px,13px"></x-import></span></span>
+</div>
+<span style="font-size:12px;line-height:17px;color:var(--ink-3)">Issued by CSCS, stays with you for life.</span>
+</div>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:var(--ink-3)">Phone</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">+234 801 234 5678</span><span style="font-size:12px;color:var(--ink-3)">Needs an SMS code</span></div>
+<span style="font-size:13px;font-weight:700;color:var(--indicator)">Change</span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:var(--ink-3)">Email</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">adebayo@email.com</span><span style="font-size:12px;color:var(--ink-3)">Needs an email code</span></div>
+<span style="font-size:13px;font-weight:700;color:var(--indicator)">Change</span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:var(--ink-3)">Home address</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">12 Awolowo Road, Ikoyi, Lagos</span><span style="font-size:12px;color:var(--ink-3)">Needs a recent utility bill</span></div>
+<span style="font-size:13px;font-weight:700;color:var(--indicator)">Change</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:14px 24px 28px;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--hairline)">
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Bank account changes live under Security, and take a 24-hour hold.</span>
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s54 }}">Go to Security</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Locked BVN-derived facts with the reason, editable contact details with what each change requires. Bank account → <a href="#s54">54 Security</a></div>
+</div>
+
+<div id="s58d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s51d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Personal details</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;align-items:center;gap:14px">
+<img src="assets/illustrations/avatars/adebayo.svg" style="width:56px;height:56px;border-radius:999px" alt="">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px">
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Adebayo Okonkwo</span>
+<span style="font-size:13px;font-weight:700;color:#C9A6EC;cursor:pointer">Change avatar</span>
+</div>
+</div>
+<div style="padding:18px 24px 0">
+<div style="background:rgba(111,211,164,.16);border-radius:16px;padding:13px 15px;display:flex;align-items:flex-start;gap:11px">
+<span style="color:#9DEBC4;margin-top:1px"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="check" size="17" hint-size="17px,17px"></x-import></span>
+<span style="flex:1;font-size:13px;line-height:19px;color:rgba(244,242,239,.70)">Verified on 14 March 2026. Locked details come from your BVN and NIN.</span>
+</div>
+</div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column">
+<div style="display:flex;flex-direction:column;gap:5px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="font-size:14px;color:rgba(244,242,239,.50)">Legal name</span>
+<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Adebayo Okonkwo<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="lock" size="13" hint-size="13px,13px"></x-import></span></span>
+</div>
+<span style="font-size:12px;line-height:17px;color:rgba(244,242,239,.50)">Change it at your bank first, then ask us to re-check.</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:5px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="font-size:14px;color:rgba(244,242,239,.50)">Date of birth</span>
+<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">14 Mar 1992<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="lock" size="13" hint-size="13px,13px"></x-import></span></span>
+</div>
+<span style="font-size:12px;line-height:17px;color:rgba(244,242,239,.50)">From your BVN record.</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:5px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="font-size:14px;color:rgba(244,242,239,.50)">CHN</span>
+<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">0912455<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="lock" size="13" hint-size="13px,13px"></x-import></span></span>
+</div>
+<span style="font-size:12px;line-height:17px;color:rgba(244,242,239,.50)">Issued by CSCS, stays with you for life.</span>
+</div>
+</div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:rgba(244,242,239,.50)">Phone</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">+234 801 234 5678</span><span style="font-size:12px;color:rgba(244,242,239,.50)">Needs an SMS code</span></div>
+<span style="font-size:13px;font-weight:700;color:#C9A6EC">Change</span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:rgba(244,242,239,.50)">Email</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">adebayo@email.com</span><span style="font-size:12px;color:rgba(244,242,239,.50)">Needs an email code</span></div>
+<span style="font-size:13px;font-weight:700;color:#C9A6EC">Change</span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:rgba(244,242,239,.50)">Home address</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">12 Awolowo Road, Ikoyi, Lagos</span><span style="font-size:12px;color:rgba(244,242,239,.50)">Needs a recent utility bill</span></div>
+<span style="font-size:13px;font-weight:700;color:#C9A6EC">Change</span>
+</div>
+</div>
+<div style="margin-top:auto;padding:14px 24px 28px;display:flex;flex-direction:column;gap:9px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Bank account changes live under Security, and take a 24-hour hold.</span>
+<span style="height:52px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;cursor:pointer" onClick="{{ nav.s54d }}">Go to Security</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark personal details.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">55 · Corporate actions</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s55" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s51 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Corporate actions</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:var(--ink)">One decision waiting</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">Companies you own sometimes ask you to choose something.</div>
+</div>
+<div style="padding:22px 24px 0">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:999px;background:#2AA36B;font-family:var(--font-display);font-weight:800;font-size:12px;color:#fff">ZB</span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Zenith Bank rights issue</span><span style="font-size:13px;color:var(--ink-3)">You hold 1,200 shares</span></div>
+<span style="padding:5px 10px;border-radius:999px;background:var(--warm-tint);font-size:12px;font-weight:700;color:var(--warm-press);white-space:nowrap">4 days left</span>
+</div>
+<span style="font-size:14px;line-height:21px;color:var(--ink-2)">You can buy 300 new shares at ₦38.00 each, below today's ₦41.15. If you do nothing your stake gets smaller.</span>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:var(--ink-2)">Cost if you take it all</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums">₦11,400</span></div>
+<div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:var(--ink-2)">Closes</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink)">Fri 30 Aug, 4:30pm</span></div>
+</div>
+<div style="display:flex;gap:10px">
+<span style="flex:1;height:46px;display:grid;place-items:center;background:var(--indicator);border-radius:13px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#fff;white-space:nowrap;cursor:pointer">Take it up</span>
+<span style="flex:1;height:46px;display:grid;place-items:center;background:var(--paper);border:1px solid var(--ink);border-radius:13px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;cursor:pointer">Skip it</span>
+</div>
+</div>
+</div>
+<div style="padding:24px 24px 0;font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--ink)">Recent</div>
+<div style="padding:10px 24px 0;display:flex;flex-direction:column;gap:9px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(42,163,107,.12);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="card" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">MTN Nigeria dividend</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">₦4,548 paid to your bank · 12 Jul</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="users" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">GTCO annual meeting</span><span style="font-size:13px;line-height:18px;color:var(--ink-3)">You voted by proxy · 4 Jul</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;border-top:1px solid var(--hairline)">
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">Unclaimed dividends from before you joined? Set up an e-mandate and we chase them for you.</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Rights issue with the cost, the deadline and the consequence of doing nothing, plus dividends, proxy votes and the unclaimed-dividend mandate.</div>
+</div>
+
+<div id="s55d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s51d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Corporate actions</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:#F4F2EF">One decision waiting</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">Companies you own sometimes ask you to choose something.</div>
+</div>
+<div style="padding:22px 24px 0">
+<div style="background:#26242A;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:999px;background:#2AA36B;font-family:var(--font-display);font-weight:800;font-size:12px;color:#fff">ZB</span>
+<div style="flex:1;display:flex;flex-direction:column"><span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Zenith Bank rights issue</span><span style="font-size:13px;color:rgba(244,242,239,.50)">You hold 1,200 shares</span></div>
+<span style="padding:5px 10px;border-radius:999px;background:rgba(240,122,69,.14);font-size:12px;font-weight:700;color:#F07A45;white-space:nowrap">4 days left</span>
+</div>
+<span style="font-size:14px;line-height:21px;color:rgba(244,242,239,.70)">You can buy 300 new shares at ₦38.00 each, below today's ₦41.15. If you do nothing your stake gets smaller.</span>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:rgba(244,242,239,.70)">Cost if you take it all</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF;font-variant-numeric:tabular-nums">₦11,400</span></div>
+<div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:rgba(244,242,239,.70)">Closes</span><span style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#F4F2EF">Fri 30 Aug, 4:30pm</span></div>
+</div>
+<div style="display:flex;gap:10px">
+<span style="flex:1;height:46px;display:grid;place-items:center;background:var(--indicator-soft);border-radius:13px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#fff;white-space:nowrap;cursor:pointer">Take it up</span>
+<span style="flex:1;height:46px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.25);border-radius:13px;font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF;white-space:nowrap;cursor:pointer">Skip it</span>
+</div>
+</div>
+</div>
+<div style="padding:24px 24px 0;font-family:var(--font-display);font-weight:700;font-size:17px;color:#F4F2EF">Recent</div>
+<div style="padding:10px 24px 0;display:flex;flex-direction:column;gap:9px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(111,211,164,.16);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="card" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">MTN Nigeria dividend</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">₦4,548 paid to your bank · 12 Jul</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer" onClick="{{ nav.s57d }}">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="users" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">GTCO annual meeting</span><span style="font-size:13px;line-height:18px;color:rgba(244,242,239,.50)">You voted by proxy · 4 Jul</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">Unclaimed dividends from before you joined? Set up an e-mandate and we chase them for you.</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark corporate actions.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font:var(--text-card-title);color:var(--ink)">57 · Data and privacy</div>
+<div style="display:flex;flex-wrap:nowrap;gap:24px;align-items:flex-start">
+
+<div id="s57" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Light</div>
+<div style="width:390px;height:880px;background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(43,26,61,.10)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:var(--ink-3)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:var(--track);color:var(--ink);cursor:pointer" onClick="{{ nav.s51 }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink)">Data and privacy</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:var(--ink)">Your data</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink-2)">Choose what we may send you, take a copy, or ask us to delete it.</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Market news and tips</span><span style="font-size:13px;color:var(--ink-3)">Email and push</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:var(--indicator);display:flex;align-items:center;padding:3px;justify-content:flex-end;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Offers from partners</span><span style="font-size:13px;color:var(--ink-3)">You can say no, nothing changes</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:var(--track);display:flex;align-items:center;padding:3px;justify-content:flex-start;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--paper);border:1px solid var(--hairline);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--indicator-tint);color:var(--indicator)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">Download my data</span><span style="font-size:13px;color:var(--ink-3)">One file, emailed within 7 days</span></div>
+<span style="color:var(--ink-3)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--hairline)">
+<span style="font-size:13px;line-height:19px;color:var(--ink-3)">We must keep your trade records for six years, even after you close the account. Everything else can go.</span>
+<span style="height:52px;display:grid;place-items:center;background:var(--paper);border:1px solid var(--loss);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--loss);cursor:pointer">Delete my data</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Two consent switches, download, delete, and the six-year retention rule. Nothing more.</div>
+</div>
+
+<div id="s57d" style="flex:none;width:390px">
+<div style="font:var(--text-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--ink-3);margin-bottom:10px">Dark</div>
+<div style="width:390px;height:880px;background:#1A191D;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(0,0,0,.35)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:var(--text-micro);letter-spacing:var(--track-micro);color:rgba(244,242,239,.50)"><span>9:41</span><span>LTE</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.07);color:#F4F2EF;cursor:pointer" onClick="{{ nav.s51d }}"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="back" size="19" hint-size="19px,19px"></x-import></span>
+<span style="font-family:var(--font-display);font-weight:700;font-size:16px;color:#F4F2EF">Data and privacy</span>
+<span style="width:40px"></span>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:32px;letter-spacing:-.02em;color:#F4F2EF">Your data</div>
+<div style="font-size:15px;line-height:22px;color:rgba(244,242,239,.70)">Choose what we may send you, take a copy, or ask us to delete it.</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Market news and tips</span><span style="font-size:13px;color:rgba(244,242,239,.50)">Email and push</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:var(--indicator-soft);display:flex;align-items:center;padding:3px;justify-content:flex-end;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px">
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Offers from partners</span><span style="font-size:13px;color:rgba(244,242,239,.50)">You can say no, nothing changes</span></div>
+<span style="width:48px;height:28px;flex:none;border-radius:999px;background:rgba(255,255,255,.07);display:flex;align-items:center;padding:3px;justify-content:flex-start;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></span>
+</div>
+</div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;gap:10px">
+<div style="background:#26242A;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer">
+<span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(161,107,224,.20);color:#C9A6EC"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="download" size="18" hint-size="18px,18px"></x-import></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#F4F2EF">Download my data</span><span style="font-size:13px;color:rgba(244,242,239,.50)">One file, emailed within 7 days</span></div>
+<span style="color:rgba(244,242,239,.50)"><x-import component-from-global-scope="KudimataDesignSystem_b88dc9.Icon" name="chevronRight" size="17" hint-size="17px,17px"></x-import></span>
+</div>
+</div>
+<div style="margin-top:auto;padding:16px 24px 30px;display:flex;flex-direction:column;gap:9px;border-top:1px solid rgba(255,255,255,.08)">
+<span style="font-size:13px;line-height:19px;color:rgba(244,242,239,.50)">We must keep your trade records for six years, even after you close the account. Everything else can go.</span>
+<span style="height:52px;display:grid;place-items:center;border:1px solid rgba(255,179,168,.5);border-radius:14px;font-family:var(--font-display);font-weight:700;font-size:16px;color:#FFB3A8;cursor:pointer">Delete my data</span>
+</div>
+</div>
+<div style="margin-top:12px;font:var(--text-data);color:var(--ink-3)">Dark data and privacy.</div>
+</div>
+
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const go = id => () => { location.hash = ''; location.hash = id; };
+    const nav = {};
+    const openTerms = () => { window.open('01 Getting In.dc.html#s03c', '_blank'); };
+    ['s51','s51d','s52','s52d','s53','s53d','s54','s54d','s55','s55d','s56','s56d','s57','s57d','s58','s58d'].forEach(id => { nav[id] = go(id); });
+    return { nav, openTerms };
+  }
+}
+</script>
+</body>
+</html>
