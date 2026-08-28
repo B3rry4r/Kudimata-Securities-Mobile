@@ -129,9 +129,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: live-gate-screenshots
-          path: |
-            build/live_gate/**
-            build/screenshots/**
+          # The test writes here -- see test_driver/integration_test.dart.
+          # This path was wrong on the first passing run and the images were
+          # produced and then discarded, which defeats the point: the assertions
+          # catch crashes and emptiness, the screenshots are how a human catches
+          # wrongness.
+          path: build/live_gate_screenshots/**
           if-no-files-found: warn
           retention-days: 30
 
@@ -186,8 +189,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: live-gate-screenshots-android
-          path: |
-            build/live_gate/**
-            build/screenshots/**
+          # The test writes here -- see test_driver/integration_test.dart.
+          # This path was wrong on the first passing run and the images were
+          # produced and then discarded, which defeats the point: the assertions
+          # catch crashes and emptiness, the screenshots are how a human catches
+          # wrongness.
+          path: build/live_gate_screenshots/**
           if-no-files-found: warn
           retention-days: 30
