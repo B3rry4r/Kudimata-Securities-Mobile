@@ -13,8 +13,9 @@ name: iOS Build and Deploy
 #   • APPLE_TEAM_ID                 — Apple Developer Team ID.
 #   • KEYCHAIN_UNLOCK_PASSWORD      — password for the throwaway CI keychain.
 on:
-  push:
-    branches: [ main ]
+  # Manual only. Pushing to main used to ship a TestFlight build automatically,
+  # which meant every merge reached testers whether or not it had been proven
+  # against a real backend. Run this deliberately, after the live gate is green.
   workflow_dispatch:
 
 jobs:

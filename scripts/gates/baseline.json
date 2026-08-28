@@ -1,12 +1,148 @@
 {
   "accepted": {
-    "967428e6c1db03ea": {
-      "gate": "hardcoded_signals",
-      "where": "lib/app/feature_flags.dart:17",
-      "message": "'kAiCreditsEnabled' - constant stands in for a runtime signal",
-      "evidence": "const bool kAiCreditsEnabled = false;",
+    "00ae8a81a5450874": {
+      "evidence": "/// timeline-append endpoints are out of scope for this backend pass), plus",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
       "owner": "Excel",
-      "reason": "Deliberate compile-time toggle, not a fake runtime source (D-3, SHARED-CHANGES.md 2026-08-27 removals pass; R-6, docs/redesign/DECISIONS.md). R-6 explicitly asks for the AI-credits line to be parked behind ONE flag so it is reversible in a single edit -- there is no backend 'is this feature on' endpoint to read, and there should not be one for a product decision still pending. This is the intended shape of the flag, not a stand-in for a real source that was never wired up."
+      "reason": "Documents that the timeline only ever shows one real backend entry today because staff-side status-transition/timeline-append endpoints don't exist yet -- the same backend gap as complaint_repository.dart, filed in docs/redesign/BACKEND_GAPS.md. The screen itself handles this honestly (a forward-looking row, no fabricated timestamps).",
+      "where": "lib/screens/account/complaint_tracked_screen.dart:106"
+    },
+    "26cf14e2b6b8f223": {
+      "evidence": "// (lib/data/api/api_client.dart \u2014 out of scope for a per-screen wiring",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Records a judgment call (PATCH used in place of the PUT registry.json documents, because ApiClient's convenience verbs don't include put) and notes ApiClient was out of scope to extend for this pass. Historical rationale for a decision already made, not an open item.",
+      "where": "lib/data/repositories/notification_preferences_repository.dart:28"
+    },
+    "2da0ba98394f5b79": {
+      "evidence": "// (\"make the assessment optional or hide it for now\") \u2014 that directive",
+      "gate": "deferrals",
+      "message": "temporary implementation left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Quotes a superseded product directive (\"make the assessment optional or hide it for now\") purely to explain why the gating logic below it exists and what it replaced (see R-2/suitability-mandatory history two paragraphs up). The code does not defer anything -- it implements the current, mandatory-suitability behavior; the quoted text is a dated instruction being recorded as overturned, not a live TODO.",
+      "where": "lib/app/app_state.dart:559"
+    },
+    "3167a6c2e7da3804": {
+      "evidence": "// lib/data/models.dart (out of scope for a per-screen wiring agent to edit,",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Same shared-file-scope provenance: LegalDocument is declared locally because lib/data/models.dart was out of scope for the agent that wired this repository, per the screen-agent brief's rule 5/6. Describes an established, repeated convention, not deferred work.",
+      "where": "lib/data/repositories/legal_documents_repository.dart:7"
+    },
+    "37c1f06222534593": {
+      "evidence": "/// here with, without editing routes.dart/app_router.dart (out of scope for",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Explains a typedef alias (ComplaintSummary = Complaint) kept only so an existing `is!` check keeps compiling without touching routes.dart/app_router.dart, which was out of scope for this pass. Purely cosmetic follow-up noted for whoever next touches those files centrally -- current behavior is already correct.",
+      "where": "lib/screens/account/complaint_tracked_screen.dart:46"
+    },
+    "4386e1f8a9e16c18": {
+      "evidence": "// resource is new, out of scope for that shared file), so \u2014 mirroring the",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Records why SuitabilityResult is a small local DTO (models.dart out of scope, resource is new) carrying only the two fields the result screen currently reads, with an explicit note to extend additively. Provenance, not a stub.",
+      "where": "lib/data/repositories/suitability_repository.dart:29"
+    },
+    "75bb2158022b633e": {
+      "evidence": "// \"remove ETFs, just shares for now\". NGX ordinary shares only,",
+      "gate": "deferrals",
+      "message": "temporary implementation left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Quotes the direct product instruction that removed ETFs from this screen ('remove ETFs, just shares for now') to explain why only AssetClass.ngx is fetched. The instruction was acted on immediately and completely -- the comment records why, it doesn't defer the removal.",
+      "where": "lib/screens/markets/markets_screen.dart:29"
+    },
+    "882d807e80037d46": {
+      "evidence": "// ReferralAccount is not in lib/data/models.dart \u2014 out of scope for a",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Same shared-file-scope provenance as the other repositories above: ReferralAccount lives here, not in lib/data/models.dart, because that file was out of scope for the wiring agent. Established convention, not deferred work.",
+      "where": "lib/data/repositories/referral_repository.dart:13"
+    },
+    "967428e6c1db03ea": {
+      "evidence": "const bool kAiCreditsEnabled = false;",
+      "gate": "hardcoded_signals",
+      "message": "'kAiCreditsEnabled' - constant stands in for a runtime signal",
+      "owner": "Excel",
+      "reason": "Deliberate compile-time toggle, not a fake runtime source (D-3, SHARED-CHANGES.md 2026-08-27 removals pass; R-6, docs/redesign/DECISIONS.md). R-6 explicitly asks for the AI-credits line to be parked behind ONE flag so it is reversible in a single edit -- there is no backend 'is this feature on' endpoint to read, and there should not be one for a product decision still pending. This is the intended shape of the flag, not a stand-in for a real source that was never wired up.",
+      "where": "lib/app/feature_flags.dart:17"
+    },
+    "a9d674190ef68487": {
+      "evidence": "//    `PATCH /notifications/:id/read`). models.dart is out of scope for a",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Records two judgment calls (NotificationItem wraps AppNotification with an id since models.dart was out of scope to edit; createdAt reformatting) made when this repository replaced mock.dart. Explains a shipped decision, not a deferred one.",
+      "where": "lib/data/repositories/notifications_repository.dart:22"
+    },
+    "b383c14c3401daa3": {
+      "evidence": "// counterpart in lib/data/models.dart (out of scope for a per-screen wiring",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Same shared-file-scope provenance: Statement is a local model because lib/data/models.dart was out of scope to edit for this repository's wiring pass, mirroring LegalDocument's identical situation. Not a deferral.",
+      "where": "lib/data/repositories/statements_repository.dart:5"
+    },
+    "bdcfff76d6bc3a5c": {
+      "evidence": "// Local models \u2014 not in lib/data/models.dart, out of scope for a per-screen",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Records why RightsIssue/etc. are declared as local models here rather than in lib/data/models.dart: rule 5/6 of the screen-agent brief bans a per-screen wiring agent from touching shared files outside its own scope. Accurate provenance for a pattern used identically across several repositories, not a deferred task.",
+      "where": "lib/data/repositories/corporate_actions_repository.dart:35"
+    },
+    "bfbc302ef6962898": {
+      "evidence": "/// is left untouched (models.dart is out of scope for this screen's",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Explains why personal_info_screen.dart's extra fields (dob, residentialAddress, city, state) live in a second screen-local PersonalInfo type instead of on UserProfile: models.dart was out of scope for that screen's wiring agent. Describes a shipped pattern used elsewhere in this file (BankAccountSummary, PortfolioSummary).",
+      "where": "lib/data/repositories/user_repository.dart:38"
+    },
+    "d04656c800e25b24": {
+      "evidence": "// endpoints are explicitly out of scope for this backend pass",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Explicitly labeled 'REAL BACKEND GAP, honestly flagged' in the comment itself and filed in docs/redesign/BACKEND_GAPS.md under complaint_tracked_screen.dart -- this is the documented, filed gap the deferrals gate exists to force into the open, and it already is.",
+      "where": "lib/screens/account/complaint_tracked_screen.dart:236"
+    },
+    "d6bf7044309e80d1": {
+      "evidence": "// second row read \"Only Nigerian shares for now \u2014 no foreign",
+      "gate": "deferrals",
+      "message": "temporary implementation left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Quotes the removed 'Only Nigerian shares for now' unlock-card copy verbatim to record what this screen used to show before the 2026-08-24 product instruction removed it (see part 2 of this pass, which rewrote the adjacent shouted note into normal prose). Historical record of a completed removal, not a live deferral.",
+      "where": "lib/screens/suitability/suitability_result_screen.dart:97"
+    },
+    "dc9049972d0a6396": {
+      "evidence": "// status-transition/timeline-append endpoints are explicitly out of scope",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Documents that the backend's ComplaintsController intentionally has no staff-side status-transition/timeline-append endpoints yet (per complaints.module.ts's own header) -- provenance for why this investor-facing repository only reads/creates/uploads. Backend gap is filed in docs/redesign/BACKEND_GAPS.md (complaint_tracked_screen.dart).",
+      "where": "lib/data/repositories/complaint_repository.dart:8"
+    },
+    "ee3d3e793432821c": {
+      "evidence": "// lib/data/models.dart \u2014 out of scope for a per-screen wiring agent to add",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Same shared-file-scope provenance as corporate_actions_repository.dart: Dividend/EDividendMandate/DividendSummary live here because lib/data/models.dart was off-limits to the wiring agent that added them, per the screen-agent brief's rule 5/6. Not a deferral.",
+      "where": "lib/data/repositories/dividend_repository.dart:20"
+    },
+    "fc613672e5ba974d": {
+      "evidence": "/// rather than shared \u2014 that file is out of scope to touch, per this",
+      "gate": "deferrals",
+      "message": "scope declaration left as prose - resolve it or baseline it with a reason",
+      "owner": "Excel",
+      "reason": "Explains a deliberate small duplication (the E.164 regex also lives in kyc/personal_details.dart) rather than a shared helper, because that file was out of scope to touch for this screen's wiring agent. States an established codebase convention, not a deferral.",
+      "where": "lib/screens/onboarding/personal_details_screen.dart:60"
     }
   }
 }

@@ -563,7 +563,7 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
   // this now correctly re-gates.
   if (!app.suitabilityComplete) {
     return const TradingEligibilityGap(
-      title: 'Complete your investor profile',
+      title: 'Complete your suitability assessment',
       message: 'A quick suitability assessment is required before you can invest',
       route: Routes.questionnaire,
     );

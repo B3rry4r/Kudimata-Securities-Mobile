@@ -442,7 +442,7 @@ class KPillChip extends StatelessWidget {
   }
 }
 
-/// A picked file (mock — the real picker plugs in later).
+/// A picked file, as returned by the platform file picker (`file_picker`).
 class KFileInfo {
   const KFileInfo({required this.name, this.size});
   final String name;
@@ -457,7 +457,8 @@ class KFileInfo {
 }
 
 /// File upload — dashed dropzone; collapses to a file row once chosen.
-/// On mobile, tapping the zone invokes [onPick] (a real picker plugs in later).
+/// On mobile, tapping the zone invokes [onPick], which callers wire to the
+/// platform file picker (`file_picker`).
 class KFileUpload extends StatelessWidget {
   const KFileUpload({
     super.key,

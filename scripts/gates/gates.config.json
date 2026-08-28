@@ -72,9 +72,9 @@
       "enabled": true,
       "require_pipeline": false,
       "pipeline_dirs": [
-        ".pipeline",
-        "../Kudimata-Securities-Backend/.pipeline"
-      ]
+        ".pipeline"
+      ],
+      "_why": "Only this repo's own .pipeline. The sibling backend's artifacts are policed by that repo's own gate run -- pointing across a directory boundary made this gate fail locally and pass in CI, which is the worst of both."
     },
     "provisional": {
       "enabled": true

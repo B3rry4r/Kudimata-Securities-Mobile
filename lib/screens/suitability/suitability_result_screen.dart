@@ -1,5 +1,7 @@
-// Suitability — risk-profile result. The one ink panel states the investor
-// profile; a paragraph explains it; primary Continue advances. No purple donut.
+// Suitability — completion screen. Per R-2 (docs/redesign/DECISIONS.md), this
+// screen does not announce the computed profile; it confirms the assessment
+// is done and sends the investor on to the statutory Risk Disclaimer, which
+// is where the categorisation is legally required to appear. No purple donut.
 // Ported from risk-screens.jsx (SuitabilityResult).
 //
 // GET /suitability-result/me (SuitabilityRepository.me, see
@@ -88,20 +90,20 @@ class _SuitabilityResultBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 2026-08-24: this screen used to announce the computed
-                // profile ("YOUR PROFILE / Conservative" + rationale) and
-                // carry a "What this unlocks" card whose second row read
-                // "Only Nigerian shares for now — no foreign stocks".
-                // Both removed on direct product instruction ("WHY ARE WE
-                // STILL PROFILING???? AND WHY ARE WE SAYING ONLY NIGERIAN
-                // SHARES FOR NOW??? A SIMPLE COMPLETION OR SUCCESS SCREEN
-                // IS ENOUGH"). The unlock card framed the whole product as
-                // a limitation at the exact moment the investor finished
-                // onboarding, and naming the profile twice in a row is
-                // redundant — the statutory Risk Disclaimer on the very
-                // next screen is where the categorisation legally has to
-                // appear, and it still shows it (RiskDisclaimerArgs below
-                // carries `result.profile` through unchanged).
+                // This is a completion screen, not a second announcement of
+                // the categorisation. 2026-08-24: it used to also announce
+                // the computed profile ("YOUR PROFILE / Conservative" +
+                // rationale) and carry a "What this unlocks" card whose
+                // second row read "Only Nigerian shares for now — no foreign
+                // stocks". Both were removed on direct product instruction:
+                // the profile announcement conflicted with R-2, and the
+                // unlock card framed the whole product as a limitation at
+                // the exact moment the investor finished onboarding. Naming
+                // the profile twice in a row was also redundant — the
+                // statutory Risk Disclaimer on the very next screen is where
+                // the categorisation legally has to appear, and it still
+                // shows it (RiskDisclaimerArgs below carries `result.profile`
+                // through unchanged).
                 Text('Assessment complete', style: KType.title()),
                 const SizedBox(height: 6),
                 Text(

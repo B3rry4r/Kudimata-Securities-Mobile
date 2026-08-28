@@ -3,7 +3,7 @@
 // "+1.94%", "−0.62%" (note: loss uses the unicode minus U+2212). Movement colour
 // is carried by [Trend] on numbers only. Scope: NGX only.
 import 'package:flutter/widgets.dart';
-import 'mock.dart' show spark;
+import 'sparkline.dart' show spark;
 
 enum Trend { gain, loss }
 

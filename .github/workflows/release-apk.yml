@@ -14,9 +14,9 @@ name: Build & Release Android
 # Without these, the workflow falls back to Android's debug keys (sideload-only,
 # not accepted by Play Store) — same as local builds without android/key.properties.
 on:
-  push:
-    tags:
-      - 'v*'
+  # Manual only. A `v*` tag used to build and publish a release automatically;
+  # a tag is easy to push by reflex, and a release is not something to trigger
+  # by reflex. Run it deliberately from the Actions tab.
   workflow_dispatch:
     inputs:
       tag:
