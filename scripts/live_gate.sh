@@ -73,6 +73,9 @@ flutter drive \
   --driver=test_driver/integration_test.dart \
   --target=integration_test/live_gate_test.dart \
   -d web-server \
+  --browser-name=chrome \
+  --headless \
+  --browser-dimension=430x932 \
   --web-port="$WEB_PORT" \
   --dart-define=API_BASE_URL="$BASE_URL" \
   --web-browser-flag=--disable-dev-shm-usage \

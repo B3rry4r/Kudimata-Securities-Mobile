@@ -61,7 +61,7 @@ jobs:
     name: Live gate (Chrome)
     if: github.event_name != 'workflow_dispatch' || inputs.target == 'web'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -104,10 +104,20 @@ jobs:
           set -euo pipefail
           chromedriver --port=4444 &
           for _ in $(seq 1 20); do curl -sf http://localhost:4444/status >/dev/null && break; sleep 1; done
+          # -d web-server, NOT -d chrome. `-d chrome` uses Flutter's ChromeDevice,
+          # which launches a HEADED browser -- on a runner with no display nothing
+          # ever connects back to the debug service and the job hangs until the
+          # timeout. `-d web-server --browser-name=chrome` uses the WebDriver path,
+          # which drives chromedriver properly and honours --headless.
+          # --browser-dimension defaults to 1600x1024, a desktop shape; this is a
+          # phone app, so it is set to a phone.
           flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=integration_test/live_gate_test.dart \
-            -d chrome \
+            -d web-server \
+            --browser-name=chrome \
+            --headless \
+            --browser-dimension=430x932 \
             --dart-define=API_BASE_URL="$BASE_URL" \
             --dart-define=LIVE_GATE_EMAIL="${{ env.LIVE_GATE_EMAIL }}" \
             --dart-define=LIVE_GATE_PASSWORD="${{ env.LIVE_GATE_PASSWORD }}" \
