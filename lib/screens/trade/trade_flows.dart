@@ -490,6 +490,12 @@ Future<void> _runBuyFlow(BuildContext context, Asset asset) async {
   while (true) {
     switch (step) {
       case 0:
+        // Nothing committed yet — just about to open the first step sheet.
+        // Reached fresh on the first pass, or via the loop's back-edge from
+        // case 1's "Back". Either way, if the widget is gone there is no
+        // sheet to open and no order in flight, so ending the flow silently
+        // is correct.
+        if (!context.mounted) return;
         final res = await _showChooserSheet(context, asset: asset, isSell: false);
         if (res == null || !context.mounted) return;
         kind = res as _Kind;
@@ -497,6 +503,9 @@ Future<void> _runBuyFlow(BuildContext context, Asset asset) async {
         break;
 
       case 1:
+        // Same reasoning as case 0: opening the price sheet, nothing
+        // committed. Reached from case 0 forward or case 2's "Back".
+        if (!context.mounted) return;
         final res = await _showPriceSheet(
           context,
           asset: asset,
@@ -517,6 +526,9 @@ Future<void> _runBuyFlow(BuildContext context, Asset asset) async {
 
       case 2:
         final refPrice = kind == _Kind.now ? _parsePrice(asset.price) : limitPrice!;
+        // Opening the shares sheet — still nothing committed (shares aren't
+        // chosen yet). Reached from case 0/1 forward or case 3's "Back".
+        if (!context.mounted) return;
         final res = await _showBuySharesSheet(
           context,
           asset: asset,
@@ -535,6 +547,12 @@ Future<void> _runBuyFlow(BuildContext context, Asset asset) async {
 
       case 3:
         final refPrice = kind == _Kind.now ? _parsePrice(asset.price) : limitPrice!;
+        // Opening the review sheet. This still precedes order placement —
+        // placing the order happens inside _BuyReviewSheetState._confirm,
+        // which already guards on its own State.mounted before touching
+        // context or state. So there is still nothing committed at this
+        // point; returning silently is safe.
+        if (!context.mounted) return;
         final order = await _showBuyReviewSheet(
           context,
           asset: asset,
@@ -1296,6 +1314,10 @@ Future<void> _runSellFlow(BuildContext context, Asset asset) async {
   while (true) {
     switch (step) {
       case 0:
+        // Nothing committed yet — opening the sell chooser (which itself
+        // just reads the holding, doesn't mutate anything). Reached fresh
+        // or via case 1's "Back".
+        if (!context.mounted) return;
         final res = await showKSheet<Object>(
           context,
           child: _SellChooserSheet(asset: asset),
@@ -1309,6 +1331,9 @@ Future<void> _runSellFlow(BuildContext context, Asset asset) async {
         break;
 
       case 1:
+        // Opening the price sheet, still nothing committed. Reached from
+        // case 0 forward or case 2's "Back".
+        if (!context.mounted) return;
         final res = await _showPriceSheet(
           context,
           asset: asset,
@@ -1330,6 +1355,9 @@ Future<void> _runSellFlow(BuildContext context, Asset asset) async {
 
       case 2:
         final refPrice = kind == _Kind.now ? _parsePrice(asset.price) : limitPrice!;
+        // Opening the shares sheet — shares not yet chosen, nothing
+        // committed. Reached from case 0/1 forward or case 3's "Back".
+        if (!context.mounted) return;
         final res = await _showSellSharesSheet(
           context,
           asset: asset,
@@ -1349,6 +1377,11 @@ Future<void> _runSellFlow(BuildContext context, Asset asset) async {
 
       case 3:
         final refPrice = kind == _Kind.now ? _parsePrice(asset.price) : limitPrice!;
+        // Opening the review sheet, still before order placement — placing
+        // the sell order happens inside _SellReviewSheetState._confirm,
+        // which already guards on its own State.mounted. Nothing committed
+        // here yet, so returning silently is safe.
+        if (!context.mounted) return;
         final order = await _showSellReviewSheet(
           context,
           asset: asset,

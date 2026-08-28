@@ -44,7 +44,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import '../api/api_client.dart' show kApiBaseUrl;
 import '../api/auth_token_store.dart';
@@ -118,7 +118,7 @@ class RealtimeClient {
   RealtimeClient({AuthTokenStore? tokenStore}) : _tokenStore = tokenStore ?? AuthTokenStore();
 
   final AuthTokenStore _tokenStore;
-  IO.Socket? _socket;
+  io.Socket? _socket;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -177,9 +177,9 @@ class RealtimeClient {
     final token = await _tokenStore.getAccessToken();
     if (token == null || token.isEmpty) return;
 
-    final socket = IO.io(
+    final socket = io.io(
       kApiBaseUrl,
-      IO.OptionBuilder()
+      io.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
           // Re-read the stored token on EVERY (re)connection attempt,
@@ -250,7 +250,7 @@ class RealtimeClient {
     'market:orderBook',
   ];
 
-  void _wireListeners(IO.Socket socket) {
+  void _wireListeners(io.Socket socket) {
     socket.onReconnect((_) => _reconnected.add(null));
     for (final event in handledEvents) {
       socket.on(event, (data) => handleEvent(event, data));
