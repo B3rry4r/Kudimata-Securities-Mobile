@@ -9,6 +9,20 @@
 // Run via scripts/live_gate.sh — see that file for the exact command and for
 // why chromedriver has to be started before this can run at all.
 //
+// ── Why this never uses pumpAndSettle ───────────────────────────────────
+// `pumpAndSettle` waits for zero pending frames AND zero pending timers.
+// This app never reaches that state while it's running correctly:
+//   lib/widgets/spinner.dart:26        AnimationController(...)..repeat() — infinite
+//   lib/screens/home/home_screen.dart  rotating movers card Timer.periodic(4s)
+//   lib/screens/home/home_screen.dart  portfolio poll Timer.periodic(8s)
+// A spinner that spins is correct behaviour — the fix belongs in this test,
+// not in the app's animations. [pumpUntil] below pumps in short slices
+// until a specific, named condition is true, or fails with a message
+// naming exactly what it was waiting for. This gate also talks to a REAL
+// backend over the network, so every wait is bounded by a generous
+// wall-clock timeout rather than a fixed frame/pump count — real latency,
+// not simulated time.
+//
 // ── Why these particular assertions ─────────────────────────────────────
 // Every value asserted below was picked by first reading
 // test/fixtures/mock_api_adapter.dart and choosing something IT PHYSICALLY
@@ -39,7 +53,8 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:kudimata_invest/data/api/auth_token_store.dart';
 import 'package:kudimata_invest/data/api/passcode_store.dart';
-import 'package:kudimata_invest/screens/shared/state_views.dart' show KErrorView;
+import 'package:kudimata_invest/screens/shared/state_views.dart' show KErrorView, KLoadingView;
+import 'package:kudimata_invest/widgets/buttons.dart' show KIconButton;
 import 'package:kudimata_invest/widgets/finance.dart' show KAssetRow;
 import 'package:kudimata_invest/widgets/scaffold.dart' show KDetailHeader;
 
@@ -77,8 +92,43 @@ void main() {
   final results = <String, bool>{}; // surface -> passed
   final failures = <String>[];
 
+  /// Pumps in short real-time slices — always at least one, so a condition
+  /// that only becomes true as a DIRECT RESULT of the frame just pumped
+  /// (e.g. "the loading spinner for the screen I just navigated to is
+  /// gone") is never checked against stale, pre-navigation state — until
+  /// [condition] is true, or fails naming [what] after [timeout]. This is
+  /// the one replacement for every `pumpAndSettle` call this file used to
+  /// make (see file header for why pumpAndSettle can't be used here at
+  /// all). [timeout] defaults generously since this drives a real backend
+  /// over a real network connection, not a mock.
+  Future<void> pumpUntil(
+    WidgetTester tester,
+    bool Function() condition,
+    String what, {
+    Duration timeout = const Duration(seconds: 20),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    do {
+      await tester.pump(const Duration(milliseconds: 200));
+      if (condition()) return;
+    } while (DateTime.now().isBefore(deadline));
+    fail('Timed out after ${timeout.inSeconds}s waiting for $what');
+  }
+
+  /// Pumps in short slices for a fixed, bounded [duration] — for the rare
+  /// spot with no specific widget/state worth naming as a wait condition
+  /// (settling a screenshot, settling a same-screen text-field edit, the
+  /// client-side-only transition between the create/confirm passcode
+  /// steps). Still bounded, never open-ended like `pumpAndSettle`.
+  Future<void> pumpBriefly(WidgetTester tester, {Duration duration = const Duration(seconds: 1)}) async {
+    final end = DateTime.now().add(duration);
+    while (DateTime.now().isBefore(end)) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
   Future<void> shot(WidgetTester tester, String name) async {
-    await tester.pumpAndSettle();
+    await pumpBriefly(tester, duration: const Duration(milliseconds: 500));
     await binding.takeScreenshot(name);
   }
 
@@ -88,6 +138,18 @@ void main() {
     if (!ok) failures.add('$surface: rendered KErrorView instead of content');
   }
 
+  /// Waits for whichever screen's own loading spinner (KLoadingView, the
+  /// shared FutureBuilder-loading widget every wired screen uses — see
+  /// lib/data/api/README.md) to be gone — i.e. the screen's own fetch has
+  /// resolved, either into real content or into a KErrorView, which
+  /// [checkNoErrorView] then reports on with a specific reason. Bounded by
+  /// real network latency, not a frame count.
+  Future<void> waitForLoad(WidgetTester tester, String surface) => pumpUntil(
+        tester,
+        () => find.byType(KLoadingView).evaluate().isEmpty,
+        '$surface to finish loading',
+      );
+
   /// Types [digits] into whichever passcode keypad (create or confirm) is
   /// currently on screen — both use KKeypad, whose digit cells render as
   /// plain `Text('0'..'9')` (onboarding_scaffold.dart's KKeypad.digit).
@@ -96,7 +158,7 @@ void main() {
       await tester.tap(find.text(d).first);
       await tester.pump(const Duration(milliseconds: 80));
     }
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await pumpBriefly(tester);
   }
 
   /// Full real login: splash -> welcome -> "Sign in" -> email+password form
@@ -107,27 +169,41 @@ void main() {
   Future<void> realLogin(WidgetTester tester, {required String email, required String password}) async {
     app.main();
     // Splash's own beat is 1400ms (splash_screen.dart) before it decides
-    // welcome vs. login; give it real time plus settle margin.
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    // welcome vs. login — wait for the actual welcome screen rather than a
+    // fixed pump count.
+    await pumpUntil(
+      tester,
+      () => find.text('Sign in').evaluate().isNotEmpty,
+      'the welcome screen ("Sign in" CTA) to appear after splash',
+    );
 
     final signIn = find.text('Sign in');
     expect(signIn, findsWidgets, reason: 'Welcome screen "Sign in" CTA not found');
     await tester.tap(signIn.first);
-    await tester.pumpAndSettle(const Duration(seconds: 1));
+    await pumpUntil(
+      tester,
+      () => find.byType(TextField).evaluate().isNotEmpty,
+      'the email/password login form after tapping "Sign in"',
+    );
 
     // Email+password form (log_in_screen.dart's _buildLoginForm) — two bare
     // TextFields in document order, Email then Password.
     final fields = find.byType(TextField);
     expect(fields, findsNWidgets(2), reason: 'expected exactly the Email + Password fields');
     await tester.enterText(fields.at(0), email);
-    await tester.pumpAndSettle();
+    await pumpBriefly(tester, duration: const Duration(milliseconds: 300));
     await tester.enterText(fields.at(1), password);
-    await tester.pumpAndSettle();
+    await pumpBriefly(tester, duration: const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Sign in').last); // the KButton, not the CTA above
-    // Real network round trip (POST /auth/login) — give it real time.
-    await tester.pumpAndSettle(const Duration(seconds: 4));
+    // Real network round trip (POST /auth/login) — real latency, so this
+    // waits for the actual next screen instead of a fixed pump duration.
+    await pumpUntil(
+      tester,
+      () => find.text('Create a passcode').evaluate().isNotEmpty,
+      'the create-passcode screen after a successful login (POST /auth/login)',
+      timeout: const Duration(seconds: 30),
+    );
 
     // A device with no stored local passcode always lands on
     // Routes.createPasscode next (see log_in_screen.dart's
@@ -139,8 +215,16 @@ void main() {
     await enterPasscode(tester, _passcode);
 
     // hydrateGatingStateAndRoute's own real GET /users/me (+ kyc/suitability
-    // calls) then context.go(Routes.home) — real network again.
-    await tester.pumpAndSettle(const Duration(seconds: 4));
+    // calls) then context.go(Routes.home) — real network again. Home's
+    // header always renders "Hi <first name>" regardless of KYC state
+    // (_HomeBody builds it unconditionally), so it's a reliable marker for
+    // both seed accounts used below.
+    await pumpUntil(
+      tester,
+      () => find.textContaining('Hi ').evaluate().isNotEmpty,
+      "Home's greeting after the real gating check (GET /users/me, /kyc-submissions/me)",
+      timeout: const Duration(seconds: 30),
+    );
   }
 
   /// Wipes local secure storage so the NEXT realLogin() call is a genuinely
@@ -171,7 +255,7 @@ void main() {
 
     // ── 2. Portfolio — server-only DANGCEM position ─────────────────────
     await tester.tap(find.text('PORTFOLIO'));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await waitForLoad(tester, 'Portfolio (GET /holdings, /portfolio-summary)');
     checkNoErrorView('Portfolio');
     expect(
       find.text('40 shares · avg ₦520.00'),
@@ -184,44 +268,59 @@ void main() {
 
     // ── 3. Markets + Asset detail (real navigation: tap a row) ──────────
     await tester.tap(find.text('MARKETS'));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await waitForLoad(tester, 'Markets (GET /assets)');
     checkNoErrorView('Markets');
     await shot(tester, 'markets_full_investor');
 
     final assetRows = find.byType(KAssetRow);
     expect(assetRows, findsWidgets, reason: 'Markets should list at least one asset row to tap into');
     await tester.tap(assetRows.first);
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await waitForLoad(tester, 'Asset detail');
     checkNoErrorView('Asset detail');
     await shot(tester, 'asset_detail_full_investor');
-    // Back to Markets via the shared pushed-screen header (KDetailHeader —
-    // lib/widgets/scaffold.dart; its first GestureDetector is the back chip).
-    final assetBack = find.descendant(of: find.byType(KDetailHeader), matching: find.byType(GestureDetector));
+    // Back to Markets — asset_detail_screen.dart builds its own top bar
+    // (NOT the shared KDetailHeader every pushed detail-style screen below
+    // uses), a plain `KIconButton(icon: 'back', ...)` as the first icon
+    // button in that bar.
+    final assetBack = find.byType(KIconButton);
+    expect(assetBack, findsWidgets, reason: 'Asset detail should have a back icon button');
     await tester.tap(assetBack.first);
-    await tester.pumpAndSettle(const Duration(seconds: 1));
+    await pumpUntil(
+      tester,
+      () => find.byType(KAssetRow).evaluate().isNotEmpty,
+      'Markets to return after tapping back from Asset detail',
+    );
 
     // ── 4. Wallet ─────────────────────────────────────────────────────
     await tester.tap(find.text('WALLET'));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await waitForLoad(tester, 'Wallet (GET /wallet-balance, /transactions)');
     checkNoErrorView('Wallet');
     await shot(tester, 'wallet_full_investor');
 
     // ── 5. Orders (pushed from Home) ─────────────────────────────────
     await tester.tap(find.text('HOME'));
-    await tester.pumpAndSettle(const Duration(seconds: 1));
+    await pumpUntil(
+      tester,
+      () => find.text('Orders').evaluate().isNotEmpty,
+      'Home to show the Orders quick action after switching tabs',
+    );
     await tester.tap(find.text('Orders').first);
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await waitForLoad(tester, 'Orders (GET /orders)');
     checkNoErrorView('Orders');
     await shot(tester, 'orders_full_investor');
     final ordersBack = find.descendant(of: find.byType(KDetailHeader), matching: find.byType(GestureDetector));
     if (ordersBack.evaluate().isNotEmpty) {
       await tester.tap(ordersBack.first);
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await pumpUntil(
+        tester,
+        () => find.byType(KDetailHeader).evaluate().isEmpty,
+        'Home to return after tapping back from Orders',
+      );
     }
 
     // ── 6. Account (pushed from Home's avatar) ────────────────────────
     await tester.tap(find.text('Hi $_fullFirstName'));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await waitForLoad(tester, 'Account');
     checkNoErrorView('Account');
     await shot(tester, 'account_full_investor');
 

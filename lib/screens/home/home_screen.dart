@@ -66,6 +66,7 @@ import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
+import 'package:kudimata_invest/data/realtime/realtime_client.dart';
 import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
 import 'package:kudimata_invest/k_links.dart';
 import 'package:kudimata_invest/router/routes.dart';
@@ -138,6 +139,19 @@ class _HomeData {
 
   /// Preformatted "₦10,000.00" (WalletRepository.balance()).
   final String walletBalance;
+
+  /// Patches just the wallet balance — used by [_HomeScreenState._onWalletUpdate]
+  /// to apply a `wallet:update` socket payload (R-41) onto already-loaded
+  /// Home data with no network call, same shape as
+  /// wallet_screens.dart's own `_onWalletUpdate`.
+  _HomeData withWalletBalance(String balance) => _HomeData(
+        user: user,
+        summary: summary,
+        holdings: holdings,
+        trending: trending,
+        walletBalance: balance,
+        watchlist: watchlist,
+      );
 }
 
 class HomeScreen extends StatefulWidget {
@@ -153,6 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final _assetRepo = AssetRepository(AppScope.read(context).apiClient);
   late final _walletRepo = WalletRepository(AppScope.read(context).apiClient);
   late final _watchlistRepo = WatchlistRepository(AppScope.read(context).apiClient);
+  late final RealtimeClient _realtime = AppScope.read(context).realtimeClient;
 
   // 2026-08-24 fix — reported live: "for a couple of seconds I still see
   // the not verified state" before it flips to the real verified body.
@@ -184,33 +199,89 @@ class _HomeScreenState extends State<HomeScreen> {
   /// shows the loading state — only the silent background poll skips it.
   _HomeData? _data;
 
-  // POLLING (2026-08-20, "poll the KYC endpoint... so we can see changes
-  // instantly without refreshing since no realtime yet"). A staff decision
-  // (or the auto-approve path) can flip AppState.kycApproved while an
-  // investor just sits on Home — without this, they'd only see it after
-  // force-quitting/relaunching. Same 8s interval submitted.dart's own
-  // polling uses; stops itself once the outcome is final either way
-  // (approved, or a genuine terminal rejected/flagged/expired).
-  Timer? _kycPollTimer;
-  static const _kycPollInterval = Duration(seconds: 8);
+  // KYC POLLING — REMOVED per R-41 (docs/redesign/DECISIONS.md). This used
+  // to be an 8s Timer.periodic re-running the full REST gating check
+  // (refreshKycGatingState) purely so a staff decision (or the
+  // auto-approve path) flipping AppState.kycApproved while an investor
+  // sat on Home would show up without a relaunch. That exact case is now
+  // pushed: main.dart wires `realtimeClient.kycStatus.listen
+  // (_state.applyRealtimeKycStatus)` ONCE, app-wide — every `kyc:status`
+  // event updates AppState.kycApproved/kycSubmitted/kycOutcomeStatus with
+  // NO network call, and `_HomeBody` below reads those via
+  // `AppScope.of(context)` (a LISTENING read), so it already rebuilds and
+  // re-evaluates `tradingEligibilityGap` the instant that fires — nothing
+  // in this file has to do anything for that to work. Keeping the poll
+  // alongside the socket would have been the exact double-load R-41 was
+  // for: the same REST check running on a timer AND the same fact pushed
+  // for free.
+  //
+  // What the poll ALSO refreshed, and the socket does NOT cover: `kyc:status`'s
+  // payload is the backend `User` row, coarser than the full gating check —
+  // it carries no draft step/total or suitability/risk-disclosure completion
+  // (see RealtimeKycStatus's + AppState.applyRealtimeKycStatus's doc
+  // comments in lib/data/realtime/realtime_client.dart /
+  // lib/app/app_state.dart). `_VerifyBanner` below still needs
+  // `kycDraftStep`/`kycDraftTotal` for its "N/total done" progress bar, and
+  // nothing pushes updates to those. Rather than resurrecting an 8s poll
+  // for a value nothing else in the app changes while parked on Home, this
+  // is refreshed the same way every other R-41-wired screen catches up on
+  // whatever it missed: once, on reconnect (see [_reconnectSub] below) —
+  // "the ONE legitimate fetch" per realtime_client.dart's own header.
 
   // POLLING (2026-08-20, "when I buy a stock I can't see the changes on
   // home screen immediately... poll, we would do real time web sockets
-  // later"). Silently re-fetches in the background (no spinner, no error
-  // state of its own — a flaky tick just leaves the last-good numbers
-  // showing) rather than reassigning `_future` naively, which would
-  // otherwise flash the whole screen back to KLoadingView on every tick.
+  // later") — KEPT. R-41 pushes wallet balance (`wallet:update`), order
+  // fills (`order:update`), live quotes and KYC status, but there is no
+  // push event for portfolio summary, the holdings list, trending, or the
+  // watchlist — a fill's `order:update` payload is the Order itself, not
+  // a recomputed portfolio summary/holdings row, and applying it would
+  // mean triggering a network call on receipt of an event, exactly what
+  // realtime_client.dart's header calls "the rule that matters most" NOT
+  // to do. So this 8s full reload stays the only mechanism keeping those
+  // four fields current while sitting on Home — a poll a socket event
+  // doesn't replace, not one left over by accident. `wallet:update` IS
+  // wired below as a genuine optimisation on top of it (see
+  // [_onWalletUpdate]), same posture wallet_screens.dart's own still-polling
+  // WalletScreen takes: applied in place with no network call, so the
+  // wallet figure updates before the next poll tick rather than instead of
+  // it.
   Timer? _portfolioPollTimer;
   static const _portfolioPollInterval = Duration(seconds: 8);
+
+  StreamSubscription<Map<String, dynamic>>? _walletSub;
+  StreamSubscription<void>? _reconnectSub;
 
   @override
   void initState() {
     super.initState();
-    final app = AppScope.read(context);
-    if (!app.kycApproved) {
-      _kycPollTimer = Timer.periodic(_kycPollInterval, (_) => _pollKycStatus());
-    }
     _portfolioPollTimer = Timer.periodic(_portfolioPollInterval, (_) => _silentRefresh());
+    _walletSub = _realtime.walletUpdates.listen(_onWalletUpdate);
+    // The one legitimate fetch on a socket event (realtime_client.dart's
+    // header): catches whatever `kyc:status`/`wallet:update`/etc. fired
+    // while disconnected and can't be replayed. Guards the KYC half on
+    // `!kycApproved` so a fully-verified investor's reconnect doesn't run
+    // a gating check that can no longer change anything.
+    _reconnectSub = _realtime.reconnected.listen((_) {
+      if (!mounted) return;
+      if (!AppScope.read(context).kycApproved) {
+        unawaited(refreshKycGatingState(context));
+      }
+      unawaited(_silentRefresh());
+    });
+  }
+
+  /// Applies a decoded `wallet:update` payload straight onto [_data]'s
+  /// walletBalance field — reuses WalletRepository's own kobo->display
+  /// formatting ([WalletRepository.walletUpdateFromJson]) rather than a
+  /// second copy of it here, exactly like wallet_screens.dart's own
+  /// `_onWalletUpdate`. No network call. Dropped if nothing has loaded yet
+  /// ([_data] null) — the in-flight initial [_future] covers that moments
+  /// later.
+  void _onWalletUpdate(Map<String, dynamic> json) {
+    final current = _data;
+    if (current == null || !mounted) return;
+    final snapshot = WalletRepository.walletUpdateFromJson(json);
+    setState(() => _data = current.withWalletBalance(snapshot.available));
   }
 
   Future<void> _silentRefresh() async {
@@ -224,19 +295,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _pollKycStatus() async {
-    await refreshKycGatingState(context);
-    if (!mounted) return;
-    final app = AppScope.read(context);
-    if (app.kycApproved || app.kycOutcomeStatus != null) {
-      _kycPollTimer?.cancel();
-    }
-  }
-
   @override
   void dispose() {
-    _kycPollTimer?.cancel();
     _portfolioPollTimer?.cancel();
+    _walletSub?.cancel();
+    _reconnectSub?.cancel();
     super.dispose();
   }
 

@@ -308,9 +308,15 @@ class AppState extends ChangeNotifier {
   /// KycSubmissionStatus.isRejectedWithRoomToRetry, kyc_repository.dart),
   /// nor suitability/risk-disclosure completion. Those three
   /// ([suitabilityComplete], [riskDisclosureAccepted], [kycDraftStep]/
-  /// [kycDraftTotal]) are left untouched here — they stay owned by the
-  /// existing REST poll (home_screen.dart's `_pollKycStatus`, unchanged by
-  /// this pass) and by reconnect-triggered refetches.
+  /// [kycDraftTotal]) are left untouched here — home_screen.dart's own 8s
+  /// `_kycPollTimer` used to also keep them current but was removed as
+  /// redundant (this method already covers everything that poll was
+  /// actually for — see home_screen.dart's doc comment on the removal);
+  /// these three now stay owned by [refreshKycGatingState] itself, run
+  /// once at Home's initial load and once more on each realtime
+  /// reconnect (home_screen.dart's `_reconnectSub`) — the one legitimate
+  /// fetch a reconnect earns, since events missed while disconnected
+  /// can't be replayed.
   void applyRealtimeKycStatus(RealtimeKycStatus status) {
     kycApproved = status.kycStatus == 'approved';
     kycSubmitted = status.kycStatus != 'draft';

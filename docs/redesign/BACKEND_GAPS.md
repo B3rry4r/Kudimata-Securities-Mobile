@@ -719,3 +719,31 @@ passed. That is exactly what this gate exists to catch.
 The backend half IS proven: login, the order-book endpoint and seeded holdings
 were all exercised over real HTTPS against `alpha.kudimatasecurities.com`. It is
 the Flutter client that has never met it.
+
+---
+
+## BR-8 — No push event for portfolio summary, holdings or trending
+
+*Found 2026-08-28 while removing polls after R-41.*
+
+Home's KYC poll was removed — `kyc:status` covers it. **The portfolio poll had to
+stay**, because R-41's event set has no equivalent:
+
+| what Home refreshes | push event | covered? |
+|---|---|---|
+| KYC status / outcome | `kyc:status` | yes — poll removed |
+| wallet balance | `wallet:update` | yes — applied in place |
+| portfolio summary, holdings, trending, watchlist | — | **no** |
+
+`order:update` carries the `Order` alone, not recomputed holdings or summary. And
+refetching on receipt of an event would violate the client's own rule — an event
+must be applied, never used as a signal to go fetch, or the socket becomes
+push-triggered polling.
+
+So Home still polls every 8s for portfolio state. That is the honest fallback, not
+a defect — but it is the last polling loop left, and closing it needs a backend
+event carrying the recomputed summary (or holdings) when a fill or settlement
+changes it.
+
+Until then the poll stays. Removing it without a replacement would leave a
+portfolio that silently stops updating, which is worse than the poll.
