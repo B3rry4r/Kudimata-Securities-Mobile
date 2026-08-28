@@ -9,16 +9,15 @@
 // governs copy/UI, not the route table, so no new routes were needed.
 //
 // R-11 rulings applied here:
-//  - Phone number IS collected (canvas re-introduces it) but there is still
-//    no backend field for it (`AuthRepository.signUp` takes
-//    {email, password, firstName, middleName?, lastName} only — see
-//    Kudimata-Securities-Backend registry.json's AuthSession resource). Per
-//    R-11 the field must never silently discard what's typed into it, so
-//    it's rendered fully DISABLED (can't be typed into at all) with an
-//    explanatory helper, not a live control whose value is thrown away.
-//    Gap filed in docs/redesign/BACKEND_GAPS.md; SHARED-CHANGE REQUEST
-//    filed in this build's report for `AuthRepository.signUp` to accept an
-//    optional `phone` once the backend has somewhere to put it.
+//  - Phone number IS collected (canvas re-introduces it). The backend gained
+//    an optional `phone` on POST /auth/signup 2026-08-27 (BR-3); the field
+//    below is now live (SHARED-CHANGES.md S-2, applied 2026-08-28) — see
+//    `AuthRepository.signUp`'s doc comment for the wire shape and error
+//    codes. It stays optional at this step: artboard #s03b draws it with no
+//    "(optional)" marker distinct from Email's, but nothing about it (no
+//    asterisk, no client-side required check) blocks Continue either, and
+//    the backend itself treats it as optional (`SignupDto.phone?`) — so
+//    Continue here still gates on email alone, same as before.
 //  - Terms acceptance is NOT collected here. The canvas's #s03p draws a
 //    pre-OTP "I have read and agree..." checkbox; R-11 says do not adopt
 //    it — acceptance stays the dedicated post-OTP screen
@@ -50,6 +49,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
   final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
 
@@ -59,6 +59,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _showErrors = false;
   bool _busy = false;
+
+  // Set only from a 400 INVALID_PHONE / 409 PHONE_ALREADY_REGISTERED
+  // response to _createAccount (see there) — server-side errors surfaced
+  // back onto the field they're actually about, on the step that field
+  // lives on, rather than a generic snackbar the investor can't act on.
+  String? _phoneError;
 
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
   static final _upperPattern = RegExp(r'[A-Z]');
@@ -86,6 +92,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _firstName.dispose();
     _lastName.dispose();
     _email.dispose();
+    _phone.dispose();
     _password.dispose();
     _confirmPassword.dispose();
     super.dispose();
@@ -135,6 +142,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final firstName = _firstName.text.trim();
     final lastName = _lastName.text.trim();
     final email = _email.text.trim();
+    final phone = _phone.text.trim();
     final password = _password.text.trim();
     setState(() => _busy = true);
     final repo = AuthRepository(AppScope.read(context).apiClient);
@@ -144,11 +152,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
         password: password,
         firstName: firstName,
         lastName: lastName,
+        phone: phone,
       );
       if (!mounted) return;
       context.go(Routes.otp, extra: email);
     } on ApiException catch (e) {
       if (!mounted) return;
+      if (e.code == 'PHONE_ALREADY_REGISTERED' || e.code == 'INVALID_PHONE') {
+        // The field the error is actually about lives on step 2 (#s03b),
+        // not the password step (#s03p) this attempt was submitted from —
+        // send the investor back to it with the error attached, rather than
+        // a snackbar pointing at a field they can no longer see.
+        setState(() {
+          _busy = false;
+          _step = 1;
+          _phoneError = e.code == 'PHONE_ALREADY_REGISTERED'
+              ? 'That number is already registered to another account.'
+              : 'Enter a valid Nigerian phone number, e.g. 0803 123 4567.';
+        });
+        return;
+      }
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
@@ -241,17 +264,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
         error: _showErrors && !_emailValid ? 'Enter a valid email address' : null,
       ),
       const SizedBox(height: 16),
-      // R-11 / BACKEND_GAPS.md: no backend field exists yet for a sign-up
-      // phone number. Rendered fully disabled — not merely styled to look
-      // inactive — so nothing typed here can be silently thrown away; there
-      // is nothing to type. See file header and the SHARED-CHANGE REQUEST
-      // in this build's report.
-      const KInput(
+      // Live per SHARED-CHANGES.md S-2 — the backend gained an optional
+      // `phone` on POST /auth/signup (BR-3). Optional at this step (see
+      // file header): no client-side format check, matching artboard
+      // #s03b, which draws no required marker distinct from Email's. The
+      // server's own normalizePhone() accepts any of '0803…', '803…',
+      // '234803…' or '+234803…', with or without spaces, so this doesn't
+      // force one shape either — a 400 INVALID_PHONE / 409
+      // PHONE_ALREADY_REGISTERED response is surfaced onto this field by
+      // _createAccount instead.
+      KInput(
         label: 'Phone number',
         prefix: '+234',
         placeholder: '801 234 5678',
-        disabled: true,
-        helper: "Not collected at sign-up yet — you'll be asked for this during verification",
+        helper: _phoneError == null ? 'Use the line registered to your BVN' : null,
+        error: _phoneError,
+        controller: _phone,
+        keyboardType: TextInputType.phone,
+        onChanged: (_) {
+          if (_phoneError != null) setState(() => _phoneError = null);
+        },
       ),
       _stepFooter([
         KButton(label: 'Continue', onPressed: _continueFromContact),

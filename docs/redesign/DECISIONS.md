@@ -791,3 +791,47 @@ relitigates it.
 - The stream carries **the same shapes the REST endpoints return.** A second
   serialisation of the same entity is two truths that drift — the forked-widget
   problem in a new place.
+
+---
+
+## The recurring structural defect: work that nobody owns
+
+*Recorded 2026-08-28, after the fourth instance.*
+
+Four times in this redesign, a decision was correctly made, correctly recorded,
+and then simply did not happen — while every individual agent reported done, and
+every gate stayed green.
+
+| # | what | why it stalled |
+|---|---|---|
+| 1 | **R-1a** — move suitability before the legal documents | needs a router change; screen agents are fenced out of `lib/router/**`, so no pass owned *flow*. Survived four waves. |
+| 2 | **R-9, R-16, R-6, R-8** — drop or park five screens | waves are organised around *building*; nothing owned *deletion*. |
+| 3 | **R-41** — replace polling with push | push landed, polls stayed. Nobody owned *removing what the new thing replaced*. Found by the live gate. |
+| 4 | **S-2** — the sign-up phone field | disabled pending backend support, marked "blocked on backend". BR-3 delivered it. Nobody owned *re-checking a cleared blocker*. **Found by a user, not by us.** |
+
+Each was a different shape of the same hole: **a task with no pass that owns it is
+a task that does not happen**, and its absence is invisible because everyone
+working on something else is legitimately finished.
+
+This is the identical failure that started this work — 12 unresolved `stubs.json`
+entries and 19 open align-tasks that a pipeline reported "done" over. Writing the
+decision down was never the missing piece. Someone owning its execution was.
+
+### What actually closes it
+
+1. **Every ruling names its executing pass at the moment it is made** — screen
+   wave, removals pass, flow pass, serial shared-change pass. A ruling with no
+   named pass is not a ruling, it is a wish.
+2. **A blocked item names the fact that unblocks it**, not just "blocked". S-2
+   should have read *"blocked until `AuthRepository.signUp` accepts `phone`"* —
+   a condition that can be checked mechanically rather than remembered.
+3. **The live gate asserts capability, not just the absence of errors.** Instance
+   4 is the sharpest lesson: the app authenticated, every surface loaded, no error
+   view appeared, the gate passed — and a sign-up field was dead. *"Nothing
+   crashed"* and *"the user can do the thing"* are different claims, and only the
+   second one matters. Every gate assertion should be phrased as a capability the
+   user has, not a failure that is absent.
+
+Instance 3 was caught by the live gate. Instance 4 reached a human first. The
+difference between those two outcomes is the whole value of the gate — and point
+3 above is what would have moved instance 4 into the first column.

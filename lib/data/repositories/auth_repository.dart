@@ -46,22 +46,36 @@ class AuthRepository {
   final ApiClient _client;
 
   /// Mirrors the sign-up screen's Continue action. POST /auth/signup
-  /// {email, password, firstName, middleName?, lastName} — registry.json's
-  /// response shape is `EmailOtp`, but no screen renders any of its fields
-  /// yet (the OTP screen still shows a static demo address), so this only
-  /// surfaces success/failure via [ApiException] and returns void; the
-  /// caller navigates to Routes.otp with the entered email once this
-  /// completes. Name became required backend-side 2026-08-07 so Home can
-  /// greet the investor by name instead of falling back to their email —
-  /// split from one `fullName` field into firstName/middleName?/lastName
-  /// 2026-08-19 so BVN/NIN verification has a real first/last to compare
-  /// against the registry's own name fields.
+  /// {email, password, firstName, middleName?, lastName, phone?} —
+  /// registry.json's response shape is `EmailOtp`, but no screen renders any
+  /// of its fields yet (the OTP screen still shows a static demo address),
+  /// so this only surfaces success/failure via [ApiException] and returns
+  /// void; the caller navigates to Routes.otp with the entered email once
+  /// this completes. Name became required backend-side 2026-08-07 so Home
+  /// can greet the investor by name instead of falling back to their
+  /// email — split from one `fullName` field into
+  /// firstName/middleName?/lastName 2026-08-19 so BVN/NIN verification has a
+  /// real first/last to compare against the registry's own name fields.
+  ///
+  /// [phone] added 2026-08-28 (BR-3, SHARED-CHANGES.md S-2) once the backend
+  /// gained the field. Optional, matching
+  /// Kudimata-Securities-Backend's `SignupDto` — omit it (or send empty) and
+  /// the backend keeps its previous unroutable-placeholder-phone behaviour.
+  /// Not format-validated here: the server's `normalizePhone()`
+  /// (src/common/phone.ts) accepts `0803…`, `803…`, `234803…` and
+  /// `+234803…` alike and is the one place that canonicalises the value, so
+  /// duplicating a shape check here would only risk rejecting something the
+  /// backend would have accepted. Two error paths a caller should expect:
+  /// 400 `INVALID_PHONE` (unparseable) and 409 `PHONE_ALREADY_REGISTERED`
+  /// (already on another account) — both surface as the usual
+  /// [ApiException] and are not caught here.
   Future<void> signUp({
     required String email,
     required String password,
     required String firstName,
     String? middleName,
     required String lastName,
+    String? phone,
   }) async {
     await _client.post('/auth/signup', data: {
       'email': email,
@@ -69,6 +83,7 @@ class AuthRepository {
       'firstName': firstName,
       if (middleName != null && middleName.isNotEmpty) 'middleName': middleName,
       'lastName': lastName,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
     });
   }
 
