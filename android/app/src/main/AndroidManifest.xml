@@ -4,6 +4,12 @@
          "hand off to the OS camera app" flow which didn't need this held by
          our own app. -->
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Required for every API call. Flutter's template declares INTERNET only
+         in the debug and profile manifests (for the dev tooling), so a RELEASE
+         build without this line is denied every socket by the OS: debug works,
+         the shipped APK/AAB cannot reach the backend at all, and no HTTP client
+         can report it as anything more useful than a connection error. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Kudimata Invest"
         android:name="${applicationName}"
