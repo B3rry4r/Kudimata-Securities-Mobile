@@ -304,38 +304,45 @@ class _AccountBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile header — canvas mockup #s45 uses the illustrated Avatar,
-          // a "CHN ... · Account live" subtitle, and a "Verified"
-          // StatusPill next to it. 2026-08-24: the avatar is now a real,
-          // user-chosen field (info.avatarKey) — an investor who hasn't
-          // picked one gets no avatar circle at all, just their name (see
-          // KAvatar's doc comment), not a generated placeholder.
+          // Profile header — AUDIT-2026-08-29/A-3 fix: s51 draws this row
+          // (illustrated Avatar, "CHN ... · Account live" subtitle, a
+          // "Verified" StatusPill) inside its own paper/hairline card,
+          // separate from the menu list below — this used to render as a
+          // bare, borderless Row, a real visual difference from the current
+          // s51 (the surrounding comment previously cited the OLD "#s45",
+          // R-5's stale-id trap; corrected here). 2026-08-24: the avatar is
+          // a real, user-chosen field (info.avatarKey) — an investor who
+          // hasn't picked one gets no avatar circle at all, just their name
+          // (see KAvatar's doc comment), not a generated placeholder.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
-            child: Row(
-              children: [
-                if (info.avatarKey != null) ...[
-                  KAvatar(avatarKey: info.avatarKey!, size: 56),
-                  const SizedBox(width: 14),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(info.fullName, style: KType.section()),
-                      const SizedBox(height: 2),
-                      Text(subtitle, style: KType.data(color: KColor.ink3)),
-                    ],
+            child: KCard(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  if (info.avatarKey != null) ...[
+                    KAvatar(avatarKey: info.avatarKey!, size: 56),
+                    const SizedBox(width: 14),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(info.fullName, style: KType.section()),
+                        const SizedBox(height: 2),
+                        Text(subtitle, style: KType.data(color: KColor.ink3)),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                KStatusPill(
-                  status: verified ? KStatus.approved : KStatus.pending,
-                  label: verified ? 'Verified' : 'Unverified',
-                  small: true,
-                ),
-              ],
+                  const SizedBox(width: 14),
+                  KStatusPill(
+                    status: verified ? KStatus.approved : KStatus.pending,
+                    label: verified ? 'Verified' : 'Unverified',
+                    small: true,
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),

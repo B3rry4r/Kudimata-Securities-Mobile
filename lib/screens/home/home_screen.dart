@@ -28,12 +28,20 @@
 //   the rotating "Top movers today" (s22, with a "Markets" link) / "Have a
 //     look around" (s23, no link) card — _TopMoverCard, real data from
 //     AssetRepository.trending().
-//   s22 only, kept per D-6b/R-15 ("the app's holdings and trending rails are
-//     kept within it"): "Your holdings" and "Trending now". Watchlist is
-//     ALSO kept, despite not being in s22 at all — a 2026-08-24 direct
-//     product instruction ("I just added a stock to watchlist and went back
-//     home screen and I did not see it"), the same standing as Cancel on
-//     Orders (R-17): real and wired, the canvas just never drew it.
+// REMOVED per AUDIT-2026-08-29/A-8 (owner, verbatim: "home screen shouldn't
+//   carry too much old things — the big movers of market and probable
+//   watchlist is enough"): the "Your holdings" and "Trending now" rails.
+//   This OVERRIDES R-15/R-32's "the app's holdings and trending rails are
+//   kept within it" (itself citing an earlier D-6b ruling) — neither rail
+//   is drawn on s22/s23, and the owner's post-ship audit names exactly what
+//   should remain below the fold: market movers and the watchlist. Flagged
+//   here so DECISIONS.md can be amended — not silently overridden.
+//
+// KEPT despite not being in s22 at all: the Watchlist rail — a 2026-08-24
+//   direct product instruction ("I just added a stock to watchlist and went
+//   back home screen and I did not see it"), the same standing as Cancel on
+//   Orders (R-17), and now doubly kept because A-8 names "probable
+//   watchlist" as one of the two things Home should carry.
 //
 // REMOVED per R-6: the "WRITTEN FOR YOU" AI digest card (portfolioDigest).
 // The AI-credits line is parked, not cut — AiRepository and its screens
@@ -46,11 +54,11 @@
 // than several:
 //   UserRepository.me()             GET /users/me                — greeting name
 //   HoldingsRepository.summary()    GET /portfolio-summary        — money card
-//   HoldingsRepository.holdings()   GET /holdings                 — holdings list
 //   AssetRepository.trending()      GET /assets/trending          — movers card
-//     + the kept "Trending now" rail (same real feed, two different views)
 //   WalletRepository.balance()      GET /wallet-balance           — money card
 //   WatchlistRepository.items()     GET /watchlist                — kept rail
+// HoldingsRepository.holdings() (GET /holdings) is no longer fetched here —
+// it only ever backed the "Your holdings" rail removed per A-8 above.
 //
 // "Total wealth" (s22/s23's headline figure) is wallet balance + portfolio
 // value summed client-side — both real, already-fetched numbers (the
@@ -125,7 +133,6 @@ class _HomeData {
   const _HomeData({
     required this.user,
     required this.summary,
-    required this.holdings,
     required this.trending,
     required this.walletBalance,
     required this.watchlist,
@@ -133,7 +140,6 @@ class _HomeData {
 
   final UserProfile user;
   final PortfolioSummary summary;
-  final List<Asset> holdings;
   final List<Asset> trending;
   final List<Asset> watchlist;
 
@@ -147,7 +153,6 @@ class _HomeData {
   _HomeData withWalletBalance(String balance) => _HomeData(
         user: user,
         summary: summary,
-        holdings: holdings,
         trending: trending,
         walletBalance: balance,
         watchlist: watchlist,
@@ -308,10 +313,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // earlier-awaited future rejecting must not abandon still-in-flight
     // later futures with nothing listening (an unhandled-exception source
     // found live via test/theme_toggle_test.dart's Home render).
-    final (user, summary, holdingsPage, trending, walletBalance, watchlist) = await (
+    final (user, summary, trending, walletBalance, watchlist) = await (
       _userRepo.me(),
       _holdingsRepo.summary(),
-      _holdingsRepo.holdings(pageSize: 5),
       _assetRepo.trending(),
       _walletRepo.balance(),
       _watchlistRepo.items(),
@@ -320,7 +324,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return _HomeData(
       user: user,
       summary: summary,
-      holdings: holdingsPage.data.map((h) => h.asset).toList(),
       trending: trending,
       walletBalance: walletBalance,
       watchlist: watchlist,
@@ -594,52 +597,13 @@ class _VerifiedContent {
         const SizedBox(height: 28),
       ],
 
-      // "Your holdings" — kept per D-6b/R-15. No "See all" affordance in s22.
-      Padding(padding: _gut, child: const KEyebrow('Your holdings')),
-      const SizedBox(height: 8),
-      // EMPTY: a verified investor with zero holdings.
-      if (data.holdings.isEmpty)
-        Padding(
-          padding: _gut,
-          child: KEmptyView.holdings(onAction: () => context.go(Routes.markets)),
-        )
-      else
-        Padding(
-          padding: _gut,
-          child: KCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Column(
-              children: [
-                for (var i = 0; i < data.holdings.length; i++)
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: i == 0
-                            ? BorderSide.none
-                            : BorderSide(color: KColor.hairline, width: 1),
-                      ),
-                    ),
-                    child: KAssetRow(
-                      name: data.holdings[i].name,
-                      ticker: data.holdings[i].ticker,
-                      price: data.holdings[i].price,
-                      change: data.holdings[i].change,
-                      trend: _kTrend(data.holdings[i].trend),
-                      logoColor: data.holdings[i].logoColor ?? KColor.ink,
-                      onTap: () =>
-                          context.push(Routes.assetDetail(data.holdings[i].ticker)),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-
       // Watchlist — kept despite not being in s22 at all: a 2026-08-24
       // direct product instruction ("I just added a stock to watchlist and
       // went back home screen and I did not see it"), the same standing as
       // Cancel on Orders (R-17) — real and wired, the canvas just never
-      // drew it. Only shown when non-empty.
+      // drew it. Doubly kept per AUDIT-2026-08-29/A-8, which names
+      // "probable watchlist" as one of the two things Home should carry.
+      // Only shown when non-empty.
       if (data.watchlist.isNotEmpty) ...[
         const SizedBox(height: 20),
         Padding(padding: _gut, child: const KEyebrow('Watchlist')),
@@ -668,44 +632,6 @@ class _VerifiedContent {
                       logoColor: data.watchlist[i].logoColor ?? KColor.ink,
                       onTap: () =>
                           context.push(Routes.assetDetail(data.watchlist[i].ticker)),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
-
-      // Trending — kept per D-6b/R-15, a standing section (not an
-      // empty-state fallback — see 01d69a0). Only shown when non-empty.
-      if (data.trending.isNotEmpty) ...[
-        const SizedBox(height: 28),
-        Padding(padding: _gut, child: const KEyebrow('Trending now')),
-        const SizedBox(height: 8),
-        Padding(
-          padding: _gut,
-          child: KCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Column(
-              children: [
-                for (var i = 0; i < data.trending.length; i++)
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: i == 0
-                            ? BorderSide.none
-                            : BorderSide(color: KColor.hairline, width: 1),
-                      ),
-                    ),
-                    child: KAssetRow(
-                      name: data.trending[i].name,
-                      ticker: data.trending[i].ticker,
-                      price: data.trending[i].price,
-                      change: data.trending[i].change,
-                      trend: _kTrend(data.trending[i].trend),
-                      logoColor: data.trending[i].logoColor ?? KColor.ink,
-                      onTap: () =>
-                          context.push(Routes.assetDetail(data.trending[i].ticker)),
                     ),
                   ),
               ],

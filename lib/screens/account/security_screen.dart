@@ -27,6 +27,14 @@
 //  - s54's second signed-in device ("iPhone 13, Abuja") stays NOT
 //    fabricated — no real multi-device feed exists (see below).
 //
+// AUDIT-2026-08-29/A-3 fix: an "Appearance" section (System/Light/Dark,
+// _ThemeModeControl below) was added — R-13's dark-mode toggle, which
+// main.dart's own header comment already claimed lived here ("the Account
+// settings toggle also writes to [KThemePreference]") while no such control
+// actually existed anywhere in the file. Not an s54 row (undrawn, like the
+// PIN rows above) — a real gap between what main.dart assumed and what this
+// screen shipped, closed now.
+//
 // Two-factor authentication was removed from this screen (2026-08-10) — no
 // real 2FA infrastructure exists distinct from the OTP verification the app
 // already does at sign-up/sign-in; the toggle only fired
@@ -50,6 +58,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/api/passcode_store.dart';
+import 'package:kudimata_invest/data/api/theme_mode_store.dart';
 import 'package:kudimata_invest/data/biometric_auth.dart';
 import 'package:kudimata_invest/screens/shared/confirm_passcode_sheet.dart';
 import 'package:kudimata_invest/router/routes.dart';
@@ -145,25 +154,16 @@ class _SecurityScreenState extends State<SecurityScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Plain text+chevron / bare-Switch rows — the canvas's #s50 rows
-          // have no leading icon bubble, and Face ID / Passcode-for-
-          // withdrawals are each a single `Switch` x-import (label+
-          // description+toggle in one component), not a Row wrapping a
-          // Switch (2026-08-23 exactness pass; mirrors
-          // notifications_settings_screen.dart's already-correct pattern).
+          // AUDIT-2026-08-29/A-3 fix: s54 draws these as TWO groups — a
+          // toggles card first, a chevron-rows card second — and this
+          // screen had them merged into one card with "Change passcode"
+          // (a chevron row) leading the toggles. Split back into s54's own
+          // two-card order: switch-style rows first, "Change passcode"
+          // second. Bare-Switch rows still have no leading icon bubble,
+          // matching the canvas's own #s54 rows (2026-08-23 exactness
+          // pass; mirrors notifications_settings_screen.dart's pattern).
           KAccountCard(
             children: [
-              KAccountRow(
-                title: 'Change passcode',
-                // PasscodeStore (lib/data/api/passcode_store.dart) doesn't
-                // track a last-set timestamp, so this stays a plain, honest
-                // label rather than a fabricated "Last changed N days ago"
-                // — see this file's header note.
-                sub: 'Set a new 6-digit passcode',
-                right: const KRowChevron(),
-                first: true,
-                onTap: _changePasscode,
-              ),
               // 2026-08-24 fix — reported live, same flaw as
               // notifications_settings_screen.dart had: a bare KSwitch
               // separated only by a plain Divider has no vertical padding
@@ -176,9 +176,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
               if (!kIsWeb)
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
-                  ),
                   // screen-specs.md spec 50 literally says "Face ID" — kept
                   // as the cross-platform "Biometric unlock" instead
                   // (2026-08-23 exactness pass: deliberate deviation, not an
@@ -205,7 +202,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
+                  border: Border(top: kIsWeb ? BorderSide.none : BorderSide(color: KColor.hairline, width: 1)),
                 ),
                 // Real, existing behaviour, not a new toggle — the withdraw
                 // flow requires passcode confirmation before money leaves
@@ -245,6 +242,38 @@ class _SecurityScreenState extends State<SecurityScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          // s54's second card — chevron rows only ("Change passcode" /
+          // "Change transaction PIN"). Only "Change passcode" is real; the
+          // transaction-PIN row isn't built (R-31 — see file header).
+          KAccountCard(
+            children: [
+              KAccountRow(
+                title: 'Change passcode',
+                // PasscodeStore (lib/data/api/passcode_store.dart) doesn't
+                // track a last-set timestamp, so this stays a plain, honest
+                // label rather than a fabricated "Last changed N days ago"
+                // — see this file's header note.
+                sub: 'Set a new 6-digit passcode',
+                right: const KRowChevron(),
+                first: true,
+                onTap: _changePasscode,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // AUDIT-2026-08-29/A-3: main.dart's own header comment already
+          // claimed "the Account settings toggle also writes to
+          // [KThemePreference.instance] — see security_screen.dart", but no
+          // such toggle existed anywhere in this file — R-13 ("the app
+          // ships light and dark, with a user-facing dark-mode toggle") had
+          // never actually been wired to a control a user can reach. s54
+          // doesn't draw this control at all (it predates R-13's reversal),
+          // so this is a real, undrawn addition — the same standing as the
+          // withdrawal/trade PIN rows above.
+          Text('Appearance'.upper, style: KType.label()),
+          const SizedBox(height: 12),
+          const _ThemeModeControl(),
           const SizedBox(height: 24),
           Text('Devices signed in'.upper, style: KType.label()),
           const SizedBox(height: 12),
@@ -309,6 +338,41 @@ class _SecurityScreenState extends State<SecurityScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// R-13's user-facing dark-mode toggle (System/Light/Dark), backed by
+/// [KThemePreference.instance] — the same singleton main.dart reads to pick
+/// `MaterialApp.themeMode`. [ListenableBuilder] rather than a local
+/// `setState` field: [KThemePreference] is a static, app-wide
+/// [ChangeNotifier] (not threaded through [AppState]/[AppScope], see its own
+/// doc comment), so this widget has to listen to it directly to reflect a
+/// change made anywhere else and to stay correct if this screen is rebuilt
+/// for an unrelated reason. [KSegmentedControl] is the shared control this
+/// app already uses for a small, mutually-exclusive choice (e.g. the
+/// Naira/Shares toggle on the buy/sell sheet) — reused here rather than a
+/// new widget for a 3-way switch.
+class _ThemeModeControl extends StatelessWidget {
+  const _ThemeModeControl();
+
+  static const _options = [
+    KSegmentOption(value: 'system', label: 'System'),
+    KSegmentOption(value: 'light', label: 'Light'),
+    KSegmentOption(value: 'dark', label: 'Dark'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: KThemePreference.instance,
+      builder: (context, _) {
+        return KSegmentedControl(
+          options: _options,
+          value: KThemePreference.instance.mode.name,
+          onChanged: (v) => KThemePreference.instance.set(ThemeMode.values.byName(v)),
+        );
+      },
     );
   }
 }

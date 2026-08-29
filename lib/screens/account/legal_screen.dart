@@ -25,20 +25,33 @@
 // a failure to open surfaces as an honest snackbar rather than a silent or
 // blank result — never a dropped-into-nothing viewer.
 //
-// The 4 reference screens below the document list (Partner disclosures,
-// Referral terms, Data notice, Account closure terms — legal_reference_
-// screens.dart) are a DIFFERENT, real set of documents with no artboard of
-// their own anywhere in the current canvas (RULINGS.md: `restyle-only`,
-// "keep and restyle"). They stay, unchanged by this pass — legal_reference_
-// screens.dart is another agent's file.
+// REMOVED per AUDIT-2026-08-29/A-9 (owner, verbatim: "on legal why are the
+// other 4 stupid things still there?"): the 4 reference-screen rows below
+// the document list (Partner disclosures, Referral terms, Data notice,
+// Account closure terms — legal_reference_screens.dart). A previous pass
+// kept them deliberately, reasoning they were "reference screens, not part
+// of R-8's four" (RULINGS.md: `restyle-only`, "keep and restyle") — the
+// owner disagrees, and this audit supersedes that reasoning. R-8 is
+// explicit that Account → Legal is 4 documents, not 8. "Referral terms" was
+// doubly wrong on top of that: Refer & earn is parked under R-6, so that
+// row advertised a parked feature from a live, unparked screen.
+//
+// legal_reference_screens.dart itself is untouched (another agent's file,
+// and its own header says so) — only the rows here that pointed at it are
+// gone. That leaves all 4 of its destinations
+// (acctLegalPartnerDisclosures/acctLegalReferralTerms/acctLegalDataNotice/
+// acctLegalClosureTerms, router/routes.dart) with NO remaining in-app entry
+// point: this screen was their only one, except acctLegalReferralTerms,
+// which also had refer_earn_screen.dart's "Referral terms" row — but that
+// screen is itself unreachable (parked per R-6, no entry point anywhere),
+// so it supplied no real reachability either. Reported, not silently
+// deleted — removing the dead routes/screens is a separate pass.
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/legal_documents_repository.dart';
-import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -109,14 +122,11 @@ class _LegalScreenState extends State<LegalScreen> {
               message: 'Legal documents will show here once published.',
             );
           }
-          // Two visibly distinct groups, per s03c's own document-card
-          // treatment (icon + download glyph, opens the real file) vs. the
-          // 4 reference screens below (legal_reference_screens.dart —
-          // a different, undesigned feature; see file header), which stay
-          // chevron rows since they navigate to another in-app screen
-          // rather than opening an external file. The download-vs-chevron
-          // glyph difference carries the distinction, so no extra heading
-          // text is needed.
+          // AUDIT-2026-08-29/A-9: this used to be followed by a second,
+          // visibly distinct group of 4 chevron rows into
+          // legal_reference_screens.dart (Partner disclosures, Referral
+          // terms, Data notice, Account closure terms). Removed — see file
+          // header. R-8's 4 real documents are the whole screen now.
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,36 +146,6 @@ class _LegalScreenState extends State<LegalScreen> {
                   ),
                   const SizedBox(height: 8),
                 ],
-                const SizedBox(height: 14),
-                KAccountCard(
-                  children: [
-                    KAccountRow(
-                      icon: 'card',
-                      title: 'Partner disclosures',
-                      right: const KRowChevron(),
-                      first: true,
-                      onTap: () => context.push(Routes.acctLegalPartnerDisclosures),
-                    ),
-                    KAccountRow(
-                      icon: 'send',
-                      title: 'Referral terms',
-                      right: const KRowChevron(),
-                      onTap: () => context.push(Routes.acctLegalReferralTerms),
-                    ),
-                    KAccountRow(
-                      icon: 'shieldCheck',
-                      title: 'Data notice · NDPA',
-                      right: const KRowChevron(),
-                      onTap: () => context.push(Routes.acctLegalDataNotice),
-                    ),
-                    KAccountRow(
-                      icon: 'close',
-                      title: 'Account closure terms',
-                      right: const KRowChevron(),
-                      onTap: () => context.push(Routes.acctLegalClosureTerms),
-                    ),
-                  ],
-                ),
               ],
             ),
           );
