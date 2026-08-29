@@ -79,6 +79,7 @@ import 'package:kudimata_invest/data/repositories/watchlist_repository.dart';
 import 'package:kudimata_invest/k_links.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
+import 'package:kudimata_invest/screens/kyc/kyc_checklist_screen.dart' show kycProgressSummary;
 import 'package:kudimata_invest/screens/onboarding/log_in_screen.dart' show refreshKycGatingState;
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -789,15 +790,35 @@ class _NotVerifiedContent {
 /// already gates on, so a rejected/flagged/expired/pending investor sees
 /// accurate copy here too, not just s22's literal "Finish verifying to
 /// start investing" example text.
-class _VerifyBanner extends StatelessWidget {
+///
+/// C-3 fix (2026-08-29 product-owner audit — "the kyc count on unverified
+/// home still wrong"): the step/total progress row used to read
+/// `AppState.kycDraftStep`/`kycDraftTotal` straight off the backend's
+/// `KycSubmissionStatus.currentStep`/`totalSteps` — which is `KYC_TOTAL_STEPS
+/// = 5` server-side (kyc-submissions.service.ts), the flow's OLD id/
+/// liveness/utility-bill-only model, never updated after CHN/Bank & DCS/
+/// Declarations joined the real 7-step flow (2026-08-24 canvas
+/// re-sequencing). That could show e.g. "3/5 done" while 4 of the real 7
+/// steps were actually finished. Now a StatefulWidget so it can fetch
+/// [kycProgressSummary] (kyc_checklist_screen.dart) — the SAME per-item
+/// derivation the checklist hub and [nextKycStepRoute] already trust — once
+/// on mount, instead of trusting the stale backend figure. Backend gap filed
+/// in BACKEND_GAPS.md rather than worked around silently.
+class _VerifyBanner extends StatefulWidget {
   const _VerifyBanner({required this.gap});
   final TradingEligibilityGap gap;
 
   @override
+  State<_VerifyBanner> createState() => _VerifyBannerState();
+}
+
+class _VerifyBannerState extends State<_VerifyBanner> {
+  late final Future<(int, int)?> _progress =
+      kycProgressSummary(AppScope.read(context).apiClient);
+
+  @override
   Widget build(BuildContext context) {
-    final app = AppScope.of(context);
-    final step = app.kycDraftStep;
-    final total = app.kycDraftTotal;
+    final gap = widget.gap;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -837,32 +858,42 @@ class _VerifyBanner extends StatelessWidget {
               ),
             ],
           ),
-          // Real step progress only — s22's own "2 of 5 steps done" example
-          // is the in-progress-draft case (kycDraftStep/kycDraftTotal, set
-          // once GET /kyc-submissions/draft returns). Other gap states
-          // (submitted-pending, rejected, flagged, expired) carry no step
-          // count, so the bar is left off for them rather than a guessed
-          // fill — same treatment R-34 gives any figure with nothing
-          // writing it.
-          if (step != null && total != null && total > 0) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                for (var i = 0; i < total; i++) ...[
-                  if (i != 0) const SizedBox(width: 5),
-                  Expanded(
-                    child: Container(
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: i < step ? KColor.warm : KColor.warm.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(999),
+          // Real step progress only — s22's own "2 of 7 steps done" example
+          // is the in-progress-draft case. Other gap states (submitted-
+          // pending, rejected, flagged, expired) carry no step count, so
+          // the bar is left off for them rather than a guessed fill — same
+          // treatment R-34 gives any figure with nothing writing it. Also
+          // left off while [_progress] is still loading or failed — see
+          // this class's own header comment for why it's fetched rather
+          // than read off AppState.
+          FutureBuilder<(int, int)?>(
+            future: _progress,
+            builder: (context, snapshot) {
+              final progress = snapshot.data;
+              if (progress == null) return const SizedBox.shrink();
+              final (done, total) = progress;
+              if (total <= 0) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 14),
+                child: Row(
+                  children: [
+                    for (var i = 0; i < total; i++) ...[
+                      if (i != 0) const SizedBox(width: 5),
+                      Expanded(
+                        child: Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: i < done ? KColor.warm : KColor.warm.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 14),
           // KButtonVariant.primary (the app's one indicator-purple CTA)
           // stands in for the canvas's literal one-off near-black fill —

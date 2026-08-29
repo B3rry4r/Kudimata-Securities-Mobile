@@ -170,6 +170,31 @@ Future<String> nextKycStepRoute(ApiClient client) async {
   return nextIndex == -1 ? steps.last.route : steps[nextIndex].route;
 }
 
+/// C-3 fix (2026-08-29 product-owner audit — "the kyc count on unverified
+/// home still wrong"): the real "N of 7 done" figure for a surface OUTSIDE
+/// this hub (home_screen.dart's `_VerifyBanner`) that needs it. Deliberately
+/// NOT `KycSubmissionStatus.currentStep`/`totalSteps` — those are the
+/// backend's phased-KYC gating numbers (`KYC_TOTAL_STEPS = 5` in
+/// kyc-submissions.service.ts), frozen at the 5-step id/liveness/utility-bill
+/// model from 2026-08-20 and never updated for the CHN/Bank & DCS/
+/// Declarations steps the 2026-08-24 canvas re-sequencing added — a fresh
+/// draft with CHN and the bank account both done can report
+/// `currentStep: 3` of `totalSteps: 5` even though 4 of the real 7 steps are
+/// finished. Filed as a backend gap (BACKEND_GAPS.md) rather than papered
+/// over: this reuses [_loadChecklistSteps]'s own real, per-item derivation
+/// instead (the SAME one the hub's own UI and [nextKycStepRoute] already
+/// trust), so the two surfaces can never disagree about what "done" means.
+/// Returns null on any fetch failure so the caller can omit the figure
+/// entirely rather than show a stale or guessed one (R-34).
+Future<(int done, int total)?> kycProgressSummary(ApiClient client) async {
+  try {
+    final steps = await _loadChecklistSteps(client);
+    return (steps.where((s) => s.done).length, steps.length);
+  } catch (_) {
+    return null;
+  }
+}
+
 class _KycChecklistScreenState extends State<KycChecklistScreen> {
   late final ApiClient _client = AppScope.read(context).apiClient;
   late Future<List<_ChecklistStep>> _future = _loadChecklistSteps(_client);

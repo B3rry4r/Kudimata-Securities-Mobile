@@ -749,3 +749,57 @@ changes it.
 
 Until then the poll stays. Removing it without a replacement would leave a
 portfolio that silently stops updating, which is worse than the poll.
+
+---
+
+## BR-9 — `KYC_TOTAL_STEPS`/`computeCurrentStep()` still model the old 5-step flow
+
+*Found 2026-08-29, product-owner audit C-3 — "the kyc count on unverified home
+still wrong."*
+
+`kyc-submissions.service.ts`:
+
+```ts
+const KYC_TOTAL_STEPS = 5;
+...
+private computeCurrentStep(row): number {
+  // no ID doc -> 2; ID doc but no liveness -> 3; liveness done but no
+  // utility bill -> 4; else KYC_TOTAL_STEPS (5).
+}
+```
+
+This is the phased-KYC model from 2026-08-20 (bvn/nin -> id doc -> liveness ->
+utility bill -> finalize). The 2026-08-24 canvas re-sequencing added three more
+real, separately-screened steps — CHN, Bank & DCS, Declarations — making the
+flow 7 steps end to end (bvn_nin.dart's own header comment enumerates all seven;
+every KYC step screen has read "of 7" since 2026-08-27). `KYC_TOTAL_STEPS` and
+`computeCurrentStep()` were never updated for any of the three: CHN is patched
+via `PATCH /kyc-submissions/draft` and Declarations' `pepSelfDeclared` the same
+way, and Bank & DCS lives on `BankAccountsRepository` entirely — none of the
+three move `currentStep`, and `totalSteps` still hard-codes 5.
+
+Net effect: `KycSubmissionStatus.currentStep`/`totalSteps` (surfaced on
+`GET /kyc-submissions/me|draft`) do not describe the real flow an investor
+walks. A draft with CHN answered and a bank account added but still on
+Declarations can report `currentStep: 3, totalSteps: 5` — "3/5 done" — while 4
+of the real 7 steps are actually finished, and `totalSteps` never reads 7 no
+matter how far the investor gets.
+
+**Client-side workaround already shipped** (not a full fix — R-4 still calls
+for the backend's own count to be correct): home_screen.dart's `_VerifyBanner`
+no longer reads `AppState.kycDraftStep`/`kycDraftTotal` for its progress bar.
+It now calls `kycProgressSummary()` (lib/screens/kyc/kyc_checklist_screen.dart),
+which re-derives "N of 7 done" from real per-item signals (draft exists, chn
+set, id+utility documents both present, liveness signal set, a primary bank
+account exists, `pepSelfDeclared` non-null) — the same derivation the checklist
+hub screen and `nextKycStepRoute()` already use, so those three surfaces can
+never disagree with each other. This costs the banner two extra requests
+(`GET /kyc-submissions/draft`, `GET /bank-accounts`) it didn't make before.
+
+**What still needs a backend fix:** `KYC_TOTAL_STEPS` -> `7`, and
+`computeCurrentStep()` extended to check `row.chn`, a primary bank account, and
+`row.pepSelfDeclared` alongside the existing three checks — so
+`currentStep`/`totalSteps` themselves become correct for every other caller of
+`GET /kyc-submissions/me|draft` (the account/personal screen, staff-side
+tooling, anything not yet built) rather than only the one client-side
+workaround above.

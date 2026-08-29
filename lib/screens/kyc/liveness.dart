@@ -175,25 +175,42 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                     // Selfie frame: captured/picked photo, else the live
                     // preview (mobile only), else a placeholder — with a
                     // dashed guidance ring.
+                    //
+                    // C-2 fix (2026-08-29 product-owner audit — "the camera
+                    // cutout is wrong and not filling the proper circle"):
+                    // this was a 240x240 CIRCLE. s15 itself draws
+                    // `width:250px;height:320px;border-radius:50%` — an
+                    // OVAL ("Fit your face in the oval" is s15's own
+                    // headline) — and _DashedRingPainter's own old doc
+                    // comment admitted it was "kept as a circle rather than
+                    // the spec's oval — reshaping risks the live
+                    // CameraPreview's FittedBox-cover math." That risk claim
+                    // was wrong: BoxFit.cover and ClipOval both work on any
+                    // target rect, square or not — nothing about the fit
+                    // math depends on the frame being square. Fixed to
+                    // 250x320 (s15's own literal px, not the older
+                    // screen-specs.md's 250x330), with a single outer
+                    // ClipOval (below) doing the clipping for every frame
+                    // state instead of each branch clipping itself to a
+                    // square.
                     SizedBox(
-                      width: 240,
-                      height: 240,
+                      width: 250,
+                      height: 320,
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
                           Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
+                            child: ClipOval(
+                              child: Container(
                                 // s15's frame sits on the feature/grape panel
                                 // with a translucent white wash
                                 // (`rgba(255,255,255,.08)`) — not
                                 // indicatorTint, a light-bg-card token that
                                 // renders as a mismatched lavender block here.
                                 color: KColor.featureInk.withValues(alpha: 0.08),
-                                shape: BoxShape.circle,
+                                alignment: Alignment.center,
+                                child: _buildFrameContent(),
                               ),
-                              alignment: Alignment.center,
-                              child: _buildFrameContent(),
                             ),
                           ),
                           // Dashed guidance ring (slightly outset).
@@ -313,24 +330,26 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
     );
   }
 
+  // C-2 fix: each branch used to clip itself into its own square ClipOval
+  // (238x238, one px shy of the old 240x240 frame). The frame's own
+  // Positioned.fill ClipOval now does that clipping once, for whatever this
+  // returns — square or not — so none of these branches clips itself any
+  // more; they just fill a 250x320 rect (the frame's real size, matching
+  // s15's oval) with BoxFit.cover.
   Widget _buildFrameContent() {
     if (kIsWeb) {
       if (_pickedBytes != null) {
-        return ClipOval(
-          child: Image.memory(_pickedBytes!, width: 238, height: 238, fit: BoxFit.cover),
-        );
+        return Image.memory(_pickedBytes!, width: 250, height: 320, fit: BoxFit.cover);
       }
       return KIcon('upload', size: 64, color: KColor.ink3);
     }
 
     if (_capturedPath != null) {
-      return ClipOval(
-        child: Image.file(
-          File(_capturedPath!),
-          width: 238,
-          height: 238,
-          fit: BoxFit.cover,
-        ),
+      return Image.file(
+        File(_capturedPath!),
+        width: 250,
+        height: 320,
+        fit: BoxFit.cover,
       );
     }
 
@@ -339,17 +358,15 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
       // previewSize is reported in the sensor's native (often landscape)
       // orientation regardless of the device's current orientation, so
       // width/height are swapped here before FittedBox scales+crops it to
-      // fill the circle — the standard package:camera pattern for a
+      // fill the frame — the standard package:camera pattern for a
       // portrait-framed preview.
       final previewSize = controller.value.previewSize!;
-      return ClipOval(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: previewSize.height,
-            height: previewSize.width,
-            child: CameraPreview(controller),
-          ),
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: previewSize.height,
+          height: previewSize.width,
+          child: CameraPreview(controller),
         ),
       );
     }
@@ -482,8 +499,16 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
 
 /// The dashed guidance ring around the selfie frame — 2026-08-22 "Soft
 /// Landing": docs/redesign/screen-specs.md screen 17 calls for a dashed
-/// indicator-soft border (kept as a circle rather than the spec's 250×330
-/// oval — reshaping risks the live CameraPreview's FittedBox-cover math).
+/// indicator-soft border.
+///
+/// C-2 fix (2026-08-29 product-owner audit): this used to be a
+/// `canvas.drawArc` loop at ONE fixed `radius` — correct only for a square
+/// frame. The frame it rings is a 250x320 OVAL now (see the SizedBox above),
+/// so a single radius no longer describes its edge at all (it drew a circle
+/// touching the frame's left/right sides but well short of its top/bottom).
+/// `Path.addOval` + `computeMetrics()` traces the real ellipse for whatever
+/// `size` this paints into, so it keeps working if the frame's aspect ratio
+/// ever changes again.
 class _DashedRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -491,19 +516,16 @@ class _DashedRingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..color = KColor.indicatorSoft;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 1;
     const dash = 7.0;
     const gap = 6.0;
-    final circumference = 2 * 3.1415926535 * radius;
-    final steps = (circumference / (dash + gap)).floor();
-    final sweep = (dash / radius);
-    final gapAngle = (gap / radius);
-    double a = -1.5708;
-    for (var i = 0; i < steps; i++) {
-      canvas.drawArc(
-          Rect.fromCircle(center: center, radius: radius), a, sweep, false, paint);
-      a += sweep + gapAngle;
+    final path = Path()..addOval(Offset.zero & size);
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final end = (distance + dash).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance += dash + gap;
+      }
     }
   }
 
