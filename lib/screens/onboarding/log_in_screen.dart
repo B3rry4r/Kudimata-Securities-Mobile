@@ -935,7 +935,11 @@ Future<void> refreshKycGatingState(BuildContext context) async {
     app.setKycApproved(kycApproved);
     app.setSuitabilityComplete(suitabilityComplete);
     app.setRiskDisclosureAccepted(riskDisclosureAccepted);
-    app.setKycDraftProgress(kyc?.isDraft == true ? kyc!.currentStep : null, kyc?.isDraft == true ? kyc!.totalSteps : null);
+    // Step only. The backend's `totalSteps` (KYC_TOTAL_STEPS = 5) is
+    // deliberately NOT carried into AppState: it has never matched the real
+    // 7-step flow, and every time it was stored something eventually
+    // rendered it. The real count is derived by kycProgressSummary().
+    app.setKycDraftProgress(kyc?.isDraft == true ? kyc!.currentStep : null);
     // See AppState.kycOutcomeStatus's doc comment — a genuine hard
     // rejected/flagged/expired outcome must not collapse into the same
     // "still pending" bucket a not-yet-decided submission does. A staff

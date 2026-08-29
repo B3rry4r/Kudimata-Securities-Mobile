@@ -196,7 +196,6 @@ class AppState extends ChangeNotifier {
   /// Home's "Complete your KYC — N/5 done" prompt and resume at the right
   /// step instead of always restarting at step 1.
   int? kycDraftStep;
-  int? kycDraftTotal;
 
   /// One of 'rejected' | 'flagged' | 'expired', or null while there's no
   /// known terminal-non-approved outcome (never submitted, still
@@ -368,9 +367,8 @@ class AppState extends ChangeNotifier {
   /// Sets both together — a draft's step/total are only ever meaningful as
   /// a pair (see [kycDraftStep]'s doc comment). Pass `null` for both to
   /// clear (no known in-progress draft).
-  void setKycDraftProgress(int? step, int? total) {
+  void setKycDraftProgress(int? step) {
     kycDraftStep = step;
-    kycDraftTotal = total;
     notifyListeners();
   }
 
@@ -588,7 +586,6 @@ class AppState extends ChangeNotifier {
     kycApproved = false;
     suitabilityComplete = false;
     kycDraftStep = null;
-    kycDraftTotal = null;
     kycOutcomeStatus = null;
     accountStatus = null;
     biometricEnabled = false;
@@ -655,9 +652,9 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
     );
   }
   if (!app.kycSubmitted) {
-    final step = app.kycDraftStep;
-    final total = app.kycDraftTotal;
-    if (step != null && total != null) {
+    // Only "is there a draft in progress", never "how far along" -- see the
+    // title below for why no total is kept.
+    if (app.kycDraftStep != null) {
       // ALWAYS routes to kyc-intro, never straight to the specific step
       // screen (fixed 2026-08-20 — reported: after refreshing the app
       // mid-flow, tapping this prompt jumped straight to e.g. Utility
@@ -671,8 +668,21 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
       // upload on that screen failed. kyc-intro's "Start" button now does
       // that fetch and resumes at the right step itself — one extra tap,
       // but the draft id is always populated correctly first.
-      return TradingEligibilityGap(
-        title: 'Complete your KYC — $step/$total done',
+      // NO step count in this title. It used to read
+      // 'Complete your KYC — $step/$total done' off the backend's
+      // KYC_TOTAL_STEPS = 5, which has never matched the real 7-step flow
+      // since the 2026-08-24 re-sequencing added CHN, Bank & DCS and
+      // Declarations. It was reported wrong three times, and each earlier
+      // fix corrected a DIFFERENT renderer of the same fact -- the step
+      // screens, then the checklist, then Home's progress bar -- while this
+      // title kept saying "4/5" above a correct 7-step bar.
+      //
+      // The count now has exactly one writer: kycProgressSummary(), derived
+      // per-item from the real checklist, rendered by _VerifyBanner's own
+      // FutureBuilder directly under this title. A second copy of a number
+      // is a second truth, and this one drifted for three passes.
+      return const TradingEligibilityGap(
+        title: 'Complete your KYC',
         message: 'Pick up where you left off',
         route: Routes.kycIntro,
       );
