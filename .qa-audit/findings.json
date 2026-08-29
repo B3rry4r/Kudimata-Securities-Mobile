@@ -1,0 +1,152 @@
+[
+  {
+    "rank": 1,
+    "severity": "defect",
+    "title": "Asset detail screen ships the exact hardcoded fee ('1.35% all-in') this project already diagnosed and killed everywhere else",
+    "owning_file": "lib/screens/markets/asset_detail_screen.dart:568 (also lib/data/glossary.dart:22)",
+    "citation": null,
+    "evidence": "asset_detail_screen.dart:568 passes the literal string fee: '1.35% all-in' into KProductCard, shown on every stock's detail page. Its own header comment (lines 55-59) defends this as 'real, product-wide constants already used identically elsewhere in this app' — that claim is false: grepping the whole lib/ tree for '1.35' shows it exists ONLY here and in glossary.dart's copy ('1.35% all-in on a buy or sell, already included in the total you see before you confirm'). trade_flows.dart:29-46 and wallet_flows.dart:1-18 both document, at length, ripping out this exact constant (_kBuyFeeRate/_kSellFeeRate) as R-34/C-1's highest-priority rule ('NO CLIENT-SIDE FEE CONSTANT, EVER') precisely because it once 'displayed \"Fees · 1.35%\" on every review screen while the backend charged nothing at all, so an investor was quoted a total the platform never collected.' docs/redesign/FACT-CONFLICTS.md's C-1 calls this class of bug 'the most serious row in this file... on the money path of a licensed broker' and records the REAL backend rate as ~1.4512% (0.90% commission + 0.45% NGX/SEC/CSCS + 7.5% VAT) — 1.35% matches neither the real backend figure nor the canvas's own drawn rate (0.375%/0.361%). Every buy/sell review and receipt screen in the app now correctly shows 'Fees are calculated by Kudimata when your order fills — not shown here yet' (trade_flows.dart:934-936) specifically because no screen may state a fee it did not receive from the wire — asset_detail_screen.dart and glossary.dart are the only two places in the app that still violate that rule, unflagged in BACKEND_GAPS.md's own s26/s27 entry (which lists only dividend yield and order book as gaps, nothing about fee/risk/liquidity/minimum).",
+    "hides": "A reader trusting the in-code comment would conclude this figure is a verified, shared, product-wide constant reused safely everywhere — it is neither shared nor verified, and the same defect class was explicitly banned project-wide one file over.",
+    "user_impact": "Every investor who opens any stock's detail page is told, in a prominent fact card and reinforced by the glossary's explanation ('already included in the total you see before you confirm'), a trading fee that is neither what the canvas designed nor what the backend actually charges — a pricing misstatement from a licensed broker, on the money path, that the project's own documentation calls its most serious risk category."
+  },
+  {
+    "rank": 2,
+    "severity": "defect",
+    "title": "A user interrupted mid-onboarding (after OTP, before passcode) is signed in on cold start with no local credential ever required",
+    "owning_file": "lib/screens/onboarding/otp_screen.dart:135; lib/app/app_state.dart:415-434; lib/router/app_router.dart:520-523; lib/main.dart:148",
+    "citation": null,
+    "evidence": "Verified end to end by direct read, independent of composition-findings.md's trace. otp_screen.dart:135 calls _tokenStore.saveTokens(...) the instant OTP verification succeeds — before suitability, risk disclosure, legal documents, or passcode creation ever run. If the app is killed before confirm_passcode_screen.dart:145 (the only call site that sets passcodeSet=true) and cold-started again: AppState._hydrateSignedIn reads the stored token and sets signedIn=true, coldStartPendingUnlock=true purely from the token's presence; _hydratePasscodeSet correctly leaves passcodeSet=false. app_router.dart:520's cold-start force-unlock is 'if (coldStartPendingUnlock && passcodeSet && loc != login) return login' — requires passcodeSet=true, so it never fires for this actor. Falls through to line 523: 'if (preAuthOnly.contains(loc)) return home' — both Routes.splash (the app's initialLocation) and Routes.welcome are in preAuthOnly, so either way the redirect resolves to Home. Second, independent path to the same gap: main.dart:148's resume-lock guard is 'if (!signedIn || !passcodeSet) return' — also a silent no-op for this exact actor, so backgrounding/resuming never challenges them either, no matter how long. No ruling in DECISIONS.md addresses the token-save timing relative to passcode creation; R-8a's note 2 ('setSignedIn(true)... wherever that step lands, sign-in completion moves with it') concerns the separate in-memory AppState.setSignedIn flag used by interactive flows, not the secure-storage token _hydrateSignedIn reads directly on cold start.",
+    "hides": "A reader of app_router.dart:520's comment would conclude the cold-start force-unlock 'fires... whenever [coldStartPendingUnlock] is true and a passcode exists' covers every restored-session case; it silently does not cover the one actor who never got the chance to set a passcode.",
+    "user_impact": "An investor who is killed (crash, OS memory pressure, manual close) anywhere between verifying their email and confirming their passcode reopens the app and lands directly on Home, fully 'signed in' with a live access token, having skipped suitability, statutory risk disclosure, the remaining legal documents, passcode creation, and biometric enrolment entirely — on a device with no local lock of any kind protecting a real brokerage session, and no mechanism (cold start or resume) will ever challenge them until the token's own ~15-minute TTL forces a server round trip."
+  },
+  {
+    "rank": 3,
+    "severity": "unclear",
+    "title": "The app's only revenue-generating flow — buy, sell, add money, and withdraw — has never been rendered or visually verified by anyone, in this codebase, ever",
+    "owning_file": "lib/screens/trade/trade_flows.dart (showBuyFlow/showSellFlow); lib/screens/wallet/wallet_flows.dart (showAddMoneyFlow/showWithdrawFlow)",
+    "citation": null,
+    "evidence": "Independently confirmed by reading test/shots_all.dart directly: it defines exactly 76 _RouteSpec entries, all routed screens, with zero entries for any buy/sell/add-money/withdraw sheet (only an unrelated '53_withdraw_mandate' route exists, for the separate DCS-mandate-removal screen). These four flows are modal bottom sheets, not routes, so the routed-screen harness structurally cannot reach them — this is DECISIONS.md's own B-3 finding ('Extend shots_all.dart to capture named sub-states... otherwise the designed variants get built with no rendered evidence'), raised 2026-08-27 and still unexecuted as of this audit. This directly contradicts coverage-findings.md's finding #3, which asserts the buy/sell side 'is thoroughly captured' by name (buy_chooser_s42, buy_price_s43, etc.) — no such capture names exist anywhere in the current test/shots_all.dart, so that claim could not be substantiated from the repository and is very likely sourced from a stale or external screenshot directory (two such external dirs, /tmp/shots and /tmp/uiops-phase5/shots, exist on this machine outside the repo). Independent prior art (docs/redesign/AUDIT-FINDINGS-conformance.md, withheld from this audit's own phases but read here for corroboration) reaches the same conclusion by a completely different method (element-by-element artboard comparison): all four flows, ~34 artboards' worth, have zero renders in build/shots/.",
+    "hides": "A reader trusting coverage-findings.md's 'the buy/sell side... is thoroughly captured' framing would conclude the app's core money-moving path has been visually checked; it has not, for any of its four flows, and this is corroborated by an independent method, not just documentation reading.",
+    "user_impact": "Nobody — human or agent — has looked at a picture of the actual buy, sell, add-money, or withdraw screens next to their artboards. Any defect in the layout, copy, fee display, or PIN step of the app's sole revenue path (including the exact class of hardcoded-fee defect found at rank 1, on the very next screens in the same user journey) would currently ship undetected. The owner must decide whether to block release on extending the harness to sheet-driven sub-states (B-3) before this flow can be called verified by any evidence stronger than 'it compiles.'"
+  },
+  {
+    "rank": 4,
+    "severity": "defect",
+    "title": "A live-pushed account suspension/dormancy flag is decoded off the socket and then silently discarded",
+    "owning_file": "lib/app/app_state.dart:377-384; lib/data/realtime/realtime_client.dart:92-110",
+    "citation": null,
+    "evidence": "Verified directly. RealtimeKycStatus.fromJson (realtime_client.dart:99-110) decodes both kycStatus and accountStatus from the kyc:status socket event; the type's own doc comment (line 92) states 'the two fields this app's gate actually reacts to are parsed here (kycStatus/accountStatus).' AppState.applyRealtimeKycStatus (app_state.dart:377-384), the sole consumer wired via realtimeClient.kycStatus.listen(applyRealtimeKycStatus) in main.dart, reads status.kycStatus three times and never references status.accountStatus at all — confirmed by direct grep of the method body. accountStatus IS read and acted on elsewhere in the app (account_screen.dart:287-293, log_in_screen.dart:848 dormant redirect, personal_info_screen.dart:373-375, dormant_account_screen.dart) but only from REST responses fetched at login or on manual navigation, never from the live push. No ruling in DECISIONS.md or RULINGS.md authorizes dropping this field; R-41 explicitly lists 'Notifications and KYC status' as a surface that must push so 'a KYC decision updates the gate immediately' — the parallel accountStatus case is the same surface, silently unimplemented.",
+    "hides": "The method's own doc comment ('applies... to the gate flags it can determine on its own') and the decoded type's doc comment (both fields are 'what the gate actually reacts to') together imply accountStatus IS handled here; it is decoded and then thrown away one line later.",
+    "user_impact": "If a staff member suspends or dormancy-flags an account while the investor is signed in with an open socket connection, the push carrying that change arrives and does nothing — the session keeps behaving as fully active (Home renders, trading gate stays open) until the access token's own TTL forces a refresh or the investor happens to trigger a manual personalInfo() fetch. Two directly related unclear items surfaced independently in scenario-matrix.json: whether a suspended account is even told why sign-in fails (status: unclear, no client-side handling found distinct from a generic wrong-password error), and how long a self-frozen account's UI stays looking normal before the next API call 401s it out (status: unclear, needs a live run)."
+  },
+  {
+    "rank": 5,
+    "severity": "unclear",
+    "title": "The KYC step that actually submits the application (next_of_kin.dart, calls finalizeDraft() directly) has never been screenshotted",
+    "owning_file": "lib/screens/kyc/next_of_kin.dart (Routes.kycNextOfKin, step 8 of 8)",
+    "citation": null,
+    "evidence": "Confirmed via test/shots_all.dart's spec list: kyc_declarations (the step immediately before) and kyc_submitted (the step immediately after) both have capture entries; next_of_kin does not appear as a distinct captured screen anywhere in the harness's route list, despite being the step whose own header notes 'Submit for verification' calls finalizeDraft() directly (R-9 dropped the standalone review-before-submit screen specifically because this screen absorbed that responsibility).",
+    "hides": "Scanning capture filenames by KYC step number makes the whole 8-step sequence look unbroken; the one screen every investor must complete to actually submit their KYC application has never been looked at.",
+    "user_impact": "A layout, validation, or submission-wiring defect on the single screen that submits every investor's KYC application would currently ship undetected. Owner must confirm whether this is a harness gap (screen exists and needs a capture entry added) or whether the screen was quietly dropped from the walk sequence."
+  },
+  {
+    "rank": 6,
+    "severity": "defect",
+    "title": "\"We'll notify you when you're verified — you can close the app\" has no mechanism to deliver on the second half of that sentence",
+    "owning_file": "lib/screens/kyc/submitted.dart:202 (weaker instances also at kyc/approved.dart:146, kyc/outcome_not_approved.dart:194-195)",
+    "citation": null,
+    "evidence": "Confirmed: pubspec.yaml and every file under lib/ contain zero references to firebase_messaging, FCM, APNs, or flutter_local_notifications (grepped directly) — there is no OS-level push-notification capability anywhere in this app. The only 'live' delivery mechanism is the socket.io connection (R-41), which per its own non-negotiable ('push is an optimisation, never the only path... reconnect, refetch') requires the app open and connected. submitted.dart's own header comment, three lines above this string, correctly removes a different unverified claim ('Usually 1-2 business days') specifically because 'no mechanism in this codebase backs a specific duration' — the very next sentence in the same message string makes an equally unbacked mechanism claim and was not caught by the same scrutiny.",
+    "hides": "The careful removal of one unverified claim right next to this one reads as evidence the whole message was checked; it was not — the instruction to close the app is the one part of the sentence that makes the promise literally undeliverable.",
+    "user_impact": "An investor who follows the screen's own explicit instruction and closes the app while KYC is under review receives no notification of any kind when their status changes — no push, no socket event (nothing to receive it), nothing — and must think to reopen the app and let it re-hydrate to discover the outcome, contradicting what they were just told."
+  },
+  {
+    "rank": 7,
+    "severity": "unclear",
+    "title": "Three live, routed screens were never triaged through R-3's mandatory ruling process at all",
+    "owning_file": "lib/screens/kyc/kyc_checklist_screen.dart (/kyc/checklist); lib/screens/onboarding/legal_preview_screen.dart#LegalBundlePreviewScreen (/legal-preview); lib/screens/markets/price_alerts_screen.dart#SetPriceAlertScreen (/asset/:ticker/alert)",
+    "citation": null,
+    "evidence": "Confirmed by direct grep of both RULINGS.md and DECISIONS.md: none of these three screens (by class name or file) appear anywhere in either document. This differs from coverage-findings.md's finding #1, which lists a fourth screen (whats_next_screen.dart) alongside these three as 'zero mentions anywhere' — that one is, in fact, functionally covered by DECISIONS.md's R-33 table ('s07 | post-signup \"What happens next\" overview'), even though RULINGS.md itself never names it; R-33 is not reproduced here since it resolves that one. The other three have no covering ruling of any kind. app_router.dart's own comment calls kyc_checklist_screen.dart 'the flow's spine... re-entered after every completed step,' and artboards s11/s11d exist in the current canvas for it, unevaluated. R-3 states plainly: 'There is no blanket policy... Every one is listed with evidence in RULINGS.md and ruled individually before any work on it starts. An agent may not infer keep, restyle or cut' — yet all three are built and shipping.",
+    "hides": "A reader of RULINGS.md's 91-screen total would conclude every screen in the app has been triaged; three routed, shipping screens — including the KYC flow's own hub — have not.",
+    "user_impact": "None directly observable by a user today (the screens work), but no one has confirmed these three match design intent or product decision-making the way every other screen in the redesign was required to. Owner must rule on each: does kyc_checklist_screen.dart match s11/s11d, does the legal-bundle-list variant need its own ruling distinct from the already-ruled single-document preview, and does the per-ticker alert screen match s49's unevaluated evidence."
+  },
+  {
+    "rank": 8,
+    "severity": "defect",
+    "title": "Buy/Sell footer button order is swapped from the artboard on asset detail, with no explanatory comment unlike every other divergence in the same file",
+    "owning_file": "lib/screens/markets/asset_detail_screen.dart:402-415",
+    "citation": null,
+    "evidence": "Verified directly: line 402-408 places the Sell button first (with label: 'Sell'), line 414-415 places Buy second. The artboard (s26, per prior-art conformance audit docs/redesign/AUDIT-FINDINGS-conformance.md, corroborated here) draws Buy first/filled, Sell second/outlined. This file otherwise documents every single divergence from the artboard in detail (dividend yield gap, order book gap, liquidity banner omission, the ProductCard substitution at rank 1) — this is the one swap with no comment anywhere explaining it, and no ruling in DECISIONS.md addresses button order on this screen.",
+    "hides": "The file's habit of documenting every other divergence makes an undocumented one easy to mistake for intentional; it reads as an oversight, not a decision.",
+    "user_impact": "Minor by itself (a muscle-memory risk for a user comparing this screen to marketing/design material, and an inconsistency with whatever ordering convention the rest of the app settles on), but it sits on the same screen and same footer as the rank-1 fee defect, reinforcing that this screen received less scrutiny than its neighbors."
+  },
+  {
+    "rank": 9,
+    "severity": "unclear",
+    "title": "Artboard s38 is independently claimed by two structurally different receipt screens with no ruling on which owns it",
+    "owning_file": "lib/screens/account/contract_note_screen.dart; lib/screens/wallet/wallet_screens.dart#transaction_detail",
+    "citation": null,
+    "evidence": "Both screens' own evidence (per coverage-inventory.json, verified against the artboard citation format used consistently elsewhere in this audit) cite s38 as their match — contract_note_screen.dart at 'likely' confidence ('closest new-canvas expression of a post-trade receipt'), wallet_screens.dart#transaction_detail on both its Reference row and fee breakdown. A contract note (per executed order, names the executing broker, per R-38 now shipped as a seeded PDF) and a wallet transaction receipt (any Txn: deposit/withdrawal/fee/dividend) are different screens with different data models. Neither DECISIONS.md nor RULINGS.md records whether s38 was drawn to be one, the other, or both.",
+    "hides": "Marking one 'resolved' and leaving the other unmarked, off identical evidence, implies a distinction was made when none was recorded.",
+    "user_impact": "No user-visible defect today — both screens function independently. Risk is that a future redesign pass treats s38 as fully spoken-for by whichever screen is marked resolved and never gives the other an independent visual check."
+  },
+  {
+    "rank": 10,
+    "severity": "unclear",
+    "title": "tax_documents_screen.dart went live and wired one day after RULINGS.md classified it as unreachable no-action; it has zero artboard coverage and no visual ruling",
+    "owning_file": "lib/screens/account/tax_documents_screen.dart; lib/screens/account/account_screen.dart",
+    "citation": null,
+    "evidence": "RULINGS.md's no-action bucket (dated 2026-08-26) describes this screen as 'currently unreachable from any live UI in the app itself.' account_screen.dart's own code comment says the menu row was 'Restored 2026-08-27' once the backend gained the tax-statement kinds it needed — confirmed the route (/account/tax) and a permanent Account-menu entry both exist now. No artboard covers it in canvas-inventory.json, and no ruling in DECISIONS.md addresses its visual treatment.",
+    "hides": "A reader trusting RULINGS.md's no-action bucket would skip this screen entirely as out of scope; it is now a live, real-backend-calling, permanently-reachable screen.",
+    "user_impact": "No functional defect — the screen works and calls the real backend. But its visual treatment was never ruled against the new design system the way every other live screen was required to be; owner should confirm whether it needs a restyle pass or is accepted as-is."
+  },
+  {
+    "rank": 11,
+    "severity": "unclear",
+    "title": "Android release build declares CAMERA with no android:required=\"false\", which filters cameraless devices out of the Play Store listing entirely",
+    "owning_file": "android/app/src/main/AndroidManifest.xml",
+    "citation": null,
+    "evidence": "Confirmed in release-check.md's packaged-artifact verification (aapt dump badging on the actual built APK): 'uses-implied-feature: name=\\'android.hardware.camera\\' reason=\\'requested android.permission.CAMERA permission\\'' with no required=\"false\" override. Camera is used only for the KYC liveness/document flow, not core app usage.",
+    "hides": "Nothing hidden from a user directly — this only affects Play Store store-distribution visibility, which debug/sideload testing structurally cannot surface.",
+    "user_impact": "Any prospective investor browsing the Play Store on a cameraless device (rare, but real for some tablets/emulator-class devices) never even sees the app's listing. Owner must decide: is a camera a hard requirement to invest (acceptable, leave as-is) or should KYC degrade gracefully without one (requires android:required=\"false\" plus an in-app fallback)."
+  },
+  {
+    "rank": 12,
+    "severity": "unclear",
+    "title": "A local (non-CI) `flutter build apk --release` silently falls back to debug signing when key.properties is absent, with no warning",
+    "owning_file": "android/app/build.gradle.kts",
+    "citation": null,
+    "evidence": "Confirmed by reading build.gradle.kts: the release buildType selects the real release signing config only when key.properties is present, falling back to debug signing otherwise, with no build-time warning either way. release-check.md confirms the artifact actually verified in this audit used the real release key (apksigner cert fingerprint matches the real keystore) — this finding is about what happens on a different machine without the keystore, not about what shipped.",
+    "hides": "A contributor without the production keystore who runs a release build locally gets a debug-signed .apk with no on-screen indication it isn't the real thing.",
+    "user_impact": "No impact on what actually ships (CI has the keystore). Risk is confined to a contributor mistaking a local debug-signed build for a real release candidate."
+  },
+  {
+    "rank": 13,
+    "severity": "unclear",
+    "title": "web/index.html has no Content-Security-Policy or host allowlist",
+    "owning_file": "web/index.html",
+    "citation": null,
+    "evidence": "Confirmed: no <meta http-equiv=\"Content-Security-Policy\"> tag and no other CSP mechanism anywhere in the repo. Per CLAUDE.md, web is built locally and not part of CI, so this is not caught by any automated gate today.",
+    "hides": "Nothing actively wrong is hidden — the app functions — but there is no defense-in-depth against injected script/resource loading on the web build specifically.",
+    "user_impact": "No currently-observable defect. Flagged because it's exactly the kind of release-only/platform-only gap that this project's own release-check phase exists to surface rather than silently pass over; owner should decide whether the web build needs a CSP before wider distribution."
+  },
+  {
+    "rank": 14,
+    "severity": "unclear",
+    "title": "RULINGS.md is stale, self-contradictory, and unsafe to treat as current — use DECISIONS.md",
+    "owning_file": "docs/redesign/RULINGS.md",
+    "citation": null,
+    "evidence": "Cross-checked coverage-findings.md's claims directly: RULINGS.md still lists 3 files as pending that no longer exist under lib/ (review_submit_screen.dart, document_summary_screen.dart, watchlist_screen.dart — confirmed absent by filesystem search); its needs-ruling bucket has an empty ruling column for all 39 rows dated 2026-08-26, while DECISIONS.md (through 2026-08-29) contains explicit rulings (R-1 through R-41) that resolve nearly every one of those rows by name — verified by reading DECISIONS.md in full. Most of coverage-findings.md's 12 raw findings about RULINGS.md's internal inconsistency (bucket mislabeling, stale file references, the s07/whats_next gap) turn out to be moot once DECISIONS.md is treated as authoritative, which the source-of-truth table in DECISIONS.md itself already says it is ('the one thing that outranks the canvas is a ruling in this file').",
+    "hides": "Nothing user-facing — this is a documentation-hygiene finding. Its risk is entirely to future agents/auditors who read RULINGS.md as current without cross-checking DECISIONS.md, exactly as this audit's brief warned.",
+    "user_impact": "None directly. Recommend RULINGS.md be either regenerated against the current lib/ tree and DECISIONS.md's actual rulings, or marked deprecated in favor of DECISIONS.md, so the next reader doesn't re-litigate settled decisions or trust a stale pending-file list."
+  },
+  {
+    "rank": 15,
+    "severity": "unclear",
+    "title": "Routes.acctComplaintTracked is a fully built, routed screen with no real in-app entry point",
+    "owning_file": "lib/router/app_router.dart (Routes.acctComplaintTracked, /account/help/complaint/tracked)",
+    "citation": null,
+    "evidence": "Confirmed via the route's own code comment: 'no live entry point yet — submitting a complaint has no real backend to return one from... registered so the built screen is reachable once that exists.' It appears in capture sets only because the harness can drive a route directly, bypassing the missing in-app trigger.",
+    "hides": "Counting this route as 'covered' overstates real user-reachable coverage — it is routed but not actually reachable through any real user action today.",
+    "user_impact": "None — developer-acknowledged, intentional pre-wiring ahead of a backend capability that does not exist yet. Included for completeness, not as a bug to fix."
+  }
+]

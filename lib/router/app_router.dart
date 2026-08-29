@@ -397,9 +397,11 @@ GoRouter buildRouter(AppState state) {
       ),
       GoRoute(path: Routes.acctComplaint, builder: (_, _) => themed(() => ComplaintScreen())),
       GoRoute(
-        // Pushed with a ComplaintSummary `extra` — no live entry point yet
-        // (see routes.dart), registered so the built screen is reachable
-        // once complaint submission has a real backend to return one from.
+        // Fully wired — complaint_screen.dart pushes here with a real
+        // Complaint (aliased ComplaintSummary, see complaint_tracked_screen
+        // .dart) `extra` from two places: `_openTracked` (tapping the
+        // "Your open complaint" card) and `_send()` right after a
+        // successful `POST /complaints` (complaint_repository.dart).
         path: Routes.acctComplaintTracked,
         builder: (_, st) {
           final complaint = st.extra;
@@ -499,6 +501,45 @@ String? _gateRedirect(AppState state, GoRouterState st) {
   };
 
   if (state.signedIn) {
+    // Defect fix (2026-08-29, two independent auditors: "an interrupted
+    // signup produces a funded account with no device lock"). The
+    // invariant this enforces: a session that is signed in but has NO
+    // local passcode is incomplete onboarding, not a usable session — full
+    // stop, regardless of how this navigation was reached (a deep link, a
+    // stray history entry, the ordinary preAuthOnly bounce two lines below,
+    // or the very first redirect evaluation after cold-start hydration
+    // settles). Enforced HERE rather than by withholding [signedIn] itself
+    // at hydration time: [signedIn] genuinely is true (a real access token
+    // is stored and will authenticate real API calls the instant any
+    // screen makes one), so lying about that would just move the bug
+    // sideways into every one of those call sites instead of fixing it.
+    // The router is the one chokepoint every path into the app already
+    // funnels through (same reasoning as the coldStartPendingUnlock branch
+    // right below), so it is the one place this can't be bypassed by a
+    // second entry path nobody thought to check.
+    //
+    // The exemption reuses `gated` MINUS `preAuthOnly` — i.e. every
+    // mid-onboarding screen (createPasscode/confirmPasscode themselves,
+    // biometric, KYC, questionnaire/suitabilityResult/riskDisclaimer/
+    // termsOfService, the onboarding extras, the login/unlock screen) stays
+    // reachable exactly as freely as it already is for a fully signed-OUT
+    // session a few lines below ("gated flow always allowed") — this is
+    // NOT a narrower, hand-picked allowlist, on purpose: riskDisclaimer's
+    // own accept handler flips [signedIn] true (see its doc comment)
+    // BEFORE createPasscode/confirmPasscode ever run, so by the time it
+    // hands off to termsOfService the investor is already signedIn=true
+    // with passcodeSet still false — a hand-picked allowlist of just the
+    // two passcode screens caught exactly this legitimate case and forced
+    // it back to createPasscode mid-flow, silently skipping terms
+    // acceptance. What's NOT exempted is precisely what the actual defect
+    // was: `preAuthOnly` (splash/welcome/signup/otp/reset, which the block
+    // below would otherwise bounce straight to Home) and everything
+    // outside `gated` entirely — Home, the tab shell, every pushed/account
+    // screen. That is the one and only invariant this enforces.
+    final midOnboardingOnly = gated.contains(loc) && !preAuthOnly.contains(loc);
+    if (!state.passcodeSet && !midOnboardingOnly) {
+      return Routes.createPasscode;
+    }
     // A-6 cold-start fix (2026-08-29, product-owner report: "if i close the
     // app and reopen, passcode never comes up. It only comes up if the app
     // is slept or the screen sleeps"). AppState.coldStartPendingUnlock is

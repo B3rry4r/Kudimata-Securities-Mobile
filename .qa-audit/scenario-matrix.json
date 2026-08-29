@@ -1,0 +1,257 @@
+{
+  "_meta": {
+    "phase": "2 — flow scenario enumeration (actor x entry-state x branch)",
+    "actors_grounded": 21,
+    "note": "Every actor below is a real reachable combination of fields read out of lib/app/app_state.dart, lib/router/app_router.dart, lib/data/api/auth_token_store.dart, lib/data/api/passcode_store.dart, lib/screens/onboarding/log_in_screen.dart and lib/screens/onboarding/otp_screen.dart. Unreachable combinations are marked reachable:false with the mechanical reason in evidence."
+  },
+  "actors": [
+    {
+      "id": "guest",
+      "fields": {"signedIn": false},
+      "evidence": "lib/app/app_state.dart:196",
+      "reachable": true
+    },
+    {
+      "id": "fresh_signup_pending_otp",
+      "fields": {"signedIn": false, "pendingSignupEmail": "set after sign-up, before OTP verify"},
+      "evidence": "lib/screens/onboarding/otp_screen.dart:122-153 (tokens only saved once verify succeeds)",
+      "reachable": true
+    },
+    {
+      "id": "interrupted_onboarding_signed_in_no_passcode",
+      "fields": {"signedIn": true, "coldStartPendingUnlock": true, "passcodeSet": false, "kycSubmitted": false, "suitabilityComplete": false, "riskDisclosureAccepted": false},
+      "evidence": "lib/screens/onboarding/otp_screen.dart:135 (AuthTokenStore.saveTokens runs immediately on OTP verify, before suitability/risk-disclaimer/terms/passcode ever run) + lib/app/app_state.dart:415-434 (_hydrateSignedIn sets signedIn=true from the token ALONE on the next cold start, no passcode check) + lib/app/app_state.dart:520 (_gateRedirect's cold-start unlock force requires passcodeSet==true, so it does not fire here)",
+      "reachable": true,
+      "note": "This is a genuine, currently-open composition defect — see composition-findings.md item 1. The app killed anywhere between a successful OTP verify and a successful passcode confirm produces exactly this actor on the next cold start."
+    },
+    {
+      "id": "returning_trusted_device_locked",
+      "fields": {"signedIn": true, "passcodeSet": true, "coldStartPendingUnlock": true},
+      "evidence": "lib/router/app_router.dart:520-522",
+      "reachable": true
+    },
+    {
+      "id": "returning_untrusted_device_no_local_passcode",
+      "fields": {"signedIn": false, "passcodeSet": false, "hasRealAccount": true},
+      "evidence": "lib/screens/onboarding/log_in_screen.dart:212-221 (_decideMode: !app.signedIn || !hasPasscode -> email+password form s08p)",
+      "reachable": true
+    },
+    {
+      "id": "kyc_not_started",
+      "fields": {"kycSubmitted": false, "kycDraftStep": null, "kycDraftTotal": null},
+      "evidence": "lib/app/app_state.dart:589-617",
+      "reachable": true
+    },
+    {
+      "id": "kyc_draft_in_progress",
+      "fields": {"kycSubmitted": false, "kycDraftStep": "1..7", "kycDraftTotal": 7},
+      "evidence": "lib/app/app_state.dart:174-182, 592-610",
+      "reachable": true
+    },
+    {
+      "id": "kyc_bvn_nin_verification_failed",
+      "fields": {"verificationSignals.bvn": false, "or verificationSignals.nin": false},
+      "evidence": "lib/screens/kyc/bvn_nin.dart:136-149 (_Step.failed, blocking)",
+      "reachable": true
+    },
+    {
+      "id": "kyc_pending_review",
+      "fields": {"kycSubmitted": true, "kycApproved": false, "kycOutcomeStatus": null},
+      "evidence": "lib/app/app_state.dart:646-651",
+      "reachable": true
+    },
+    {
+      "id": "kyc_rejected",
+      "fields": {"kycOutcomeStatus": "rejected"},
+      "evidence": "lib/app/app_state.dart:184-195, 625-631; lib/data/repositories/kyc_repository.dart:74 (status enum)",
+      "reachable": true
+    },
+    {
+      "id": "kyc_rejected_with_room_to_retry",
+      "fields": {"kycOutcomeStatus": "rejected_retry"},
+      "evidence": "lib/data/repositories/kyc_repository.dart:132-140 (isRejectedWithRoomToRetry), lib/screens/onboarding/log_in_screen.dart:946-951",
+      "reachable": true
+    },
+    {
+      "id": "kyc_flagged",
+      "fields": {"kycOutcomeStatus": "flagged"},
+      "evidence": "lib/app/app_state.dart:633-637",
+      "reachable": true
+    },
+    {
+      "id": "kyc_expired",
+      "fields": {"kycOutcomeStatus": "expired"},
+      "evidence": "lib/app/app_state.dart:639-643",
+      "reachable": true
+    },
+    {
+      "id": "kyc_approved_suitability_incomplete",
+      "fields": {"kycApproved": true, "suitabilityComplete": false},
+      "evidence": "lib/app/app_state.dart:653-666",
+      "reachable": true
+    },
+    {
+      "id": "suitability_complete_risk_disclosure_not_accepted",
+      "fields": {"suitabilityComplete": true, "riskDisclosureAccepted": false},
+      "evidence": "lib/app/app_state.dart:668-672",
+      "reachable": true
+    },
+    {
+      "id": "fully_eligible",
+      "fields": {"kycApproved": true, "suitabilityComplete": true, "riskDisclosureAccepted": true},
+      "evidence": "lib/app/app_state.dart:675 (tradingEligibilityGap returns null)",
+      "reachable": true
+    },
+    {
+      "id": "dormant_account",
+      "fields": {"accountStatus": "dormant"},
+      "evidence": "lib/screens/onboarding/log_in_screen.dart:834-853, lib/screens/account/dormant_account_screen.dart:16",
+      "reachable": true
+    },
+    {
+      "id": "suspended_account",
+      "fields": {"accountStatus": "suspended"},
+      "evidence": "lib/data/repositories/user_repository.dart:189 (raw backend value 'active'/'suspended'), lib/data/realtime/realtime_client.dart:106",
+      "reachable": true,
+      "note": "Reachable only as a BLOCKED login attempt per the backend contract cited in the client's own comment (log_in_screen.dart's header references dormancy being the one lifecycle check login doesn't block on, implying suspended is blocked at login) — never as a live signed-in AppState combination. Could not confirm the client-side handling of the login rejection shape for this case from lib/ alone; see composition-findings.md bonus finding for what the client does and does not do with a live accountStatus:'suspended' push."
+    },
+    {
+      "id": "self_service_frozen_account",
+      "fields": {"accountStatus": "frozen", "sessionRevoked": true},
+      "evidence": "lib/screens/account/freeze_account_screen.dart:1-16 (POST /users/me/freeze revokes every session immediately)",
+      "reachable": true
+    },
+    {
+      "id": "resumed_after_grace_locked",
+      "fields": {"signedIn": true, "passcodeSet": true, "pausedDuration": ">=30s"},
+      "evidence": "lib/main.dart:109, 133-159",
+      "reachable": true
+    },
+    {
+      "id": "resumed_after_grace_no_passcode",
+      "fields": {"signedIn": true, "passcodeSet": false, "pausedDuration": ">=30s"},
+      "evidence": "lib/main.dart:148 (`if (!_state.signedIn || !_state.passcodeSet) return;` — resume-lock is a silent no-op for exactly the actor above, interrupted_onboarding_signed_in_no_passcode, if it is ever resumed from background instead of cold-started)",
+      "reachable": true,
+      "note": "Same underlying gap as interrupted_onboarding_signed_in_no_passcode, reached via the resume entry-state instead of cold start."
+    },
+    {
+      "id": "security_reentry_change_passcode",
+      "fields": {"signedIn": true, "reentry": true},
+      "evidence": "lib/screens/onboarding/confirm_passcode_screen.dart:19-24, 146-155",
+      "reachable": true
+    }
+  ],
+  "rows": [
+    {"actor":"guest","entry":"cold_start","flow":"onboarding","step":"splash","branch":"happy",
+     "capability":"a guest with no token on this device is dropped on the Welcome/Sign-up path rather than Home",
+     "expected":"splash routes to welcome (no passcode set) per splash_screen.dart:81","status":"pending"},
+
+    {"actor":"fresh_signup_pending_otp","entry":"already_open","flow":"onboarding","step":"otp_verify","branch":"happy",
+     "capability":"a user who just signed up can verify the emailed OTP and move on to the suitability questionnaire",
+     "expected":"tokens saved, AppState.pendingSignupEmail set, routes to Routes.questionnaire (otp_screen.dart:134-144)","status":"pending"},
+    {"actor":"fresh_signup_pending_otp","entry":"already_open","flow":"onboarding","step":"otp_verify","branch":"error",
+     "capability":"a user who types a wrong OTP code sees why and can retry without losing their place",
+     "expected":"ApiException surfaces e.message inline, _verifying resets (otp_screen.dart:145-152)","status":"pending"},
+    {"actor":"fresh_signup_pending_otp","entry":"already_open","flow":"onboarding","step":"otp_verify","branch":"offline",
+     "capability":"a user verifying OTP with no network sees a clear failure, not a stuck spinner",
+     "expected":"ApiException (network) caught the same as any other ApiException; unclear whether raw DioException/timeout is also caught here — otp_screen.dart:145 catches ApiException only, no widened catch like bvn_nin.dart:199 has","status":"unclear — needs a live offline run to confirm ApiClient normalizes every transport failure into ApiException before this screen sees it"},
+
+    {"actor":"interrupted_onboarding_signed_in_no_passcode","entry":"cold_start","flow":"onboarding","step":"splash_redirect","branch":"happy",
+     "capability":"none — this is the defect. A user who was killed mid-onboarding (after OTP verify, before confirming a passcode) reopens the app and is dropped straight onto Home, fully free-roaming the signed-in app shell, with no local passcode, no biometric enrolment, and never having seen suitability/risk-disclosure/terms",
+     "expected":"should resume onboarding exactly where it left off (questionnaire/risk-disclaimer/terms/create-passcode), or at minimum force local passcode creation before any Home render",
+     "actual":"lib/router/app_router.dart:494-499,520-524 — preAuthOnly.contains('/splash') and '/welcome' both redirect signed-in users straight to Routes.home; the cold-start unlock force at line 520 is gated on passcodeSet==true so it never engages for this actor",
+     "status":"defect"},
+
+    {"actor":"returning_trusted_device_locked","entry":"cold_start","flow":"login_unlock","step":"gate_redirect","branch":"happy",
+     "capability":"a returning investor with a passcode on this device is forced through a real local unlock before anything else renders, even if they land on Home via a stale deep link",
+     "expected":"redirected to Routes.login (app_router.dart:520-522)","status":"pending"},
+    {"actor":"returning_trusted_device_locked","entry":"cold_start","flow":"login_unlock","step":"passcode_entry","branch":"error",
+     "capability":"a user who mistypes their passcode is told it's wrong and can retry, without being signed out",
+     "expected":"log_in_screen.dart:336-347 sets _error, clears _code, stays on screen","status":"pending"},
+    {"actor":"returning_trusted_device_locked","entry":"cold_start","flow":"login_unlock","step":"passcode_entry","branch":"offline",
+     "capability":"a user who unlocks with the correct local passcode while offline still gets into the app (local check doesn't require network)",
+     "expected":"log_in_screen.dart:351-369 — a transient/network failure on the confirmatory GET /users/me falls through to unlock anyway, per its own comment ('don't lock a returning user out over a transient error')","status":"pending"},
+
+    {"actor":"returning_untrusted_device_no_local_passcode","entry":"cold_start","flow":"login_unlock","step":"email_password_form","branch":"happy",
+     "capability":"a real account holder on a brand-new device can sign in with email+password and is walked into creating this device's first local passcode",
+     "expected":"log_in_screen.dart:394-491 -> Routes.createPasscode","status":"pending"},
+    {"actor":"returning_untrusted_device_no_local_passcode","entry":"cold_start","flow":"login_unlock","step":"email_password_form","branch":"error",
+     "capability":"a user who enters a wrong password sees the server's real error message",
+     "expected":"log_in_screen.dart:415-421","status":"pending"},
+    {"actor":"returning_untrusted_device_no_local_passcode","entry":"cold_start","flow":"login_unlock","step":"step_up_otp","branch":"happy",
+     "capability":"an account with step-up auth enabled is challenged with an emailed OTP before a session is issued",
+     "expected":"log_in_screen.dart:407-413, 434-457","status":"pending"},
+
+    {"actor":"kyc_bvn_nin_verification_failed","entry":"already_open","flow":"kyc","step":"bvn_nin_confirm","branch":"error",
+     "capability":"a user whose BVN/NIN fails the registry check (a real mismatch, not merely unresolved) is blocked from proceeding and told to fix the numbers, even though the backend call itself returned HTTP 200",
+     "expected":"bvn_nin.dart:136-149 routes to _Step.failed on verificationSignals.bvn/nin == false",
+     "status":"pass — this is the composition check #3 case and it holds; see composition-findings.md item 3"},
+    {"actor":"kyc_draft_in_progress","entry":"cold_start","flow":"kyc","step":"resume_prompt","branch":"happy",
+     "capability":"a user who left KYC mid-way and reopens the app can tap Home's prompt and resume at the right step instead of restarting from step 1",
+     "expected":"app_state.dart:588-617 always routes to Routes.kycIntro first (never straight to a step screen) so kyc_intro.dart can re-fetch the draft id","status":"pending"},
+
+    {"actor":"kyc_rejected","entry":"already_open","flow":"kyc","step":"outcome","branch":"happy",
+     "capability":"a rejected applicant sees a hard-wall outcome message distinct from 'still under review', with no retry path",
+     "expected":"app_state.dart:625-631 -> Routes.kycOutcome, \"Your KYC wasn't approved\"","status":"pending"},
+    {"actor":"kyc_rejected_with_room_to_retry","entry":"already_open","flow":"kyc","step":"outcome","branch":"happy",
+     "capability":"a rejected applicant who still has resubmission attempts left sees that distinctly from a hard rejection",
+     "expected":"log_in_screen.dart:946-951 sets kycOutcomeStatus='rejected_retry' rather than 'rejected'","status":"pending"},
+    {"actor":"kyc_flagged","entry":"already_open","flow":"kyc","step":"outcome","branch":"happy",
+     "capability":"a flagged account is told it needs manual review and will be notified, not shown the generic pending-review copy",
+     "expected":"app_state.dart:633-637","status":"pending"},
+    {"actor":"kyc_expired","entry":"already_open","flow":"kyc","step":"outcome","branch":"happy",
+     "capability":"an account whose KYC submission expired is told to verify again, not left on a stale 'under review' state",
+     "expected":"app_state.dart:639-643","status":"pending"},
+
+    {"actor":"kyc_approved_suitability_incomplete","entry":"already_open","flow":"trading_gate","step":"buy_entry","branch":"happy",
+     "capability":"a KYC-approved investor who has not taken the suitability questionnaire is stopped at the Buy/Sell/Add-money/Withdraw entry points and sent to the questionnaire, not allowed to place an order",
+     "expected":"app_state.dart:661-666 (tradingEligibilityGap), enforced also server-side per its own doc comment (app_state.dart:579-580)","status":"pending"},
+    {"actor":"suitability_complete_risk_disclosure_not_accepted","entry":"already_open","flow":"trading_gate","step":"buy_entry","branch":"happy",
+     "capability":"an investor who completed suitability but never accepted the statutory risk disclosure is sent to accept it before trading",
+     "expected":"app_state.dart:668-672","status":"pending"},
+    {"actor":"fully_eligible","entry":"already_open","flow":"trading_gate","step":"buy_entry","branch":"happy",
+     "capability":"a fully eligible investor can open the Buy sheet with no interstitial gate at all",
+     "expected":"app_state.dart:675 returns null","status":"pending"},
+
+    {"actor":"dormant_account","entry":"already_open","flow":"login_unlock","step":"post_login_route","branch":"happy",
+     "capability":"an account idle 12+ months is routed to the Dormant account screen on login instead of Home, even though login itself still succeeds",
+     "expected":"log_in_screen.dart:834-853","status":"pending"},
+    {"actor":"dormant_account","entry":"already_open","flow":"login_unlock","step":"post_login_route","branch":"error",
+     "capability":"if the dormancy check's own network call fails, the investor still lands somewhere usable (Home) rather than being stuck",
+     "expected":"log_in_screen.dart:845-854 falls through to Home on ApiException","status":"pending"},
+
+    {"actor":"suspended_account","entry":"cold_start","flow":"login_unlock","step":"email_password_form","branch":"error",
+     "capability":"a suspended account cannot sign in and is told why",
+     "expected":"unclear from lib/ alone — could not find client-side handling of a suspended-specific login rejection distinct from a generic wrong-password error; see composition-findings.md","status":"unclear"},
+
+    {"actor":"self_service_frozen_account","entry":"already_open","flow":"account_lifecycle","step":"freeze_confirm","branch":"happy",
+     "capability":"a user can freeze their own account and is told it is irreversible except via support",
+     "expected":"freeze_account_screen.dart POST /users/me/freeze, confirmation dialog","status":"pending"},
+    {"actor":"self_service_frozen_account","entry":"already_open","flow":"account_lifecycle","step":"next_api_call_after_freeze","branch":"error",
+     "capability":"immediately after freezing, the same still-open app session is kicked out rather than continuing to show a live-looking Home screen",
+     "expected":"freeze revokes every session server-side per freeze_account_screen.dart:5-7; relies on the NEXT api_client.dart 401 -> onSessionExpired -> AppState.forceSignOut() (main.dart:55) — not an immediate local push; a user who freezes and then sits idle on a cached screen may see stale 'live' data until the next network call 401s","status":"unclear — needs a live run to see how long a frozen session's UI stays looking normal before the next call 401s"},
+
+    {"actor":"resumed_after_grace_locked","entry":"resume","flow":"resume_lock","step":"foreground","branch":"happy",
+     "capability":"a signed-in investor who backgrounds the app for 30+ seconds is challenged with the passcode/biometric lock on return, without losing their place in the app",
+     "expected":"main.dart:133-159 pushes Routes.login(extra:true); pops back to the same screen on success (log_in_screen.dart:372-380)","status":"pending"},
+    {"actor":"resumed_after_grace_locked","entry":"resume","flow":"resume_lock","step":"foreground","branch":"happy (under grace)",
+     "capability":"a quick app-switch under 30 seconds does not re-challenge the investor",
+     "expected":"main.dart:149 (`< _resumeLockGrace`) returns without pushing login","status":"pending"},
+    {"actor":"resumed_after_grace_no_passcode","entry":"resume","flow":"resume_lock","step":"foreground","branch":"happy",
+     "capability":"none — this is the same defect as interrupted_onboarding_signed_in_no_passcode, reached via resume instead of cold start: a signed-in investor with no local passcode who backgrounds and resumes the app is NEVER challenged at all, no matter how long the app sat backgrounded",
+     "expected":"should still force some re-authentication (there is no local secret to challenge with, so this should route to the email+password re-auth, not silently do nothing)",
+     "actual":"main.dart:148 returns silently whenever passcodeSet is false","status":"defect"},
+
+    {"actor":"security_reentry_change_passcode","entry":"already_open","flow":"security","step":"change_passcode_confirm","branch":"happy",
+     "capability":"an already signed-in investor can change their local passcode from Security and land back on Security with a confirmation, without being routed through onboarding",
+     "expected":"confirm_passcode_screen.dart:146-155 pops twice back to Security","status":"pending"},
+
+    {"actor":"guest","entry":"cold_start","flow":"onboarding","step":"deep_link_into_home","branch":"permission-denied",
+     "capability":"a signed-out user who deep-links straight into a tab-shell/pushed-detail route is bounced to splash, never shown the gated content",
+     "expected":"app_router.dart:526-533 (`return Routes.splash`)","status":"pending"},
+
+    {"actor":"returning_trusted_device_locked","entry":"already_open","flow":"onboarding","step":"back_navigation_into_preauth","branch":"happy",
+     "capability":"a signed-in investor who navigates browser-back (web) or hits a stray stack entry into a pre-auth-only screen (splash/welcome/signup/otp/reset) is bounced forward to Home instead of being shown a pre-auth screen while already signed in",
+     "expected":"app_router.dart:494-499, 523 (BUG-04, 2026-08-14 fix)","status":"pending"}
+  ]
+}

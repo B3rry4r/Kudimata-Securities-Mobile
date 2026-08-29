@@ -31,6 +31,73 @@
 
   <title>Kudimata Invest</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Content-Security-Policy. Origins below were verified two ways, not
+    assumed from reading code alone: (1) grepped lib/data/ for every network
+    target, (2) built this app (`flutter build web --release`), served it,
+    and loaded it in headless Chrome with this exact policy active, reading
+    the actual "Refused to connect"/CSP-violation console lines to catch
+    anything the static read missed. That loop caught two origins the
+    source read alone did not:
+
+    - lib/data/api/api_client.dart: `kApiBaseUrl` is a single dart-define,
+      `--dart-define=API_BASE_URL=https://alpha.kudimatasecurities.com` in
+      every real build (.github/workflows/release-apk.yml,
+      .github/workflows/live-gate.yml); defaultValue 'http://localhost:3000'
+      when unset, i.e. a local `flutter run -d chrome`/`flutter build web`
+      against a locally-run backend. Both are allowed below (http(s) for
+      REST, ws(s) for the socket below) since this is one file shared by
+      every build — a stricter policy would silently break local dev.
+    - lib/data/realtime/realtime_client.dart: one socket.io connection to
+      the SAME `kApiBaseUrl`, `.setTransports(['websocket'])` only (no
+      polling fallback), so only the ws(s) scheme is needed, not xhr/fetch
+      polling origins.
+    - No app code loads Google Fonts (grepped lib/, pubspec.yaml, web/ for
+      'google_fonts'/'fonts.googleapis' — zero hits; Nunito/Nunito Sans ship
+      as local .ttf assets, pubspec.yaml `fonts:`) — BUT the headless-Chrome
+      run showed the Flutter web ENGINE itself fetching
+      `https://fonts.gstatic.com/s/roboto/...woff2` unprompted, to cover a
+      glyph Nunito doesn't have (CanvasKit's automatic fallback-font
+      download, independent of anything this app's code does). Confirmed by
+      the console CSP-violation line naming that exact URL. fonts.gstatic.com
+      is allowed for that reason alone, not because this app chose Google
+      Fonts.
+    - No NetworkImage/Image.network anywhere in lib/ (grepped) — every icon
+      is an inline SVG string rendered via flutter_svg's
+      `SvgPicture.string` (lib/widgets/k_icon.dart), not fetched, so img-src
+      needs only 'self' (favicon/manifest/touch icons) plus data: for
+      camera/file-picker-captured bytes rendered locally.
+    - CanvasKit: `flutter build web` DOES copy the wasm/js files into
+      build/web/canvaskit/ locally, but the headless-Chrome run showed
+      flutter_bootstrap.js loading them from
+      `https://www.gstatic.com/flutter-canvaskit/<engine-revision>/...`
+      regardless — that CDN path is this Flutter version's default
+      (bin/cache/flutter_web_sdk/flutter_js/flutter.js: canvasKitBaseUrl
+      falls back to the gstatic CDN unless the build was run with
+      `--no-web-resources-cdn`, a build-invocation flag outside this file).
+      www.gstatic.com is allowed here to match the default build command;
+      building with `--no-web-resources-cdn` would let it be dropped in
+      favour of the locally-bundled copy this build already produces.
+    - object-src/form-action/base-uri locked down: this is a standalone
+      SPA with no plugin content and no native HTML form submission.
+      frame-ancestors is deliberately NOT set here — it is ignored by every
+      browser when delivered via <meta> (must be an HTTP response header),
+      so setting it here would only add a false sense of protection.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data:;
+    font-src 'self';
+    manifest-src 'self';
+    worker-src 'self' blob:;
+    connect-src 'self' https://alpha.kudimatasecurities.com wss://alpha.kudimatasecurities.com http://localhost:* ws://localhost:* https://www.gstatic.com https://fonts.gstatic.com;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'none';
+  ">
 </head>
 <body>
   <!--

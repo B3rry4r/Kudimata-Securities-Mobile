@@ -52,17 +52,13 @@
 //
 // 2026-08-24 rebuild: the canvas's About tab has NO Open/High/Low/Prev-close
 // /Mkt-cap/P-E stat grid at all — that six-cell block was never in the
-// design; removed. It also has NO "OPEN"/"HIGH" cells and does NOT leave
-// ProductCard's risk/fee/liquidity/minimum blank: `risk="high" fee="1.35%
-// all-in" liquidity="Daily · T+3" minimum="₦5,000"` — real, product-wide
-// constants already used identically elsewhere in this app (trade_flows.dart's
-// sell fee row, wallet_flows.dart/onboarding's ₦5,000 minimum,
-// faq_screen.dart's T+3 glossary term). Passing "—" for these was a wiring
-// bug, not an honest backend gap — fixed by reusing the SAME constants.
-// `risk: high` applies uniformly to every NGX ordinary share here (this app
-// carries no fixed income — see AssetClass's own doc comment — so "equities,
-// not bonds" is the real, product-wide disclosure, not a per-instrument
-// judgement). The ProductCard/dividend-yield/"You own" row is real app
+// design; removed. It also has NO "OPEN"/"HIGH" cells. ProductCard's
+// risk/liquidity/minimum ARE real, product-wide constants (`risk: high`
+// applies uniformly to every NGX ordinary share here — this app carries no
+// fixed income, see AssetClass's own doc comment — `liquidity="Daily · T+3"`
+// and `minimum="₦5,000"` are used identically elsewhere in this app:
+// wallet_flows.dart/onboarding's ₦5,000 minimum, faq_screen.dart's T+3
+// glossary term). The ProductCard/dividend-yield/"You own" row is real app
 // content the artboard doesn't draw (it draws a plainer From/Paid-out/
 // Dividend three-cell row instead) — kept rather than silently dropped, per
 // the screen-agent brief's rule 2; reported in this pass's summary.
@@ -72,6 +68,24 @@
 // no backend endpoint computes yet, even though Dividend records now exist
 // (see DividendsModule) — still renders "—". Flagged in
 // docs/redesign/BACKEND_GAPS.md.
+//
+// 2026-08-29 repair: `fee: "1.35% all-in"` was a client-side literal with no
+// writer, and it was also flatly wrong. FACT-CONFLICTS.md C-1 tracked two
+// competing figures — the backend rate card's effective 1.4512% of
+// consideration vs. the new canvas's ~0.37% — as unconfirmed. The product
+// owner has since ruled (2026-08-29) in favour of the BACKEND rate card;
+// the canvas's ~0.361–0.375% figures are now a recorded design error, not a
+// competing truth. `fee` below reads `kTradingFeeDisplay`
+// (lib/data/fees.dart) — the single place that confirmed rate lives on the
+// mobile side — rather than a literal repeated per call site. This is a
+// product-wide informational rate, not a per-order computation: a real
+// order's own commission/VAT/total in ₦ is calculated and charged
+// server-side, but `POST /orders`'s response type has no field carrying it
+// back to a client (see BACKEND_GAPS.md's "buy/sell fees are unreachable"
+// entry for the exact missing fields) — that's the exact defect class
+// fees.ts's own header warns about (the app previously showed "Fees ·
+// 1.35%" while the backend charged nothing at all), and it's why
+// trade_flows.dart still carries no fee constant of its own.
 //
 // 2026-08-27: Order book tab built (R-18). At the time, no depth/order-book
 // feed existed anywhere in this app's data layer — filed as a gap in
@@ -107,6 +121,7 @@ import 'package:kudimata_invest/app/feature_flags.dart';
 import 'dart:async';
 
 import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/fees.dart';
 import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/realtime/realtime_client.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
@@ -383,7 +398,11 @@ class _AssetDetailBodyState extends State<_AssetDetailBody> {
         ),
 
         // sticky Buy / Sell footer — shared by both tabs (s26 and s27 both
-        // draw it identically directly under the tab content).
+        // draw it identically directly under the tab content). Order is
+        // Buy (primary, left) then Sell (secondary outline, right), matching
+        // s26/s27's markup in `03 Home and Markets.dc.html` exactly — no
+        // ruling in DECISIONS.md authorises the reverse order this footer
+        // shipped with (2026-08-29 repair pass).
         Container(
           decoration: BoxDecoration(
             color: KColor.paper,
@@ -399,6 +418,13 @@ class _AssetDetailBodyState extends State<_AssetDetailBody> {
             children: [
               Expanded(
                 child: KButton(
+                  label: 'Buy',
+                  onPressed: () => showBuyFlow(context, asset),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: KButton(
                   label: 'Sell',
                   variant: KButtonVariant.secondary,
                   // Disabled when this investor doesn't hold the asset
@@ -406,13 +432,6 @@ class _AssetDetailBodyState extends State<_AssetDetailBody> {
                   // nothing stopping a Sell attempt on a position of zero
                   // shares before this, reported 2026-08-19.
                   onPressed: holding == null ? null : () => showSellFlow(context, asset),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: KButton(
-                  label: 'Buy',
-                  onPressed: () => showBuyFlow(context, asset),
                 ),
               ),
             ],
@@ -517,7 +536,12 @@ class _AboutTab extends StatelessWidget {
         // live-look sparkline on the Markets LIST gets hidden when
         // closed, not this screen's real historical range chart.
         if (!marketOpen) ...[
-          const Padding(padding: _gut, child: KMarketClosedBanner()),
+          Padding(
+            padding: _gut,
+            child: KMarketClosedBanner(
+              onSetAlert: () => context.push(Routes.setPriceAlert(asset.ticker)),
+            ),
+          ),
           const SizedBox(height: 16),
         ],
         // price header — s26 is a hero price + change line directly on the
@@ -555,8 +579,11 @@ class _AboutTab extends StatelessWidget {
 
         // The redesigned product card (2026-08-22 "Soft Landing" —
         // components/finance/ProductCard.jsx). price/change are real
-        // (same Asset fields as the hero above). risk/fee/liquidity/
-        // minimum are real, product-wide constants — see file header.
+        // (same Asset fields as the hero above). risk/liquidity/minimum
+        // are real, product-wide constants — see file header. `fee` reads
+        // kTradingFeeDisplay (lib/data/fees.dart) — see file header's
+        // 2026-08-29 note (FACT-CONFLICTS.md C-1): the owner has ruled the
+        // backend rate card is the confirmed figure.
         Padding(
           padding: _gut,
           child: KProductCard(
@@ -565,7 +592,7 @@ class _AboutTab extends StatelessWidget {
             price: asset.price,
             change: asset.change,
             risk: KRiskTier.high,
-            fee: '1.35% all-in',
+            fee: kTradingFeeDisplay,
             liquidity: 'Daily · T+3',
             minimum: '₦5,000',
             // D-3 (SHARED-CHANGES.md, 2026-08-27 removals pass, R-6): the

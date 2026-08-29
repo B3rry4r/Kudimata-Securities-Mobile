@@ -111,6 +111,23 @@ class AppState extends ChangeNotifier {
     final changed = await Future.wait(
       [_hydrateSignedIn(), _hydratePasscodeSet(), _hydrateBiometricEnabled()],
     );
+    // Defect fix (2026-08-29, two-auditor report): [coldStartPendingUnlock]
+    // exists to force a re-auth CHALLENGE against an EXISTING local
+    // passcode — see its own doc comment, "prove whoever just opened the
+    // app is really that token's owner". It presumes a passcode exists to
+    // challenge with. A restored session with a token but NO passcode at
+    // all is not a returning owner to verify — it's an interrupted signup
+    // (otp_screen.dart persists the token the instant OTP verifies, before
+    // passcode creation ever runs; kill the app in between and the next
+    // cold start hydrates exactly this: signedIn=true, passcodeSet=false).
+    // `_gateRedirect` (app_router.dart) handles that case on its own by
+    // forcing a resume at the passcode step directly — this flag must not
+    // survive to hijack THAT screen's own onward navigation the moment
+    // passcode creation actually completes a few seconds later (it would
+    // otherwise still be sitting here `true`, and `_gateRedirect` would
+    // force a redundant, flow-breaking re-challenge with the code the
+    // investor just typed).
+    if (coldStartPendingUnlock && !passcodeSet) coldStartPendingUnlock = false;
     if (changed.any((v) => v)) notifyListeners();
   }
 
@@ -193,6 +210,18 @@ class AppState extends ChangeNotifier {
   /// actually was. Populated by refreshKycGatingState (log_in_screen.dart)
   /// alongside kycSubmitted/kycApproved.
   String? kycOutcomeStatus;
+
+  /// 'active' | 'suspended' | 'dormant' — this investor's server-side
+  /// account lifecycle state, or null before it's ever been told. Applied
+  /// LIVE from the `kyc:status` socket payload's own `accountStatus` field
+  /// (see [applyRealtimeKycStatus] — RealtimeKycStatus carries this
+  /// already; it was decoded off the wire and then never read anywhere,
+  /// which is the bug this field fixes: a staff-pushed suspension/dormancy
+  /// flag was silently dropped, so a suspended account kept trading until
+  /// whatever screen was open next happened to run a full REST refresh).
+  /// [tradingEligibilityGap] below gates on 'dormant'; 'suspended' is
+  /// handled more severely, in [applyRealtimeKycStatus] itself (see there).
+  String? accountStatus;
   bool signedIn = false;
 
   /// True while a fresh email+password login (log_in_screen.dart) is
@@ -380,6 +409,25 @@ class AppState extends ChangeNotifier {
     kycOutcomeStatus = const {'rejected', 'flagged', 'expired'}.contains(status.kycStatus)
         ? status.kycStatus
         : null;
+    // Defect fix (2026-08-29, two-auditor report): [accountStatus] used to
+    // be decoded off this exact payload (RealtimeKycStatus.accountStatus)
+    // and never applied here at all — see that field's own doc comment.
+    // Applied directly, same as every flag above: no network call.
+    accountStatus = status.accountStatus;
+    if (accountStatus == 'suspended') {
+      // The backend already treats 'suspended' as a hard block on using the
+      // app at all — login itself refuses a suspended account outright
+      // (hydrateGatingStateAndRoute's dormancy-gate doc comment,
+      // log_in_screen.dart: "only 'suspended' is blocked server-side"). A
+      // suspension pushed mid-session must end that session with the same
+      // finality — not leave it running, silently flagged, still able to
+      // place trades until the next unrelated refresh happens to notice.
+      // forceSignOut() itself makes no network call (only local
+      // storage/state teardown + disconnecting this very socket) — this
+      // stays a direct application of the pushed payload, per this file's
+      // "no refetch" rule, not a trigger to go ask the server anything.
+      unawaited(forceSignOut());
+    }
     notifyListeners();
   }
 
@@ -542,6 +590,7 @@ class AppState extends ChangeNotifier {
     kycDraftStep = null;
     kycDraftTotal = null;
     kycOutcomeStatus = null;
+    accountStatus = null;
     biometricEnabled = false;
     _watchlist.clear();
     watchlistVersion = 0;
@@ -586,6 +635,25 @@ class TradingEligibilityGap {
 }
 
 TradingEligibilityGap? tradingEligibilityGap(AppState app) {
+  // Checked BEFORE every KYC/suitability check below — account-lifecycle
+  // state is orthogonal to KYC outcome (an already-approved, fully
+  // onboarded investor can still go dormant), so it must not be masked by
+  // whichever KYC-shaped gap would otherwise be returned first. dormant_
+  // account_screen.dart is the same screen hydrateGatingStateAndRoute
+  // (log_in_screen.dart) already routes a returning dormant investor to
+  // after a REST check; this is the live-push route to the identical
+  // screen for a dormancy flag that arrives mid-session (AppState.
+  // accountStatus's own doc comment). 'suspended' isn't handled here at
+  // all — applyRealtimeKycStatus ends that session outright the instant
+  // the flag arrives, so a suspended investor never reaches this check
+  // still signed in.
+  if (app.accountStatus == 'dormant') {
+    return const TradingEligibilityGap(
+      title: 'Your account is dormant',
+      message: 'Reactivate your account to keep investing',
+      route: Routes.acctDormant,
+    );
+  }
   if (!app.kycSubmitted) {
     final step = app.kycDraftStep;
     final total = app.kycDraftTotal;
@@ -633,7 +701,10 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
     case 'flagged':
       return const TradingEligibilityGap(
         title: 'Your account needs manual review',
-        message: "We'll notify you once it's resolved",
+        // No in-app notification mechanism backs a "we'll tell you" promise
+        // here (unbacked_promises gate) — states what's actually happening
+        // instead, same shape as the 'expired' case below.
+        message: 'Manual review is under way',
         route: Routes.kycOutcome,
       );
     case 'expired':
@@ -646,7 +717,10 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
   if (!app.kycApproved) {
     return const TradingEligibilityGap(
       title: 'Your KYC is under review',
-      message: "We'll notify you once it's approved",
+      // No in-app notification mechanism backs a "we'll tell you" promise
+      // (unbacked_promises gate) — states what's actually happening
+      // instead, same shape as the 'expired' case below.
+      message: 'Review is under way',
       route: Routes.kycSubmitted,
     );
   }

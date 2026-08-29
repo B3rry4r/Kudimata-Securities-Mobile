@@ -69,24 +69,23 @@
 // yet. Needs: the scheduler wired, and `lastTriggeredAt` added to
 // `PriceAlert`/`PriceAlertWithQuote`'s wire shape.
 //
-// SHARED-CHANGE REQUEST (lib/router/routes.dart, lib/router/app_router.dart
-// — off-limits to a screen agent, R-30/rule 5): SetPriceAlertScreen below
-// (s49) is a real, working screen but has no go_router entry, so it isn't
-// deep-linkable and test/shots_all.dart can't capture it by route. It's
-// reached today only via this file's own "New alert" flow
-// (Navigator.push, not go_router) and is exposed as a public, ticker-
-// parametrised widget specifically so it can be wired from elsewhere once
-// a route exists. Requested: `Routes.setPriceAlert(String ticker) =>
-// '/asset/$ticker/alert'` + a matching GoRoute — after which (a)
-// asset_detail_screen.dart (out of this file's scope) can add s49's other
-// real entry point, a "Set a price alert" action on the asset page, via
-// `context.push(Routes.setPriceAlert(asset.ticker))`, and (b) whatever
-// screen owns the "Market closed" banner (market_hours.dart is a shared
-// helper, not a screen — the actual banner lives in screens this pass
-// doesn't own) can wire s49's other cited entry point the same way.
-// Verified without a route in the interim via a throwaway rendering test
-// (see this change's report), matching the precedent
-// BACKEND_GAPS.md's Order Book entry already set.
+// SHARED-CHANGE REQUEST — RESOLVED (2026-08-29 audit, closed same day): the
+// request below asked for a go_router entry for SetPriceAlertScreen (s49).
+// That landed: `Routes.setPriceAlertPath` ('/asset/:ticker/alert') is
+// registered in app_router.dart (S-11/X-7, SHARED-CHANGES.md), and
+// asset_detail_screen.dart wires s49's asset-page entry point via
+// `context.push(Routes.setPriceAlert(widget.ticker))`. This screen is now
+// deep-linkable, so test/shots_all.dart can capture it by route rather than
+// only via a throwaway rendering test.
+//
+// s49's OTHER cited entry point, "Set a price alert" from the "Market
+// closed" banner (s39), is now also wired: KMarketClosedBanner
+// (market_hours.dart) takes an optional `onSetAlert` callback, and
+// asset_detail_screen.dart's `_AboutTab` (the only caller with a single
+// ticker in scope) passes `() => context.push(Routes.setPriceAlert(asset.
+// ticker))`. markets_screen.dart's list-level banner has no one ticker to
+// alert on and passes null, which omits the button rather than rendering it
+// dead.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -451,8 +450,9 @@ class _TickerPickerSheet extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// s49 · Set a price alert — public (not routed via go_router yet; see this
-// file's SHARED-CHANGE REQUEST above), constructed with the ticker to
+// s49 · Set a price alert — public, now also routed via go_router at
+// `Routes.setPriceAlertPath` (see this file's SHARED-CHANGE REQUEST above),
+// constructed with the ticker to
 // alert on.
 // ─────────────────────────────────────────────────────────────────────────
 

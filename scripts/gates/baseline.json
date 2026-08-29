@@ -8,6 +8,14 @@
       "reason": "Documents that the timeline only ever shows one real backend entry today because staff-side status-transition/timeline-append endpoints don't exist yet -- the same backend gap as complaint_repository.dart, filed in docs/redesign/BACKEND_GAPS.md. The screen itself handles this honestly (a forward-looking row, no fabricated timestamps).",
       "where": "lib/screens/account/complaint_tracked_screen.dart:106"
     },
+    "177b1cae2c443480": {
+      "evidence": "support@kudimata.securities and we will respond within 30 days. You can also file a",
+      "gate": "unbacked_promises",
+      "message": "copy promises 'within 30 days' with nothing named to deliver it - say what implements it (// MECHANISM: ...) or cite a ruling, or do not promise it",
+      "owner": "Excel",
+      "reason": "Statutory and support commitments in the legal reference documents, not app mechanisms. The NDPA s.40 breach-notification window and the DPO response times are obligations Kudimata owes as a company; the app is not what implements them, and no code change would make them 'backed'. Reviewed 2026-08-29 against the committed policy text.",
+      "where": "lib/screens/account/legal_reference_screens.dart:670"
+    },
     "26cf14e2b6b8f223": {
       "evidence": "// (lib/data/api/api_client.dart \u2014 out of scope for a per-screen wiring",
       "gate": "deferrals",
@@ -48,6 +56,14 @@
       "reason": "Records why SuitabilityResult is a small local DTO (models.dart out of scope, resource is new) carrying only the two fields the result screen currently reads, with an explicit note to extend additively. Provenance, not a stub.",
       "where": "lib/data/repositories/suitability_repository.dart:29"
     },
+    "5942501f6eb9d8a2": {
+      "evidence": "Commission within 72 hours, as Section 40 of the NDPA requires, and we will tell you",
+      "gate": "unbacked_promises",
+      "message": "copy promises 'within 72 hours' with nothing named to deliver it - say what implements it (// MECHANISM: ...) or cite a ruling, or do not promise it",
+      "owner": "Excel",
+      "reason": "Statutory and support commitments in the legal reference documents, not app mechanisms. The NDPA s.40 breach-notification window and the DPO response times are obligations Kudimata owes as a company; the app is not what implements them, and no code change would make them 'backed'. Reviewed 2026-08-29 against the committed policy text.",
+      "where": "lib/screens/account/legal_reference_screens.dart:676"
+    },
     "75bb2158022b633e": {
       "evidence": "// \"remove ETFs, just shares for now\". NGX ordinary shares only,",
       "gate": "deferrals",
@@ -72,6 +88,14 @@
       "reason": "Deliberate compile-time toggle, not a fake runtime source (D-3, SHARED-CHANGES.md 2026-08-27 removals pass; R-6, docs/redesign/DECISIONS.md). R-6 explicitly asks for the AI-credits line to be parked behind ONE flag so it is reversible in a single edit -- there is no backend 'is this feature on' endpoint to read, and there should not be one for a product decision still pending. This is the intended shape of the flag, not a stand-in for a real source that was never wired up.",
       "where": "lib/app/feature_flags.dart:17"
     },
+    "a205d32c8eae0099": {
+      "evidence": "Contact support@kudimata.securities. We acknowledge within 1 business day and give a",
+      "gate": "unbacked_promises",
+      "message": "copy promises 'within 1 business day' with nothing named to deliver it - say what implements it (// MECHANISM: ...) or cite a ruling, or do not promise it",
+      "owner": "Excel",
+      "reason": "Statutory and support commitments in the legal reference documents, not app mechanisms. The NDPA s.40 breach-notification window and the DPO response times are obligations Kudimata owes as a company; the app is not what implements them, and no code change would make them 'backed'. Reviewed 2026-08-29 against the committed policy text.",
+      "where": "lib/screens/account/legal_reference_screens.dart:788"
+    },
     "a9d674190ef68487": {
       "evidence": "//    `PATCH /notifications/:id/read`). models.dart is out of scope for a",
       "gate": "deferrals",
@@ -95,6 +119,14 @@
       "owner": "Excel",
       "reason": "Records why RightsIssue/etc. are declared as local models here rather than in lib/data/models.dart: rule 5/6 of the screen-agent brief bans a per-screen wiring agent from touching shared files outside its own scope. Accurate provenance for a pattern used identically across several repositories, not a deferred task.",
       "where": "lib/data/repositories/corporate_actions_repository.dart:35"
+    },
+    "bf629f42a79eb7ef": {
+      "evidence": "support@kudimata.securities; we respond within 30 days.",
+      "gate": "unbacked_promises",
+      "message": "copy promises 'within 30 days' with nothing named to deliver it - say what implements it (// MECHANISM: ...) or cite a ruling, or do not promise it",
+      "owner": "Excel",
+      "reason": "Statutory and support commitments in the legal reference documents, not app mechanisms. The NDPA s.40 breach-notification window and the DPO response times are obligations Kudimata owes as a company; the app is not what implements them, and no code change would make them 'backed'. Reviewed 2026-08-29 against the committed policy text.",
+      "where": "lib/screens/account/legal_reference_screens.dart:771"
     },
     "bfbc302ef6962898": {
       "evidence": "/// is left untouched (models.dart is out of scope for this screen's",

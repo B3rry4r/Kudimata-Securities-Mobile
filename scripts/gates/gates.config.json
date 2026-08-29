@@ -78,6 +78,9 @@
     },
     "provisional": {
       "enabled": true
+    },
+    "unbacked_promises": {
+      "enabled": true
     }
   }
 }

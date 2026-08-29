@@ -50,7 +50,40 @@ business and compliance own it.
 changes, and every screen renders from the backend rather than from a drawn
 figure.
 
-- [ ] ruling:
+- [x] ruling: **2026-08-29 — the BACKEND rate card is confirmed real.**
+  Commission 0.90% + NGX·SEC·CSCS 0.45%, plus 7.5% VAT on those — an
+  effective **1.4512%** of consideration — is the product's actual trading
+  fee, not provisional. `lib/data/fees.dart` (mobile) is now the single
+  place that confirmed rate lives on the app side (`kTradingFeeRate` /
+  `kTradingFeeDisplay`), feeding `asset_detail_screen.dart`'s KProductCard
+  stat cell and `glossary.dart`'s "Fees" entry, both of which used to carry
+  an unrelated, unsourced `1.35%` literal.
+
+  **The canvas's drawn figures are now a recorded design error, not a
+  competing truth — do not reshape any screen to match them.** The specific
+  artboards in `04 Buy and Sell.dc.html` that carry the wrong ~0.361–0.375%
+  numbers, for the design pass to redraw against the confirmed 1.4512% rate:
+
+  | artboard (light / dark) | what it shows | wrong figure |
+  |---|---|---:|
+  | `s43b` / `s43bd` | buy · shares step, "Fees of ₦93.50 included" | ₦93.50 |
+  | `s29` / `s29d` | buy · limit review, "Estimated commission" | ₦93.50 |
+  | `s29m` / `s29md` | buy · market review, "Estimated commission" | ₦93.50 |
+  | `s44` / `s44d` | buy · executed receipt, "Fees, all in" | ₦93.50 |
+  | `s47` / `s47d` | sell · shares step, "Fees and stamp duty ... taken off" | ₦316.70 |
+  | `s48` / `s48d` | sell · limit review, "Fees and stamp duty" | ₦316.70 |
+  | `s46m` / `s46md` | sell · market shares step, "Fees ... taken off" | ₦309.80 |
+  | `s48m` / `s48md` | sell · market review, "Fees and stamp duty" | ₦309.80 |
+
+  Also still open from this same row: `fees.ts` on the backend still carries
+  its own `!! BEFORE GO-LIVE !!` self-warning quoted above — that warning is
+  now stale for the *rate* (confirmed by this ruling) but the file itself is
+  outside a screen agent's scope; flagged separately for a backend pass.
+  `trade_flows.dart`'s buy/sell review/receipt screens themselves are also
+  out of scope here (a different pass owns them) and still render "Added
+  when your order fills" per `BACKEND_GAPS.md`'s "buy/sell fees are
+  unreachable" entry — this ruling confirms the *rate*, it does not by
+  itself make a per-order ₦ figure reachable from `POST /orders`'s response.
 
 ---
 

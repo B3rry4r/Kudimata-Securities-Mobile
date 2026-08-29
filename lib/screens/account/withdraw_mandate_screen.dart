@@ -67,7 +67,13 @@ class _WithdrawMandateScreenState extends State<WithdrawMandateScreen> {
             effects: const [
               'This account stops receiving sale proceeds and dividends',
               'The CSCS takes up to two business days to remove a mandate',
-              "We'll email you a copy of the instruction either way",
+              // The line that stood here promised "We'll email you a copy of
+              // the instruction either way". Nothing sends it: the backend has
+              // mandate-linked and mandate-active emails, but none for a
+              // withdrawal, and there is no withdraw-mandate endpoint in
+              // lib/data/. Filed as BR-10. A written record of a mandate
+              // withdrawal is worth having -- it is just not something this
+              // screen may claim until something sends it.
               'Withdrawals are blocked until a new mandate is active',
             ],
           ),

@@ -60,6 +60,7 @@ import 'package:kudimata_invest/data/api/api_client.dart';
 import 'package:kudimata_invest/data/repositories/market_status_repository.dart';
 import 'package:kudimata_invest/router/app_router.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/account/faq_screen.dart' show kSettlementArticleQuestion;
 import 'package:kudimata_invest/screens/kyc/kyc_form_state.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart' show KErrorView;
 import 'package:kudimata_invest/theme/app_theme.dart';
@@ -109,6 +110,7 @@ class FlowSpec {
     required this.dartFile,
     required this.steps,
     this.market = MockMarket.open,
+    this.extra,
   });
 
   /// Named after the artboard it should match (e.g. `buy_review_s29`) per
@@ -118,6 +120,15 @@ class FlowSpec {
   final String dartFile;
   final List<FlowStep> steps;
   final MockMarket market;
+
+  /// GoRouter's own `extra` — passed straight to `router.go(route, extra:
+  /// extra)`. glossary_term_t3 needs this: faq_screen.dart's real Settlement
+  /// article (the one with the actual "T+3"/"Direct Cash Settlement" inline
+  /// glossary terms) only renders when `GoRouterState.of(context).extra ==
+  /// kSettlementArticleQuestion` — the FAQ list itself has no live tap that
+  /// pushes there (that screen's own header comment: "no real destination
+  /// modelled yet"), so this is the only way to actually reach it.
+  final Object? extra;
 }
 
 final List<FlowSpec> _flows = [
@@ -313,10 +324,17 @@ final List<FlowSpec> _flows = [
     steps: const [Tap('Withdraw'), Tap('Queue it for 09:00')],
   ),
 
-  // ── Glossary sheet (glossary_sheet.dart) — via FAQ's real "T+3" term. ─
+  // ── Glossary sheet (glossary_sheet.dart) — via FAQ's real "T+3" term.
+  //    2026-08-29 fix: the FAQ LIST has no live tap into the Settlement
+  //    article that actually contains "T+3" (faq_screen.dart's own
+  //    _FaqScreenState only renders it when GoRouterState.extra ==
+  //    kSettlementArticleQuestion) — this used to silently tap nothing and
+  //    capture the plain FAQ list instead; `extra` below reaches the real
+  //    article the same way a live in-app entry point eventually would. ──
   FlowSpec(
     name: 'glossary_term_t3',
     route: Routes.acctFaq,
+    extra: kSettlementArticleQuestion,
     dartFile: 'shared/glossary_sheet.dart',
     steps: const [Tap('T+3')],
   ),
@@ -546,14 +564,27 @@ void main() {
 
         if (mounted != null) {
           try {
-            mounted.router.go(spec.route);
+            mounted.router.go(spec.route, extra: spec.extra);
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 350));
             await tester.pump(const Duration(milliseconds: 350));
             for (final step in spec.steps) {
               switch (step) {
                 case Tap(:final text):
-                  await tester.tap(find.text(text).first);
+                  // 2026-08-29 (independent capture audit): glossary_term_t3
+                  // used to tap blind and silently land on whatever was
+                  // already on screen when find.text() found nothing (the
+                  // FAQ list's own KGlossaryTerm row sits below the fold) —
+                  // the "Bad state: No element" landed in renderNote instead
+                  // of failing the capture, so a screenshot of the plain FAQ
+                  // page got kept as glossary_term_t3's evidence. ensureVisible
+                  // scrolls the nearest Scrollable to the target first, so an
+                  // off-screen tap target is reachable instead of silently
+                  // missed.
+                  final tapFinder = find.text(text).first;
+                  await tester.ensureVisible(tapFinder);
+                  await tester.pump(const Duration(milliseconds: 100));
+                  await tester.tap(tapFinder);
                 case EnterText(:final text):
                   await tester.enterText(find.byType(TextField).first, text);
               }
@@ -588,9 +619,23 @@ void main() {
           captureError = await _capture(tester, mounted.key, pngPath);
           mounted.state.dispose();
 
-          final rendered = File(pngPath).existsSync() &&
+          // 2026-08-29 (independent capture audit): `renderError` (a step
+          // that THREW, e.g. its finder matched nothing) used to be
+          // excluded from this condition and filed only as a non-failing
+          // 'renderNote' — so a tap that silently missed its target still
+          // produced a "successful" capture of whatever was already on
+          // screen. glossary_term_t3 was exactly this: "Bad state: No
+          // element" landed in renderNote while the FAQ list (not the
+          // glossary sheet) got kept as its evidence. A thrown step now
+          // fails the capture like any other drive failure.
+          final rendered = renderError == null &&
+              File(pngPath).existsSync() &&
               captureError == null &&
               errorViewError == null;
+          if (!rendered && File(pngPath).existsSync()) {
+            // Never keep a false capture as evidence — delete it.
+            File(pngPath).deleteSync();
+          }
           _results[label] = {
             'screen': spec.name,
             'substate': 'flow',
@@ -601,7 +646,7 @@ void main() {
             'png': rendered ? pngPath : null,
             'rendered': rendered,
             'error': rendered ? null : (errorViewError ?? renderError ?? captureError ?? 'unknown'),
-            'renderNote': rendered ? renderError : null,
+            'renderNote': null,
           };
         } else {
           _results[label] = {

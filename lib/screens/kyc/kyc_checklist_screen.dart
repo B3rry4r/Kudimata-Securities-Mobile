@@ -8,11 +8,12 @@
 // caption) — meant to be re-entered after EVERY completed step, not just at
 // the start.
 //
-// ROUTING: lib/router/routes.dart has no entry for this screen — see
-// docs/redesign/SHARED-CHANGES.md (S-8) for the route constant and GoRoute
-// it needs, and where each step screen's post-completion navigation should
-// point. This file names no such constant, so it compiles standalone and
-// every existing KYC route keeps its current behaviour.
+// ROUTING — RESOLVED (2026-08-29 audit): the S-8 route request below has
+// landed. `Routes.kycChecklist` ('/kyc/checklist') is registered in
+// app_router.dart as a themed+gated GoRoute, and it's part of the KYC-flow
+// route set app_router.dart tracks for its own back-stack handling. Left the
+// history above intact — see kyc_intro.dart's `_start()` for the real
+// resume entry point onto this screen.
 //
 // PROGRESS — derived from real data, nothing invented:
 //   step 1 BVN & NIN   — a draft exists at all (draftStep1 always sets both).

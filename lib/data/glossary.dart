@@ -11,6 +11,19 @@
 // map covers every current call site (faq_screen.dart's "T+3"/"Direct Cash
 // Settlement", asset_detail_screen.dart's Risk/Fees/Liquidity/Minimum stat
 // cells, trade_flows.dart's "T+3").
+//
+// 'Fees' 2026-08-29 repair: used to quote a flat "1.35% all-in ... No
+// separate hidden charges" — a figure with no writer, and wrong (see
+// asset_detail_screen.dart's header for the full FACT-CONFLICTS.md C-1
+// history and the 2026-08-29 ruling in favour of the backend rate card).
+// Now interpolates kTradingFeeDisplay (lib/data/fees.dart) so this and the
+// asset detail stat cell can never drift apart. Also drops the "no separate
+// hidden charges" guarantee: it isn't one — deposit/funding fees are a
+// separate, real charge category (FACT-CONFLICTS.md C-3) this line never
+// covered, so promising none exist elsewhere was never something this app
+// implements.
+import 'package:kudimata_invest/data/fees.dart';
+
 const Map<String, String> kGlossary = {
   'T+3':
       'Trade day plus three business days — how long it takes for money from a sale to reach your wallet, or for shares from a buy to show up as yours. It\'s not a Kudimata rule: every trade on the NGX settles this way.',
@@ -19,7 +32,7 @@ const Map<String, String> kGlossary = {
   'Risk':
       'How much a share\'s price can realistically move, up or down, compared to safer places to keep money. Shares are never risk-free — the price you see today isn\'t guaranteed tomorrow.',
   'Fees':
-      'What Kudimata and the exchange charge to place and settle your order — 1.35% all-in on a buy or sell, already included in the total you see before you confirm. No separate hidden charges.',
+      'What Kudimata and the exchange charge to place and settle your order for you — an all-in rate of $kTradingFeeDisplay on a buy or sell, made up of brokerage commission, exchange/regulatory levies (NGX, SEC, CSCS) and VAT. It\'s already included in the total you see before you confirm.',
   'Liquidity':
       'How easily you can turn a holding back into cash. "Daily · T+3" means you can place a sell order any trading day, and the proceeds land in your wallet three business days after it fills.',
   'Minimum':

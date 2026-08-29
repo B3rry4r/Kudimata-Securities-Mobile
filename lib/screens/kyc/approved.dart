@@ -139,11 +139,18 @@ class _ApprovedScreenState extends State<ApprovedScreen> {
       );
     }
     if (status == 'pending' || status == 'review') {
+      // Same defect class as submitted.dart's s20 pending copy (see that
+      // file's doc comment): no mechanism here backs a specific duration or
+      // a notification, and the investor isn't blocked from the rest of the
+      // app while this is pending (only placing trades is gated — see
+      // app_state.dart's tradingEligibilityGap and app_router.dart's
+      // _gateRedirect), so the copy says that instead of promising a
+      // notification and staying silent on what they can actually do.
       return KStatusView(
         tone: KStatusTone.pending,
         title: "We're still reviewing your details",
         message:
-            "This usually takes a few minutes. We'll notify you when you're verified.",
+            "We're checking a few more things. You don't need to wait here — you can keep using the app, including adding money to your wallet, while we finish.",
         secondary: 'Back to home',
         onSecondary: () => context.go(Routes.home),
       );

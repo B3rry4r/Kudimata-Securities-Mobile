@@ -189,17 +189,30 @@ class _SubmittedScreenState extends State<SubmittedScreen> {
                         tone: KStatusTone.pending,
                         illustrationName: 'kyc-checking',
                         // s20's own title, verbatim. Body is NOT s20's "Usually
-                        // 1–2 business days" — that's an unverified SLA claim
-                        // (no mechanism in this codebase backs a specific
-                        // duration; the real signal set is the synchronous
+                        // 1–2 business days. We'll notify you." — that's an
+                        // unverified SLA plus a notification promise this
+                        // codebase has no mechanism to back (no push, no
+                        // email hook; the real signal set is the synchronous
                         // provider check this screen polls for below), so it
                         // gets the same treatment as the redesign's other
-                        // unverified-claim removals rather than being
-                        // transcribed. This copy states what's actually true
-                        // of the flow instead.
+                        // unverified-claim removals (e.g. the "24-hour
+                        // security hold" line) rather than being transcribed.
+                        //
+                        // "you can close the app" is also dropped outright —
+                        // it isn't just unbacked, it's wrong on its own terms:
+                        // AppState's trading gate (app_state.dart,
+                        // tradingEligibilityGap) only blocks placing trades
+                        // while KYC is pending; router/app_router.dart's
+                        // _gateRedirect free-roams every other screen for any
+                        // signed-in user regardless of kycApproved. The
+                        // investor can carry on using the app right now — the
+                        // "Add money while you wait" button below is exactly
+                        // that — so telling them to leave both overpromises
+                        // (a notification) and underdescribes (an app they
+                        // could keep using) in the same sentence.
                         title: "You're done. We're reviewing",
                         message:
-                            "This usually takes a few minutes. We'll notify you when you're verified — you can close the app.",
+                            "We're checking your details now. You don't need to wait here — you can keep using the app, including adding money to your wallet, while we finish.",
                         // Canvas screen 23's own checklist card, between the
                         // message and the button — real per-check signals,
                         // not the canvas's illustrative example labels (see

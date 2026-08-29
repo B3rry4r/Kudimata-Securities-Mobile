@@ -4,6 +4,17 @@
          "hand off to the OS camera app" flow which didn't need this held by
          our own app. -->
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- required="false" so a device with no camera at all is not filtered out of
+         the Play Store listing (Play treats a `<uses-permission>` for CAMERA with
+         no explicit override as an implied `<uses-feature android.hardware.camera
+         required=true>`). Camera is used only for KYC liveness/document capture
+         (see kyc/liveness.dart) — browsing, funding and trading never touch it,
+         and liveness.dart's own _initCamera() already handles a
+         CameraException('noCamerasAvailable', ...) by showing a retryable error
+         state plus a "My camera won't work" escape hatch to Routes.kycOutcome
+         (manual review), so a cameraless device does not crash that flow, it
+         just can't complete in-app liveness. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <!-- Required for every API call. Flutter's template declares INTERNET only
          in the debug and profile manifests (for the dev tooling), so a RELEASE
          build without this line is denied every socket by the OS: debug works,

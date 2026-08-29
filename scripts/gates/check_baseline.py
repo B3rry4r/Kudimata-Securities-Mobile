@@ -26,6 +26,44 @@ PLACEHOLDERS = ("unset", "todo", "tbd", "n/a", "na", "?", "none", "-")
 MIN_REASON = 15
 
 
+def _is_placeholder(value: str, min_len: int) -> bool:
+    """True when a field was never actually filled in.
+
+    Deliberately NOT a bare `startswith`. A real reason often *begins with the
+    word it is explaining* -- "TODO(wave-2) note on the seed script's own
+    transaction rows, describing a seed-data nicety..." is two hundred
+    characters of genuine justification for a `deferrals` finding, and a
+    startswith test threw it out alongside the empty entries. Getting rejected
+    for explaining the thing you were asked to explain is how people learn to
+    stop writing reasons.
+
+    So a value is a placeholder when it is *only* a placeholder: the whole
+    string is one of the stock words (give or take punctuation), or it is too
+    short to act on. Anything long enough to be actionable is taken at face
+    value -- this guard checks that someone wrote something, not whether it is
+    a good argument. That judgement belongs to a human reading the diff.
+    """
+    stripped = value.strip().lower().strip(".:;- ")
+    if not stripped:
+        return True
+
+    # "unset" is scaffolding and nothing else. `--accept` writes
+    # "UNSET -- put a name here" / "UNSET -- say why this is acceptable...",
+    # and no genuine sentence has ever opened with it, so a prefix test is
+    # safe here and is the single most important case to catch.
+    if stripped.startswith("unset"):
+        return True
+
+    # The rest ("todo", "tbd", "n/a", "none", "?") DO legitimately open real
+    # prose -- a reason explaining a `deferrals` finding naturally starts
+    # "TODO(wave-2) note on the seed script...". So they only count when the
+    # whole value is that word and nothing more.
+    if stripped in PLACEHOLDERS:
+        return True
+
+    return len(value.strip()) < min_len
+
+
 def main() -> int:
     if not BASELINE.exists():
         print("no baseline.json - nothing accepted, nothing to check")
@@ -45,9 +83,9 @@ def main() -> int:
         reason = str(entry.get("reason", "")).strip()
         where = entry.get("where", "?")
 
-        if owner.lower().startswith(PLACEHOLDERS) or len(owner) < 2:
+        if _is_placeholder(owner, 2):
             bad.append(f"{key} ({where}): no owner")
-        if reason.lower().startswith(PLACEHOLDERS) or len(reason) < MIN_REASON:
+        if _is_placeholder(reason, MIN_REASON):
             bad.append(f"{key} ({where}): reason is missing or too thin to act on")
 
     print(f"baseline entries: {len(accepted)}")

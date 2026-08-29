@@ -8,8 +8,9 @@ plugins {
 }
 
 // Load keystore properties from android/key.properties (never committed — see .gitignore).
-// Absent on machines without the release keystore; we fall back to debug signing there,
-// same as CI does before the keystore secret is decoded onto disk.
+// Absent on machines without the release keystore — the release buildType below
+// now FAILS LOUDLY in that case rather than silently falling back to debug
+// signing (see that block's comment for why, and the opt-in escape hatch).
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
@@ -56,15 +57,66 @@ android {
 
     buildTypes {
         release {
-            // Use the release keystore when key.properties is present (CI / release
-            // builds); otherwise fall back to debug keys so `flutter run --release`
-            // and contributor builds without the keystore still work.
+            // Use the release keystore when key.properties is present (CI decodes
+            // the keystore secret onto disk before this runs). Absent that, this
+            // USED to fall back to debug signing silently — a local
+            // `flutter build apk --release` with no keystore produced a
+            // debug-signed .apk that installs, runs, and looks exactly like a
+            // real release artifact, with nothing on screen or in the output
+            // filename to tell them apart. That is the exact failure class this
+            // project has shipped before (see AndroidManifest.xml's allowBackup
+            // and release-INTERNET-permission comments for two prior incidents
+            // in the same shape) — a plausible-looking wrong artifact instead
+            // of a loud failure.
+            //
+            // Now: fail the build by default, naming the missing file. A
+            // contributor who deliberately wants a debug-signed "release" build
+            // (e.g. to test R8/shrinking locally without the production keystore)
+            // must opt in explicitly via ALLOW_DEBUG_SIGNED_RELEASE=true, which
+            // still prints an unmissable warning so the resulting artifact is
+            // never mistaken for a real release.
             signingConfig = if (keystoreProperties.isNotEmpty()) {
                 signingConfigs.getByName("release")
-            } else {
+            } else if (System.getenv("ALLOW_DEBUG_SIGNED_RELEASE") == "true") {
+                logger.warn(
+                    "\n" + "!".repeat(72) +
+                    "\n! DEBUG-SIGNED RELEASE BUILD (ALLOW_DEBUG_SIGNED_RELEASE=true)" +
+                    "\n! ${keystorePropertiesFile.absolutePath} is missing, so this" +
+                    "\n! 'release' build is signed with the DEBUG key, not the real" +
+                    "\n! release keystore. It is NOT a release candidate — do not" +
+                    "\n! upload it anywhere or mistake it for one." +
+                    "\n" + "!".repeat(72) + "\n"
+                )
                 signingConfigs.getByName("debug")
+            } else {
+                throw GradleException(
+                    "Release build requires ${keystorePropertiesFile.absolutePath}, which " +
+                    "is missing on this machine (it holds the real release keystore " +
+                    "credentials and is git-ignored — see android/.gitignore). Without it, " +
+                    "this build would previously have fallen back to debug signing SILENTLY, " +
+                    "producing a debug-signed .apk indistinguishable from a real release. " +
+                    "Either: (1) provide key.properties + the release keystore it points to, or " +
+                    "(2) if you deliberately want a debug-signed 'release' build for local " +
+                    "testing (e.g. checking R8/shrinking behaviour), re-run with " +
+                    "ALLOW_DEBUG_SIGNED_RELEASE=true set in the environment — that path still " +
+                    "warns loudly so the artifact is never mistaken for a real release."
+                )
             }
         }
+        // R8/minification note for the next maintainer: this block sets no
+        // `isMinifyEnabled`/`isShrinkResources` line, yet a real release build
+        // DOES run R8 (build/app/outputs/mapping/release/mapping.txt comes out
+        // with real class/method renaming — confirmed against a packaged
+        // artifact, see .qa-audit/release-check.md §3). Flutter's Gradle plugin
+        // is defaulting the release buildType to minified+shrunk for this
+        // Flutter/AGP version even though nothing here asks for it explicitly.
+        // There is also no project-level proguard-rules.pro in this module —
+        // shrinking/keep-rules rely entirely on the consumer ProGuard rules
+        // each plugin (camera, file_picker, local_auth, socket_io_client, dio,
+        // flutter_secure_storage, …) bundles into its own AAR. That has worked
+        // so far, but it means adding a new plugin, or a reflective/JNI call in
+        // app code, with no rules of its own is a live risk of an R8 crash or
+        // silent runtime break that only appears in the release variant.
     }
 }
 

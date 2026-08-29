@@ -100,27 +100,51 @@ String marketClosedBannerSubtitle() {
 /// showed any closed-market indication at all before this (reported live
 /// as "markets dont show closed too").
 class KMarketClosedBanner extends StatelessWidget {
-  const KMarketClosedBanner({super.key});
+  const KMarketClosedBanner({super.key, this.onSetAlert});
+
+  /// s39's ("Market closed") own secondary footer button, "Set a price
+  /// alert" — the artboard's second cited entry point into `s49`
+  /// (SetPriceAlertScreen), alongside the asset page's bell icon
+  /// (asset_detail_screen.dart's own `Routes.setPriceAlert` wire). Only a
+  /// caller that knows a single ticker can offer this — markets_screen.dart
+  /// shows this banner at list level, with no one asset to alert on, and
+  /// passes null; the affordance is then simply omitted rather than shown
+  /// as a dead control.
+  final VoidCallback? onSetAlert;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(color: KColor.track, borderRadius: KRadii.cardR),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          KIcon('clock', size: 18, color: KColor.ink2),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('The market is closed', style: KType.cardTitle()),
-                const SizedBox(height: 2),
-                Text(marketClosedBannerSubtitle(), style: KType.data(color: KColor.ink2)),
-              ],
-            ),
+          Row(
+            children: [
+              KIcon('clock', size: 18, color: KColor.ink2),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('The market is closed', style: KType.cardTitle()),
+                    const SizedBox(height: 2),
+                    Text(marketClosedBannerSubtitle(), style: KType.data(color: KColor.ink2)),
+                  ],
+                ),
+              ),
+            ],
           ),
+          if (onSetAlert != null) ...[
+            const SizedBox(height: 12),
+            KButton(
+              label: 'Set a price alert',
+              variant: KButtonVariant.secondary,
+              size: KButtonSize.sm,
+              onPressed: onSetAlert,
+            ),
+          ],
         ],
       ),
     );

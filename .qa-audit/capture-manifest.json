@@ -1,0 +1,2706 @@
+[
+  {
+    "file": "build/shots/01_splash__light.png",
+    "artboard": "s01",
+    "capability_asserted": "routes to / (onboarding/splash_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/01_splash__dark.png",
+    "artboard": "s01",
+    "capability_asserted": "routes to / (onboarding/splash_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/02_welcome__light.png",
+    "artboard": "s02",
+    "capability_asserted": "routes to /welcome (onboarding/welcome_slider_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/02_welcome__dark.png",
+    "artboard": "s02",
+    "capability_asserted": "routes to /welcome (onboarding/welcome_slider_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/03_signup__light.png",
+    "artboard": "s03",
+    "capability_asserted": "routes to /signup (onboarding/sign_up_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/03_signup__dark.png",
+    "artboard": "s03",
+    "capability_asserted": "routes to /signup (onboarding/sign_up_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/04_otp__light.png",
+    "artboard": "s04",
+    "capability_asserted": "routes to /otp (onboarding/otp_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/04_otp__dark.png",
+    "artboard": "s04",
+    "capability_asserted": "routes to /otp (onboarding/otp_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/05_legal_bundle_preview__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /legal-preview (onboarding/legal_preview_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/05_legal_bundle_preview__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /legal-preview (onboarding/legal_preview_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/06_legal_preview_kind__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /legal-preview/terms_of_service (onboarding/legal_preview_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/06_legal_preview_kind__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /legal-preview/terms_of_service (onboarding/legal_preview_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/07_terms__light.png",
+    "artboard": "s03p",
+    "capability_asserted": "routes to /suitability/terms (suitability/terms_and_privacy_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/07_terms__dark.png",
+    "artboard": "s03p",
+    "capability_asserted": "routes to /suitability/terms (suitability/terms_and_privacy_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/08_passcode_create__light.png",
+    "artboard": "s05",
+    "capability_asserted": "routes to /passcode/create (onboarding/create_passcode_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/08_passcode_create__dark.png",
+    "artboard": "s05",
+    "capability_asserted": "routes to /passcode/create (onboarding/create_passcode_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/09_passcode_confirm__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /passcode/confirm (onboarding/confirm_passcode_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/09_passcode_confirm__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /passcode/confirm (onboarding/confirm_passcode_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/10_biometric__light.png",
+    "artboard": "s06",
+    "capability_asserted": "routes to /biometric (onboarding/biometric_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/10_biometric__dark.png",
+    "artboard": "s06",
+    "capability_asserted": "routes to /biometric (onboarding/biometric_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/12_onboarding_personal__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /onboarding/personal (onboarding/personal_details_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/12_onboarding_personal__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /onboarding/personal (onboarding/personal_details_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/13_onboarding_avatar__light.png",
+    "artboard": "s06b",
+    "capability_asserted": "routes to /onboarding/avatar (onboarding/avatar_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/13_onboarding_avatar__dark.png",
+    "artboard": "s06b",
+    "capability_asserted": "routes to /onboarding/avatar (onboarding/avatar_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/13b_onboarding_next_steps__light.png",
+    "artboard": "s07",
+    "capability_asserted": "routes to /onboarding/next-steps (onboarding/whats_next_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/13b_onboarding_next_steps__dark.png",
+    "artboard": "s07",
+    "capability_asserted": "routes to /onboarding/next-steps (onboarding/whats_next_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/14_login__light.png",
+    "artboard": "s08, s08p",
+    "capability_asserted": "routes to /login (onboarding/log_in_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/14_login__dark.png",
+    "artboard": "s08, s08p",
+    "capability_asserted": "routes to /login (onboarding/log_in_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/15_reset__light.png",
+    "artboard": "s09",
+    "capability_asserted": "routes to /reset (onboarding/reset_passcode_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/15_reset__dark.png",
+    "artboard": "s09",
+    "capability_asserted": "routes to /reset (onboarding/reset_passcode_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/16_kyc_intro__light.png",
+    "artboard": "s10",
+    "capability_asserted": "routes to /kyc (kyc/kyc_intro.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/16_kyc_intro__dark.png",
+    "artboard": "s10",
+    "capability_asserted": "routes to /kyc (kyc/kyc_intro.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/16b_kyc_checklist__light.png",
+    "artboard": "s11",
+    "capability_asserted": "routes to /kyc/checklist (kyc/kyc_checklist_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/16b_kyc_checklist__dark.png",
+    "artboard": "s11",
+    "capability_asserted": "routes to /kyc/checklist (kyc/kyc_checklist_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/17_kyc_bvn__light.png",
+    "artboard": "s12, s13",
+    "capability_asserted": "routes to /kyc/bvn (kyc/bvn_nin.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/17_kyc_bvn__dark.png",
+    "artboard": "s12, s13",
+    "capability_asserted": "routes to /kyc/bvn (kyc/bvn_nin.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/18_kyc_chn__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /kyc/chn (kyc/chn_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/18_kyc_chn__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /kyc/chn (kyc/chn_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/19_kyc_id__light.png",
+    "artboard": "s14",
+    "capability_asserted": "routes to /kyc/id (kyc/id_upload.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/19_kyc_id__dark.png",
+    "artboard": "s14",
+    "capability_asserted": "routes to /kyc/id (kyc/id_upload.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/20_kyc_liveness__light.png",
+    "artboard": "s15",
+    "capability_asserted": "routes to /kyc/liveness (kyc/liveness.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/20_kyc_liveness__dark.png",
+    "artboard": "s15",
+    "capability_asserted": "routes to /kyc/liveness (kyc/liveness.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/21_kyc_checking__light.png",
+    "artboard": "s16",
+    "capability_asserted": "routes to /kyc/checking (kyc/checking.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/21_kyc_checking__dark.png",
+    "artboard": "s16",
+    "capability_asserted": "routes to /kyc/checking (kyc/checking.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/22_kyc_utility_bill__light.png",
+    "artboard": "s17",
+    "capability_asserted": "routes to /kyc/utility-bill (kyc/utility_bill.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/22_kyc_utility_bill__dark.png",
+    "artboard": "s17",
+    "capability_asserted": "routes to /kyc/utility-bill (kyc/utility_bill.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/23_kyc_bank_dcs__light.png",
+    "artboard": "s18, s18b",
+    "capability_asserted": "routes to /kyc/bank-dcs (kyc/bank_dcs_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/23_kyc_bank_dcs__dark.png",
+    "artboard": "s18, s18b",
+    "capability_asserted": "routes to /kyc/bank-dcs (kyc/bank_dcs_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/24_kyc_declarations__light.png",
+    "artboard": "s19",
+    "capability_asserted": "routes to /kyc/declarations (kyc/declarations_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/24_kyc_declarations__dark.png",
+    "artboard": "s19",
+    "capability_asserted": "routes to /kyc/declarations (kyc/declarations_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/27_kyc_submitted__light.png",
+    "artboard": "s20",
+    "capability_asserted": "routes to /kyc/submitted (kyc/submitted.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/27_kyc_submitted__dark.png",
+    "artboard": "s20",
+    "capability_asserted": "routes to /kyc/submitted (kyc/submitted.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/28_kyc_approved__light.png",
+    "artboard": "s21",
+    "capability_asserted": "routes to /kyc/approved (kyc/approved.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/28_kyc_approved__dark.png",
+    "artboard": "s21",
+    "capability_asserted": "routes to /kyc/approved (kyc/approved.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/29_kyc_outcome__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /kyc/outcome (kyc/outcome_not_approved.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/29_kyc_outcome__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /kyc/outcome (kyc/outcome_not_approved.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/30_questionnaire__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /suitability (suitability/questionnaire_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/30_questionnaire__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /suitability (suitability/questionnaire_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/31_suitability_result__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /suitability/result (suitability/suitability_result_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/31_suitability_result__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /suitability/result (suitability/suitability_result_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/32_risk_disclaimer__light.png",
+    "artboard": "s03c",
+    "capability_asserted": "routes to /suitability/risk-disclaimer (suitability/risk_disclaimer_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/32_risk_disclaimer__dark.png",
+    "artboard": "s03c",
+    "capability_asserted": "routes to /suitability/risk-disclaimer (suitability/risk_disclaimer_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/33_notifications__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /notifications (home/notifications_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/33_notifications__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /notifications (home/notifications_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/34_search__light.png",
+    "artboard": "s25",
+    "capability_asserted": "routes to /search (home/search_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/34_search__dark.png",
+    "artboard": "s25",
+    "capability_asserted": "routes to /search (home/search_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/35_orders__light.png",
+    "artboard": "s41",
+    "capability_asserted": "routes to /orders (portfolio/order_status_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/35_orders__dark.png",
+    "artboard": "s41",
+    "capability_asserted": "routes to /orders (portfolio/order_status_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/37_asset_detail__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /asset/MTNN (markets/asset_detail_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/37_asset_detail__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /asset/MTNN (markets/asset_detail_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/37b_set_price_alert__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /asset/MTNN/alert (markets/price_alerts_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/37b_set_price_alert__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /asset/MTNN/alert (markets/price_alerts_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/38_explain__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /explain/MTNN (markets/explain_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/38_explain__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /explain/MTNN (markets/explain_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/39_holding_detail__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /portfolio/holding/MTNN (portfolio/holding_detail_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/39_holding_detail__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /portfolio/holding/MTNN (portfolio/holding_detail_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/40_transaction_detail__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /wallet/txn/TX1042 (wallet/wallet_screens.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/40_transaction_detail__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /wallet/txn/TX1042 (wallet/wallet_screens.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/41_acct_personal__light.png",
+    "artboard": "s58",
+    "capability_asserted": "routes to /account/personal (account/personal_info_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/41_acct_personal__dark.png",
+    "artboard": "s58",
+    "capability_asserted": "routes to /account/personal (account/personal_info_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/42_acct_banks__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/banks (account/bank_accounts_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/42_acct_banks__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/banks (account/bank_accounts_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/43_acct_refer__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/refer (account/refer_earn_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/43_acct_refer__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/refer (account/refer_earn_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/44_acct_help__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/help (account/help_support_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/44_acct_help__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/help (account/help_support_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/45_acct_faq__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/help/faq (account/faq_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/45_acct_faq__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/help/faq (account/faq_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/46_acct_security__light.png",
+    "artboard": "s54",
+    "capability_asserted": "routes to /account/security (account/security_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/46_acct_security__dark.png",
+    "artboard": "s54",
+    "capability_asserted": "routes to /account/security (account/security_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/47_acct_notifications__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/notifications (account/notifications_settings_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/47_acct_notifications__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/notifications (account/notifications_settings_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/48_acct_legal__light.png",
+    "artboard": "s03c",
+    "capability_asserted": "routes to /account/legal (account/legal_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/48_acct_legal__dark.png",
+    "artboard": "s03c",
+    "capability_asserted": "routes to /account/legal (account/legal_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/49_acct_statements__light.png",
+    "artboard": "s52",
+    "capability_asserted": "routes to /account/statements (account/statements_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/49_acct_statements__dark.png",
+    "artboard": "s52",
+    "capability_asserted": "routes to /account/statements (account/statements_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/50_acct_freeze__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/security/freeze (account/freeze_account_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/50_acct_freeze__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/security/freeze (account/freeze_account_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/51_security_alert__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /security-alert (account/security_alert_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/51_security_alert__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /security-alert (account/security_alert_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/52_acct_plans__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/plans (account/plans_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/52_acct_plans__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/plans (account/plans_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/53_withdraw_mandate__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/banks/withdraw-mandate (account/withdraw_mandate_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/53_withdraw_mandate__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/banks/withdraw-mandate (account/withdraw_mandate_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/54_contract_note__light.png",
+    "artboard": "s38",
+    "capability_asserted": "routes to /account/statements/contract-note (account/contract_note_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/54_contract_note__dark.png",
+    "artboard": "s38",
+    "capability_asserted": "routes to /account/statements/contract-note (account/contract_note_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/55_statement_detail__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/statements/detail (account/statement_detail_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/55_statement_detail__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/statements/detail (account/statement_detail_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/56_acct_tax__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/tax (account/tax_documents_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/56_acct_tax__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/tax (account/tax_documents_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/57_price_alerts__light.png",
+    "artboard": "s50",
+    "capability_asserted": "routes to /watchlist/alerts (markets/price_alerts_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/57_price_alerts__dark.png",
+    "artboard": "s50",
+    "capability_asserted": "routes to /watchlist/alerts (markets/price_alerts_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/58_corp_actions__light.png",
+    "artboard": "s55",
+    "capability_asserted": "routes to /corporate-actions (corporate_actions/corporate_actions_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/58_corp_actions__dark.png",
+    "artboard": "s55",
+    "capability_asserted": "routes to /corporate-actions (corporate_actions/corporate_actions_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/59_rights_issue__light.png",
+    "artboard": "s55",
+    "capability_asserted": "routes to /corporate-actions/rights-issue (corporate_actions/rights_issue_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/59_rights_issue__dark.png",
+    "artboard": "s55",
+    "capability_asserted": "routes to /corporate-actions/rights-issue (corporate_actions/rights_issue_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/60_agm_vote__light.png",
+    "artboard": "s55",
+    "capability_asserted": "routes to /corporate-actions/agm (corporate_actions/agm_vote_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/60_agm_vote__dark.png",
+    "artboard": "s55",
+    "capability_asserted": "routes to /corporate-actions/agm (corporate_actions/agm_vote_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/61_dividends__light.png",
+    "artboard": "s55",
+    "capability_asserted": "routes to /corporate-actions/dividends (corporate_actions/dividends_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/61_dividends__dark.png",
+    "artboard": "s55",
+    "capability_asserted": "routes to /corporate-actions/dividends (corporate_actions/dividends_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/62_complaint__light.png",
+    "artboard": "s53",
+    "capability_asserted": "routes to /account/help/complaint (account/complaint_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/62_complaint__dark.png",
+    "artboard": "s53",
+    "capability_asserted": "routes to /account/help/complaint (account/complaint_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/63_complaint_tracked__light.png",
+    "artboard": "s53",
+    "capability_asserted": "routes to /account/help/complaint/tracked (account/complaint_tracked_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/63_complaint_tracked__dark.png",
+    "artboard": "s53",
+    "capability_asserted": "routes to /account/help/complaint/tracked (account/complaint_tracked_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/64_dormant__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/dormant (account/dormant_account_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/64_dormant__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/dormant (account/dormant_account_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/65_close_account__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/close (account/close_account_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/65_close_account__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/close (account/close_account_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/66_data_privacy__light.png",
+    "artboard": "s57",
+    "capability_asserted": "routes to /account/data-privacy (account/data_privacy_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/66_data_privacy__dark.png",
+    "artboard": "s57",
+    "capability_asserted": "routes to /account/data-privacy (account/data_privacy_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/67_locked_out__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /locked-out (onboarding/locked_out_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/67_locked_out__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /locked-out (onboarding/locked_out_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/68_partner_disclosures__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/legal/partner-disclosures (account/legal_reference_screens.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/68_partner_disclosures__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/legal/partner-disclosures (account/legal_reference_screens.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/69_referral_terms__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/legal/referral-terms (account/legal_reference_screens.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/69_referral_terms__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/legal/referral-terms (account/legal_reference_screens.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/70_data_notice__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/legal/data-notice (account/legal_reference_screens.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/70_data_notice__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/legal/data-notice (account/legal_reference_screens.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/71_closure_terms__light.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/legal/closure-terms (account/legal_reference_screens.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/71_closure_terms__dark.png",
+    "artboard": null,
+    "capability_asserted": "routes to /account/legal/closure-terms (account/legal_reference_screens.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/72_home__light.png",
+    "artboard": "s22",
+    "capability_asserted": "routes to /home (home/home_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/72_home__dark.png",
+    "artboard": "s22",
+    "capability_asserted": "routes to /home (home/home_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/73_portfolio__light.png",
+    "artboard": "s33",
+    "capability_asserted": "routes to /portfolio (portfolio/portfolio_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/73_portfolio__dark.png",
+    "artboard": "s33",
+    "capability_asserted": "routes to /portfolio (portfolio/portfolio_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/74_markets__light.png",
+    "artboard": "s24",
+    "capability_asserted": "routes to /markets (markets/markets_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/74_markets__dark.png",
+    "artboard": "s24",
+    "capability_asserted": "routes to /markets (markets/markets_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/75_wallet__light.png",
+    "artboard": "s35",
+    "capability_asserted": "routes to /wallet (wallet/wallet_screens.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/75_wallet__dark.png",
+    "artboard": "s35",
+    "capability_asserted": "routes to /wallet (wallet/wallet_screens.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/76_account__light.png",
+    "artboard": "s51",
+    "capability_asserted": "routes to /account (account/account_screen.dart)",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/76_account__dark.png",
+    "artboard": "s51",
+    "capability_asserted": "routes to /account (account/account_screen.dart)",
+    "flow": null,
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/home__unverified__light.png",
+    "artboard": "s22",
+    "capability_asserted": "home sub-state: unverified (home/home_screen.dart)",
+    "flow": "unverified",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/home__unverified__dark.png",
+    "artboard": "s22",
+    "capability_asserted": "home sub-state: unverified (home/home_screen.dart)",
+    "flow": "unverified",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/asset_detail__order_book__light.png",
+    "artboard": "s26",
+    "capability_asserted": "asset_detail sub-state: order_book (markets/asset_detail_screen.dart)",
+    "flow": "order_book",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/asset_detail__order_book__dark.png",
+    "artboard": "s26",
+    "capability_asserted": "asset_detail sub-state: order_book (markets/asset_detail_screen.dart)",
+    "flow": "order_book",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/markets__market_closed__light.png",
+    "artboard": "s24",
+    "capability_asserted": "markets sub-state: market_closed (markets/markets_screen.dart)",
+    "flow": "market_closed",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/markets__market_closed__dark.png",
+    "artboard": "s24",
+    "capability_asserted": "markets sub-state: market_closed (markets/markets_screen.dart)",
+    "flow": "market_closed",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/portfolio__empty__light.png",
+    "artboard": "s33",
+    "capability_asserted": "portfolio sub-state: empty (portfolio/portfolio_screen.dart)",
+    "flow": "empty",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/portfolio__empty__dark.png",
+    "artboard": "s33",
+    "capability_asserted": "portfolio sub-state: empty (portfolio/portfolio_screen.dart)",
+    "flow": "empty",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/home__loading__light.png",
+    "artboard": "s22",
+    "capability_asserted": "home sub-state: loading (home/home_screen.dart)",
+    "flow": "loading",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/home__loading__dark.png",
+    "artboard": "s22",
+    "capability_asserted": "home sub-state: loading (home/home_screen.dart)",
+    "flow": "loading",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/home__error__light.png",
+    "artboard": "s22",
+    "capability_asserted": "home sub-state: error (home/home_screen.dart)",
+    "flow": "error",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/home__error__dark.png",
+    "artboard": "s22",
+    "capability_asserted": "home sub-state: error (home/home_screen.dart)",
+    "flow": "error",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/portfolio__loading__light.png",
+    "artboard": "s33",
+    "capability_asserted": "portfolio sub-state: loading (portfolio/portfolio_screen.dart)",
+    "flow": "loading",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/portfolio__loading__dark.png",
+    "artboard": "s33",
+    "capability_asserted": "portfolio sub-state: loading (portfolio/portfolio_screen.dart)",
+    "flow": "loading",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/portfolio__error__light.png",
+    "artboard": "s33",
+    "capability_asserted": "portfolio sub-state: error (portfolio/portfolio_screen.dart)",
+    "flow": "error",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/portfolio__error__dark.png",
+    "artboard": "s33",
+    "capability_asserted": "portfolio sub-state: error (portfolio/portfolio_screen.dart)",
+    "flow": "error",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/wallet__loading__light.png",
+    "artboard": null,
+    "capability_asserted": "wallet sub-state: loading (wallet/wallet_screens.dart)",
+    "flow": "loading",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/wallet__loading__dark.png",
+    "artboard": null,
+    "capability_asserted": "wallet sub-state: loading (wallet/wallet_screens.dart)",
+    "flow": "loading",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/wallet__error__light.png",
+    "artboard": null,
+    "capability_asserted": "wallet sub-state: error (wallet/wallet_screens.dart)",
+    "flow": "error",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/wallet__error__dark.png",
+    "artboard": null,
+    "capability_asserted": "wallet sub-state: error (wallet/wallet_screens.dart)",
+    "flow": "error",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/notifications__loading__light.png",
+    "artboard": null,
+    "capability_asserted": "notifications sub-state: loading (home/notifications_screen.dart)",
+    "flow": "loading",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/notifications__loading__dark.png",
+    "artboard": null,
+    "capability_asserted": "notifications sub-state: loading (home/notifications_screen.dart)",
+    "flow": "loading",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/notifications__error__light.png",
+    "artboard": null,
+    "capability_asserted": "notifications sub-state: error (home/notifications_screen.dart)",
+    "flow": "error",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/notifications__error__dark.png",
+    "artboard": null,
+    "capability_asserted": "notifications sub-state: error (home/notifications_screen.dart)",
+    "flow": "error",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/notifications__empty__light.png",
+    "artboard": null,
+    "capability_asserted": "notifications sub-state: empty (home/notifications_screen.dart)",
+    "flow": "empty",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/notifications__empty__dark.png",
+    "artboard": null,
+    "capability_asserted": "notifications sub-state: empty (home/notifications_screen.dart)",
+    "flow": "empty",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/price_alerts__loading__light.png",
+    "artboard": "s50",
+    "capability_asserted": "price_alerts sub-state: loading (markets/price_alerts_screen.dart)",
+    "flow": "loading",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/price_alerts__loading__dark.png",
+    "artboard": "s50",
+    "capability_asserted": "price_alerts sub-state: loading (markets/price_alerts_screen.dart)",
+    "flow": "loading",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/price_alerts__error__light.png",
+    "artboard": "s50",
+    "capability_asserted": "price_alerts sub-state: error (markets/price_alerts_screen.dart)",
+    "flow": "error",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/price_alerts__error__dark.png",
+    "artboard": "s50",
+    "capability_asserted": "price_alerts sub-state: error (markets/price_alerts_screen.dart)",
+    "flow": "error",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/price_alerts__empty__light.png",
+    "artboard": "s50",
+    "capability_asserted": "price_alerts sub-state: empty (markets/price_alerts_screen.dart)",
+    "flow": "empty",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/price_alerts__empty__dark.png",
+    "artboard": "s50",
+    "capability_asserted": "price_alerts sub-state: empty (markets/price_alerts_screen.dart)",
+    "flow": "empty",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/kyc_outcome__rejected__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc_outcome sub-state: rejected (kyc/outcome_not_approved.dart)",
+    "flow": "rejected",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/kyc_outcome__rejected__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc_outcome sub-state: rejected (kyc/outcome_not_approved.dart)",
+    "flow": "rejected",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/kyc_outcome__flagged__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc_outcome sub-state: flagged (kyc/outcome_not_approved.dart)",
+    "flow": "flagged",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/kyc_outcome__flagged__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc_outcome sub-state: flagged (kyc/outcome_not_approved.dart)",
+    "flow": "flagged",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/kyc_outcome__expired__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc_outcome sub-state: expired (kyc/outcome_not_approved.dart)",
+    "flow": "expired",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/kyc_outcome__expired__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc_outcome sub-state: expired (kyc/outcome_not_approved.dart)",
+    "flow": "expired",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_chooser_s42__light.png",
+    "artboard": "s42",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_chooser_s42",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_chooser_s42__dark.png",
+    "artboard": "s42",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_chooser_s42",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_price_s43__light.png",
+    "artboard": "s43",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_price_s43",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_price_s43__dark.png",
+    "artboard": "s43",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_price_s43",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_shares_s43b__light.png",
+    "artboard": "s43b",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_shares_s43b",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_shares_s43b__dark.png",
+    "artboard": "s43b",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_shares_s43b",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_review_s29__light.png",
+    "artboard": "s29",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_review_s29",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_review_s29__dark.png",
+    "artboard": "s29",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_review_s29",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_pin_s30__light.png",
+    "artboard": "s30",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_pin_s30",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_pin_s30__dark.png",
+    "artboard": "s30",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_pin_s30",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_placed_s31__light.png",
+    "artboard": "s31",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_placed_s31",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_placed_s31__dark.png",
+    "artboard": "s31",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_placed_s31",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_pin_wrong_code__light.png",
+    "artboard": null,
+    "capability_asserted": "shared/confirm_passcode_sheet.dart sheet flow step",
+    "flow": "buy_pin_wrong_code",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_pin_wrong_code__dark.png",
+    "artboard": null,
+    "capability_asserted": "shared/confirm_passcode_sheet.dart sheet flow step",
+    "flow": "buy_pin_wrong_code",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_shares_now_s43m__light.png",
+    "artboard": "s43m",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_shares_now_s43m",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_shares_now_s43m__dark.png",
+    "artboard": "s43m",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_shares_now_s43m",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_review_now_s29m__light.png",
+    "artboard": "s29m",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_review_now_s29m",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_review_now_s29m__dark.png",
+    "artboard": "s29m",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_review_now_s29m",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_market_closed_interstitial_s29c__light.png",
+    "artboard": "s29c",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_market_closed_interstitial_s29c",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/buy_market_closed_interstitial_s29c__dark.png",
+    "artboard": "s29c",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "buy_market_closed_interstitial_s29c",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_chooser_s45__light.png",
+    "artboard": "s45",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_chooser_s45",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_chooser_s45__dark.png",
+    "artboard": "s45",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_chooser_s45",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_price_s46__light.png",
+    "artboard": "s46",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_price_s46",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_price_s46__dark.png",
+    "artboard": "s46",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_price_s46",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_shares_s47__light.png",
+    "artboard": "s47",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_shares_s47",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_shares_s47__dark.png",
+    "artboard": "s47",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_shares_s47",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_review_s48__light.png",
+    "artboard": "s48",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_review_s48",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_review_s48__dark.png",
+    "artboard": "s48",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_review_s48",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_pin_s30__light.png",
+    "artboard": "s30",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_pin_s30",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_pin_s30__dark.png",
+    "artboard": "s30",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_pin_s30",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_placed_s31__light.png",
+    "artboard": "s31",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_placed_s31",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_placed_s31__dark.png",
+    "artboard": "s31",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_placed_s31",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_shares_now_s46m__light.png",
+    "artboard": "s46m",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_shares_now_s46m",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_shares_now_s46m__dark.png",
+    "artboard": "s46m",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_shares_now_s46m",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_review_now_s48m__light.png",
+    "artboard": "s48m",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_review_now_s48m",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/sell_review_now_s48m__dark.png",
+    "artboard": "s48m",
+    "capability_asserted": "trade/trade_flows.dart sheet flow step",
+    "flow": "sell_review_now_s48m",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/add_money_bank_s36__light.png",
+    "artboard": "s36",
+    "capability_asserted": "wallet/wallet_flows.dart sheet flow step",
+    "flow": "add_money_bank_s36",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/add_money_bank_s36__dark.png",
+    "artboard": "s36",
+    "capability_asserted": "wallet/wallet_flows.dart sheet flow step",
+    "flow": "add_money_bank_s36",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/add_money_card__light.png",
+    "artboard": null,
+    "capability_asserted": "wallet/wallet_flows.dart sheet flow step",
+    "flow": "add_money_card",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/add_money_card__dark.png",
+    "artboard": null,
+    "capability_asserted": "wallet/wallet_flows.dart sheet flow step",
+    "flow": "add_money_card",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/add_money_card_checkout_failed__light.png",
+    "artboard": null,
+    "capability_asserted": "wallet/wallet_flows.dart sheet flow step",
+    "flow": "add_money_card_checkout_failed",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/add_money_card_checkout_failed__dark.png",
+    "artboard": null,
+    "capability_asserted": "wallet/wallet_flows.dart sheet flow step",
+    "flow": "add_money_card_checkout_failed",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/withdraw_outside_hours_s37variant__light.png",
+    "artboard": "s37v",
+    "capability_asserted": "wallet/wallet_flows.dart sheet flow step",
+    "flow": "withdraw_outside_hours_s37variant",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/withdraw_outside_hours_s37variant__dark.png",
+    "artboard": "s37v",
+    "capability_asserted": "wallet/wallet_flows.dart sheet flow step",
+    "flow": "withdraw_outside_hours_s37variant",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/withdraw_outside_hours_pin__light.png",
+    "artboard": null,
+    "capability_asserted": "shared/confirm_passcode_sheet.dart sheet flow step",
+    "flow": "withdraw_outside_hours_pin",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/withdraw_outside_hours_pin__dark.png",
+    "artboard": null,
+    "capability_asserted": "shared/confirm_passcode_sheet.dart sheet flow step",
+    "flow": "withdraw_outside_hours_pin",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/glossary_term_t3__light.png",
+    "artboard": null,
+    "capability_asserted": "shared/glossary_sheet.dart sheet flow step",
+    "flow": "glossary_term_t3",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/glossary_term_t3__dark.png",
+    "artboard": null,
+    "capability_asserted": "shared/glossary_sheet.dart sheet flow step",
+    "flow": "glossary_term_t3",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/next_of_kin_relationship_picker__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc/next_of_kin.dart sheet (no canvas artboard)",
+    "flow": "next_of_kin_relationship_picker",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/next_of_kin_relationship_picker__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc/next_of_kin.dart sheet (no canvas artboard)",
+    "flow": "next_of_kin_relationship_picker",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/utility_bill_state_picker__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc/_address_data.dart sheet (no canvas artboard)",
+    "flow": "utility_bill_state_picker",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/utility_bill_state_picker__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc/_address_data.dart sheet (no canvas artboard)",
+    "flow": "utility_bill_state_picker",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/declarations_pep_explainer__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc/declarations_screen.dart sheet (no canvas artboard)",
+    "flow": "declarations_pep_explainer",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/declarations_pep_explainer__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc/declarations_screen.dart sheet (no canvas artboard)",
+    "flow": "declarations_pep_explainer",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/declarations_pep_who_picker__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc/declarations_screen.dart sheet (no canvas artboard)",
+    "flow": "declarations_pep_who_picker",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/declarations_pep_who_picker__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc/declarations_screen.dart sheet (no canvas artboard)",
+    "flow": "declarations_pep_who_picker",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/bank_dcs_bank_picker__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc/bank_dcs_screen.dart sheet (no canvas artboard)",
+    "flow": "bank_dcs_bank_picker",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/bank_dcs_bank_picker__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc/bank_dcs_screen.dart sheet (no canvas artboard)",
+    "flow": "bank_dcs_bank_picker",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/bank_dcs_explainer__light.png",
+    "artboard": null,
+    "capability_asserted": "kyc/bank_dcs_screen.dart sheet (no canvas artboard)",
+    "flow": "bank_dcs_explainer",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/bank_dcs_explainer__dark.png",
+    "artboard": null,
+    "capability_asserted": "kyc/bank_dcs_screen.dart sheet (no canvas artboard)",
+    "flow": "bank_dcs_explainer",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/bank_accounts_select_bank_picker__light.png",
+    "artboard": null,
+    "capability_asserted": "account/bank_accounts_screen.dart sheet (no canvas artboard)",
+    "flow": "bank_accounts_select_bank_picker",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/bank_accounts_select_bank_picker__dark.png",
+    "artboard": null,
+    "capability_asserted": "account/bank_accounts_screen.dart sheet (no canvas artboard)",
+    "flow": "bank_accounts_select_bank_picker",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/bank_accounts_row_actions__light.png",
+    "artboard": null,
+    "capability_asserted": "account/bank_accounts_screen.dart sheet (no canvas artboard)",
+    "flow": "bank_accounts_row_actions",
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "build/shots/bank_accounts_row_actions__dark.png",
+    "artboard": null,
+    "capability_asserted": "account/bank_accounts_screen.dart sheet (no canvas artboard)",
+    "flow": "bank_accounts_row_actions",
+    "theme": "dark",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/account.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/add_money_bank_transfer.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/add_money_chooser.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/asset_detail.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/explain.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/freeze.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/holding.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/home.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/home_dark.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/home_light.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/kyc_bvn.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/kyc_intro.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/login.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/markets.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/notifications.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/onboarding_personal.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/orders.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/plans.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/portfolio.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/search.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/security.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/security_alert.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/signup.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/suitability.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/txn.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/wallet.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/welcome.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots/withdraw.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/13_kyc_intro.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/14_bvn_nin.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/15_chn.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/16_id_upload.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/17_liveness.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/18_utility_bill.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/19_bank_dcs.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/20_declarations.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/21_next_of_kin.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/23_24_submitted_pending.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/25_approved.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/26_outcome_not_approved.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/27_questionnaire.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/28_suitability_result.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_kyc/29_risk_disclaimer.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_kyc.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/01_splash.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/02_welcome.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/03_signup.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/04_otp.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/05_06_terms.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/07_passcode_create.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/08_passcode_confirm.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/09_biometric.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/10_onboarding_personal.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/11_login.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/12_reset.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_onboarding/welcome_slide_0.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_onboarding.dart (+ shots_welcome_slides.dart)), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/45_account_hub.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/52_legal_hub.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/76_statements_hub.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/81_corporate_actions.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/82_rights_issue.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/83_agm_vote.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/84_dividends.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/85_tax_documents.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/86_price_alerts.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/87_file_complaint.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/89_dormant_account.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/90_close_account.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/91_data_privacy.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/92_locked_out.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/94_partner_disclosures.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/95_referral_terms.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/96_data_notice.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_expansion/97_closure_terms.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_expansion.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowd/30_home_not_verified.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowd.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowd/35_buy_amount.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowd.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/47_notifications.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/48_notification_settings.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/49_personal_info.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/50_security.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/51_security_alert.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/52_statements.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/53_plans.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/55_refer_earn.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/56_help_support.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/57_faq.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  },
+  {
+    "file": "/tmp/shots_flowf/64_bank_accounts.png",
+    "artboard": null,
+    "capability_asserted": "legacy pre-audit capture (test/shots_flowf.dart), light theme only, no false-capture guard",
+    "flow": null,
+    "theme": "light",
+    "verdict": "captured"
+  }
+]

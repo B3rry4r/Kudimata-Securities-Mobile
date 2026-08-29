@@ -189,10 +189,16 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
   }
 
   Widget _buildFlagged(KycSubmissionStatus result) {
+    // "we'll notify you" dropped for the same reason as submitted.dart's
+    // s20 pending copy: no push/email mechanism backs it. This class is
+    // still signed in and the router's gate only checks signedIn, not
+    // kycApproved (see this file's header comment), so — same as
+    // pending/review — they can keep using the app; the copy says that
+    // instead of a promise nothing delivers on.
     final reasons = _failedChecks(result);
     final message = reasons.isNotEmpty
-        ? "${reasons.join('. ')}. One of our team is taking a closer look — we'll notify you once it's resolved."
-        : "One of our team needs to take a closer look at your submission. We'll notify you once it's resolved.";
+        ? "${reasons.join('. ')}. One of our team is taking a closer look — you can keep using the app while that happens."
+        : "One of our team needs to take a closer look at your submission. You can keep using the app while that happens.";
     return KStatusView(
       tone: KStatusTone.pending,
       illustrationName: 'kyc-not-approved',

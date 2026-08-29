@@ -13,6 +13,7 @@
 // NotificationsRepository.notificationFromJson) actually reuse the SAME
 // formatting the REST fetch path uses, and AppState.applyRealtimeKycStatus's
 // mapping from the coarse `kyc:status` payload onto the gate flags.
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
@@ -21,6 +22,36 @@ import 'package:kudimata_invest/data/realtime/realtime_client.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
 import 'package:kudimata_invest/data/repositories/notifications_repository.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
+import 'package:kudimata_invest/router/routes.dart';
+
+/// A null-always mock for `flutter_secure_storage`'s method channel — only
+/// needed by the 'suspended' test below, which exercises
+/// AppState.forceSignOut() (secure-storage writes) as a SIDE EFFECT of
+/// applying a realtime payload. Without this, those writes hit the real
+/// plugin with no platform test binding behind it and throw
+/// MissingPluginException.
+void _mockSecureStorage() {
+  final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(
+    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+    (call) async {
+      switch (call.method) {
+        case 'read':
+          return null;
+        case 'readAll':
+          return <String, String>{};
+        case 'containsKey':
+          return false;
+        case 'write':
+        case 'delete':
+        case 'deleteAll':
+          return null;
+        default:
+          return null;
+      }
+    },
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -284,6 +315,51 @@ void main() {
 
       expect(state.kycApproved, isTrue);
       expect(notified, isTrue);
+      state.dispose();
+    });
+
+    // Defect fix (2026-08-29, two-auditor report): "a live suspension is
+    // decoded and thrown away" — RealtimeKycStatus.accountStatus was
+    // decoded off the socket and never read by this method at all.
+    test('accountStatus applies directly onto AppState.accountStatus (no refetch)', () {
+      final state = AppState();
+      state.applyRealtimeKycStatus(
+        const RealtimeKycStatus(kycStatus: 'approved', accountStatus: 'dormant'),
+      );
+      expect(state.accountStatus, 'dormant');
+      // Gates trading immediately — the whole point of applying it live,
+      // not waiting for the next full refresh to notice.
+      final gap = tradingEligibilityGap(state);
+      expect(gap, isNotNull);
+      expect(gap!.route, Routes.acctDormant);
+      state.dispose();
+    });
+
+    test('a pushed "suspended" accountStatus ends the session — never left running', () async {
+      _mockSecureStorage();
+      final state = AppState()
+        ..signedIn = true
+        ..passcodeSet = true;
+
+      state.applyRealtimeKycStatus(
+        const RealtimeKycStatus(kycStatus: 'approved', accountStatus: 'suspended'),
+      );
+      expect(state.accountStatus, 'suspended');
+
+      // forceSignOut() is fire-and-forget (unawaited) from inside
+      // applyRealtimeKycStatus — the realtime contract's own "no refetch"
+      // rule is about NETWORK calls, not about taking no action at all; a
+      // sign-out here is pure local state/storage teardown, same as any
+      // other forceSignOut() call site. Give it a turn of the event loop.
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        state.signedIn,
+        isFalse,
+        reason: 'the backend already blocks a suspended account at LOGIN — '
+            'a suspension pushed mid-session must end that session with the '
+            'same finality, not leave it running able to keep trading',
+      );
       state.dispose();
     });
   });

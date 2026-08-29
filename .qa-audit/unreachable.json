@@ -1,0 +1,32 @@
+[
+  {
+    "state": "withdraw_inhours_s37 (wallet/wallet_flows.dart's normal-hours _WithdrawSheet, and the \"Withdrawal started\" _showSuccessSheet only that branch leads to)",
+    "reason": "_isOutsideWithdrawHours() in lib/screens/wallet/wallet_flows.dart reads the real DateTime.now().weekday first (Saturday/Sunday always takes the outside-hours branch regardless of clock time) with no package:clock / injectable Clock anywhere in lib/ to override it from a test. This capture pass ran on Saturday 2026-08-29, so only the outside-hours sibling (_OutsideHoursWithdrawSheet, captured as withdraw_outside_hours_s37variant/withdraw_outside_hours_pin) was reachable. Injecting a fake clock would be a lib/ change, out of scope for a repair-only capture pass. Re-run on a weekday between 09:00-21:00 local time to capture the normal-hours branch instead.",
+    "artboard": "s37"
+  },
+  {
+    "state": "review_submit (kyc/review_submit_screen.dart, route /kyc/review — the standalone review-before-submit screen)",
+    "reason": "File no longer exists under lib/ (confirmed by filesystem search) and Routes has no corresponding route. Deleted 2026-08-27 per DECISIONS.md R-9: next_of_kin.dart absorbed submission directly, making this screen redundant. No code path can mount a screen that has been deleted.",
+    "artboard": null
+  },
+  {
+    "state": "watchlist (markets/watchlist_screen.dart, route /watchlist — dedicated watchlist list view)",
+    "reason": "File no longer exists under lib/ (confirmed by filesystem search) and Routes has no corresponding route. Dropped per DECISIONS.md R-16. s26/s27 only ever covered the unrelated add-to-watchlist toggle, not this list view. No code path can mount a screen that has been deleted.",
+    "artboard": null
+  },
+  {
+    "state": "document_summary (onboarding/document_summary_screen.dart — Routes.documentSummary)",
+    "reason": "File no longer exists under lib/ and Routes.documentSummary is no longer defined anywhere in routes.dart (confirmed by grep). Dropped 2026-08-27 per DECISIONS.md D-4/R-8: built but never wired, superseded by the native PDF viewer used elsewhere. No code path can mount a screen that has been deleted.",
+    "artboard": null
+  },
+  {
+    "state": "order_fill_progress (trade/order_fill_progress_screen.dart's OrderFillProgressScreen)",
+    "reason": "Not referenced anywhere in lib/ outside its own file (confirmed by grep for the class name and filename) — no route, no showKSheet/push call site, nothing constructs it. The file's own header comment calls it dead code: UI-ready but never wired into any real navigation path. A widget test can force-mount any class directly, but doing so would not be evidence of anything a real user can reach — this pass mounts only through the app's own real navigation surface (a route, or a tap/showKSheet call site).",
+    "artboard": null
+  },
+  {
+    "state": "price_moved (trade/price_moved_screen.dart's PriceMovedScreen)",
+    "reason": "Not referenced anywhere in lib/ outside its own file (confirmed by grep for the class name and filename) — no route, no showKSheet/push call site, nothing constructs it. Dead code with no trigger mechanism, same as order_fill_progress above, and no canvas artboard designs this specific post-order price-moved interstitial anyway.",
+    "artboard": null
+  }
+]

@@ -15,9 +15,11 @@
 #   build/shots/<screen>__light.png / __dark.png            — one pair per routed screen
 #   build/shots/<screen>__<substate>__light.png / __dark.png — one pair per declared sub-state
 #   build/shots/<flow>__light.png / __dark.png               — one pair per declared flow step
+#   build/shots/<picker>__light.png / __dark.png             — one pair per declared picker/explainer sheet
 #   build/shots/_captures.json                    — raw per-(route,theme) facts
 #   build/shots/_substate_captures.json           — raw per-(screen,substate,theme) facts
 #   build/shots/_flow_captures.json               — raw per-(flow,theme) facts
+#   build/shots/_picker_captures.json             — raw per-(picker,theme) facts
 #   build/shots/manifest.json                     — route/file/PNGs/artboard per screen + sub-state + flow
 set -euo pipefail
 
@@ -33,6 +35,10 @@ flutter test test/shots_substates.dart
 echo
 echo "== shots.sh: rendering every declared modal-sheet flow step (light + dark) =="
 flutter test test/shots_flows.dart
+
+echo
+echo "== shots.sh: rendering every declared picker/explainer sheet (light + dark) =="
+flutter test test/shots_pickers.dart
 
 echo
 echo "== shots.sh: building build/shots/manifest.json =="

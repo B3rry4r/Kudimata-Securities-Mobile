@@ -1,3 +1,26 @@
+> **SUPERSEDED — 2026-08-29.** This file is stale and self-contradictory; do
+> not read it as current. Treat `docs/redesign/DECISIONS.md` as the sole
+> source of truth for every screen's ruling (it says so itself: "the one
+> thing that outranks the canvas is a ruling in this file").
+>
+> What was found wrong with this file, independently verified 2026-08-29:
+> - It omits at least 4 live, routed screens entirely (no row anywhere, in
+>   any bucket) — including the KYC flow's own hub, `kyc_checklist_screen.dart`.
+> - 22 of the 39 rows bucketed under **needs-ruling** ("no artboard covers
+>   these") carry evidence text, in that same row, citing a direct artboard
+>   match found during the search that bucket claims came up empty.
+> - It lists 3 files as pending/needing evaluation
+>   (`kyc/review_submit_screen.dart`, `onboarding/document_summary_screen.dart`,
+>   `markets/watchlist_screen.dart`) that no longer exist anywhere under `lib/`
+>   — deleted since this file was last written.
+>
+> Nobody has gone back through this file to correct the above — it is left
+> exactly as it was found, as a record of what was wrong, not a repaired
+> ruling sheet. Re-deriving the correct ruling for any row here is a design
+> decision, not a documentation-hygiene one; it belongs in `DECISIONS.md`,
+> made by whoever owns that authority, not inferred from this file's own
+> mistakes.
+
 # Redesign 2026-08 — ruling sheet
 
 Every app screen, and what the new canvas does or does not say about it.

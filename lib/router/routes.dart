@@ -189,11 +189,11 @@ class Routes {
   static const String corpActionsRightsIssue = '/corporate-actions/rights-issue';
   static const String corpActionsAgm = '/corporate-actions/agm';
   static const String corpActionsDividends = '/corporate-actions/dividends';
-  // File / track a complaint (screens 87-88). acctComplaintTracked is pushed
-  // with a ComplaintSummary `extra` — no live entry point yet since
-  // submitting a complaint has no real backend to return one from (see
-  // complaint_screen.dart), registered so the built screen is reachable
-  // once that exists.
+  // File / track a complaint (screens 87-88). acctComplaintTracked is fully
+  // wired from complaint_screen.dart: `_openTracked` pushes it (tapping the
+  // "Your open complaint" card) with the investor's existing Complaint, and
+  // `_send()` pushes it again with the just-created one right after a
+  // successful `POST /complaints` (complaint_repository.dart).
   static const String acctComplaint = '/account/help/complaint';
   static const String acctComplaintTracked = '/account/help/complaint/tracked';
   // Account lifecycle edge states (screens 89, 90, 92).

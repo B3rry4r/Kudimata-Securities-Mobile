@@ -1,0 +1,1150 @@
+{
+  "generated": "2026-08-29",
+  "sources": {
+    "routes": 76,
+    "artboards": 135,
+    "rulings": 91
+  },
+  "rows": [
+    {
+      "screen": "plans",
+      "route": "/account/plans",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-6",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Parked behind kAiCreditsEnabled per R-6, not deleted; route still registered and reachable when flag flips."
+    },
+    {
+      "screen": "refer_earn",
+      "route": "/account/refer",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-6",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Parked behind kAiCreditsEnabled per R-6. Evidence cites s51 Account-hub menu has no row for it once flag is off."
+    },
+    {
+      "screen": "agm_vote",
+      "route": "/corporate-actions/agm",
+      "reach": "route",
+      "artboards": [
+        "s55"
+      ],
+      "ruling": "R-24",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "s55 lists corporate actions as hub items only; detail screen itself went undrawn per R-24, kept and restyled anyway."
+    },
+    {
+      "screen": "dividends",
+      "route": "/corporate-actions/dividends",
+      "reach": "route",
+      "artboards": [
+        "s55"
+      ],
+      "ruling": "R-24",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Same as agm_vote: hub-only coverage in s55, detail screen undrawn, kept per R-24."
+    },
+    {
+      "screen": "rights_issue",
+      "route": "/corporate-actions/rights-issue",
+      "reach": "route",
+      "artboards": [
+        "s55"
+      ],
+      "ruling": "R-24",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Hub-only coverage (s55); partial take-up behavior additionally retained per R-12."
+    },
+    {
+      "screen": "home",
+      "route": "/home",
+      "reach": "route",
+      "artboards": [
+        "s22",
+        "s22d",
+        "s23",
+        "s23d"
+      ],
+      "ruling": "R-15",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-15/R-32: rebuilt from scratch against s22/s23 (verified investor) — the tradingEligibilityGap unverified body has no artboard counterpart."
+    },
+    {
+      "screen": "notifications",
+      "route": "/notifications",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-25",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-25: kept, restyled, live and backend-wired; no artboard anywhere in the canvas."
+    },
+    {
+      "screen": "chn",
+      "route": "/kyc/chn",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-9",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-9: CHN step kept though undrawn in canvas."
+    },
+    {
+      "screen": "next_of_kin",
+      "route": "/kyc/next-of-kin",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-9",
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "R-9: next-of-kin step kept though undrawn; the standalone review-before-submit screen was the one dropped."
+    },
+    {
+      "screen": "outcome_not_approved",
+      "route": "/kyc/outcome",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-10",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-10: designed fresh in the canvas visual language rather than mapped to a specific artboard."
+    },
+    {
+      "screen": "review_submit",
+      "route": "/kyc/review",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-9",
+      "status": "deleted",
+      "has_capture": false,
+      "note": "R-9: standalone review-before-submit screen DROPPED. File no longer exists in lib/ (confirmed by search) — RULINGS.md still lists it as a pending file."
+    },
+    {
+      "screen": "utility_bill",
+      "route": "/kyc/utility-bill",
+      "reach": "route",
+      "artboards": [
+        "s17"
+      ],
+      "ruling": "R-19",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-19: s17 pairs address fields with utility-bill upload, adopted directly."
+    },
+    {
+      "screen": "asset_detail",
+      "route": "/asset/:ticker",
+      "reach": "route",
+      "artboards": [
+        "s26",
+        "s27"
+      ],
+      "ruling": "R-18",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-18: Order Book tab built as designed though no artboard draws it; s26/s27 cover only the watchlist-toggle header fragment."
+    },
+    {
+      "screen": "explain",
+      "route": "/explain/:topic",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-6",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Parked behind kAiCreditsEnabled per R-6 (AI comprehension layer)."
+    },
+    {
+      "screen": "price_alerts",
+      "route": "/watchlist/alerts",
+      "reach": "route",
+      "artboards": [
+        "s50"
+      ],
+      "ruling": "R-16",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-16: \"My alerts\" (s50) becomes the permanent reader for saved-asset data now that watchlist_screen is dropped."
+    },
+    {
+      "screen": "watchlist",
+      "route": "/watchlist",
+      "reach": "route",
+      "artboards": [
+        "s26",
+        "s27"
+      ],
+      "ruling": "R-16",
+      "status": "deleted",
+      "has_capture": false,
+      "note": "R-16: screen DROPPED; file no longer exists in lib/. s26/s27 only ever covered the unrelated add-to-watchlist toggle, not a list view."
+    },
+    {
+      "screen": "confirm_passcode",
+      "route": "/passcode/confirm",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-11",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-11: auth mechanics ruling; no dedicated confirm-passcode artboard in canvas."
+    },
+    {
+      "screen": "create_passcode",
+      "route": "/passcode/create",
+      "reach": "route",
+      "artboards": [
+        "s05"
+      ],
+      "ruling": "R-11",
+      "status": "matched",
+      "has_capture": true,
+      "note": "Evidence text: s05 \"matches the app screen\" almost verbatim, yet row is bucketed needs-ruling rather than redesign-to-artboard — bucket/evidence mismatch."
+    },
+    {
+      "screen": "document_summary",
+      "route": "REMOVED (Routes.documentSummary no longer defined)",
+      "reach": "removed",
+      "artboards": [],
+      "ruling": "R-8",
+      "status": "deleted",
+      "has_capture": false,
+      "note": "D-4/R-8: dropped 2026-08-27 (built but never wired; superseded by native PDF viewer). File no longer exists in lib/."
+    },
+    {
+      "screen": "legal_preview",
+      "route": "/legal-preview/:kind",
+      "reach": "route",
+      "artboards": [
+        "s03c"
+      ],
+      "ruling": "R-8",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-8: s03c is the 4(canvas draws 8)-document tap-to-open list; app narrows to the real 4 documents."
+    },
+    {
+      "screen": "personal_details",
+      "route": "/onboarding/personal",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-19",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-19: address step kept alongside BVN/NIN auto-populate; the only DOB-bearing screen in canvas is unrelated (02 Verification)."
+    },
+    {
+      "screen": "reset_passcode",
+      "route": "/reset",
+      "reach": "route",
+      "artboards": [
+        "s09"
+      ],
+      "ruling": "R-20",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-20: account-password-reset and local-passcode-reset stay separate flows; s09 is a direct match for the one this screen implements."
+    },
+    {
+      "screen": "sign_up",
+      "route": "/signup",
+      "reach": "route",
+      "artboards": [
+        "s03",
+        "s03b"
+      ],
+      "ruling": "R-11",
+      "status": "matched",
+      "has_capture": true,
+      "note": "Canvas splits sign-up into 3 screens (s03/s03b/s03p); app keeps ONE screen — R-11 auth-mechanics ruling covers the collapse."
+    },
+    {
+      "screen": "welcome_slider",
+      "route": "/welcome",
+      "reach": "route",
+      "artboards": [
+        "s02"
+      ],
+      "ruling": "R-14",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-14: Welcome uses Landing Video Concept V3, not s02 — evidence cites s02 as a single static screen but the actual ruling points elsewhere (Landing Video Concept.dc.html, ids v1-v3, which canvas-inventory.json does not enumerate at all)."
+    },
+    {
+      "screen": "holding_detail",
+      "route": "/portfolio/holding/:ticker",
+      "reach": "route",
+      "artboards": [
+        "s34"
+      ],
+      "ruling": "R-23",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-23: build s34, keep the extra dividends-received/held-in-CSCS rows the artboard omits."
+    },
+    {
+      "screen": "order_status",
+      "route": "/orders",
+      "reach": "route",
+      "artboards": [
+        "s41"
+      ],
+      "ruling": "R-17",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-17: Cancel is kept and added to the new layout though the artboard omits it."
+    },
+    {
+      "screen": "portfolio",
+      "route": "/portfolio",
+      "reach": "route",
+      "artboards": [
+        "s33"
+      ],
+      "ruling": "R-22",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-22: adopt canvas bar-chart-by-sector allocation, replacing the donut-by-asset-class the live app currently draws."
+    },
+    {
+      "screen": "glossary_sheet",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [],
+      "ruling": "R-6",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Parked behind kAiCreditsEnabled per R-6 (credit-metered \"Explain further\" follow-up); the static definition itself stays live."
+    },
+    {
+      "screen": "legal_acceptance",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [
+        "s03p",
+        "s03c"
+      ],
+      "ruling": "R-8a",
+      "status": "matched",
+      "has_capture": false,
+      "note": "Shared scaffold backing termsOfService and risk_disclaimer; s03p (checkbox) links to s03c (8-doc list), restructured into R-8/R-8a's split."
+    },
+    {
+      "screen": "questionnaire",
+      "route": "/suitability",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-1",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-1/R-1a: quiz KEPT, relocated to end of KYC flow, restyled; zero canvas mentions of \"suitability\" anywhere."
+    },
+    {
+      "screen": "risk_disclaimer",
+      "route": "/suitability/risk-disclaimer",
+      "reach": "route",
+      "artboards": [
+        "s03c"
+      ],
+      "ruling": "R-8a",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-8a: own scroll-gated screen, restored 2026-08-24; s03c only names the document as a row label, not a dedicated disclaimer screen."
+    },
+    {
+      "screen": "suitability_result",
+      "route": "/suitability/result",
+      "reach": "route",
+      "artboards": [],
+      "ruling": "R-1",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-1: closest structural analog only, no direct artboard."
+    },
+    {
+      "screen": "terms_and_privacy",
+      "route": "/suitability/terms",
+      "reach": "route",
+      "artboards": [
+        "s03p",
+        "s03c"
+      ],
+      "ruling": "R-8a",
+      "status": "matched",
+      "has_capture": true,
+      "note": "Thin wrapper over legal_acceptance_screen; same s03p/s03c evidence."
+    },
+    {
+      "screen": "buy_market",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [
+        "s29m",
+        "s29md"
+      ],
+      "ruling": "R-33",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-33: one of six new build-work screens; UNROUTED, launched via showBuyFlow() sheet from asset/holding detail."
+    },
+    {
+      "screen": "buy_market_closed",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [
+        "s40"
+      ],
+      "ruling": "R-33",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-33: UNROUTED, shown automatically by showBuyFlow() when market is closed, in place of the PIN step."
+    },
+    {
+      "screen": "sell",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [
+        "s45",
+        "s46",
+        "s47",
+        "s48"
+      ],
+      "ruling": "R-33",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-33: UNROUTED dedicated sell journey (spec screens 77-79), launched via showSellFlow()."
+    },
+    {
+      "screen": "add_money",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [
+        "s36"
+      ],
+      "ruling": "R-33",
+      "status": "matched",
+      "has_capture": true,
+      "note": "R-33: UNROUTED, launched via showAddMoneyFlow() from Wallet screen."
+    },
+    {
+      "screen": "withdraw_outside_hours",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [],
+      "ruling": "R-21",
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "R-21: kept, restyled; UNROUTED, selected automatically by showWithdrawFlow() outside ~09:00-21:00 weekdays/weekends. NO capture exists in build/shots for the normal-hours sibling (#withdraw) — see findings."
+    },
+    {
+      "screen": "transaction_detail",
+      "route": "/wallet/txn/:id",
+      "reach": "route",
+      "artboards": [
+        "s38"
+      ],
+      "ruling": "R-33",
+      "status": "matched",
+      "has_capture": true,
+      "note": "Evidence cites a strong s38 match (\"Reference\"/\"Fees, all in\" rows both found) yet bucketed needs-ruling; s38 is ALSO independently claimed for account/contract_note_screen.dart in redesign-to-artboard — one artboard asked to cover two structurally distinct receipt screens."
+    },
+    {
+      "screen": "bank_accounts",
+      "route": "/account/banks",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Bank-account/DCS-mandate management is core regulated-broker functionality (referenced by s37's mandate copy …"
+    },
+    {
+      "screen": "close_account",
+      "route": "/account/close",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Account closure is a required self-service/compliance flow (SEC record-keeping language already lives in the …"
+    },
+    {
+      "screen": "dormant_account",
+      "route": "/account/dormant",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "A real account-lifecycle edge state with a live auto-redirect from login; no artboard exists anywhere, but it…"
+    },
+    {
+      "screen": "faq",
+      "route": "/account/help/faq",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "No FAQ/article artboard exists anywhere in the new canvas; basic customer-education content is not an obvious…"
+    },
+    {
+      "screen": "freeze_account",
+      "route": "/account/security/freeze",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "The freeze entry point is designed for in s54, but the actual confirmation screen this file implements has no…"
+    },
+    {
+      "screen": "help_support",
+      "route": "/account/help",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "No Help & support hub artboard exists; this is basic customer-service infrastructure, not an obviously cut fe…"
+    },
+    {
+      "screen": "legal_reference_screens",
+      "route": "/account/legal/partner-disclosures",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "These are real compliance/reference documents with no artboard drawn; keep and restyle, though 'Referral term…"
+    },
+    {
+      "screen": "notifications_settings",
+      "route": "/account/notifications",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "No artboard exists for notification preferences; this is basic account infrastructure with a real wired backe…"
+    },
+    {
+      "screen": "security_alert",
+      "route": "/security-alert",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "A real, already-shipped security-critical screen (audit P0 per its own header comment) with no artboard anywh…"
+    },
+    {
+      "screen": "statement_detail",
+      "route": "/account/statements/detail",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "A real, already-scoped screen (its own header comment documents exactly which backend fields are missing) wit…"
+    },
+    {
+      "screen": "withdraw_mandate",
+      "route": "/account/banks/withdraw-mandate",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "A real, regulatorily-meaningful destructive action (with its own honest 'not available yet' backend gap alrea…"
+    },
+    {
+      "screen": "_kyc_chrome",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "The header pattern (back + step label) is a genuine, repeated canvas convention. But the segmented progress-b…"
+    },
+    {
+      "screen": "confirm_passcode_sheet",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [
+        "s08 (pattern match, full-screen not sheet)"
+      ],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "The exact passcode dots + keypad component exists in the design system (s08) and sheet-form-factor confirmati…"
+    },
+    {
+      "screen": "state_views",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [
+        "pattern present across many artboards, e.g. s23, s53, s35 (no single dedicated artboard)"
+      ],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "This is generic UI infrastructure, not a distinct screen concept — the design system's illustration/plate/but…"
+    },
+    {
+      "screen": "account",
+      "route": "/account",
+      "reach": "route",
+      "artboards": [
+        "s51"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "s51 is clearly the redesigned Account hub (same header shape, same avatar/status pattern, same Log out placem…"
+    },
+    {
+      "screen": "complaint",
+      "route": "/account/help/complaint",
+      "reach": "route",
+      "artboards": [
+        "s53"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "The complaints hub concept and category taxonomy are clearly designed for in s53; the detailed form fields ar…"
+    },
+    {
+      "screen": "complaint_tracked",
+      "route": "/account/help/complaint/tracked",
+      "reach": "route",
+      "artboards": [
+        "s53"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "The open-complaint status concept is clearly present in s53 (status pill, SLA countdown, reference), even tho…"
+    },
+    {
+      "screen": "contract_note",
+      "route": "/account/statements/contract-note",
+      "reach": "route",
+      "artboards": [
+        "s38"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "s38 is the closest new-canvas expression of a post-trade receipt naming the executing broker; the itemised fe…"
+    },
+    {
+      "screen": "data_privacy",
+      "route": "/account/data-privacy",
+      "reach": "route",
+      "artboards": [
+        "s57"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "The screen's shape (consent toggles, export, delete/close, retention note) is a strong structural match to s5…"
+    },
+    {
+      "screen": "legal",
+      "route": "/account/legal",
+      "reach": "route",
+      "artboards": [
+        "s03c"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "s03c is explicitly cross-referenced from Account in its own footer note, making this the one confident non-Ac…"
+    },
+    {
+      "screen": "personal_info",
+      "route": "/account/personal",
+      "reach": "route",
+      "artboards": [
+        "s58"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Near-exact structural and copy match — the strongest single mapping in this batch."
+    },
+    {
+      "screen": "security",
+      "route": "/account/security",
+      "reach": "route",
+      "artboards": [
+        "s54"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Strong structural match on the core security controls and devices list, with only the Log-out placement diffe…"
+    },
+    {
+      "screen": "statements",
+      "route": "/account/statements",
+      "reach": "route",
+      "artboards": [
+        "s52"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Direct structural and functional match — same document list concept, same downstream links to statement/contr…"
+    },
+    {
+      "screen": "corporate_actions",
+      "route": "/corporate-actions",
+      "reach": "route",
+      "artboards": [
+        "s55"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Direct, high-confidence match on title, structure (pending decision card + recent/settled list), and even the…"
+    },
+    {
+      "screen": "search",
+      "route": "/search",
+      "reach": "route",
+      "artboards": [
+        "s25"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Core shell (back+pill+results list navigating to asset detail) matches s25 closely enough for a direct redesi…"
+    },
+    {
+      "screen": "approved",
+      "route": "/kyc/approved",
+      "reach": "route",
+      "artboards": [
+        "s21"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "s21 is a near-exact copy match for the approved/verified success state. Gap: s21's own CTAs are plain 'Add mo…"
+    },
+    {
+      "screen": "bank_dcs",
+      "route": "/kyc/bank-dcs",
+      "reach": "route",
+      "artboards": [
+        "s18, s18b"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Strong content/structure match (bank select, account number, auto-resolved name confirmation, DCS checkbox + …"
+    },
+    {
+      "screen": "bvn_nin",
+      "route": "/kyc/bvn",
+      "reach": "route",
+      "artboards": [
+        "s12, s13"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Direct content match, but the canvas splits BVN/NIN into TWO screens (s12 entry + s13 confirm-details), while…"
+    },
+    {
+      "screen": "checking",
+      "route": "/kyc/checking",
+      "reach": "route",
+      "artboards": [
+        "s16"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Copy and layout match closely. Sequencing differs: canvas's s16 goes straight to Bank (address/utility-bill w…"
+    },
+    {
+      "screen": "declarations",
+      "route": "/kyc/declarations",
+      "reach": "route",
+      "artboards": [
+        "s19"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "PEP question is a real match on s19, but the app's actual content diverges on two points the canvas doesn't d…"
+    },
+    {
+      "screen": "id_upload",
+      "route": "/kyc/id",
+      "reach": "route",
+      "artboards": [
+        "s14"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Strong match on purpose/copy/layout (row-list ID picker, matching the app's 2026-08-20 fix from chips to a sh…"
+    },
+    {
+      "screen": "kyc_intro",
+      "route": "/kyc",
+      "reach": "route",
+      "artboards": [
+        "s10"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "s10 is the right intro-screen counterpart, but the app conflates s10 (intro) and s11 (checklist hub) into one…"
+    },
+    {
+      "screen": "liveness",
+      "route": "/kyc/liveness",
+      "reach": "route",
+      "artboards": [
+        "s15"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Near-exact structural and copy match (circular camera frame, dashed guidance ring, single shutter). App addit…"
+    },
+    {
+      "screen": "submitted",
+      "route": "/kyc/submitted",
+      "reach": "route",
+      "artboards": [
+        "s20"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Strong structural match — illustration, title, body copy, progress-checklist card, and CTA all present in s20…"
+    },
+    {
+      "screen": "markets",
+      "route": "/markets",
+      "reach": "route",
+      "artboards": [
+        "s24"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Core purpose and list/filter structure map cleanly to s24; the missing Market-mood card and Biggest-gainers r…"
+    },
+    {
+      "screen": "avatar",
+      "route": "/onboarding/avatar",
+      "reach": "route",
+      "artboards": [
+        "s06b"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Same purpose and interaction as #s06b, but the canvas places avatar directly between Face ID (06) and 'What h…"
+    },
+    {
+      "screen": "biometric",
+      "route": "/biometric",
+      "reach": "route",
+      "artboards": [
+        "s06"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Near-verbatim copy and layout match to #s06; identical position in the flow (immediately after passcode) in b…"
+    },
+    {
+      "screen": "log_in",
+      "route": "/login",
+      "reach": "route",
+      "artboards": [
+        "s08, s08p"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Core two modes match #s08/#s08p well; the step-up OTP mode is real, necessary security functionality with no …"
+    },
+    {
+      "screen": "otp",
+      "route": "/otp",
+      "reach": "route",
+      "artboards": [
+        "s04"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Very close copy and structure match to #s04; only drift is an extra 'I can't access this email' button in the…"
+    },
+    {
+      "screen": "splash",
+      "route": "/",
+      "reach": "route",
+      "artboards": [
+        "s01"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Near-exact copy and layout match to #s01; identical purpose and position (first screen, decides where to rout…"
+    },
+    {
+      "screen": "withdraw",
+      "route": "UNROUTED",
+      "reach": "sheet",
+      "artboards": [
+        "s37, s30"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": false,
+      "note": "Strong content and behavioral match: fee facts agree, arrival-time copy agrees, and both the live app and the…"
+    },
+    {
+      "screen": "wallet_home",
+      "route": "/wallet",
+      "reach": "route",
+      "artboards": [
+        "s35"
+      ],
+      "ruling": null,
+      "status": "matched",
+      "has_capture": true,
+      "note": "Direct structural and purpose match with only copy-level differences -- a straightforward rebuild against s35."
+    },
+    {
+      "screen": "account_widgets",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "Pure helper/shared-widget file; design coverage is inherited from whatever screens use it, not assessed on it…"
+    },
+    {
+      "screen": "tax_documents",
+      "route": "/account/tax",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "needs-ruling",
+      "has_capture": true,
+      "note": "STALE: RULINGS.md (2026-08-26) calls this unreachable/no-action, but account_screen.dart comment says the menu row was \"Restored 2026-08-27\" and is live, wired, hitting a real backend. No artboard exists for it either way -- should be restyle-only, not no-action."
+    },
+    {
+      "screen": "corporate_actions_widgets",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [
+        "s55"
+      ],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "Pure helper file — its fate follows whatever the human decides for the screens that use it (corporate_actions…"
+    },
+    {
+      "screen": "kyc_form_state",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "Not a design artifact. Its held fields matter only through the screens that read/write them (next_of_kin, dec…"
+    },
+    {
+      "screen": "market_hours",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "This file is a shared utility/banner, not a page with its own route -- there is no artboard-shaped surface he…"
+    },
+    {
+      "screen": "_pickers",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "Helper/shared-widget file, not a user-facing screen — no design coverage is meaningful here."
+    },
+    {
+      "screen": "locked_out",
+      "route": "/locked-out",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": true,
+      "note": "Genuinely uncovered in the new canvas AND unreachable in the live app (no attempt counter exists, no caller n…"
+    },
+    {
+      "screen": "onboarding_scaffold",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "Helper/shared-widget file, not a user-facing screen."
+    },
+    {
+      "screen": "order_fill_progress",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "This app screen is dead code by its own header comment (UI-ready, not wired into any real navigation path; no…"
+    },
+    {
+      "screen": "price_moved",
+      "route": "UNROUTED",
+      "reach": "unknown",
+      "artboards": [],
+      "ruling": null,
+      "status": "ruled-no-artboard",
+      "has_capture": false,
+      "note": "Dead code (unrouted, no trigger mechanism exists) and no canvas artboard designs this specific post-open deci…"
+    },
+    {
+      "screen": "kyc_checklist",
+      "route": "/kyc/checklist",
+      "reach": "route",
+      "artboards": [
+        "s11",
+        "s11d"
+      ],
+      "ruling": null,
+      "status": "missing-from-rulings-sheet",
+      "has_capture": true,
+      "note": "kyc/kyc_checklist_screen.dart -- app_router.dart's own comment calls this 'the flow's spine, re-entered after every completed step,' and routes.dart cites 'screen s11' which exists in the current canvas (verified). Zero mentions anywhere in RULINGS.md across all 4 buckets despite the document's stated goal to bucket 'every screen.' Captured as 16b_kyc_checklist in build/shots (as sampled)."
+    },
+    {
+      "screen": "whats_next",
+      "route": "/onboarding/next-steps",
+      "reach": "route",
+      "artboards": [
+        "s07",
+        "s07d"
+      ],
+      "ruling": null,
+      "status": "missing-from-rulings-sheet",
+      "has_capture": true,
+      "note": "onboarding/whats_next_screen.dart -- routes.dart cites 'screen s07', which exists in the current canvas (verified). Zero mentions anywhere in RULINGS.md. Captured as 13b_onboarding_next_steps in build/shots (as sampled)."
+    },
+    {
+      "screen": "legal_bundle_preview",
+      "route": "/legal-preview",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "missing-from-rulings-sheet",
+      "has_capture": true,
+      "note": "onboarding/legal_preview_screen.dart:161 class LegalBundlePreviewScreen -- a SECOND routed screen living in the same file as LegalPreviewScreen (which IS ruled, matched to s03c). RULINGS.md's one row for this file only discusses the single-document preview; the 2026-08-24 bundled-list variant (routes.dart: 'one scrollable row-list of all 4 documents') is not separately addressed. Captured as 05_legal_bundle_preview in build/shots (as sampled)."
+    },
+    {
+      "screen": "set_price_alert",
+      "route": "/asset/:ticker/alert",
+      "reach": "route",
+      "artboards": [],
+      "ruling": null,
+      "status": "missing-from-rulings-sheet",
+      "has_capture": true,
+      "note": "markets/price_alerts_screen.dart:459 class SetPriceAlertScreen -- a SECOND routed screen sharing a file with price_alerts_screen.dart's PriceAlertsScreen (which IS ruled, needs-ruling, matched to s50 per R-16). routes.dart cites 'screen s49' for this specific screen, which exists in the current canvas (verified) but is not separately evaluated anywhere in RULINGS.md. Captured as set_price_alert in build/shots (as sampled)."
+    }
+  ],
+  "mismatches": [
+    {
+      "kind": "rulings-sheet-not-actually-exhaustive",
+      "detail": "RULINGS.md states it 'buckets every screen' and totals 91 across its 4 buckets, but at least 4 live, routed screens have zero mention anywhere in the document: kyc/kyc_checklist_screen.dart (/kyc/checklist -- the KYC flow's own 'spine' screen, s11), onboarding/whats_next_screen.dart (/onboarding/next-steps, s07), onboarding/legal_preview_screen.dart's LegalBundlePreviewScreen (/legal-preview, a second class in an already-ruled file), and markets/price_alerts_screen.dart's SetPriceAlertScreen (/asset/:ticker/alert, s49, a second class in an already-ruled file). All 4 have canvas artboard ids cited directly in routes.dart comments that DO exist in the verified 135-artboard set, so this isn't a case of genuinely-undesigned surfaces -- the ruling sheet simply never evaluated them.",
+      "hides": "The two file-sharing cases (bundle preview, set-price-alert) mean file-level granularity in RULINGS.md silently swallows a whole second route -- so '91 ruled screens' overstates coverage even before counting the KYC-spine and onboarding-completion gaps, which are outright absent. A reviewer who treats RULINGS.md as the authoritative screen census (as this audit's own brief initially assumed by using it as the backbone for source 3) undercounts the true screen surface and has no ruling on record for two of the app's most heavily-trafficked screens -- every single onboarding investor passes through both kyc_checklist and whats_next."
+    },
+    {
+      "kind": "capture-gap-critical-path",
+      "detail": "kyc/next_of_kin.dart (route /kyc/next-of-kin, step 8 of 8 -- the LAST KYC collection step; its own 'Submit for verification' button calls finalizeDraft() directly, ending onboarding) has zero screenshots in build/shots/, in either theme. The step immediately before it (kyc_declarations) and immediately after it (kyc_submitted) both have full light+dark captures -- the harness walks past this exact step without capturing it.",
+      "hides": "Nobody has visually verified the screen every investor must complete to submit their KYC application at all. A reviewer scanning the shot set by KYC step number would see an unbroken sequence and wrongly conclude the whole 8-step flow was checked."
+    },
+    {
+      "kind": "capture-gap-revenue-path",
+      "detail": "wallet/wallet_flows.dart's normal-hours Withdraw sheet (_WithdrawSheet, UNROUTED via showWithdrawFlow(), artboards s37/s30 per RULINGS.md redesign-to-artboard) has no capture. Its rarer sibling -- the outside-hours/queued variant (_OutsideHoursWithdrawSheet) -- IS captured twice (withdraw_outside_hours_pin, withdraw_outside_hours_s37variant), and withdraw_mandate (an unrelated DCS-mandate screen) is captured too.",
+      "hides": "The withdraw path used on every weekday between roughly 09:00 and 21:00 -- i.e. most of the time money actually leaves the app -- has never been visually checked, while the edge-case path that only fires outside those hours has. A reviewer searching shots for 'withdraw' finds two hits and reasonably assumes withdraw is covered."
+    },
+    {
+      "kind": "ruling-sheet-internally-inconsistent",
+      "detail": "22 of the 39 rows RULINGS.md buckets as 'needs-ruling' (i.e. 'no artboard covers these') carry evidence text in that same row citing a specific matching artboard id -- e.g. onboarding/create_passcode_screen.dart's own evidence says s05 '...matches the app screen', welcome_slider_screen.dart cites s02, wallet_screens.dart#transaction_detail cites s38 ('found in s38...matching the app's own Reference row'). The bucket assignment does not reliably track the evidence column within the same document.",
+      "hides": "The document's own headline split (39 needs-ruling / 28 redesign-to-artboard) overstates how much of the product is actually undesigned. A reader trusting only the bucket counts, not the evidence prose, would misjudge design coverage in both directions -- underestimating how many screens have a real artboard, and not noticing which specific rows to double check."
+    },
+    {
+      "kind": "duplicate-artboard-claim",
+      "detail": "Artboard s38 is independently claimed as the covering artboard for TWO structurally different screens: account/contract_note_screen.dart (bucketed redesign-to-artboard, confidence 'likely', 'closest new-canvas expression of a post-trade receipt') and wallet/wallet_screens.dart#transaction_detail (bucketed needs-ruling, evidence: 'Reference'/'Fees, all in' rows found in s38). One is marked resolved, the other is not, off the same artboard evidence.",
+      "hides": "Whether s38 was actually designed as a wallet-transaction receipt, a per-order contract note, or was never meant to serve both -- the two screens have different data (a wallet Txn vs an executed order) and the ruling sheet does not record which one the artboard is really for."
+    },
+    {
+      "kind": "route-exists-without-live-entry-point",
+      "detail": "Routes.acctComplaintTracked (/account/help/complaint/tracked, ComplaintTrackedScreen) is a fully registered GoRoute -- app_router.dart's own comment says 'no live entry point yet -- submitting a complaint has no real backend to return one from ... registered so the built screen is reachable once that exists.' It appears in the shot set (63_complaint_tracked) only because the capture harness can drive a route directly, bypassing the missing in-app trigger.",
+      "hides": "Counting this as 'routed' (source 1) or 'captured' makes it look reachable through the real app when it is not -- the inverse of the UNROUTED-but-reachable-by-sheet problem this audit was asked to watch for. A route in app_router.dart does not by itself prove a real user can ever land on the screen."
+    },
+    {
+      "kind": "rulings-sheet-stale-vs-live-code (reachability regressed toward MORE coverage)",
+      "detail": "RULINGS.md's no-action bucket (dated 2026-08-26) describes account/tax_documents_screen.dart as 'currently unreachable from any live UI in the app itself (hidden by dir[ect instruction])'. account_screen.dart's own code comment says the menu row was 'Restored 2026-08-27' -- one day later -- because the backend gained the tax statement kinds it needed; it is now a live, wired, real-backend-calling route (/account/tax) with a permanent Account-menu entry.",
+      "hides": "A reader trusting RULINGS.md's no-action classification would file this as dead code needing no design coverage. It is in fact a live, reachable, real-data screen with zero artboard anywhere in the canvas -- it should be in restyle-only, not no-action, and nobody has ruled on its design treatment."
+    },
+    {
+      "kind": "rulings-sheet-stale-vs-live-code (opposite direction: still lists deleted files)",
+      "detail": "RULINGS.md's needs-ruling table still lists kyc/review_submit_screen.dart, onboarding/document_summary_screen.dart, and markets/watchlist_screen.dart as pending files needing a ruling. All three no longer exist anywhere under lib/ (confirmed by filesystem search) -- their rulings (R-9 drop review-before-submit, R-8/D-4 drop document-summary, R-16 drop watchlist) were already executed and the files deleted, but the ruling sheet itself was never pruned to reflect that.",
+      "hides": "RULINGS.md's own gate rule states 'nothing in the build queue starts until the needs-ruling section is empty' -- taken literally today, the sheet still claims 39 outstanding items including three that are already resolved-and-deleted, so its count overstates how much decision-work is genuinely still open. Routes.documentSummary itself no longer exists in routes.dart at all, confirming the deletion independently."
+    },
+    {
+      "kind": "gate-doc-vs-execution-drift (RULINGS.md ruling column never closed out)",
+      "detail": "RULINGS.md's own header states 'Nothing in the build queue starts until the needs-ruling section is empty,' and its needs-ruling table has an empty 'your ruling' column for all 39 rows. DECISIONS.md, dated the same day (2026-08-26) through 2026-08-27, contains explicit product-owner rulings (R-1, R-1a, R-6, R-8, R-8a, R-9, R-10, R-11, R-12, R-14, R-15/R-32, R-16 through R-25, R-33) that resolve essentially every one of the 39 rows -- and the build has visibly proceeded past that gate (76 routes exist, 236 screenshots captured, commit history shows 'Wave 6' etc.).",
+      "hides": "Someone reading only RULINGS.md, exactly as the task brief warns against ('sources that do not read each other'), would conclude the project is still blocked on 39 open product decisions. The actual resolutions live in a second document and were never written back into RULINGS.md's own ruling column, so the two documents tell contradictory stories about whether the build gate is open."
+    },
+    {
+      "kind": "stale-canvas-ids-in-shipped-code (known issue, still present)",
+      "detail": "routes.dart and app_router.dart comments cite 'Screen 65' (acctWithdrawMandate), 'Screen 66' (contractNote), 'screens 76-97', 'screens 81-84', 'screen 85' (acctTax), 'screen 86' (priceAlerts), 'screens 87-88' (complaint), 'screens 89, 90, 92', 'screen 91', and 'screens 94-97' -- all from a 97-light-screen OLD canvas that DECISIONS.md itself records was replaced by the current 56-artboard canvas (verified: the current canvas's highest sNN id is s58, with only 56 base-numbered screens, gaps at 28 and 32). DECISIONS.md's own R-5 already names this exact defect and mandates stripping/re-pointing stale ids.",
+      "hides": "Nothing new is hidden -- R-5 already flags this -- but the stale numbers are still live in the source as of this audit (confirmed by my own grep), so any future agent or engineer who reads a route comment without first reading R-5 will misidentify which artboard, if any, actually covers that screen."
+    },
+    {
+      "kind": "pre-parsed-inventory-silently-excludes-two-files",
+      "detail": "docs/redesign/canvas-inventory.json's total of 135 is correct against my own regex parse of the 6 numbered .dc.html files (56 base screens x light/dark + variant states = 135, verified independently). But two more .dc.html files sit in the same docs/design/redesign-2026-08/ folder -- 'Home Variants.dc.html' (ids '3e', 'l1': alternate home-screen treatments, e.g. 'Dark - approved') and 'Landing Video Concept.dc.html' (ids 'v1'/'v2'/'v3'/'kd-landing-still': marketing video-concept frames, one of which -- V3 -- is the actual ruling for the Welcome screen per DECISIONS.md R-14). Neither file's ids match the sNN pattern the inventory script looks for, so both are invisible to it.",
+      "hides": "R-14 (Welcome screen) rules in favor of an artboard that the pre-parsed inventory doesn't know exists at all. Anyone using canvas-inventory.json as the complete artboard index would never find the artboard the product owner actually chose for Welcome."
+    },
+    {
+      "kind": "environment-caveat",
+      "detail": "build/shots/*.png (236 files, enumerated and used as the basis for the has_capture analysis in this report) was overwritten mid-audit by what appears to be a concurrent Android/Gradle build in this same working directory -- build/ now contains only Gradle output directories (app, .cxx, camera_android_camerax, etc.), no shots/ folder. The has_capture column reflects the snapshot taken before that happened, not the current filesystem state.",
+      "hides": "N/A -- disclosed so the has_capture column is read as 'true as of the moment it was sampled,' not as a live, currently-reproducible fact. Re-run the capture harness and re-diff before relying on this column again."
+    }
+  ]
+}
