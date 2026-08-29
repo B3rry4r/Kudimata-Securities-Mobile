@@ -462,10 +462,19 @@ class _SummaryRow extends StatelessWidget {
         border: divider ? Border(bottom: BorderSide(color: KColor.hairline, width: 1)) : null,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: labelStyle),
-          valueWidget ?? Text(value!, style: valueStyle.tnum),
+          const SizedBox(width: 12),
+          Expanded(
+            child: valueWidget ??
+                Text(
+                  value!,
+                  style: valueStyle.tnum,
+                  textAlign: TextAlign.right,
+                ),
+          ),
         ],
       ),
     );
@@ -906,11 +915,17 @@ class _BuySharesSheetState extends State<_BuySharesSheet> {
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(isNow ? 'Estimated total' : 'Total to pay', style: KType.body(color: KColor.ink2)),
-            Text(_feeUnknown, style: KType.body(color: KColor.ink3)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _feeUnknown,
+                style: KType.body(color: KColor.ink3),
+                textAlign: TextAlign.right,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -1550,11 +1565,17 @@ class _SellSharesSheetState extends State<_SellSharesSheet> {
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(isNow ? 'You should receive' : 'You receive', style: KType.body(color: KColor.ink2)),
-            Text(_feeUnknown, style: KType.body(color: KColor.ink3)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _feeUnknown,
+                style: KType.body(color: KColor.ink3),
+                textAlign: TextAlign.right,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
