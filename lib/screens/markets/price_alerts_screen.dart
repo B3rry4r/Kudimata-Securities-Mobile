@@ -170,7 +170,13 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
   /// sent to Markets instead of an empty picker.
   Future<void> _openNewAlert(List<Asset> watchlist) async {
     if (watchlist.isEmpty) {
-      context.push(Routes.markets);
+// `go`, never `push`. These four are StatefulShellRoute branch ROOTS:
+      // pushing one stacks a second, detached copy of that tab on top of
+      // the shell, so the bottom nav the investor can see belongs to the
+      // shell underneath and stops responding — reported as "the markets
+      // tab is disabled". `go` switches the branch, which is what a tab
+      // change actually is.
+      context.go(Routes.markets);
       return;
     }
     final ticker = await showModalBottomSheet<String>(

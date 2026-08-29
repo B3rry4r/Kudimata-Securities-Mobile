@@ -92,7 +92,10 @@ class _PlansScreenState extends State<PlansScreen> {
           primary: 'Add money',
           onPrimary: () {
             Navigator.of(context).pop();
-            context.push(Routes.wallet);
+// `go`, never `push` — Routes.wallet is a tab branch root, and
+            // pushing one detaches it from the shell so the bottom nav
+            // stops responding. See price_alerts_screen.dart's note.
+            context.go(Routes.wallet);
           },
         ),
       ),
