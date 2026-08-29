@@ -60,7 +60,16 @@ List<(String title, String route, String? icon, String? sub)> _menuRows(int pend
     // (both out of this pass's scope) already say "Account › Personal
     // info" verbatim; renaming here alone would silently break that
     // cross-screen breadcrumb. SHARED-CHANGE REQUEST filed in the report.
-    ('Personal info', Routes.acctPersonal, 'profile', 'Name, contact, address'),
+    // 2026-08-29 exactness pass: s51's own row text is "Personal details",
+    // not "Personal info" — the prior comment here defended "Personal info"
+    // for cross-screen breadcrumb consistency with suitability_result_screen.dart
+    // and dormant_account_screen.dart's "Account › Personal info" copy, but a
+    // defence for keeping a divergence isn't a ruling that authorises it, and
+    // no entry in docs/redesign/DECISIONS.md covers this label. Renamed to
+    // match s51; the other two screens are out of this pass's scope and now
+    // read one word out of step with this row — SHARED-CHANGE REQUEST filed
+    // in the report so that breadcrumb gets the same fix.
+    ('Personal details', Routes.acctPersonal, 'profile', 'Name, contact, address'),
     // 2026-08-24: trailing bank name/masked number removed per direct
     // product instruction ("You tab should not show the user bank account
     // and number... so that the bank account and DCS can sit properly") —
@@ -108,20 +117,24 @@ List<(String title, String route, String? icon, String? sub)> _menuRows(int pend
       'doc',
       'Annual summary, WHT credit notes',
     ),
-    // s51 calls this "Terms and disclosures" with a "All eight documents"
+    // s51 calls this row "Terms and disclosures" with a "All eight documents"
     // sub — R-8/C-4 (DECISIONS.md) already ruled the real set is 4
     // documents, not 8, so that clause is not transcribed (would be a
     // false claim). 2026-08-24: trailing document count removed per direct
     // product instruction as a separate, earlier decision.
     //
-    // 2026-08-29 exactness pass: moved back up to sit directly before "Data
-    // & privacy" — s51's own row order is …Complaints → Terms and
+    // 2026-08-29 exactness pass: title corrected from "Legal" to s51's own
+    // "Terms and disclosures" — no DECISIONS.md ruling authorises "Legal",
+    // it was a paraphrase. Also moved back up to sit directly before "Data
+    // and privacy" — s51's own row order is …Complaints → Terms and
     // disclosures → Data and privacy (its last drawn row); this used to sit
     // dead last, after two undrawn rows, which silently reordered the two
     // drawn rows relative to each other.
-    ('Legal', Routes.acctLegal, 'doc', 'Terms, risk disclosure, client agreement'),
+    ('Terms and disclosures', Routes.acctLegal, 'doc', 'Terms, risk disclosure, client agreement'),
     // s51: 'settings' · "Consents, export, deletion" — s51's own last row.
-    ('Data & privacy', Routes.acctDataPrivacy, 'settings', 'Consents, export, deletion'),
+    // 2026-08-29 exactness pass: "Data & privacy" -> "Data and privacy" —
+    // s51 spells it out, no ampersand; no ruling authorises the shorthand.
+    ('Data and privacy', Routes.acctDataPrivacy, 'settings', 'Consents, export, deletion'),
     // Not an s51 row — kept, real, wired (FAQ + contact channels + file a
     // complaint).
     ('Help & support', Routes.acctHelp, 'mail', 'FAQs, contact, file a complaint'),
@@ -201,45 +214,61 @@ class _AccountScreenState extends State<AccountScreen> {
     final kycApproved = AppScope.of(context).kycApproved;
     return Scaffold(
       backgroundColor: KColor.bg,
-      // Pushed from Home's header avatar (R-28, docs/redesign/DECISIONS.md)
-      // rather than a tab root — same KDetailHeader chrome every other
-      // pushed account screen uses (see KAccountSubScaffold), so there's a
-      // visible/tappable back affordance in addition to the edge-swipe and
-      // hardware back that already worked.
-      appBar: const KDetailHeader(title: 'Account'),
+      // AUDIT-2026-08-29 (s51 exactness pass): s51 draws "You" as a plain
+      // 26px/800-weight title sitting directly under the status bar — NOT a
+      // `KDetailHeader` bar with a back chevron (the prior comment here
+      // defended that chevron by citing R-28's "pushed from Home's header
+      // avatar", but R-28 only rules HOW this screen is reached, not what
+      // its own header renders; s51 itself has no back affordance drawn
+      // anywhere, same as every other tab-root screen — see
+      // markets_screen.dart's identical bare `Text(_, style: KType.title())`
+      // pattern, reused here rather than forking a new header widget).
+      // Going back still works exactly as before: edge-swipe and hardware
+      // back were never wired through the chevron in the first place.
       body: SafeArea(
-        top: false,
-        child: FutureBuilder<(PersonalInfo, AiCreditStatus, int)>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const KLoadingView();
-            }
-            if (snapshot.hasError) {
-              return KErrorView(onPrimary: _reload);
-            }
-            final (info, credits, pendingCorpActions) = snapshot.data!;
-            return _AccountBody(
-              info: info,
-              credits: credits,
-              pendingCorpActions: pendingCorpActions,
-              verified: kycApproved,
-              lang: _lang,
-              onLangChanged: (v) => setState(() => _lang = v),
-              // Personal info can change name/avatar (this screen's own
-              // header); Plans & credits can change the balance shown here
-              // (the compact meter + the menu row both push there) — both
-              // refetch this screen's data on return, same "persistent tab,
-              // never disposed, so nothing refreshes without this" fix as
-              // account_screen.dart's earlier stale-data bug.
-              onReturnFromPersonalInfo: _reload,
-              onReturnFromPlans: _reload,
-              signingOut: _signingOut,
-              onSignOut: () => _signOut(context, (busy) {
-                if (mounted) setState(() => _signingOut = busy);
-              }),
-            );
-          },
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 0),
+              child: Align(alignment: Alignment.centerLeft, child: Text('You', style: KType.title())),
+            ),
+            Expanded(
+              child: FutureBuilder<(PersonalInfo, AiCreditStatus, int)>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const KLoadingView();
+                  }
+                  if (snapshot.hasError) {
+                    return KErrorView(onPrimary: _reload);
+                  }
+                  final (info, credits, pendingCorpActions) = snapshot.data!;
+                  return _AccountBody(
+                    info: info,
+                    credits: credits,
+                    pendingCorpActions: pendingCorpActions,
+                    verified: kycApproved,
+                    lang: _lang,
+                    onLangChanged: (v) => setState(() => _lang = v),
+                    // Personal info can change name/avatar (this screen's
+                    // own header); Plans & credits can change the balance
+                    // shown here (the compact meter + the menu row both push
+                    // there) — both refetch this screen's data on return,
+                    // same "persistent tab, never disposed, so nothing
+                    // refreshes without this" fix as account_screen.dart's
+                    // earlier stale-data bug.
+                    onReturnFromPersonalInfo: _reload,
+                    onReturnFromPlans: _reload,
+                    signingOut: _signingOut,
+                    onSignOut: () => _signOut(context, (busy) {
+                      if (mounted) setState(() => _signingOut = busy);
+                    }),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -318,16 +347,33 @@ class _AccountBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Subtitle mirrors the canvas's "CHN 1234567890 · NGX account live"
-    // shape with real data: cscsNumber is '—' until KYC assigns one, and
-    // accountStatus reflects the real lifecycle state (active/frozen/
-    // dormant/...) rather than assuming every account is live.
+    // s51's own caption is a single inline line: "✓ Verified · CHN 0912455"
+    // — no account-lifecycle clause at all, because its mock investor is a
+    // plain active/verified account. Real accountStatus (active/frozen/
+    // dormant/...) is data the design's happy path never had to represent
+    // but this screen must not silently drop — a frozen/dormant investor
+    // losing that signal here is a real regression, not a cosmetic one — so
+    // a non-active status is appended to whichever line (verified or
+    // unverified) is showing, rather than invented into the design or thrown
+    // away to match it (R-30: non-happy states are owed by us, not the
+    // canvas).
     final hasChn = info.cscsNumber != '—' && info.cscsNumber.isNotEmpty;
     final statusLower = info.accountStatus.trim().toLowerCase();
-    final statusText = statusLower.isEmpty || statusLower == 'active'
-        ? 'Account live'
+    final nonActiveStatus = statusLower.isEmpty || statusLower == 'active'
+        ? null
         : '${info.accountStatus[0].toUpperCase()}${info.accountStatus.substring(1)} account';
-    final subtitle = hasChn ? 'CHN ${info.cscsNumber} · $statusText' : statusText;
+    // s51's own text for the verified line — "Verified" alone until KYC
+    // assigns a CHN, then "Verified · CHN ####".
+    final verifiedLine = [
+      'Verified',
+      if (hasChn) 'CHN ${info.cscsNumber}',
+      ?nonActiveStatus,
+    ].join(' · ');
+    final unverifiedLine = [
+      if (hasChn) 'CHN ${info.cscsNumber}',
+      ?nonActiveStatus,
+    ].join(' · ');
+    final subtitle = verified ? verifiedLine : unverifiedLine;
 
     final rows = _menuRows(pendingCorpActions);
 
@@ -341,15 +387,17 @@ class _AccountBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Profile header — AUDIT-2026-08-29/A-3 fix: s51 draws this row
-          // (illustrated Avatar, "CHN ... · Account live" subtitle, a
-          // "Verified" StatusPill) inside its own paper/hairline card,
-          // separate from the menu list below — this used to render as a
-          // bare, borderless Row, a real visual difference from the current
-          // s51 (the surrounding comment previously cited the OLD "#s45",
-          // R-5's stale-id trap; corrected here). 2026-08-24: the avatar is
-          // a real, user-chosen field (info.avatarKey) — an investor who
-          // hasn't picked one gets no avatar circle at all, just their name
-          // (see KAvatar's doc comment), not a generated placeholder.
+          // (illustrated Avatar, name, and a small inline "✓ Verified · CHN
+          // ..." line in `--gain`) inside its own paper/hairline card,
+          // separate from the menu list below.
+          //
+          // 2026-08-29 exactness pass: the verified affordance itself was
+          // still wrong — a `KStatusPill` badge reading "VERIFIED" plus a
+          // separate "Account live" subtitle line, not s51's single inline
+          // check-mark + "Verified · CHN ..." caption under the name. s51
+          // draws no unverified state at all, so that branch keeps the
+          // existing pill (a real, sensible non-happy state per R-30,
+          // not an invented design element).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: KCard(
@@ -366,16 +414,27 @@ class _AccountBody extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(info.fullName, style: KType.section()),
-                        const SizedBox(height: 2),
-                        Text(subtitle, style: KType.data(color: KColor.ink3)),
+                        const SizedBox(height: 3),
+                        if (verified)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              KIcon('check', size: 13, color: KColor.gain),
+                              const SizedBox(width: 6),
+                              Text(subtitle, style: KType.data(color: KColor.gain)),
+                            ],
+                          )
+                        else
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(subtitle, style: KType.data(color: KColor.ink3)),
+                              const SizedBox(width: 8),
+                              const KStatusPill(status: KStatus.pending, label: 'Unverified', small: true),
+                            ],
+                          ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  KStatusPill(
-                    status: verified ? KStatus.approved : KStatus.pending,
-                    label: verified ? 'Verified' : 'Unverified',
-                    small: true,
                   ),
                 ],
               ),
@@ -428,15 +487,17 @@ class _AccountBody extends StatelessWidget {
           // draws on `--warm-tint` (still with an indicator-coloured icon).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
-            child: KAccountCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (var i = 0; i < rows.length; i++)
+                for (var i = 0; i < rows.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
                   KAccountRow(
                     title: rows[i].$1,
                     icon: rows[i].$3,
                     iconTint: rows[i].$2 == Routes.corpActions ? KColor.warmTint : KColor.indicatorTint,
                     sub: rows[i].$4,
-                    first: i == 0,
+                    standalone: true,
                     onTap: () async {
                       await context.push(rows[i].$2);
                       if (rows[i].$2 == Routes.acctPersonal) {
@@ -445,6 +506,7 @@ class _AccountBody extends StatelessWidget {
                     },
                     right: const KRowChevron(),
                   ),
+                ],
               ],
             ),
           ),

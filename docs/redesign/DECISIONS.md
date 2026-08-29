@@ -658,6 +658,30 @@ viewer pattern would record acceptance for a document nobody could read.
 and never took the assessment. It is no longer the only path to the
 questionnaire, which is what R-1a was about — it is a safety net behind it.
 
+> **SUPERSEDED 2026-08-29 — product owner, verbatim:** *"risk disclosure
+> should be part of the legal docs screen not a standalone before them they
+> should be in on user opens and then can click on the checkmark leave the
+> scroll thing please."*
+>
+> This reverses this ruling's own central move: risk disclosure goes back
+> into the legal-documents bundle (`terms_and_privacy_screen.dart`) as one
+> row among the other three, not a standalone screen ahead of it. **What
+> does NOT change:** the scroll-to-bottom gate this ruling's whole rationale
+> rested on — "the only mechanism producing evidence the investor was shown
+> the text" — is explicitly kept ("leave the scroll thing please"), just
+> relocated. The mechanic is: the investor taps the Risk Disclosure row
+> (same open-then-check pattern the other three documents already use),
+> which pushes an in-app scroll-gated viewer
+> (`risk_disclaimer_screen.dart`'s `RiskDisclosureScrollScreen`) instead of
+> handing off to the phone's native viewer the other three use; the row only
+> counts as "opened" once genuinely scrolled to the end, exactly as strong a
+> signal as before. Both "must not be lost" items above carried over intact:
+> `setSignedIn(true)` now fires in `legal_acceptance_screen.dart`'s shared
+> accept action when its `kinds` include `risk_disclosure`, and R-2 still
+> holds (no profile is ever displayed). This is a placement change, not a
+> reversal of the evidentiary standard — the old arrangement above is kept
+> verbatim for history; it is no longer what the app does.
+
 ---
 
 ## Rulings 2026-08-27 (evening) — the simulation phase
@@ -902,3 +926,32 @@ API does not enforce is not a rule, it is a suggestion rendered in a tick-box.
 The policy lives in **one** place that every password entry point uses — sign-up,
 password reset, and staff invite acceptance. A policy enforced at sign-up but not
 at reset is one an attacker walks around by resetting.
+
+### R-44 — The avatar picker belongs to onboarding, and is optional
+*Ruled by the product owner, 2026-08-29.*
+
+An investor is offered an avatar **during onboarding**. Not during KYC, and not
+from `kyc_intro`. Owner's words: *"avatar should never be on KYC — onboarding."*
+
+Choosing one is **optional**. Whoever skips it gets their name rendered as text
+wherever an avatar would appear — that was the original instruction when the
+screen was added on 2026-08-24, and it still holds. The screen offers a choice;
+it does not gate Home.
+
+**Why this ruling exists at all:** the screen was built, given artboard `s06b` /
+`s06bd`, registered in the router — and then silently stranded. Its entry point
+was `kyc_intro.dart`'s `_start()`, which was later rewritten to route straight to
+`Routes.kycChecklist` / `Routes.kycBvn`. Nothing navigated to the avatar screen
+after that. It was never cut, never ruled out, never mentioned; it just stopped
+being reachable, and its own header comment went on describing the dead entry
+point as if it were live.
+
+The product owner found it by noticing it was gone. That is the failure mode
+this file exists to prevent, so the rule is written down rather than left to
+whoever next reads the flow:
+
+**A screen losing its entry point is not the same as a screen being cut.** Any
+pass that removes or rewrites a navigation call must account for every
+destination that call was the only route to — and a destination left with no
+callers is reported, never silently accepted. `personal_details_screen.dart` was
+stranded by the same rewrite and is still open at the time of this ruling.

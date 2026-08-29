@@ -1,8 +1,17 @@
 // Suitability — completion screen. Per R-2 (docs/redesign/DECISIONS.md), this
 // screen does not announce the computed profile; it confirms the assessment
-// is done and sends the investor on to the statutory Risk Disclaimer, which
-// is where the categorisation is legally required to appear. No purple donut.
-// Ported from risk-screens.jsx (SuitabilityResult).
+// is done and sends the investor on to the legal documents screen, which
+// includes the statutory Risk Disclosure and is where the categorisation is
+// legally required to appear. No purple donut. Ported from risk-screens.jsx
+// (SuitabilityResult).
+//
+// 2026-08-29 (DECISIONS.md's R-8a superseded note): this used to `push`
+// Routes.riskDisclaimer, a standalone scroll-gated screen, with a
+// RiskDisclaimerArgs `extra` carrying the just-computed profile (R-2 meant
+// it was never actually rendered there either). Risk disclosure is back in
+// the legal-documents list now (terms_and_privacy_screen.dart), so this
+// screen just `go`es straight to Routes.termsOfService — no args to carry,
+// no risk-disclaimer hop in between.
 //
 // GET /suitability-result/me (SuitabilityRepository.me, see
 // lib/data/repositories/suitability_repository.dart) supplies the real
@@ -20,7 +29,6 @@ import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
-import 'risk_disclaimer_screen.dart' show RiskDisclaimerArgs;
 import 'package:kudimata_invest/data/repositories/suitability_repository.dart';
 
 class SuitabilityResultScreen extends StatefulWidget {
@@ -100,10 +108,10 @@ class _SuitabilityResultBody extends StatelessWidget {
                 // unlock card framed the whole product as a limitation at
                 // the exact moment the investor finished onboarding. Naming
                 // the profile twice in a row was also redundant — the
-                // statutory Risk Disclaimer on the very next screen is where
-                // the categorisation legally has to appear, and it still
-                // shows it (RiskDisclaimerArgs below carries `result.profile`
-                // through unchanged).
+                // statutory Risk Disclosure, one of the documents on the
+                // very next screen, is where the categorisation legally has
+                // to appear (still true; it just no longer needs a
+                // route-`extra` to get there — see file header).
                 Text('Assessment complete', style: KType.title()),
                 const SizedBox(height: 6),
                 Text(
@@ -119,7 +127,11 @@ class _SuitabilityResultBody extends StatelessWidget {
                   // test screenshots (confirmed via fontTools:
                   // NunitoSans-Regular.ttf's cmap has no 0x2192). U+203A
                   // (›) is covered and reads the same way.
-                  'You can retake this any time in Account › Personal info.',
+                  // Breadcrumb must name the row as the Account hub labels it. The hub
+// renamed to s58's 'Personal details' on 2026-08-29; a breadcrumb
+// pointing at a label that no longer exists sends the investor looking
+// for a row they will not find.
+                  'You can retake this any time in Account › Personal details.',
                   style: KType.data(color: KColor.ink3),
                 ),
               ],
@@ -132,21 +144,23 @@ class _SuitabilityResultBody extends StatelessWidget {
               children: [
                 KButton(
                   label: 'Continue',
-                  // 2026-08-24: routes to the Statutory Risk Disclaimer
-                  // instead of straight to Home — restored per direct
-                  // product instruction (real SEC compliance intake, "My
-                  // observations on KSL papers.docx"): the disclaimer must
-                  // appear immediately after suitability and show this
-                  // computed profile dynamically. setSignedIn(true) moved
-                  // to that screen's own Accept & Proceed action — this is
-                  // no longer the last gated step of onboarding.
+                  // 2026-08-24: routes onward instead of straight to Home —
+                  // per direct product instruction (real SEC compliance
+                  // intake, "My observations on KSL papers.docx"): a
+                  // statutory notice must appear immediately after
+                  // suitability. 2026-08-29 (R-8a superseded, file header):
+                  // that notice is one of termsOfService's documents now,
+                  // not a standalone screen reached with a route `extra` —
+                  // `go`, not `push`, matching this file's own "linear
+                  // gated step" convention (routes.dart's header). Sign-in
+                  // completion fires inside termsOfService's own accept
+                  // action when its documents include risk_disclosure (see
+                  // legal_acceptance_screen.dart) — this is still not the
+                  // last gated step of onboarding.
                   fullWidth: true,
                   onPressed: () {
                     AppScope.read(context).setSuitabilityComplete(true);
-                    context.push(
-                      Routes.riskDisclaimer,
-                      extra: RiskDisclaimerArgs(profile: result.profile),
-                    );
+                    context.go(Routes.termsOfService);
                   },
                 ),
                 const SizedBox(height: 12),

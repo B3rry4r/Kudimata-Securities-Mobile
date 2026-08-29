@@ -4,32 +4,44 @@
 // onboard... then it is used everywhere... and those who don't select gets
 // only their name text").
 //
-// Reached the same way personal_details_screen.dart is — from
-// kyc_intro.dart's `_start()`, right after personal details are confirmed
-// and before KYC actually begins — NOT forced between login and Home
-// (personal_details_screen.dart's own header comment documents why that
-// blocking-before-Home shape was already tried and reverted: "a few more
-// details should be part of the KYC and not a separate step after login").
-// Same reasoning applies here: this is offered at the one point an investor
-// has already signaled intent to go further (starting verification), not a
-// forced gate on every fresh sign-up. `s06b` itself draws the back arrow
-// returning to `s06` (Face ID) since in the canvas's own linear flow this
-// sits right after it — this app's real flow reaches this screen via
-// `context.go` from `onboarding/personal`, so "back" returns there instead,
-// the nearest real equivalent of "the step before this one".
+// R-44 (DECISIONS.md, 2026-08-29): reached from biometric_screen.dart's two
+// exits (`_proceed()`, after "Turn on <biometric>"/"Maybe later"), in
+// ONBOARDING — never from KYC. Owner's words: "avatar should never be on
+// KYC — onboarding." This screen used to be reached from
+// kyc_intro.dart's `_start()`, the same way personal_details_screen.dart
+// still claims to be — that entry point stopped existing when kyc_intro.dart
+// was rewritten to route straight to Routes.kycChecklist/Routes.kycBvn
+// (2026-08-29 A-1 audit fix), and nothing else called `context.go`/`push`
+// on this route afterwards: it sat fully built, registered, and completely
+// unreachable until the owner noticed it was gone. R-44 records the fix and
+// the rule ("a screen losing its entry point is not the same as a screen
+// being cut") so it does not happen again silently. `s06b` itself draws the
+// back arrow returning to `s06` (Face ID) since in the canvas's own linear
+// flow this sits right after it — this app's real flow reaches this screen
+// via `context.go` from `Routes.biometric`, so "back" returns there
+// instead, the nearest real equivalent of "the step before this one".
 //
 // Both exits go to Routes.onboardingNextSteps (X-4, SHARED-CHANGES.md
 // 2026-08-27) — "s07"/whats_next_screen.dart's "Your account is ready"
 // checklist, which sits between avatar selection and KYC start in the
-// canvas's own linear flow, not straight back into kyc_intro.dart.
+// canvas's own linear flow, and was itself never stranded (it has no other
+// caller, so restoring this screen's entry point restores its reachability
+// too).
 //
-// Entirely optional — both "Skip" (top-right) and "Use this avatar" (with
-// nothing chosen) proceed to KYC without saving anything; only choosing a
-// tile and continuing calls updateProfile. `s06b` itself shows its first
-// tile pre-selected purely to demonstrate the selected-tile styling in the
-// static mock — defaulting a fresh signup to an avatar they never tapped
-// would contradict the "only those who select get one" product direction
-// above, so this screen starts with nothing chosen.
+// Entirely optional (still true under R-44 — "choosing one is optional...
+// the screen offers a choice, it does not gate Home") — both "Skip"
+// (top-right) and "Use this avatar" (with nothing chosen) proceed onward
+// without saving anything, and whoever skips gets their name rendered as an
+// initial-letter avatar instead (the null-avatarKey fallback home_screen.dart
+// / account_screen.dart / log_in_screen.dart each already draw — this
+// screen has no fallback of its own to build; it only ever writes
+// `avatarKey` when the investor actually picks a tile). Only choosing a
+// tile and continuing calls updateProfile. `s06b`
+// itself shows its first tile pre-selected purely to demonstrate the
+// selected-tile styling in the static mock — defaulting a fresh signup to
+// an avatar they never tapped would contradict the "only those who select
+// get one" product direction above, so this screen starts with nothing
+// chosen.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -87,7 +99,7 @@ class _OnboardingAvatarScreenState extends State<OnboardingAvatarScreen> {
                   KIconButton(
                     icon: 'back',
                     semanticLabel: 'Back',
-                    onPressed: () => context.go(Routes.onboardingPersonal),
+                    onPressed: () => context.go(Routes.biometric),
                   ),
                   GestureDetector(
                     onTap: _skip,

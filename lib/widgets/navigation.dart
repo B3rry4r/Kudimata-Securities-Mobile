@@ -29,6 +29,8 @@
 // [KShadow.nav] and [KColor.indicatorTint] are still used elsewhere (see
 // widgets/feedback.dart and ~30 screen call sites) — not removed as tokens,
 // just no longer read by this widget.
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import '../theme/tokens.dart';
 import 'k_icon.dart';
@@ -72,7 +74,22 @@ class KBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 14, 8, 14),
+      // The bottom inset is added INSIDE this container, not by a SafeArea
+      // wrapped around it. That distinction is the whole fix: a SafeArea
+      // outside pads the coloured surface away from the screen edge, so the
+      // bar's `paper` background stopped short and the screen showed through
+      // underneath — exactly where an Android gesture bar or a home indicator
+      // sits, which reads as a transparent strip under the nav.
+      //
+      // s22 draws `padding:14px 8px 26px` on a static 390px artboard, where
+      // that 26 is standing in for BOTH a comfortable bottom margin and a
+      // real home-indicator inset — an artboard cannot tell those apart.
+      // Split for a real device: 14 to match the top, plus whichever is
+      // larger of the device's own inset or 12. No inset lands at 26, the
+      // canvas's number; a notched device gets its real inset instead of
+      // 26 plus the inset on top.
+      padding: EdgeInsets.fromLTRB(
+        8, 14, 8, 14 + math.max(12.0, MediaQuery.viewPaddingOf(context).bottom)),
       decoration: BoxDecoration(
         color: KColor.paper,
         border: Border(top: BorderSide(color: KColor.hairline)),

@@ -29,6 +29,19 @@
 // page — nothing client-side can detect that in advance). This is a weaker
 // acceptance signal than scroll-to-bottom-of-real-text and is intentionally
 // not overstated as equivalent.
+//
+// RISK DISCLOSURE IS THE ONE EXCEPTION TO THAT PATTERN (2026-08-29,
+// DECISIONS.md's R-8a superseded note): it was pulled out into its own
+// scroll-gated screen ahead of this one on 2026-08-27, then folded back
+// into this list on direct product instruction — "risk disclosure should
+// be part of the legal docs screen not a standalone before them... leave
+// the scroll thing please". So its row is 'opened' by the same open-then-
+// checkbox mechanic as the other three, but tapping it pushes
+// risk_disclaimer_screen.dart's `RiskDisclosureScrollScreen` (an in-app,
+// scroll-to-bottom-gated view of the real content) instead of handing off
+// to the phone's native viewer — see `_open` below. It is the one document
+// here for which "opened" still means "genuinely scrolled to the end",
+// exactly as strong an acceptance signal as it always was.
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -40,6 +53,7 @@ import 'package:kudimata_invest/data/repositories/legal_documents_repository.dar
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/screens/onboarding/onboarding_scaffold.dart' show KOnboardTopBar;
+import 'risk_disclaimer_screen.dart' show RiskDisclosureScrollScreen;
 
 /// Display titles per kind — canvas s05's document-list row labels.
 const Map<String, String> _kDocTitle = {
@@ -96,10 +110,13 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
   String? _error;
 
   /// Kinds the investor has tapped open at least once — the acceptance-
-  /// evidence gate under R-8 (see file header). A kind with no file
-  /// attached yet (`fileObjectKey.isEmpty`) can't be opened at all, so it's
-  /// excluded from this requirement rather than permanently blocking
-  /// acceptance of the other, available documents.
+  /// evidence gate under R-8 (see file header). A kind with no content
+  /// attached yet can't be opened at all, so it's excluded from this
+  /// requirement rather than permanently blocking acceptance of the other,
+  /// available documents. "No content" means `fileObjectKey.isEmpty` for
+  /// the three phone-viewer documents, but `sections.isEmpty` for
+  /// risk_disclosure — it has no file to speak of, it's rendered in-app
+  /// from `sections` (see [_unavailable]).
   final Set<String> _opened = {};
   String? _openingKind;
 
@@ -109,13 +126,31 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
     return Future.wait(widget.kinds.map(_legalRepo.getContent));
   }
 
+  /// True when [d] has no real content behind it yet — see [_opened]'s doc
+  /// comment for why risk_disclosure checks a different field than the
+  /// other three.
+  bool _unavailable(LegalDocument d) =>
+      d.kind == 'risk_disclosure' ? d.sections.isEmpty : d.fileObjectKey.isEmpty;
+
   bool _allOpened(List<LegalDocument> docs) => docs.every(
-        (d) => d.fileObjectKey.isEmpty || _opened.contains(d.kind),
+        (d) => _unavailable(d) || _opened.contains(d.kind),
       );
 
   Future<void> _open(LegalDocument doc) async {
-    if (doc.fileObjectKey.isEmpty) {
+    if (_unavailable(doc)) {
       _snack("${_kDocTitle[doc.kind] ?? doc.title} hasn't been uploaded yet.");
+      return;
+    }
+    // Risk disclosure: in-app scroll-gated viewer, not the phone's native
+    // file viewer — see file header. `_opened` is only set on a `true` pop,
+    // i.e. genuinely scrolled to the end, never on a bare back-out.
+    if (doc.kind == 'risk_disclosure') {
+      final result = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => RiskDisclosureScrollScreen(document: doc)),
+      );
+      if (result == true && mounted) {
+        setState(() => _opened.add(doc.kind));
+      }
       return;
     }
     setState(() => _openingKind = doc.kind);
@@ -152,14 +187,22 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
       }
       if (!mounted) return;
       // Keeps AppState.riskDisclosureAccepted in sync when this bundle
-      // covers risk_disclosure (R-8: it's just one of the four documents
-      // here now, not its own screen) — without this, app_state.dart's
-      // tradingEligibilityGap would still re-route a freshly-onboarded
-      // investor to Routes.riskDisclaimer post-KYC despite having already
-      // accepted it on this screen, since that flag is otherwise only ever
-      // set by risk_disclaimer_screen.dart's own _accept().
+      // covers risk_disclosure (R-8, then R-8a-superseded 2026-08-29: it's
+      // one of the documents here now, not its own screen) — without this,
+      // app_state.dart's tradingEligibilityGap would still re-route a
+      // freshly-onboarded investor to Routes.termsOfService post-KYC
+      // despite having already accepted it on this screen, since that flag
+      // is otherwise only ever set here.
+      //
+      // setSignedIn(true) rides along with it (moved from the old standalone
+      // risk-disclaimer screen's own accept action, per R-8a's own "two
+      // things that must not be lost in the rewiring" note — DECISIONS.md):
+      // the onboarding chain's sign-in completion has to fire exactly at
+      // the point risk disclosure is accepted, wherever that step lands.
       if (widget.kinds.contains('risk_disclosure')) {
-        AppScope.read(context).setRiskDisclosureAccepted(true);
+        final app = AppScope.read(context);
+        app.setRiskDisclosureAccepted(true);
+        if (!app.signedIn) app.setSignedIn(true);
       }
       await widget.onAccepted(context);
     } on ApiException catch (e) {

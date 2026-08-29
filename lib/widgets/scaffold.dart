@@ -96,15 +96,32 @@ class KDetailHeader extends StatelessWidget implements PreferredSizeWidget {
         height: _bar,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
+          // Matches the canvas's detail header exactly (s52 and every other
+          // detail artboard draw the same one, verified against the rendered
+          // artboard 2026-08-29, not read off the markup):
+          //
+          //   back:  40x40, border-radius:999px, background:var(--track),
+          //          icon "back" at 19
+          //   title: centred, font-display 700 at 16
+          //   right: a 40px spacer, which is what keeps the title optically
+          //          centred rather than centred-in-the-gap
+          //
+          // Before this it was a bare 22px chevron with a LEFT-aligned title
+          // and no circle — a divergence on every detail screen in the app,
+          // reported by the product owner.
           child: Row(
             children: [
               GestureDetector(
                 onTap: onBack ?? () => Navigator.of(context).maybePop(),
                 behavior: HitTestBehavior.opaque,
-                child: SizedBox(
+                child: Container(
                   width: 40,
                   height: 40,
-                  child: Center(child: KIcon('back', size: 22, color: KColor.ink)),
+                  decoration: BoxDecoration(
+                    color: KColor.track,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Center(child: KIcon('back', size: 19, color: KColor.ink)),
                 ),
               ),
               const SizedBox(width: 4),
@@ -117,13 +134,17 @@ class KDetailHeader extends StatelessWidget implements PreferredSizeWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: KType.section(),
+                  textAlign: TextAlign.center,
+                  style: KType.cardTitle(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (trailing != null) const SizedBox(width: 8),
-              ?trailing,
+              // The canvas's balancing spacer. Without it the title centres in
+              // the space LEFT OF the trailing control rather than in the bar,
+              // and shifts every time a screen adds or drops a trailing action.
+              trailing ?? const SizedBox(width: 40),
             ],
           ),
         ),

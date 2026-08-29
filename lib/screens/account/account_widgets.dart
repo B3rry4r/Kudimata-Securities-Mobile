@@ -80,6 +80,7 @@ class KAccountRow extends StatelessWidget {
     this.crossAlign = CrossAxisAlignment.center,
     this.titleColor,
     this.subUppercase = false,
+    this.standalone = false,
   });
 
   final String? icon;
@@ -111,43 +112,63 @@ class KAccountRow extends StatelessWidget {
   /// need the opposite.
   final bool subUppercase;
 
+  /// AUDIT-2026-08-29 (s51 exactness pass): s51's own hub rows are NOT one
+  /// grouped card with hairline dividers between rows — each row is its own
+  /// separate `--paper` card (radius 18, 1px hairline border, `14px 16px`
+  /// padding) with a 10px gap to its neighbours. Opt-in prop (never fork a
+  /// widget — add a prop) so every other `KAccountRow` call site (security,
+  /// personal info, data & privacy, ...) keeps today's single-card-with-
+  /// dividers look, which none of this pass's canvas evidence touches.
+  final bool standalone;
+
   @override
   Widget build(BuildContext context) {
-    final row = Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: first
-              ? BorderSide.none
-              : BorderSide(color: KColor.hairline, width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-      child: Row(
-        crossAxisAlignment: crossAlign,
-        children: [
-          if (icon != null) ...[
-            KIconBubble(icon!, tint: iconTint, iconColor: iconColor),
-            const SizedBox(width: 14),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(title, style: KType.cardTitle(color: titleColor, w: KWeight.medium)),
-                if (sub != null) ...[
-                  const SizedBox(height: 2),
-                  Text(subUppercase ? sub!.upper : sub!,
-                      style: KType.micro(color: KColor.ink3)
-                          .copyWith(letterSpacing: 0.04 * 10)),
-                ],
-              ],
-            ),
-          ),
-          if (right != null) ...[const SizedBox(width: 10), right!],
+    final content = Row(
+      crossAxisAlignment: crossAlign,
+      children: [
+        if (icon != null) ...[
+          KIconBubble(icon!, tint: iconTint, iconColor: iconColor),
+          const SizedBox(width: 14),
         ],
-      ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(title, style: KType.cardTitle(color: titleColor, w: KWeight.medium)),
+              if (sub != null) ...[
+                const SizedBox(height: 2),
+                Text(subUppercase ? sub!.upper : sub!,
+                    style: KType.micro(color: KColor.ink3)
+                        .copyWith(letterSpacing: 0.04 * 10)),
+              ],
+            ],
+          ),
+        ),
+        if (right != null) ...[const SizedBox(width: 10), right!],
+      ],
     );
+    final row = standalone
+        ? Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: KColor.paper,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: KColor.hairline, width: 1),
+            ),
+            child: content,
+          )
+        : Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: first
+                    ? BorderSide.none
+                    : BorderSide(color: KColor.hairline, width: 1),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+            child: content,
+          );
     if (onTap == null) return row;
     return GestureDetector(onTap: onTap, behavior: HitTestBehavior.opaque, child: row);
   }

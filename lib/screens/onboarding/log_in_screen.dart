@@ -802,8 +802,24 @@ class _LogInScreenState extends State<LogInScreen> {
 /// those flags accurately so Home can show the right "Complete your KYC"
 /// prompt (or none, if already done) — never to redirect away from Home.
 Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
-  await refreshKycGatingState(context);
+  final override = await hydrateGatingState(context);
   if (!context.mounted) return;
+  context.go(override ?? Routes.home);
+}
+
+/// Does everything [hydrateGatingStateAndRoute] does EXCEPT the final
+/// navigation — pulled apart 2026-08-29 (R-44, DECISIONS.md) so
+/// biometric_screen.dart can run these same real side effects (sign-in
+/// completion, cold-start-lock clearing, biometric re-hydration, the
+/// dormancy check) without being forced to land on Home immediately after:
+/// its own fresh-onboarding chain has an optional avatar-picker hop
+/// (Routes.onboardingAvatar) first. Returns [Routes.acctDormant] when the
+/// dormancy gate below fires, or `null` meaning "proceed to whatever this
+/// caller's own ordinary next step is" (Home, for every caller except
+/// biometric_screen.dart's onboarding chain).
+Future<String?> hydrateGatingState(BuildContext context) async {
+  await refreshKycGatingState(context);
+  if (!context.mounted) return null;
   final app = AppScope.read(context);
   app.setSignedIn(true);
   // A-6 cold-start fix: every path that reaches this function has just had a
@@ -827,7 +843,7 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   // it's already correct.
   if (!app.biometricEnabled) {
     final storedBiometric = await PasscodeStore().getBiometricEnabled();
-    if (!context.mounted) return;
+    if (!context.mounted) return null;
     if (storedBiometric) app.setBiometric(true);
   }
 
@@ -844,16 +860,13 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   // refreshKycGatingState's own header comment describes.
   try {
     final info = await UserRepository(AppScope.read(context).apiClient).personalInfo();
-    if (!context.mounted) return;
-    if (info.accountStatus == 'dormant') {
-      context.go(Routes.acctDormant);
-      return;
-    }
+    if (!context.mounted) return null;
+    if (info.accountStatus == 'dormant') return Routes.acctDormant;
   } on ApiException {
-    // Fall through to Home — see comment above.
+    // Fall through — see comment above.
   }
 
-  context.go(Routes.home);
+  return null;
 }
 
 /// The actual KYC/suitability fetch + AppState update [hydrateGatingStateAndRoute]

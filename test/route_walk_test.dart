@@ -70,7 +70,8 @@ void main() {
       '/account/statements',
       // gated
       '/signup', '/otp', '/passcode/create', '/passcode/confirm', '/biometric',
-      '/onboarding/personal', '/onboarding/next-steps', '/login', '/reset',
+      '/onboarding/personal', '/onboarding/avatar', '/onboarding/next-steps',
+      '/login', '/reset',
       // kyc (2026-08-24: re-sequenced to 8 real steps — chn, bank-dcs,
       // declarations, review were new; D-1, 2026-08-27 removals pass, R-9:
       // review dropped, next-of-kin is now the last step and submits
@@ -84,8 +85,10 @@ void main() {
       '/kyc/utility-bill',
       '/kyc/bank-dcs', '/kyc/declarations', '/kyc/next-of-kin',
       '/kyc/submitted', '/kyc/approved',
-      // suitability
-      '/suitability', '/suitability/result', '/suitability/risk-disclaimer',
+      // suitability. 2026-08-29 (DECISIONS.md's R-8a superseded note):
+      // '/suitability/risk-disclaimer' no longer exists — risk disclosure
+      // is one of '/suitability/terms's documents now, not its own route.
+      '/suitability', '/suitability/result',
       '/suitability/terms',
       // 2026-08-22 "Soft Landing" redesign additions — added after this
       // exact test's original list missed a real overflow bug on

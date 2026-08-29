@@ -22,9 +22,10 @@ class Routes {
   static const String otp = '/otp';
   // ALL FOUR legal documents (terms of service, privacy policy, risk
   // disclosure, client agreement) — ONE combined screen/tick (2026-08-20
-  // consolidation, final pass, see terms_and_privacy_screen.dart), accepted
-  // right after OTP verification, before passcode/KYC. Path segment still
-  // says "suitability" for historical reasons.
+  // consolidation, final pass; risk disclosure folded back in 2026-08-29,
+  // see terms_and_privacy_screen.dart and DECISIONS.md's R-8a superseded
+  // note), reached right after the suitability result, before passcode/KYC.
+  // Path segment still says "suitability" for historical reasons.
   static const String termsOfService = '/suitability/terms';
   static const String createPasscode = '/passcode/create';
   static const String confirmPasscode = '/passcode/confirm';
@@ -74,13 +75,17 @@ class Routes {
 
   // ── Suitability ──────────────────────────────────────────────────────────
   static const String questionnaire = '/suitability';
+  // suitabilityResult's own Continue action goes straight to termsOfService
+  // now. There is no standalone risk-disclaimer route any more — DECISIONS.
+  // md's R-8a (2026-08-27) put risk disclosure in its own scroll-gated
+  // screen ahead of the legal documents; the product owner reversed that on
+  // 2026-08-29 ("risk disclosure should be part of the legal docs screen
+  // not a standalone before them"). Risk disclosure is now one row in
+  // termsOfService's document list (terms_and_privacy_screen.dart), opened
+  // in-app with the same scroll-to-bottom gate it always had
+  // (risk_disclaimer_screen.dart's RiskDisclosureScrollScreen) before its
+  // checkbox unlocks — see that file's header for the full trace.
   static const String suitabilityResult = '/suitability/result';
-  // Last gated screen — Accept & Proceed here completes onboarding to Home.
-  // Restored 2026-08-24 (direct product instruction, real SEC compliance
-  // intake): the risk disclaimer moved back to running immediately after
-  // suitability instead of bundled into termsOfService at signup — see
-  // risk_disclaimer_screen.dart's header comment.
-  static const String riskDisclaimer = '/suitability/risk-disclaimer';
 
   // ── Tab roots (StatefulShellRoute / indexedStack) ────────────────────────
   // R-28: 4 tabs, Markets before Portfolio. "Assets" (the old nav label on
@@ -238,15 +243,21 @@ class Routes {
     otp: signup,
     questionnaire: otp,
     suitabilityResult: questionnaire,
-    // riskDisclaimer has no entry here on purpose — every path that reaches
-    // it (suitability_result_screen.dart's Continue AND Home's
-    // tradingEligibilityGap prompt, home_screen.dart) uses `context.push()`,
-    // so it always has a real Navigator entry underneath and
-    // app_router.dart's `_handleGatedBack` pops it normally before ever
-    // consulting this map.
-    termsOfService: riskDisclaimer,
+    // termsOfService is reached two ways: suitability_result_screen.dart's
+    // Continue action `context.go()`es here directly (no risk-disclaimer
+    // hop any more — 2026-08-29), which is what this entry is for; it's
+    // ALSO pushed as Home's tradingEligibilityGap fallback prompt
+    // (home_screen.dart) with `context.push()`, which leaves a real
+    // Navigator entry underneath, so app_router.dart's `_handleGatedBack`
+    // pops that instance normally before ever consulting this map.
+    termsOfService: suitabilityResult,
     createPasscode: termsOfService,
     confirmPasscode: createPasscode,
+    // R-44 (2026-08-29): avatar_screen.dart's own on-screen back arrow
+    // `context.go(Routes.biometric)`s — biometric_screen.dart is the only
+    // caller of `Routes.onboardingAvatar` now (both its "Turn on <biometric>"
+    // and "Maybe later" exits), so this is the one real predecessor.
+    onboardingAvatar: biometric,
     reset: login,
     kycBvn: kycIntro,
     kycChn: kycBvn,

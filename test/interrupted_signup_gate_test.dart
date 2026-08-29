@@ -180,18 +180,20 @@ void main() {
 
   testWidgets(
     'the invariant does not hijack the LEGITIMATE fresh-signup flow: '
-    'risk_disclaimer_screen.dart sets signedIn TRUE before termsOfService, '
-    'still ahead of passcode creation — that hop must still render, not '
-    'bounce back to Create passcode',
+    'termsOfService itself sets signedIn TRUE (when its documents include '
+    'risk_disclosure), still ahead of passcode creation — that hop must '
+    'still render, not bounce back to Create passcode',
     (tester) async {
       // A first version of this fix used a hand-picked allowlist of just
       // {createPasscode, confirmPasscode} for the signedIn-without-passcode
-      // exemption — and broke exactly this: risk_disclaimer_screen.dart's
-      // own accept handler flips AppState.signedIn to true (see its doc
-      // comment) BEFORE terms/passcode/biometric ever run, so a
-      // signedIn=true + passcodeSet=false moment is legitimately reached
-      // mid-flow, not just as a bug. This state is built directly (not via
-      // real hydration/secure storage) to isolate the router's OWN
+      // exemption — and broke exactly this: termsOfService's own accept
+      // handler (legal_acceptance_screen.dart's `_accept()`, when `kinds`
+      // includes 'risk_disclosure' — every run of the onboarding legal
+      // screen since 2026-08-29, see risk_disclaimer_screen.dart's header)
+      // flips AppState.signedIn to true BEFORE passcode/biometric ever run,
+      // so a signedIn=true + passcodeSet=false moment is legitimately
+      // reached mid-flow, not just as a bug. This state is built directly
+      // (not via real hydration/secure storage) to isolate the router's OWN
       // decision from that unrelated screen's behaviour — same style as
       // test/gate_redirect_test.dart's `pumpAt`.
       final state = AppState()

@@ -49,7 +49,6 @@ import '../screens/kyc/outcome_not_approved.dart';
 
 // Suitability & agreements.
 import '../screens/suitability/questionnaire_screen.dart';
-import '../screens/suitability/risk_disclaimer_screen.dart';
 import '../screens/suitability/suitability_result_screen.dart';
 import '../screens/suitability/terms_and_privacy_screen.dart';
 
@@ -291,30 +290,16 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.questionnaire, builder: (_, _) => themedGated(() => QuestionnaireScreen())),
       GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themedGated(() => SuitabilityResultScreen())),
       GoRoute(
-        path: Routes.riskDisclaimer,
-        // R-8a (DECISIONS.md, 2026-08-27): its own scroll-gated in-app
-        // screen, run right after suitability's result — pushed from
-        // suitability_result_screen.dart with a RiskDisclaimerArgs `extra`
-        // (profile already known there, though R-2 means the screen never
-        // displays it), or from AppState.tradingEligibilityGap's prompt
-        // (home_screen.dart) with no `extra` at all for a returning
-        // investor re-gated here directly.
-        builder: (_, st) {
-          final args = st.extra;
-          return themed(() => RiskDisclaimerScreen(
-                profile: args is RiskDisclaimerArgs ? args.profile : null,
-              ));
-        },
-      ),
-      GoRoute(
         path: Routes.termsOfService,
-        // R-8a: the remaining THREE legal documents (risk disclosure moved
-        // to its own screen above) in one screen/one tick — reached from
-        // risk_disclaimer_screen.dart's own accept action, not straight off
-        // OTP any more. The account email rides AppState.pendingSignupEmail
-        // across the suitability/result/risk-disclaimer hops between OTP
-        // and here (see that field's doc comment) rather than this route's
-        // `extra`.
+        // All FOUR legal documents, risk disclosure included, in one
+        // screen/one tick — see terms_and_privacy_screen.dart's header.
+        // Reached from suitability_result_screen.dart's own Continue action
+        // (`context.go`), not straight off OTP. There is no risk-disclaimer
+        // hop in between any more (DECISIONS.md's R-8a superseded note,
+        // 2026-08-29) — this route is reached directly. The account email
+        // rides AppState.pendingSignupEmail across the suitability/result
+        // hops between OTP and here (see that field's doc comment) rather
+        // than this route's `extra`.
         builder: (_, _) => themedGated(() => TermsAndPrivacyScreen()),
       ),
 
@@ -514,7 +499,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill,
     Routes.kycBankDcs, Routes.kycDeclarations, Routes.kycNextOfKin,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
-    Routes.questionnaire, Routes.suitabilityResult, Routes.riskDisclaimer,
+    Routes.questionnaire, Routes.suitabilityResult,
     Routes.termsOfService,
   };
 
@@ -545,22 +530,23 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     //
     // The exemption reuses `gated` MINUS `preAuthOnly` — i.e. every
     // mid-onboarding screen (createPasscode/confirmPasscode themselves,
-    // biometric, KYC, questionnaire/suitabilityResult/riskDisclaimer/
-    // termsOfService, the onboarding extras, the login/unlock screen) stays
-    // reachable exactly as freely as it already is for a fully signed-OUT
-    // session a few lines below ("gated flow always allowed") — this is
-    // NOT a narrower, hand-picked allowlist, on purpose: riskDisclaimer's
-    // own accept handler flips [signedIn] true (see its doc comment)
-    // BEFORE createPasscode/confirmPasscode ever run, so by the time it
-    // hands off to termsOfService the investor is already signedIn=true
-    // with passcodeSet still false — a hand-picked allowlist of just the
-    // two passcode screens caught exactly this legitimate case and forced
-    // it back to createPasscode mid-flow, silently skipping terms
-    // acceptance. What's NOT exempted is precisely what the actual defect
-    // was: `preAuthOnly` (splash/welcome/signup/otp/reset, which the block
-    // below would otherwise bounce straight to Home) and everything
-    // outside `gated` entirely — Home, the tab shell, every pushed/account
-    // screen. That is the one and only invariant this enforces.
+    // biometric, KYC, questionnaire/suitabilityResult/termsOfService, the
+    // onboarding extras, the login/unlock screen) stays reachable exactly
+    // as freely as it already is for a fully signed-OUT session a few lines
+    // below ("gated flow always allowed") — this is NOT a narrower,
+    // hand-picked allowlist, on purpose: termsOfService's own accept
+    // handler (legal_acceptance_screen.dart, when its kinds include
+    // risk_disclosure) flips [signedIn] true BEFORE createPasscode/
+    // confirmPasscode ever run, so termsOfService itself can be reached
+    // with signedIn=true and passcodeSet still false — a hand-picked
+    // allowlist of just the two passcode screens caught exactly this
+    // legitimate case and forced it back to createPasscode mid-flow,
+    // silently skipping terms acceptance. What's NOT exempted is precisely
+    // what the actual defect was: `preAuthOnly` (splash/welcome/signup/otp/
+    // reset, which the block below would otherwise bounce straight to
+    // Home) and everything outside `gated` entirely — Home, the tab shell,
+    // every pushed/account screen. That is the one and only invariant this
+    // enforces.
     final midOnboardingOnly = gated.contains(loc) && !preAuthOnly.contains(loc);
     if (!state.passcodeSet && !midOnboardingOnly) {
       return Routes.createPasscode;
@@ -617,12 +603,12 @@ void _handleGatedBack(BuildContext context) {
   // `push()` from elsewhere, over a real screen that's still there
   // underneath: Security's "Change passcode" re-entry into createPasscode/
   // confirmPasscode, personal_info_screen.dart's re-verify push into
-  // kycIntro, riskDisclaimer being pushed both from suitability_result_
-  // screen.dart AND from Home's tradingEligibilityGap prompt. A genuinely
-  // poppable Navigator entry means THIS instance is one of those cases —
-  // popping it the ordinary way is already correct, so do that instead of
-  // running the predecessor-map/block logic below, which is only for the
-  // no-stack `go()` case.
+  // kycIntro, termsOfService being pushed as Home's tradingEligibilityGap
+  // prompt (home_screen.dart) as well as reached via `go()` from
+  // suitability_result_screen.dart. A genuinely poppable Navigator entry
+  // means THIS instance is one of those cases — popping it the ordinary way
+  // is already correct, so do that instead of running the predecessor-map/
+  // block logic below, which is only for the no-stack `go()` case.
   final navigator = Navigator.of(context);
   if (navigator.canPop()) {
     navigator.pop();
@@ -696,11 +682,12 @@ class _TabShell extends StatelessWidget {
             // a notched device) and never neither (would crowd the labels
             // against the edge on a device with no home indicator). A device
             // with no inset lands at 12 + 14 = 26 — the canvas's own number.
-            child: SafeArea(
-              top: false,
-              minimum: const EdgeInsets.only(bottom: 12),
-              child: KBottomNav(active: active, onChange: _onNav),
-            ),
+            // No SafeArea here on purpose — KBottomNav applies the bottom
+            // inset inside its own padding so its background paints all the
+            // way to the physical edge. Wrapping it here instead left a strip
+            // of bare Scaffold showing beneath the bar on any device with a
+            // gesture area.
+            child: KBottomNav(active: active, onChange: _onNav),
           ),
         ],
       ),

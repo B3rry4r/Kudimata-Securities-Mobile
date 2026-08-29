@@ -207,7 +207,11 @@ final List<_RouteSpec> _specs = [
       suitabilityComplete: false),
   _RouteSpec('31_suitability_result', Routes.suitabilityResult,
       'suitability/suitability_result_screen.dart', suitabilityComplete: false),
-  _RouteSpec('32_risk_disclaimer', Routes.riskDisclaimer, 'suitability/risk_disclaimer_screen.dart'),
+  // 2026-08-29 (DECISIONS.md's R-8a superseded note): risk disclosure is no
+  // longer its own standalone screen/route between suitability result and
+  // the legal documents — it's one of the documents '07_terms' above
+  // already captures (terms_and_privacy_screen.dart's `kinds` now include
+  // 'risk_disclosure'). '32_risk_disclaimer' no longer exists.
 
   // ── Pushed detail (fully onboarded investor) ────────────────────────────
   _RouteSpec('33_notifications', Routes.notifications, 'home/notifications_screen.dart'),

@@ -179,8 +179,13 @@ class AppState extends ChangeNotifier {
   bool suitabilityComplete = false;
 
   /// Whether this investor has accepted the Statutory Risk Disclaimer
-  /// (Rule 76 compliance — risk_disclaimer_screen.dart), added 2026-08-24
-  /// per the firm's real SEC-facing compliance intake. In-memory only, same
+  /// (Rule 76 compliance), added 2026-08-24 per the firm's real SEC-facing
+  /// compliance intake. Set by legal_acceptance_screen.dart's own
+  /// `_accept()` when its `kinds` include 'risk_disclosure' — since
+  /// 2026-08-29 that's every run of the onboarding legal-documents screen
+  /// (terms_and_privacy_screen.dart; risk disclosure was its own
+  /// standalone screen before that, see risk_disclaimer_screen.dart's
+  /// header and DECISIONS.md's R-8a superseded note). In-memory only, same
   /// as every other gate flag here — hydrated for a RETURNING investor by
   /// refreshKycGatingState (log_in_screen.dart) via GET
   /// /compliance-acknowledgements/me, same "don't re-block someone who
@@ -750,10 +755,14 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
     );
   }
   if (!app.riskDisclosureAccepted) {
+    // Routes to the legal-documents screen, not a standalone risk-
+    // disclosure screen — 2026-08-29, DECISIONS.md's R-8a superseded note:
+    // risk disclosure is one of the documents in terms_and_privacy_screen
+    // .dart's list now, not its own step ahead of it.
     return const TradingEligibilityGap(
       title: 'Accept the risk disclosure',
       message: 'Please review and accept the statutory risk notice',
-      route: Routes.riskDisclaimer,
+      route: Routes.termsOfService,
     );
   }
   return null;

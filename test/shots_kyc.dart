@@ -47,7 +47,12 @@ const _routes = <String, (String, bool, bool, bool)>{
   '26_outcome_not_approved': (Routes.kycOutcome, true, false, false),
   '27_questionnaire': (Routes.questionnaire, true, true, false),
   '28_suitability_result': (Routes.suitabilityResult, true, true, false),
-  '29_risk_disclaimer': (Routes.riskDisclaimer, true, true, true),
+  // 2026-08-29 (DECISIONS.md's R-8a superseded note): risk disclosure moved
+  // back into termsOfService's document list — there is no standalone
+  // risk-disclaimer route left to capture here. '29_terms_of_service'
+  // replaces '29_risk_disclaimer', same suitabilityComplete: true state
+  // (reached right after suitability under the real flow).
+  '29_terms_of_service': (Routes.termsOfService, true, true, true),
 };
 
 Future<void> _loadFonts() async {

@@ -67,3 +67,6 @@ ios/fastlane/report.xml
 RELEASE_SECRETS.local.md
 scripts/gates/__pycache__/
 scripts/gates/**/__pycache__/
+
+# Skills export for download — never committed (asked for explicitly, 2026-08-29).
+kudimata-skills-*.zip

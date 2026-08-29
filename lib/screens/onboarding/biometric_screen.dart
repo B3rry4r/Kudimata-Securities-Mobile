@@ -1,9 +1,9 @@
 // Artboard `s06` (+ dark `s06d`) in `01 Getting In.dc.html` — enable Face ID.
-// Illustration + headline, "Turn on Face ID" / "Maybe later". Both paths sign
-// the investor in and land straight on Home — Enable also flips
-// biometricEnabled. KYC/suitability are no longer forced here — browsing is
-// open to everyone, only trading/funding require them (see Home's "Complete
-// your KYC" prompt and the KYC-gate checks on Buy/Sell/Add money/Withdraw).
+// Illustration + headline, "Turn on Face ID" / "Maybe later" — Enable also
+// flips biometricEnabled. KYC/suitability are no longer forced here —
+// browsing is open to everyone, only trading/funding require them (see
+// Home's "Complete your KYC" prompt and the KYC-gate checks on Buy/Sell/Add
+// money/Withdraw).
 //
 // 2026-08-24: used to detour through the onboarding personal-details step
 // (personal_details_screen.dart) before Home — direct product feedback: "a
@@ -13,12 +13,22 @@
 // reaches Home immediately, browse-only, same as any other not-yet-verified
 // investor.
 //
-// 2026-08-29 (A-1 audit fix): kyc_intro.dart no longer detours anywhere
-// either — see its own header for where each of that screen's fields ended
-// up (mostly duplicates of sign_up_screen.dart's phone field and
-// utility_bill.dart's address fields; DOB folded into bvn_nin.dart's
-// confirm step). Nothing changes here: this screen still signs in and
-// lands on Home either way, same as always.
+// 2026-08-29 (R-44, DECISIONS.md): both paths now go to
+// Routes.onboardingAvatar instead of straight to Home — the optional
+// avatar picker (avatar_screen.dart), which the product owner ruled belongs
+// in onboarding, not on the KYC path ("avatar should never be on KYC —
+// onboarding"). It had been reached from kyc_intro.dart's `_start()`, which
+// stopped detouring there in the very audit fix this file's 2026-08-29
+// paragraph above describes — silently stranding avatar_screen.dart (and
+// personal_details_screen.dart, which is NOT wired back in by this change;
+// see its own header) with no entry point at all. This screen is the last
+// point common to every fresh-onboarding AND fresh-device-login path before
+// Home (see hydrateGatingState's own doc comment on why the sign-in/
+// dormancy side effects had to be split out of hydrateGatingStateAndRoute
+// to make this possible), so it is where the picker hop belongs. Skippable
+// either way — "Maybe later" here skips biometrics, not the avatar step;
+// avatar_screen.dart's own "Skip" is what a name-as-text fallback investor
+// actually uses.
 //
 // 2026-08-27 (SCREEN-AGENT-BRIEF.md R-5 audit): dropped the "Step 4 of 4"
 // KOnboardTopBar this screen had grown. It was justified by an in-code
@@ -37,12 +47,14 @@
 // actually has (fingerprint/face/iris) rather than assuming from platform
 // alone. See lib/widgets/biometric_label.dart for the mapping.
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/biometric_auth.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/biometric_label.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
-import 'log_in_screen.dart' show hydrateGatingStateAndRoute;
+import 'log_in_screen.dart' show hydrateGatingState;
 import 'onboarding_scaffold.dart';
 
 class BiometricScreen extends StatefulWidget {
@@ -85,7 +97,16 @@ class _BiometricScreenState extends State<BiometricScreen> {
         );
     if (!context.mounted) return;
     if (ok) AppScope.read(context).setBiometric(true);
-    await hydrateGatingStateAndRoute(context);
+    await _proceed(context);
+  }
+
+  /// Runs the real sign-in/dormancy side effects [hydrateGatingStateAndRoute]
+  /// always ran, then routes into the optional avatar picker instead of
+  /// straight to Home — see this file's header (R-44, DECISIONS.md).
+  Future<void> _proceed(BuildContext context) async {
+    final dormantRoute = await hydrateGatingState(context);
+    if (!context.mounted) return;
+    context.go(dormantRoute ?? Routes.onboardingAvatar);
   }
 
   @override
@@ -118,7 +139,7 @@ class _BiometricScreenState extends State<BiometricScreen> {
             KButton(
               label: 'Maybe later',
               variant: KButtonVariant.ghost,
-              onPressed: () => hydrateGatingStateAndRoute(context),
+              onPressed: () => _proceed(context),
             ),
             // 2026-08-29 (A-7 audit — "a skip that is honest about what it
             // costs them"): one true, verifiable line, not in `s06` (which

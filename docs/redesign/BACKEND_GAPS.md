@@ -516,14 +516,16 @@ anywhere in this app: `NotificationPreferencesRepository` only covers the
 two consent switches, and a grep of `Kudimata-Securities-Backend` found no
 data-export/GDPR-style-download endpoint of any kind.
 
-Built: the row itself (`data_privacy_screen.dart`), real and tappable.
-Not built: the export — tapping it surfaces an honest "Data export isn't
-available yet — contact support" message rather than pretending a file was
-queued or emailed, the same established pattern `s58`'s email-change row
-and `statements_screen.dart`'s request flow already use for a real, known,
-unbuilt capability. Needs: an export endpoint that assembles the
-investor's own records into one file and emails it (or a presigned
-download link), before this row can be self-serve.
+**REMOVED 2026-08-29** (product owner: "remove download my data and
+improve the app from data privacy"). It was built and tappable
+(`data_privacy_screen.dart`), but its only possible outcome was an honest
+"Data export isn't available yet — contact support" refusal — a control
+whose only outcome is a refusal is a dead control, not a real capability
+with a caveat, so it no longer renders at all rather than being left
+showing a permanent "not available yet" state. Needs, if this capability
+is ever built: an export endpoint that assembles the investor's own
+records into one file and emails it (or a presigned download link), plus
+the row re-added to `data_privacy_screen.dart` to call it.
 
 ## s19 — Declarations: broker/NGX-employment question has no backend field
 

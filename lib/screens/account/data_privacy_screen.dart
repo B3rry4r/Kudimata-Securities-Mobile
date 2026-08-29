@@ -1,7 +1,8 @@
 // Screen 91 — Data & privacy (2026-08-23, account-lifecycle/legal cluster).
 // A settings hub — the NDPA consent set plus entry points into the
-// retention doc (#96), a data export, and account closure (#90) — not a
-// document viewer itself.
+// retention doc (#96) and account closure (#90) — not a document viewer
+// itself. (Originally also a data-export entry point; removed 2026-08-29,
+// see below.)
 //
 // R-5 correction (2026-08-27, docs/redesign/DECISIONS.md): "screen 91"
 // above is the OLD 97-screen canvas's numbering. The real, current artboard
@@ -54,15 +55,19 @@
 // message on failure — same technique
 // notifications_settings_screen.dart uses for its own three switches.
 //
-// "Download my data" is s57's own row ("One file, emailed within 7 days")
-// — NOT a separate old-canvas screen; the prior comment here cited a stale
-// "screen #93" id from the superseded 97-screen canvas (the exact R-5
-// mistake DECISIONS.md warns about) and has been corrected. The row is
-// real and built, but has no route/repository anywhere in this app yet —
-// tapping it surfaces a known "not available yet" message, the same
-// established pattern statements_screen.dart / withdraw_mandate_screen.dart
-// already use for a real, known, unbuilt capability. Filed as a proper gap
-// in docs/redesign/BACKEND_GAPS.md under "s57 — Data and privacy".
+// "Download my data" — s57's own row ("One file, emailed within 7 days") —
+// is REMOVED (2026-08-29, product owner: "remove download my data and
+// improve the app from data privacy"). It was built and tappable but had no
+// route/repository behind it anywhere in this app (grepped
+// Kudimata-Securities-Backend: no data-export/GDPR-style-download endpoint
+// of any kind), so tapping it only ever surfaced "Data export isn't
+// available yet — contact support". A control whose only possible outcome
+// is a refusal is a dead control, not a real capability with an honest
+// caveat — the distinction the established "not available yet" pattern
+// (statements_screen.dart / withdraw_mandate_screen.dart) relies on for a
+// capability that's merely incomplete, not absent. Removed rather than kept
+// showing; docs/redesign/BACKEND_GAPS.md's "s57 — Data and privacy" entry
+// is updated to say so instead of describing a still-visible row.
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
@@ -94,12 +99,6 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
   void _openClose() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const CloseAccountScreen()),
-    );
-  }
-
-  void _exportData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Data export isn't available yet — contact support.")),
     );
   }
 
@@ -220,12 +219,6 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
               right: const KRowChevron(),
               first: true,
               onTap: _openDataNotice,
-            ),
-            KAccountRow(
-              title: 'Download my data',
-              sub: 'Emailed as a ZIP',
-              right: const KRowChevron(),
-              onTap: _exportData,
             ),
           ],
         ),
