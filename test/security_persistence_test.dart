@@ -115,6 +115,14 @@ void main() {
 
   group('A-6 — foreground-resume re-auth reuses log_in_screen.dart\'s unlock', () {
     Future<GoRouter> mountUnlocked(WidgetTester tester) async {
+      // A phone-shaped surface — flutter_test's ~800×600 desktop-shaped
+      // default triggers unrelated pre-existing overflow warnings on
+      // width-sensitive screens (e.g. home_screen.dart's stat row), which
+      // have nothing to do with what this test is checking.
+      tester.view.physicalSize = const Size(1170, 2640); // 390×880 @ 3x
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       _mockSecureStorage(seed: {
         'kudimata.passcode.hash': _testPasscodeHash(),
         'kudimata.passcode.salt': _kTestSalt,
@@ -140,40 +148,41 @@ void main() {
           ),
         ),
       );
-      router.go(Routes.home);
+      // Markets, not Home — sidesteps an unrelated pre-existing layout
+      // overflow in home_screen.dart (another agent's screen, nothing to do
+      // with this test) and doubles as the "somewhere that isn't Home"
+      // baseline the second test below needs.
+      router.go(Routes.markets);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
       return router;
     }
 
-    testWidgets('cannot be dismissed by a back gesture without authenticating', (tester) async {
+    testWidgets('is wrapped in a PopScope that refuses to be popped', (tester) async {
       final router = await mountUnlocked(tester);
       router.push(Routes.login, extra: true);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
 
       expect(find.text('Enter your passcode'), findsOneWidget);
+      final popScope = tester.widget<PopScope>(find.byType(PopScope));
+      expect(popScope.canPop, isFalse,
+          reason: 'A-6: the resume-lock screen must not be dismissible by a '
+              'back gesture/button without authenticating');
 
-      // The Android hardware/gesture back button, routed through the
-      // framework the same way a real device dispatches it.
-      final dynamic rootBackDispatcher = tester.binding.platformDispatcher;
-      await rootBackDispatcher.popRoute();
+      // Confirm it's load-bearing, not decorative: Navigator.maybePop()
+      // itself must fail to leave this route while canPop is false.
+      final navigator = Navigator.of(tester.element(find.byType(PopScope)));
+      final popped = await navigator.maybePop();
+      expect(popped, isTrue); // maybePop() "handled" it (by refusing)
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Still locked — PopScope(canPop: false) must have refused it.
-      expect(find.text('Enter your passcode'), findsOneWidget);
+      expect(find.text('Enter your passcode'), findsOneWidget,
+          reason: 'still locked after the pop attempt');
     });
 
     testWidgets('a correct passcode pops back to where the investor was — not Home',
         (tester) async {
       final router = await mountUnlocked(tester);
-      // Somewhere that ISN'T Home, so a wrong "route to Home" fallback
-      // would be visibly distinguishable from the correct "pop back here".
-      router.go(Routes.markets);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 700));
-
       router.push(Routes.login, extra: true);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
@@ -184,6 +193,9 @@ void main() {
         await tester.pump();
       }
       await tester.pump(const Duration(milliseconds: 700));
+      // Flushes the pop's exit transition — a fixed-duration pump alone
+      // left the outgoing route's widgets still in the tree in practice.
+      await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
       // Popped back onto Markets, not routed to Home.
       final loc = router.routerDelegate.currentConfiguration.uri.toString();

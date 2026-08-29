@@ -125,32 +125,34 @@ doesn't recognise as a real profile avatar. Needs a product decision (is
 be 8?) before `avatarKeys` — off-limits to a screen agent, per
 SCREEN-AGENT-BRIEF.md rule 5 (`lib/data/**`) — is touched.
 
-## s13 — Details from BVN
+## s13 — Details from BVN — RESOLVED 2026-08-29 (A-2 audit fix)
 
-**Resolved name/date-of-birth/phone from the BVN & NIN check.** Ruling R-19
-adopts BVN/NIN auto-populate: s13 "Is this you?" shows the investor's name,
-date of birth and phone exactly as the BVN/NIN verification returned them,
-for a read-only confirm-or-go-back step, plus a "Matches the name on your
-account" checkmark. `POST /kyc-submissions/draft`'s response
-(`KycSubmissionStatus`, `lib/data/repositories/kyc_repository.dart`) carries
-none of this — only masked `bvn`/`nin` strings and pass/fail
-`verificationSignals` booleans (`nin`/`bvn`/`name`/`dob`/`liveness`), never
-the resolved values themselves or a real name-match result.
+**Was:** `POST /kyc-submissions/draft`'s response carried no resolved
+name/date-of-birth/phone, only masked `bvn`/`nin` and pass/fail
+`verificationSignals` booleans — s13's confirm rows shipped as `—`.
 
-Built (`lib/screens/kyc/bvn_nin.dart`'s `_buildConfirm`): the card, its three
-labelled rows, and both buttons ("Yes, that's me" / "Re-enter BVN"). Not
-built: the row values, which render `—` rather than the canvas's mock
-"Adebayo Okonkwo" / "14 Mar 1992" / "+234 801 234 5678" (R-34 — a figure
-with no data source is omitted, never invented), and the "Matches the name
-on your account" checkmark line, omitted entirely since it asserts a
-computed match with nothing to compute it from.
+**Now closed on the backend side:** BR-4 (MOBILE-REQUESTS.md, 2026-08-27)
+added `resolvedName`/`resolvedDob`/`resolvedPhone` to `KycSubmission` and its
+wire shape. Wired into `lib/data/repositories/kyc_repository.dart`'s
+`KycSubmissionStatus` and rendered on `bvn_nin.dart`'s confirm step
+2026-08-29 — the row values show the real registry values (or `—` when the
+provider genuinely returned none, still per R-34).
 
-Needs: `POST /kyc-submissions/draft` (and/or `GET /kyc-submissions/draft`)
-to additionally return the BVN/NIN provider's resolved name, date of birth
-and phone, plus a boolean/computed flag for whether the resolved name
-matches the account's own name on file. See `SHARED-CHANGES.md` for the
-matching `KycSubmissionStatus` model change this also needs, since
-`lib/data/**` is off-limits to a screen agent.
+**Also closed same pass, a real defect, not a gap:** a real bvn/nin
+verification failure (`verificationSignals.bvn`/`.nin == false`) used to let
+the investor continue past "Is this you?" anyway (the confirm step doesn't
+distinguish a failure from an unresolved/never-run check) — now blocks with
+a retry (`_Step.failed`).
+
+**Still not built, but no longer a backend gap:** the "Matches the name on
+your account" checkmark line. `verificationSignals.name` already IS that
+computed result (confirmed against the backend's own doc comment on
+`KycSubmission.resolvedName` — "the existing `verificationSignals.name`
+boolean... already IS the 'does the resolved name match the account's own
+name' result the s13 artboard's checkmark line needs — no separate match
+field was added for it"). Omitted this pass as a scope decision (A-2's ask
+was the resolved values + the failure gate), not a data gap — a future pass
+can add it directly from the existing field.
 
 ## s38 — Wallet: Transaction receipt
 

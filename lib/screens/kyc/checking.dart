@@ -9,10 +9,17 @@
 // liveness.dart already uploaded+registered against the draft and actually
 // runs the check. On failure, shows a retryable error state rather than
 // silently continuing — this is a real verification call now, not a mocked
-// delay. On success, returns to Routes.kycChecklist (X-5, SHARED-CHANGES.md
-// 2026-08-27) rather than hard-chaining straight to the next collection
-// screen — the checklist hub is the flow's spine, re-entered after every
-// completed step.
+// delay.
+//
+// 2026-08-29 (A-4 audit fix): on success this used to return to
+// Routes.kycChecklist unconditionally, forcing a tap through the checklist
+// hub's own UI to continue. Now advances straight to the real next step via
+// nextKycStepRoute (kyc_checklist_screen.dart) — for the app's real
+// navigation order that's utility_bill.dart (id_upload.dart forwards into
+// liveness/this screen BEFORE the utility bill, per the backend's own
+// step-gating — see id_upload.dart's header). The checklist hub is
+// unchanged and stays the resume point for an investor re-entering KYC
+// part-way.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -22,6 +29,7 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import '_kyc_chrome.dart';
+import 'kyc_checklist_screen.dart' show nextKycStepRoute;
 
 class CheckingScreen extends StatefulWidget {
   const CheckingScreen({super.key});
@@ -45,7 +53,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
     try {
       await _repo.verifyDraftLiveness();
       if (!mounted) return;
-      context.go(Routes.kycChecklist);
+      final next = await nextKycStepRoute(AppScope.read(context).apiClient);
+      if (!mounted) return;
+      context.go(next);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);

@@ -176,10 +176,22 @@ GoRouter buildRouter(AppState state) {
       GoRoute(
         path: Routes.biometric,
         // Biometric enrolment can't function on web (no local_auth backing
-        // store) — bounce straight past it to the next onboarding step, same
-        // as BiometricScreen's own "Maybe later" path, rather than showing a
-        // screen offering a capability that will never work.
-        redirect: (_, _) => kIsWeb ? Routes.onboardingPersonal : null,
+        // store) — bounce straight past it, same as BiometricScreen's own
+        // "Maybe later" path, rather than showing a screen offering a
+        // capability that will never work.
+        //
+        // 2026-08-29 (A-1 audit fix): used to redirect to
+        // Routes.onboardingPersonal — confirm_passcode_screen.dart's OWN
+        // kIsWeb branch already bypasses this route entirely and calls
+        // hydrateGatingStateAndRoute() directly, so in practice nothing
+        // reaches this redirect via the real signup flow any more; kept
+        // only as a defensive fallback for a direct/deep-link hit on `/biometric`
+        // from a web session. onboardingPersonal is no longer on the KYC
+        // path at all (kyc_intro.dart's `_start()` — DOB now folds into
+        // bvn_nin.dart's confirm step), so this now matches
+        // hydrateGatingStateAndRoute's own destination instead of a
+        // detour that no longer leads anywhere real.
+        redirect: (_, _) => kIsWeb ? Routes.home : null,
         builder: (_, _) => themed(() => BiometricScreen()),
       ),
       GoRoute(
@@ -194,7 +206,17 @@ GoRouter buildRouter(AppState state) {
         path: Routes.onboardingNextSteps,
         builder: (_, _) => themed(() => WhatsNextScreen()),
       ),
-      GoRoute(path: Routes.login, builder: (_, _) => themed(() => LogInScreen())),
+      GoRoute(
+        path: Routes.login,
+        // `extra: true` (main.dart's resume-lock push, A-6 2026-08-29 audit)
+        // marks this as a re-lock challenge over an already-signed-in
+        // session rather than the ordinary pre-auth/returning-unlock entry
+        // — see LogInScreen.resumeLock's doc comment for the behavior
+        // difference (pop back to whatever was underneath instead of
+        // routing to Home, and a PopScope that refuses to be dismissed any
+        // other way).
+        builder: (_, st) => themed(() => LogInScreen(resumeLock: st.extra == true)),
+      ),
       GoRoute(path: Routes.reset, builder: (_, _) => themed(() => ResetPasscodeScreen())),
 
       // ── KYC ───────────────────────────────────────────────────────────--

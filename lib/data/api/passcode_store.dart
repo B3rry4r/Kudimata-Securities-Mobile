@@ -41,6 +41,7 @@ class PasscodeStore {
   static const _hashKey = 'kudimata.passcode.hash';
   static const _saltKey = 'kudimata.passcode.salt';
   static const _ownerKey = 'kudimata.passcode.owner';
+  static const _biometricKey = 'kudimata.passcode.biometricEnabled';
 
   /// Hash and persist [passcode], scoped to [owner] (the account's email —
   /// see [belongsTo]) — call once the create/confirm passcode flow has a
@@ -99,10 +100,41 @@ class PasscodeStore {
   /// session, the explicit "reset passcode via password reset" flow) or
   /// when a fresh login's account doesn't match [belongsTo]. NOT called by
   /// AppState.signOut() (plain voluntary sign-out) — see file header.
+  ///
+  /// Also wipes the persisted biometric-unlock preference ([setBiometricEnabled])
+  /// — it only ever means anything relative to a passcode on THIS device for
+  /// THIS owner, so it has no business surviving past the point that
+  /// passcode itself is gone.
   Future<void> clearPasscode() async {
     await _storage.delete(key: _hashKey);
     await _storage.delete(key: _saltKey);
     await _storage.delete(key: _ownerKey);
+    await _storage.delete(key: _biometricKey);
+  }
+
+  /// Persist whether this device's owner has turned biometric unlock on —
+  /// added 2026-08-29 (product-owner audit A-6/A-7: "passcode or biometrics
+  /// scan for reopening the app is not enforced" / "biometrics is not
+  /// collected from start"). Before this, `AppState.biometricEnabled` was
+  /// in-memory only, so enrolling in biometric_screen.dart during onboarding
+  /// was forgotten the instant the app cold-started again — the very next
+  /// launch reset the flag to `false`, silently dropping the Face ID key
+  /// from log_in_screen.dart's unlock keypad for a returning investor who
+  /// had genuinely turned it on. See [AppState]'s `_hydrateBiometricEnabled`
+  /// for the read side of this fix.
+  Future<void> setBiometricEnabled(bool enabled) async {
+    if (enabled) {
+      await _storage.write(key: _biometricKey, value: 'true');
+    } else {
+      await _storage.delete(key: _biometricKey);
+    }
+  }
+
+  /// Whether biometric unlock was last turned on on this device — defaults
+  /// to false (nothing stored) for a fresh install or one that never
+  /// enrolled.
+  Future<bool> getBiometricEnabled() async {
+    return (await _storage.read(key: _biometricKey)) == 'true';
   }
 
   String _hash(String passcode, String salt) {

@@ -28,6 +28,24 @@
 // the old flow — a real draft KycSubmission already exists by this point
 // (created on step 1), so there's no more need to stash the objectKey in
 // KycFormState for a later bulk registration.
+//
+// 2026-08-29 (A-4 audit fix): this screen used to forward straight to
+// Routes.kycUtilityBill on success. That's wrong against the backend's own
+// gating — KycSubmissionsService.computeCurrentStep() (the source of
+// `currentStep`/`documentType`, which the checklist hub's "documents
+// done"/"selfie done" derivation reads) checks liveness BEFORE it ever
+// looks at the utility bill: no ID doc -> step 2; ID doc but no liveness ->
+// step 3; liveness done but no utility bill -> step 4; else done. Reaching
+// utility_bill.dart before liveness left `currentStep` stuck at 3 forever
+// (its own gate short-circuits there), even after the utility bill
+// uploaded — the checklist hub's "Documents uploaded" row could never
+// self-report done via this path. liveness.dart's own back button already
+// pointed here (`onBack: () => context.go(Routes.kycId)`) and
+// utility_bill.dart's own back button already pointed at liveness
+// (`onBack: () => context.go(Routes.kycLiveness)`) — both were written
+// assuming THIS screen forwards into liveness next; only the forward wiring
+// here disagreed. Now forwards to Routes.kycLiveness, matching both of
+// those and the backend's real step order (id -> liveness -> utility bill).
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -102,7 +120,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
                   children: [
                     const KScreenHead(
                       title: 'Your documents',
-                      body: "Pick one ID to photograph. You'll add a utility bill next.",
+                      body: "Pick one ID to photograph. You'll take a selfie next.",
                     ),
                     const SizedBox(height: 24),
                     for (var i = 0; i < _types.length; i++) ...[
@@ -184,7 +202,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
     if (_file != null) {
       // Already uploaded this session (e.g. Continue tapped again after a
       // successful upload, before navigation lands) — just advance.
-      context.go(Routes.kycUtilityBill);
+      context.go(Routes.kycLiveness);
       return;
     }
 
@@ -237,7 +255,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
         _file = KFileInfo(name: picked.name, size: picked.size);
         _uploading = false;
       });
-      context.go(Routes.kycUtilityBill);
+      context.go(Routes.kycLiveness);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {

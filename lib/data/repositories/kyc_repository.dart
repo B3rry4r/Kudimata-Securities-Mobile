@@ -66,6 +66,9 @@ class KycSubmissionStatus {
     this.currentStep,
     this.totalSteps,
     this.verificationSignals,
+    this.resolvedName,
+    this.resolvedDob,
+    this.resolvedPhone,
   });
 
   final String status;
@@ -103,6 +106,21 @@ class KycSubmissionStatus {
   /// reject/flag. See outcome_not_approved.dart's _failedChecks for how
   /// this becomes plain-language copy.
   final KycVerificationSignals? verificationSignals;
+
+  /// The BVN/NIN registry's OWN resolved name/date-of-birth/phone from the
+  /// most recent lookup (BR-4, MOBILE-REQUESTS.md 2026-08-27 — added for
+  /// bvn_nin.dart's `s13` "Is this you?" confirmation, A-2 2026-08-29 audit
+  /// fix). Distinct from an account's own on-file name/dob (never carried
+  /// on this model at all) — these three are null whenever no lookup has
+  /// run yet, every provider failed, or the provider's response simply
+  /// omitted that field; that's a normal, expected "not available" outcome,
+  /// not an error, same meaning null already carries on
+  /// [verificationSignals]'s booleans.
+  final String? resolvedName;
+
+  /// ISO-8601 date (`YYYY-MM-DD`), or null — see [resolvedName].
+  final String? resolvedDob;
+  final String? resolvedPhone;
 
   bool get isApproved => status == 'approved';
   bool get isDraft => status == 'draft';
@@ -313,6 +331,9 @@ class KycRepository {
       verificationSignals: json['verificationSignals'] != null
           ? KycVerificationSignals.fromJson(json['verificationSignals'] as Map<String, dynamic>)
           : null,
+      resolvedName: json['resolvedName'] as String?,
+      resolvedDob: json['resolvedDob'] as String?,
+      resolvedPhone: json['resolvedPhone'] as String?,
     );
   }
 

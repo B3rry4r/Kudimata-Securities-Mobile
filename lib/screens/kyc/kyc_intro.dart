@@ -17,12 +17,28 @@
 // draft/account data and is the one place that logic should live, now that
 // it exists as its own re-enterable screen instead of computing it here
 // too.
+//
+// 2026-08-29 (A-1 audit fix — "why is there a few more details screen? why
+// is that still there"): this used to detour a fresh "Start" tap through
+// onboarding/personal_details_screen.dart first, gated on a
+// dob/address/city/state/phone completeness check. Removed entirely:
+//   - Address/city/state duplicated utility_bill.dart's own s17 address
+//     fields verbatim (same PATCH /users/me target) — a pure double-entry.
+//   - Phone duplicated sign_up_screen.dart's own phone field (BR-3, added
+//     after this screen's detour existed) — also a double-entry now.
+//   - DOB has no other writer anywhere in the app. Rather than keep a
+//     whole separate interrupting screen alive for one field, it now
+//     folds into bvn_nin.dart's own "Is this you?" confirmation (step 1) —
+//     the BVN/NIN registry resolves a DOB there for most investors (BR-4);
+//     that screen only asks directly when the registry didn't resolve one
+//     AND the account doesn't already have one on file.
+// personal_details_screen.dart itself is kept (not deleted — reported as a
+// removal candidate) since its own route is still walked by
+// test/route_walk_test.dart and still reachable directly if deep-linked.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
-import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
-import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -37,48 +53,10 @@ class KycIntroScreen extends StatefulWidget {
 class _KycIntroScreenState extends State<KycIntroScreen> {
   bool _busy = false;
 
-  /// "A few more details" (DOB/address/city/state/phone) — 2026-08-24,
-  /// direct product feedback: "a few more details should be part of the
-  /// KYC and not a separate step after login". Moved from a mandatory
-  /// post-login onboarding gate (every fresh signup used to detour through
-  /// personal_details_screen.dart before ever reaching Home) to a
-  /// prerequisite checked HERE, the moment an investor actually starts
-  /// verification — Home itself no longer waits on it, matching every
-  /// other not-yet-KYC'd investor's browse-only state. Same completeness
-  /// check confirm_passcode_screen.dart used to run before this move (now
-  /// removed there — see that file's header).
-  Future<bool> _personalDetailsComplete(AppState app) async {
-    try {
-      final info = await UserRepository(app.apiClient).personalInfo();
-      return info.dob != '—' &&
-          info.residentialAddress != '—' &&
-          info.city != '—' &&
-          info.state != '—' &&
-          info.phone.isNotEmpty;
-    } on ApiException {
-      // Best-effort — a failed check falls through to asking again rather
-      // than blocking verification entirely on a network hiccup.
-      return false;
-    }
-  }
-
   Future<void> _start() async {
     setState(() => _busy = true);
     final app = AppScope.read(context);
     try {
-      // Never send an ALREADY-APPROVED investor to "a few more details" —
-      // reported: "why has a user who has approved KYC still showing same
-      // thing with the a few more details?". An approved account with
-      // genuinely missing dob/residentialAddress/phone is a real, historical
-      // data gap (most likely from before this prerequisite existed, or an
-      // account provisioned some other way) — that's a data-repair
-      // question, not something re-entering this flow should ever demand
-      // from someone the NGX has already approved.
-      if (!app.kycApproved && !await _personalDetailsComplete(app)) {
-        if (!mounted) return;
-        context.go(Routes.onboardingPersonal);
-        return;
-      }
       final draft = await KycRepository(app.apiClient).getDraft();
       if (!mounted) return;
       if (draft != null && draft.id != null) {

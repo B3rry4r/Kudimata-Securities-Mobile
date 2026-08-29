@@ -45,16 +45,31 @@
 //                         last remaining item once 1-6 are done.
 //
 // NOTE — steps 3 and 4 are not always done in canvas order. The app's own
-// real navigation chain (owned by other screens, not this one) reaches
-// liveness (step 4) BEFORE utility_bill.dart (the address half of step 3) —
-// see checking.dart's own routing. So it is possible to observe step 4 done
-// while step 3 (documents) is not. This screen shows that honestly rather
-// than reordering or hiding it: R-34's spirit is "reflect what's real", and
-// pretending steps always complete in numeric order would be the same kind
-// of invention R-34 forbids for a figure.
+// real navigation chain reaches liveness (step 4) BEFORE utility_bill.dart
+// (the address half of step 3) — see id_upload.dart's own routing. So it is
+// possible to observe step 4 done while step 3 (documents) is not. This
+// screen shows that honestly rather than reordering or hiding it: R-34's
+// spirit is "reflect what's real", and pretending steps always complete in
+// numeric order would be the same kind of invention R-34 forbids for a
+// figure.
+//
+// A-4 (2026-08-29 product-owner audit — "two foolish screens that can
+// interrupt when you want to go to the next thing"): this hub used to sit
+// BETWEEN every consecutive step — chn_screen.dart, checking.dart,
+// bank_dcs_screen.dart and declarations_screen.dart all routed here on
+// completion, forcing a tap through this screen's own UI just to continue.
+// The step derivation below is unchanged and still correct (it's the one
+// place that logic should live — X-5, SHARED-CHANGES.md), but it's now
+// ALSO exposed as [nextKycStepRoute], a plain function with no UI, which
+// those four screens call directly to advance straight to the real next
+// step instead. This screen itself is unchanged and stays reachable as the
+// RESUME point for an investor re-entering KYC part-way (kyc_intro.dart's
+// `_start()`) — it just no longer sits between two steps that are both
+// already in progress.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_client.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
@@ -77,72 +92,89 @@ class _ChecklistStep {
   final String route;
 }
 
+/// The real per-step "done" derivation — shared by this screen's own hub UI
+/// and [nextKycStepRoute] below. See this file's header for the per-step
+/// rules and the out-of-order-completion note.
+Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client) async {
+  final kycRepo = KycRepository(client);
+  final bankRepo = BankAccountsRepository(client);
+  final draft = await kycRepo.getDraft();
+  final accounts = draft == null ? const <BankAccountSummary>[] : await bankRepo.list();
+
+  final cs = draft?.currentStep;
+  final bvnDone = draft != null;
+  final chnDone = draft != null && ((cs != null && cs > 2) || draft.chn != null);
+  final documentsDone = cs != null && cs >= 5;
+  final selfieDone = cs != null && cs >= 4;
+  final bankDone = accounts.any((a) => a.primary);
+  final declarationsDone = draft?.pepSelfDeclared != null;
+
+  return [
+    _ChecklistStep(
+      title: 'BVN & NIN confirmed',
+      note: 'Verified with NIBSS',
+      done: bvnDone,
+      route: Routes.kycBvn,
+    ),
+    _ChecklistStep(
+      title: 'CHN',
+      note: 'Optional — for returning investors',
+      done: chnDone,
+      route: Routes.kycChn,
+    ),
+    _ChecklistStep(
+      title: 'Documents uploaded',
+      note: 'ID · utility bill',
+      // Sends you to whichever half is still outstanding, not always the
+      // ID screen — see this file's header note on out-of-order steps.
+      done: documentsDone,
+      route: documentsDone ? Routes.kycId : (selfieDone ? Routes.kycUtilityBill : Routes.kycId),
+    ),
+    _ChecklistStep(
+      title: 'Take a selfie',
+      note: '2 minutes',
+      done: selfieDone,
+      route: Routes.kycLiveness,
+    ),
+    _ChecklistStep(
+      title: 'Add your bank account',
+      note: 'For withdrawals and dividends',
+      done: bankDone,
+      route: Routes.kycBankDcs,
+    ),
+    _ChecklistStep(
+      title: 'Two quick questions',
+      note: 'Regulator requires them',
+      done: declarationsDone,
+      route: Routes.kycDeclarations,
+    ),
+    _ChecklistStep(
+      title: 'Next of kin',
+      note: "Who to contact if we can't reach you",
+      done: false,
+      route: Routes.kycNextOfKin,
+    ),
+  ];
+}
+
+/// A-4 fix: the real next KYC screen to continue to, derived from the SAME
+/// live backend state the checklist hub's own UI uses — call this on step
+/// completion instead of routing to [Routes.kycChecklist] so finishing a
+/// step advances straight to the next one. Never returns the checklist hub
+/// itself; when every step is done this returns the last step's route
+/// (next_of_kin.dart), same as the hub's own "Continue" button falls back
+/// to today.
+Future<String> nextKycStepRoute(ApiClient client) async {
+  final steps = await _loadChecklistSteps(client);
+  final nextIndex = steps.indexWhere((s) => !s.done);
+  return nextIndex == -1 ? steps.last.route : steps[nextIndex].route;
+}
+
 class _KycChecklistScreenState extends State<KycChecklistScreen> {
-  late final _kycRepo = KycRepository(AppScope.read(context).apiClient);
-  late final _bankRepo = BankAccountsRepository(AppScope.read(context).apiClient);
-  late Future<List<_ChecklistStep>> _future = _load();
+  late final ApiClient _client = AppScope.read(context).apiClient;
+  late Future<List<_ChecklistStep>> _future = _loadChecklistSteps(_client);
 
-  Future<List<_ChecklistStep>> _load() async {
-    final draft = await _kycRepo.getDraft();
-    final accounts = draft == null ? const <BankAccountSummary>[] : await _bankRepo.list();
-
-    final cs = draft?.currentStep;
-    final bvnDone = draft != null;
-    final chnDone = draft != null && ((cs != null && cs > 2) || draft.chn != null);
-    final documentsDone = cs != null && cs >= 5;
-    final selfieDone = cs != null && cs >= 4;
-    final bankDone = accounts.any((a) => a.primary);
-    final declarationsDone = draft?.pepSelfDeclared != null;
-
-    return [
-      _ChecklistStep(
-        title: 'BVN & NIN confirmed',
-        note: 'Verified with NIBSS',
-        done: bvnDone,
-        route: Routes.kycBvn,
-      ),
-      _ChecklistStep(
-        title: 'CHN',
-        note: 'Optional — for returning investors',
-        done: chnDone,
-        route: Routes.kycChn,
-      ),
-      _ChecklistStep(
-        title: 'Documents uploaded',
-        note: 'ID · utility bill',
-        // Sends you to whichever half is still outstanding, not always the
-        // ID screen — see this file's header note on out-of-order steps.
-        done: documentsDone,
-        route: documentsDone ? Routes.kycId : (selfieDone ? Routes.kycUtilityBill : Routes.kycId),
-      ),
-      _ChecklistStep(
-        title: 'Take a selfie',
-        note: '2 minutes',
-        done: selfieDone,
-        route: Routes.kycLiveness,
-      ),
-      _ChecklistStep(
-        title: 'Add your bank account',
-        note: 'For withdrawals and dividends',
-        done: bankDone,
-        route: Routes.kycBankDcs,
-      ),
-      _ChecklistStep(
-        title: 'Two quick questions',
-        note: 'Regulator requires them',
-        done: declarationsDone,
-        route: Routes.kycDeclarations,
-      ),
-      _ChecklistStep(
-        title: 'Next of kin',
-        note: "Who to contact if we can't reach you",
-        done: false,
-        route: Routes.kycNextOfKin,
-      ),
-    ];
-  }
-
-  void _retry() => setState(() => _future = _load());
+  void _retry() => setState(() => _future = _loadChecklistSteps(_client));
 
   @override
   Widget build(BuildContext context) {

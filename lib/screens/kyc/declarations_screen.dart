@@ -35,6 +35,7 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import '_kyc_chrome.dart';
+import 'kyc_checklist_screen.dart' show nextKycStepRoute;
 
 const List<String> _pepWhoOptions = ['Myself', 'A family member', 'A close associate'];
 
@@ -129,13 +130,14 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
             pepWho: _pep ? _who : null,
             pepPosition: _pep ? _position.text.trim() : null,
           );
-      // Routes.kycChecklist, not straight to Next of kin (X-5,
-      // SHARED-CHANGES.md 2026-08-27) — the checklist hub is the flow's
-      // spine, re-entered after every completed step. (The hub's own
-      // "Continue" then lands on Next of kin anyway, since it's always the
-      // one item still outstanding once 1-6 are done — see that screen's
-      // header comment.)
-      context.go(Routes.kycChecklist);
+      // 2026-08-29 (A-4 audit fix): used to go to Routes.kycChecklist,
+      // forcing a tap through the hub's own UI — advances straight to the
+      // real next step instead (always Next of kin at this point, since
+      // it's the one item still outstanding once 1-6 are done, but derived
+      // the same way every other step does rather than assumed here).
+      final next = await nextKycStepRoute(AppScope.read(context).apiClient);
+      if (!mounted) return;
+      context.go(next);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);

@@ -71,7 +71,31 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 import 'onboarding_scaffold.dart';
 
 class LogInScreen extends StatefulWidget {
-  const LogInScreen({super.key});
+  const LogInScreen({super.key, this.resumeLock = false});
+
+  /// True when main.dart's `didChangeAppLifecycleState` PUSHED this screen
+  /// as a foreground-resume re-auth challenge over an already-signed-in
+  /// session (A-6, 2026-08-29 audit), rather than reaching it the ordinary
+  /// way (splash_screen.dart's ROUTING to it — a `go()` that owns the
+  /// screen's exit itself). Reuses this same unlock UI/logic rather than a
+  /// second lock screen, per the audit's own instruction, with two
+  /// deliberate differences from the default behaviour:
+  ///   - a successful unlock pops back to whatever was underneath instead
+  ///     of re-hydrating gating state and routing to Home — the investor's
+  ///     place in the app must survive a resume challenge, not be lost to
+  ///     it.
+  ///   - biometric unlock is offered proactively (attempted once, on
+  ///     entry, when available/enabled) rather than waiting for a tap on
+  ///     the keypad's Face ID key — a resume challenge is a security
+  ///     re-check the app is imposing, not a fresh sign-in the investor is
+  ///     initiating, so it should cost as little friction as the passcode
+  ///     alternative it's standing in for. A failed/cancelled/unavailable
+  ///     attempt falls straight through to the ordinary passcode keypad
+  ///     (already-built fallback — see [_unlock]'s `viaBiometric` branch).
+  /// Also wrapped in a [PopScope] that refuses to be dismissed by a back
+  /// gesture/button without authenticating — the whole point is that it
+  /// cannot be swiped away.
+  final bool resumeLock;
 
   @override
   State<LogInScreen> createState() => _LogInScreenState();
@@ -83,6 +107,7 @@ class _LogInScreenState extends State<LogInScreen> {
   bool? _showEmailLogin;
   final _passcodeStore = PasscodeStore();
   bool _prefilledEmail = false;
+  bool _autoBiometricAttempted = false;
 
   // Canvas #s08 personalizes the unlock greeting ("Welcome back, Adebayo")
   // and shows the investor's own chosen avatar — see [_loadProfileForGreeting].
@@ -154,6 +179,16 @@ class _LogInScreenState extends State<LogInScreen> {
     final available = await BiometricAuth.isAvailable();
     if (!mounted) return;
     setState(() => _biometricAvailable = available);
+    // See [LogInScreen.resumeLock]'s doc comment — offer biometric
+    // proactively for a resume challenge instead of waiting for a keypad
+    // tap. Guarded so this only ever fires once per screen instance.
+    if (widget.resumeLock &&
+        !_autoBiometricAttempted &&
+        available &&
+        AppScope.read(context).biometricEnabled) {
+      _autoBiometricAttempted = true;
+      _unlock(viaBiometric: true);
+    }
   }
 
   @override
@@ -334,6 +369,15 @@ class _LogInScreenState extends State<LogInScreen> {
     }
 
     if (!mounted) return;
+    if (widget.resumeLock) {
+      // A-6: a resume challenge unlocks back into wherever the investor
+      // already was — no gating re-hydration, no route to Home. That state
+      // was never lost (the app process stayed alive in the background);
+      // re-fetching it here would only cost time and risk visibly resetting
+      // a screen the investor is about to land back on unchanged.
+      context.pop();
+      return;
+    }
     // Re-hydrate kyc/suitability from the server before landing on Home —
     // those AppState flags are in-memory only (not persisted), so on a cold
     // start they've reset to their `false` defaults even for an
@@ -448,17 +492,22 @@ class _LogInScreenState extends State<LogInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final Widget content;
     if (_showEmailLogin == null) {
       // Brief beat while [_decideMode] reads PasscodeStore.
-      return Scaffold(
+      content = Scaffold(
         backgroundColor: KColor.bg,
         body: Center(child: KSpinner(size: 22, color: KColor.ink3)),
       );
+    } else if (_showEmailLogin == true) {
+      content = _stepUpEmail != null ? _buildStepUp() : _buildLoginForm();
+    } else {
+      content = _buildUnlock(context);
     }
-    if (_showEmailLogin == true) {
-      return _stepUpEmail != null ? _buildStepUp() : _buildLoginForm();
-    }
-    return _buildUnlock(context);
+    if (!widget.resumeLock) return content;
+    // A-6: cannot be swiped/backed away from without authenticating — see
+    // [LogInScreen.resumeLock]'s doc comment.
+    return PopScope(canPop: false, child: content);
   }
 
   // ── Local unlock UI (unchanged) ─────────────────────────────────────────
@@ -755,7 +804,23 @@ class _LogInScreenState extends State<LogInScreen> {
 Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   await refreshKycGatingState(context);
   if (!context.mounted) return;
-  AppScope.read(context).setSignedIn(true);
+  final app = AppScope.read(context);
+  app.setSignedIn(true);
+
+  // A-7 (2026-08-29 audit) belt-and-suspenders: AppState._hydrateBiometricEnabled
+  // already restores this from PasscodeStore at app CONSTRUCTION, which
+  // covers every cold start. The one gap that misses is a voluntary sign-out
+  // (AppState.signOut() zeroes biometricEnabled in memory, on purpose — see
+  // its own doc comment) followed by the SAME owner signing back in inside
+  // the SAME still-running app process (no restart in between, so
+  // hydration never re-runs). Re-checking here, on every path that lands a
+  // signed-in investor on Home, closes that gap too — a no-op write when
+  // it's already correct.
+  if (!app.biometricEnabled) {
+    final storedBiometric = await PasscodeStore().getBiometricEnabled();
+    if (!context.mounted) return;
+    if (storedBiometric) app.setBiometric(true);
+  }
 
   // Dormancy gate (2026-08-24, mobile canvas screen 89) — the backend
   // promotes an idle-12-months account to accountStatus 'dormant' at the

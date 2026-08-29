@@ -18,34 +18,43 @@
 // re-verifies against the SAME existing draft — see
 // KycRepository.draftStep1's doc comment.
 //
-// STEP COUNT: the canvas's own checklist (s11) numbers this "Step 1 of 5"
-// — but its 5 only covers the artboards the canvas drew. The app's OTHER
-// (not-yet-renumbered) KYC screens say "of 8" — chn_screen.dart "2 of 8",
-// id_upload.dart "3 of 8", liveness.dart/checking.dart "4 of 8",
-// utility_bill.dart "5 of 8", bank_dcs_screen.dart "6 of 8",
-// declarations_screen.dart "7 of 8", next_of_kin.dart "8 of 8". Neither
-// number is right once R-9 is applied:
-//   - The old "8" already excludes the dropped review-before-submit step
-//     (it was never one of the 8 — see the removed _KycRow list this
-//     screen's own kyc_intro.dart sibling used to carry). So dropping
-//     review doesn't change 8 by itself.
-//   - What DOES change it: s11's checklist counts "Documents uploaded ·
-//     ID · utility bill" as ONE item, where the app currently runs it as
-//     TWO separate steps (id_upload.dart step 3, utility_bill.dart step
-//     5). Merging those per the canvas takes 8 down to 7.
-// Real sequence: (1) BVN & NIN [this screen], (2) CHN, (3) Documents +
-// address (s14/s17, merged), (4) Selfie (s15/s16), (5) Bank & DCS
-// (s18/s18b), (6) Two questions/Declarations (s19), (7) Next of kin —
-// order otherwise unchanged from the app's existing sequence. This screen
-// ships "1 of 7"; every other KYC screen still says "of 8" and needs the
-// same renumbering in one coordinated pass — filed as X-2 in
-// docs/redesign/SHARED-CHANGES.md rather than done piecemeal here, since
-// those are other agents' screens.
+// STEP COUNT (2026-08-29: this file's own note below was stale — the X-2
+// renumbering it described as still pending was already carried out; every
+// KYC step screen has said "of 7" since 2026-08-27). Real sequence: (1) BVN
+// & NIN [this screen], (2) CHN, (3) Documents + address (s14/s17, merged),
+// (4) Selfie (s15/s16), (5) Bank & DCS (s18/s18b), (6) Two
+// questions/Declarations (s19), (7) Next of kin. personal_details_screen.dart
+// (onboarding/) is NOT and never was one of these 7 — see kyc_intro.dart's
+// header for where its fields ended up after the A-1 audit fix below.
+//
+// A-2 (2026-08-29 product-owner audit) — two fixes to s13's confirmation:
+//   1. resolvedName/resolvedDob/resolvedPhone (BR-4, MOBILE-REQUESTS.md) now
+//      exist on the draftStep1/getDraft response — wired below instead of
+//      the "—" placeholders this screen shipped with when the backend gap
+//      was still open.
+//   2. "if there's a failure in bvn why should it populate dash fields and
+//      user still continues" — a draftStep1 call ALWAYS returns 200
+//      (verification is a same-call synchronous check, not an async
+//      decision), so a real bvn/nin mismatch was previously
+//      indistinguishable from a genuine pass: both landed on "Is this
+//      you?" with a "Yes, that's me" the investor could just tap through.
+//      `verificationSignals.bvn`/`.nin` being explicitly `false` (a real
+//      failure, not merely unresolved/null — see KycVerificationSignals'
+//      doc comment) now routes to a blocking `_Step.failed` state instead,
+//      with no way past it except fixing the numbers and retrying.
+//
+// A-1 (2026-08-29 audit — "why is there a few more details screen?"): DOB
+// collection folds in here now that onboarding/personal_details_screen.dart
+// is off the KYC path (see kyc_intro.dart's header). Most investors get
+// resolvedDob from the registry lookup above and never see an extra field;
+// this only asks directly when the registry didn't resolve one AND the
+// account has no dob on file yet.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
+import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -58,7 +67,17 @@ final RegExp _digitsPattern = RegExp(r'^\d{11}$');
 
 const int _kycTotalSteps = 7; // see the step-count note above
 
-enum _Step { form, confirm }
+enum _Step { form, confirm, failed }
+
+const _kMonths = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+String _formatDobDisplay(DateTime d) => '${d.day} ${_kMonths[d.month - 1]} ${d.year}';
+
+String _formatDobIso(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 class BvnNinScreen extends StatefulWidget {
   const BvnNinScreen({super.key});
@@ -77,6 +96,17 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
   bool _showErrors = false;
   bool _busy = false;
   String? _error;
+
+  // ── Confirm step (s13) state ─────────────────────────────────────────
+  KycSubmissionStatus? _confirmResult;
+
+  /// True when neither the registry lookup (resolvedDob) nor the account's
+  /// own on-file record has a date of birth — see this file's header (A-1).
+  bool _needsDobEntry = false;
+  DateTime? _pickedDob;
+  bool _confirmShowErrors = false;
+  bool _confirmBusy = false;
+  String? _confirmError;
 
   @override
   void dispose() {
@@ -102,9 +132,67 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
       if (!mounted) return;
       final id = result.id;
       if (id != null) AppScope.read(context).kycForm.setDraftId(id);
-      // s12 -> s13: BVN/NIN verified, show the read-only confirmation
-      // rather than advancing straight into the next collection step.
-      setState(() => _step = _Step.confirm);
+
+      // A-2: an explicit `false` is a real verification failure — block
+      // continuing rather than showing "Is this you?" with dashes/blanks a
+      // "Yes, that's me" could sail past. `null` (never resolved — e.g. a
+      // provider outage) is left alone: that's not a failure, it's the
+      // existing "unresolved" state finalizeDraft()'s own decision already
+      // accounts for later.
+      final signals = result.verificationSignals;
+      if (signals?.bvn == false || signals?.nin == false) {
+        setState(() {
+          _confirmResult = result;
+          _step = _Step.failed;
+        });
+        return;
+      }
+
+      // A-1: fold DOB collection in here. Only ask directly when the
+      // registry gave nothing AND the account has nothing on file already
+      // (a returning investor redoing KYC after a rejection/expiry may
+      // already have one from a previous pass). When the registry DID
+      // resolve one and the account has none on file yet, best-effort
+      // auto-save it — see the doc comment on the write below.
+      var needsDobEntry = false;
+      if (result.resolvedDob == null) {
+        String existingDob = '—';
+        try {
+          existingDob = (await UserRepository(AppScope.read(context).apiClient).personalInfo()).dob;
+        } on ApiException {
+          // Best-effort — see this method's other catches. Falls through to
+          // asking directly, the safe default (never worse than asking once
+          // more of someone who already has one on file).
+        }
+        needsDobEntry = existingDob == '—';
+      } else {
+        // Registry resolved one — persist it onto the account if nothing's
+        // there yet, so `KycSubmission.dob` (which reads the ACCOUNT's
+        // on-file value, not this resolved one — see the backend's
+        // runIdentityAndAmlChecks doc comment) doesn't stay null purely for
+        // want of a write nobody triggered. Best-effort/fire-and-forget in
+        // spirit, but awaited so a failure here can be surfaced rather than
+        // silently lost — a failure just means the DOB entry may be asked
+        // for again later; it never blocks this step.
+        try {
+          final client = AppScope.read(context).apiClient;
+          final existing = (await UserRepository(client).personalInfo()).dob;
+          if (!mounted) return;
+          if (existing == '—') {
+            await UserRepository(client).updateProfile(dob: result.resolvedDob);
+          }
+        } on ApiException {
+          // Non-fatal — the resolved value still displays on this screen
+          // either way.
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _confirmResult = result;
+        _needsDobEntry = needsDobEntry;
+        _step = _Step.confirm;
+      });
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -120,6 +208,47 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
     }
   }
 
+  Future<void> _pickDob() async {
+    final now = DateTime.now();
+    final adultCutoff = DateTime(now.year - 18, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _pickedDob ?? adultCutoff,
+      firstDate: DateTime(now.year - 100),
+      lastDate: adultCutoff,
+      helpText: 'Date of birth',
+    );
+    if (picked != null) setState(() => _pickedDob = picked);
+  }
+
+  Future<void> _proceedFromConfirm() async {
+    if (_needsDobEntry && _pickedDob == null) {
+      setState(() => _confirmShowErrors = true);
+      return;
+    }
+    if (_needsDobEntry) {
+      setState(() {
+        _confirmBusy = true;
+        _confirmError = null;
+      });
+      try {
+        await UserRepository(AppScope.read(context).apiClient)
+            .updateProfile(dob: _formatDobIso(_pickedDob!));
+      } on ApiException catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _confirmBusy = false;
+          _confirmError = e.message;
+        });
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _confirmBusy = false);
+    }
+    if (!mounted) return;
+    context.go(Routes.kycChn);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -131,12 +260,19 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
             KycTopBar(
               onBack: _step == _Step.form
                   ? () => context.go(Routes.kycIntro)
-                  : () => setState(() => _step = _Step.form),
+                  : () => setState(() {
+                        _step = _Step.form;
+                        _confirmResult = null;
+                      }),
               stepLabel: 'Verification · 1 of $_kycTotalSteps',
             ),
             const KycStepProgress(total: _kycTotalSteps, current: 1),
             Expanded(
-              child: _step == _Step.form ? _buildForm() : _buildConfirm(),
+              child: switch (_step) {
+                _Step.form => _buildForm(),
+                _Step.confirm => _buildConfirm(),
+                _Step.failed => _buildFailed(),
+              },
             ),
           ],
         ),
@@ -228,8 +364,12 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
     );
   }
 
-  // ── s13 — Is this you? (read-only confirmation) ──────────────────────
+  // ── s13 — Is this you? (read-only confirmation, now real data — A-2) ──
   Widget _buildConfirm() {
+    final result = _confirmResult!;
+    final dobText = result.resolvedDob != null
+        ? _formatDobDisplay(DateTime.parse(result.resolvedDob!))
+        : null;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
       child: Column(
@@ -240,15 +380,6 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
             body: "From your BVN and NIN records. If something's wrong, fix it at your bank first.",
           ),
           const SizedBox(height: 24),
-          // BACKEND GAP (filed in docs/redesign/BACKEND_GAPS.md): the
-          // draftStep1/getDraft response has no resolved name/date-of-birth
-          // /phone from the BVN/NIN check — only masked bvn/nin and
-          // pass-fail verificationSignals booleans. Per R-34, the figures
-          // are omitted rather than shown as the canvas's mock "Adebayo
-          // Okonkwo" — the row labels still ship, values read "—". Same
-          // reasoning drops the design's "Matches the name on your
-          // account" checkmark line entirely: that's a computed match
-          // result with nothing to compute it from.
           Container(
             decoration: BoxDecoration(
               color: KColor.paper,
@@ -256,26 +387,118 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
               borderRadius: KRadii.cardR,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: const Column(
+            child: Column(
               children: [
-                KKeyValueRow(label: 'Name', value: '—', first: true),
-                KKeyValueRow(label: 'Date of birth', value: '—'),
-                KKeyValueRow(label: 'Phone', value: '—'),
+                KKeyValueRow(label: 'Name', value: result.resolvedName ?? '—', first: true),
+                if (!_needsDobEntry)
+                  KKeyValueRow(label: 'Date of birth', value: dobText ?? '—')
+                else
+                  _DobPickerRow(
+                    value: _pickedDob != null ? _formatDobDisplay(_pickedDob!) : null,
+                    onTap: _pickDob,
+                    error: _confirmShowErrors && _pickedDob == null,
+                  ),
+                KKeyValueRow(label: 'Phone', value: result.resolvedPhone ?? '—'),
               ],
             ),
           ),
+          if (_needsDobEntry) ...[
+            const SizedBox(height: 10),
+            Text(
+              "We couldn't get your date of birth from your BVN/NIN — enter it once here.",
+              style: KType.body(color: KColor.ink3).copyWith(fontSize: 13, height: 18 / 13),
+            ),
+          ],
+          if (_confirmShowErrors && _needsDobEntry && _pickedDob == null) ...[
+            const SizedBox(height: 8),
+            Text('Select your date of birth to continue',
+                style: KType.micro(color: KColor.loss).copyWith(letterSpacing: 0.02 * 10)),
+          ],
+          if (_confirmError != null) ...[
+            const SizedBox(height: 12),
+            Text(_confirmError!, style: KType.body(color: KColor.loss)),
+          ],
           const SizedBox(height: 28),
           KButton(
             label: "Yes, that's me",
-            onPressed: () => context.go(Routes.kycChn),
+            loading: _confirmBusy,
+            onPressed: _confirmBusy ? null : _proceedFromConfirm,
           ),
           const SizedBox(height: 10),
           KButton(
             label: 'Re-enter BVN',
             variant: KButtonVariant.ghost,
-            onPressed: () => setState(() => _step = _Step.form),
+            onPressed: _confirmBusy
+                ? null
+                : () => setState(() {
+                      _step = _Step.form;
+                      _confirmResult = null;
+                    }),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── A-2: blocking failure state — a real bvn/nin mismatch, not merely
+  // unresolved. No way past this except fixing the numbers and retrying.
+  Widget _buildFailed() {
+    final signals = _confirmResult?.verificationSignals;
+    final reasons = <String>[
+      if (signals?.nin == false) 'Your NIN could not be verified',
+      if (signals?.bvn == false) 'Your BVN could not be verified',
+    ];
+    final message = reasons.isNotEmpty
+        ? '${reasons.join('. ')}. Double-check the numbers and try again.'
+        : "We couldn't verify those details. Double-check the numbers and try again.";
+    return KCentered(
+      child: KStatusView(
+        tone: KStatusTone.error,
+        title: "We couldn't verify you",
+        message: message,
+        primary: 'Try again',
+        onPrimary: () => setState(() {
+          _step = _Step.form;
+          _confirmResult = null;
+        }),
+      ),
+    );
+  }
+}
+
+/// The DOB row when it needs to be collected directly (A-1) — same visual
+/// rhythm as [KKeyValueRow] (label left, value right, hairline divider) but
+/// tappable, with a chevron affordance matching this screen's other
+/// tappable rows elsewhere in the app. File-local: nothing else in this
+/// screen needs a tappable key/value row.
+class _DobPickerRow extends StatelessWidget {
+  const _DobPickerRow({required this.value, required this.onTap, required this.error});
+  final String? value;
+  final VoidCallback onTap;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: KColor.hairline, width: 1)),
+        ),
+        child: Row(
+          children: [
+            Text('Date of birth', style: KType.data(color: KColor.ink2)),
+            const Spacer(),
+            Text(
+              value ?? 'Select',
+              style: KType.data(color: error ? KColor.loss : (value != null ? KColor.ink : KColor.ink3)).tnum,
+            ),
+            const SizedBox(width: 6),
+            KIcon('arrowDown', size: 14, color: error ? KColor.loss : KColor.ink3),
+          ],
+        ),
       ),
     );
   }

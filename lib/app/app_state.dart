@@ -4,8 +4,11 @@
 // by the demo flows.
 // Persistence: `signedIn` is now backed by AuthTokenStore (flutter_secure_storage)
 // — the secure store this comment used to say "plugs in later". See
-// _hydrateSignedIn() and forceSignOut() below. Every other flag here is still
-// in-memory only.
+// _hydrateSignedIn() and forceSignOut() below. `biometricEnabled` is backed by
+// PasscodeStore the same way (2026-08-29, A-6/A-7 fix — see
+// _hydrateBiometricEnabled()'s doc comment: it used to be in-memory only,
+// which meant a real enrolment was forgotten on the very next cold start).
+// Every other flag here is still in-memory only.
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
@@ -53,15 +56,16 @@ class AppState extends ChangeNotifier {
   }
 
   /// Resolves once startup hydration ([_hydrateSignedIn] +
-  /// [_hydratePasscodeSet]) has completed. [signedIn] and [passcodeSet]
-  /// both start `false` synchronously (before the secure-storage reads that
-  /// back them return) — callers that need a startup-correct read of either
-  /// flag, rather than just reacting to a later [notifyListeners] call, must
-  /// await this first. See splash_screen.dart's routing decision.
+  /// [_hydratePasscodeSet] + [_hydrateBiometricEnabled]) has completed.
+  /// [signedIn], [passcodeSet] and [biometricEnabled] all start `false`
+  /// synchronously (before the secure-storage reads that back them return)
+  /// — callers that need a startup-correct read of any of them, rather than
+  /// just reacting to a later [notifyListeners] call, must await this
+  /// first. See splash_screen.dart's routing decision.
   late final Future<void> ready;
 
   Future<void> _hydrate() async {
-    await Future.wait([_hydrateSignedIn(), _hydratePasscodeSet()]);
+    await Future.wait([_hydrateSignedIn(), _hydratePasscodeSet(), _hydrateBiometricEnabled()]);
   }
 
   final AuthTokenStore _tokenStore;
@@ -254,8 +258,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Flips [biometricEnabled] AND persists it (2026-08-29, A-6/A-7 fix —
+  /// see [_hydrateBiometricEnabled]'s doc comment for what broke before
+  /// this). Fire-and-forget on the write: every existing call site
+  /// (biometric_screen.dart's enrolment, security_screen.dart's toggle)
+  /// treats this as a synchronous setter already, and the in-memory flag —
+  /// which every screen actually reads — is updated immediately either way.
   void setBiometric(bool v) {
     biometricEnabled = v;
+    unawaited(_passcodeStore.setBiometricEnabled(v));
     notifyListeners();
   }
 
@@ -384,6 +395,33 @@ class AppState extends ChangeNotifier {
       final has = await _passcodeStore.hasPasscode();
       if (has) {
         passcodeSet = true;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Best-effort — see _hydrateSignedIn()'s identical catch above.
+    }
+  }
+
+  /// On construction, read the secure store to decide the initial
+  /// [biometricEnabled] value — mirrors [_hydratePasscodeSet] exactly, just
+  /// reading [PasscodeStore.getBiometricEnabled] instead. Added 2026-08-29
+  /// (product-owner audit A-6/A-7). Before this fix, [biometricEnabled] was
+  /// flipped true by biometric_screen.dart's enrolment but never persisted
+  /// anywhere — every cold start silently reset it to `false`, so:
+  ///   - log_in_screen.dart's unlock keypad (`app.biometricEnabled &&
+  ///     _biometricAvailable`) never showed the Face ID key again after the
+  ///     very first app launch, even for an investor who genuinely turned it
+  ///     on — i.e. biometrics were "collected" once and then forgotten (A-7).
+  ///   - a resume-lock built on this flag (main.dart's
+  ///     `didChangeAppLifecycleState`, A-6) would have had nothing reliable
+  ///     to offer biometric-first either.
+  /// Without this hydration, [biometricEnabled] stays at its `false` default
+  /// until the investor happens to notice and re-enrol from Security.
+  Future<void> _hydrateBiometricEnabled() async {
+    try {
+      final enabled = await _passcodeStore.getBiometricEnabled();
+      if (enabled) {
+        biometricEnabled = true;
         notifyListeners();
       }
     } catch (_) {

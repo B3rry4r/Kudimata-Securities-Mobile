@@ -24,6 +24,7 @@ import 'data/api/theme_mode_store.dart';
 import 'data/repositories/market_status_repository.dart';
 import 'data/repositories/watchlist_repository.dart';
 import 'router/app_router.dart';
+import 'router/routes.dart';
 import 'screens/kyc/kyc_form_state.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
@@ -96,6 +97,20 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
     if (KThemePreference.instance.mode == ThemeMode.system) setState(() {});
   }
 
+  /// How long the app can sit backgrounded before a foreground resume
+  /// demands re-authentication (A-6, 2026-08-29 audit: "passcode or
+  /// biometrics scan for reopening the app is not enforced"). Chosen as a
+  /// deliberate middle ground: instant re-lock on every task-switch (a
+  /// notification banner tap, a quick app-switcher glance) would be hostile
+  /// on a money app people dip in and out of all day; no grace at all is
+  /// what the audit is flagging as broken. 30s covers a genuine
+  /// backgrounding — a phone call, switching to another app for a minute —
+  /// without re-challenging a reflexive half-second switch-and-back.
+  static const Duration _resumeLockGrace = Duration(seconds: 30);
+
+  DateTime? _pausedAt;
+  bool _resumeLockShowing = false;
+
   /// R-41: reconnect the realtime socket on app foreground resume — a
   /// backgrounded app's socket is routinely dropped by the OS/network
   /// (Nigerian mobile connections most of all), and [RealtimeClient.connect]
@@ -103,11 +118,44 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
   /// there's no signed-in session to reconnect. No action needed on
   /// pause/detach: socket.io's own Manager already handles a connection
   /// dying mid-background the same way it handles any other drop.
+  ///
+  /// A-6 (2026-08-29 audit) also lives here: this used to be ALL this
+  /// handler did — the app held a live session, holdings and money
+  /// movement, and coming back from the background never asked for
+  /// anything. [_pausedAt] records when the app actually left the
+  /// foreground (`paused`, not the brief `inactive` a control-centre swipe
+  /// or an incoming call causes without ever really backgrounding); a
+  /// `resumed` past [_resumeLockGrace] later pushes a local re-auth
+  /// challenge — reusing log_in_screen.dart's own unlock screen
+  /// (`resumeLock: true`) rather than inventing a second lock, per the
+  /// audit's own instruction. Nothing to challenge with (no session, or no
+  /// passcode set yet — still mid onboarding) simply skips it.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _state.signedIn) {
+    if (state == AppLifecycleState.paused) {
+      _pausedAt = DateTime.now();
+      return;
+    }
+    if (state != AppLifecycleState.resumed) return;
+
+    if (_state.signedIn) {
       _state.realtimeClient.connect();
     }
+
+    final pausedAt = _pausedAt;
+    _pausedAt = null;
+    if (_resumeLockShowing || pausedAt == null) return;
+    if (!_state.signedIn || !_state.passcodeSet) return;
+    if (DateTime.now().difference(pausedAt) < _resumeLockGrace) return;
+
+    _resumeLockShowing = true;
+    // Pushed (not go()'d) so whatever screen the investor was on stays
+    // underneath, intact, once they unlock — a resume challenge should not
+    // also lose their place. LogInScreen's own PopScope (resumeLock: true)
+    // refuses to be dismissed any other way.
+    _router.push(Routes.login, extra: true).then((_) {
+      _resumeLockShowing = false;
+    });
   }
 
   @override

@@ -32,19 +32,28 @@
 //     fields (residentialAddress/state/city) to the SAME endpoint. An
 //     investor who reaches KYC types these twice. DUPLICATE.
 //   - Date of birth: R-19's own text says "BVN returns name and DOB", which
-//     would make this a duplicate too — but bvn_nin.dart's own file header
-//     records that draftStep1/getDraft's real response has NO resolved
-//     name/DOB/phone (only masked bvn/nin + pass/fail booleans, filed as a
-//     backend gap there), so `s13` ships its confirm rows as "—" per R-34.
-//     Nothing else in the app collects DOB. NOT a duplicate today — the
-//     only place DOB is actually captured, whatever the ruling assumed.
-//   - Phone: `s17` doesn't collect it, nothing upstream does either. NOT a
-//     duplicate — R-19's own conclusion holds here.
-// Net: this screen is a removal CANDIDATE for its 3 address fields (once a
-// human decides how to de-duplicate the two entry points — not this file's
-// call), but DOB and phone are both still live, uniquely-sourced fields.
-// Per the brief this screen is not rewritten or trimmed on that basis; this
-// is a report, filed here for whoever runs the removal pass.
+//     would make this a duplicate too — at the time this audit ran,
+//     bvn_nin.dart's response carried no resolved name/DOB/phone at all
+//     (filed as a backend gap there). NOT a duplicate at the time — the
+//     only place DOB was actually captured.
+//   - Phone: `s17` doesn't collect it. At the time of this audit nothing
+//     upstream did either.
+//
+// 2026-08-29 (A-1 product-owner audit — "why is there a few more details
+// screen? why is that still there" / "two foolish screens that can
+// interrupt"): the backend gap above was closed (BR-4: draftStep1/getDraft
+// now return resolvedName/resolvedDob/resolvedPhone), and sign_up_screen.dart
+// separately gained its own phone field (BR-3) — so ALL FIVE of this
+// screen's fields are now duplicated elsewhere in the flow. kyc_intro.dart no
+// longer detours here at all: DOB (the one field with no other writer once
+// BR-4's resolved value is absent) is now asked directly on bvn_nin.dart's
+// confirm step when needed, and this screen has no forward entry point left
+// in the app. Kept, not deleted, per the audit's own instruction — reported
+// as a removal candidate. Its route (`Routes.onboardingPersonal`) and the
+// avatar/what's-next chain after it (`onboardingAvatar`/`onboardingNextSteps`)
+// stay registered/walked by test/route_walk_test.dart since they're still
+// directly reachable (avatar_screen.dart's own back arrow, a deep link),
+// just no longer part of any screen's forward navigation.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';

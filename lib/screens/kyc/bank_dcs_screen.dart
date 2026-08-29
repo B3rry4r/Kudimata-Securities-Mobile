@@ -20,9 +20,12 @@
 // before, or already had one), this shows it directly instead of asking to
 // re-add — Continue just moves on.
 //
-// Post-confirm navigation goes to Routes.kycChecklist, not straight to
-// Declarations (X-5, SHARED-CHANGES.md 2026-08-27) — the checklist hub is
-// the flow's spine, re-entered after every completed step.
+// 2026-08-29 (A-4 audit fix): post-confirm navigation used to go to
+// Routes.kycChecklist unconditionally, forcing a tap through the checklist
+// hub's own UI to continue. Now advances straight to the real next step
+// (Declarations) via nextKycStepRoute (kyc_checklist_screen.dart) — the hub
+// itself is unchanged and stays the resume point for an investor
+// re-entering KYC part-way.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -33,6 +36,7 @@ import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import '_kyc_chrome.dart';
+import 'kyc_checklist_screen.dart' show nextKycStepRoute;
 
 class BankDcsScreen extends StatefulWidget {
   const BankDcsScreen({super.key});
@@ -147,7 +151,13 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
   // "****6835" and a blank Name row rather than the real values s18b draws;
   // that's worse than the resume shortcut it would replace. The account was
   // already confirmed the session it was added.
-  void _continueWithExisting() => context.go(Routes.kycChecklist);
+  Future<void> _goToNextStep() async {
+    final next = await nextKycStepRoute(AppScope.read(context).apiClient);
+    if (!mounted) return;
+    context.go(next);
+  }
+
+  void _continueWithExisting() => _goToNextStep();
 
   /// s18b "Confirm your bank account" sheet. Primary -> declarations; ghost
   /// "Edit" just dismisses back onto s18 (the form stays exactly as typed).
@@ -160,7 +170,7 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
       context,
       child: _BankConfirmSheet(bankName: bankName, accountNumber: accountNumber, holderName: holderName),
     );
-    if (confirmed == true && mounted) context.go(Routes.kycChecklist);
+    if (confirmed == true && mounted) await _goToNextStep();
   }
 
   @override

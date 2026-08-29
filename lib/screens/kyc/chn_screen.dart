@@ -15,9 +15,15 @@
 // (ghost button) is the same no-op-and-move-on, always available regardless
 // of the radio/input state, per the canvas's own two-CTA design.
 //
-// Step-complete navigation goes to Routes.kycChecklist, not straight to the
-// next collection screen (X-5, SHARED-CHANGES.md 2026-08-27) — the
-// checklist hub is the flow's spine now, re-entered after every step.
+// 2026-08-29 (A-4 audit fix — "two foolish screens that can interrupt when
+// you want to go to the next thing"): step-complete navigation used to go
+// to Routes.kycChecklist unconditionally (X-5, SHARED-CHANGES.md
+// 2026-08-27), forcing a tap through the checklist hub's own UI just to
+// continue. Now advances straight to the real next step via
+// kyc_checklist_screen.dart's `nextKycStepRoute` — the SAME derivation the
+// hub's own UI uses, just without its screen in between. The hub itself is
+// unchanged and stays the RESUME point for an investor re-entering KYC
+// part-way.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -27,6 +33,7 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import '_kyc_chrome.dart';
+import 'kyc_checklist_screen.dart' show nextKycStepRoute;
 
 class ChnScreen extends StatefulWidget {
   const ChnScreen({super.key});
@@ -67,6 +74,12 @@ class _ChnScreenState extends State<ChnScreen> {
     }).catchError((_) {});
   }
 
+  Future<void> _goToNextStep() async {
+    final next = await nextKycStepRoute(AppScope.read(context).apiClient);
+    if (!mounted) return;
+    context.go(next);
+  }
+
   Future<void> _continue() async {
     if (_hasChn && _chn.text.trim().isEmpty) {
       setState(() => _showErrors = true);
@@ -74,7 +87,7 @@ class _ChnScreenState extends State<ChnScreen> {
     }
     if (!_hasChn) {
       // Nothing to persist — chn already defaults to null on the draft.
-      context.go(Routes.kycChecklist);
+      await _goToNextStep();
       return;
     }
     setState(() {
@@ -84,7 +97,8 @@ class _ChnScreenState extends State<ChnScreen> {
     try {
       await _repo.updateDraftFields(chn: _chn.text.trim());
       if (!mounted) return;
-      context.go(Routes.kycChecklist);
+      await _goToNextStep();
+      return;
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -96,7 +110,7 @@ class _ChnScreenState extends State<ChnScreen> {
     }
   }
 
-  void _skip() => context.go(Routes.kycChecklist);
+  void _skip() => _goToNextStep();
 
   @override
   Widget build(BuildContext context) {
