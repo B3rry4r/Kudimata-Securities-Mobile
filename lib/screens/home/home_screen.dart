@@ -68,7 +68,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/data/repositories/asset_repository.dart';
@@ -116,17 +115,6 @@ String _formatWealth(double value) {
     buf.write(whole[i]);
   }
   return '₦${buf.toString()}.${parts[1]}';
-}
-
-/// Best-effort hand-off to the device browser for the R-29 external links —
-/// same seam as help_support_screen.dart's `_launch`: a promo card, not a
-/// form, has no in-app surface to report failure on.
-Future<void> _openExternal(String url) async {
-  try {
-    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-  } catch (_) {
-    // Silently stays on Home — see doc comment above.
-  }
 }
 
 /// Combined payload for the single screen-level FutureBuilder.
@@ -524,15 +512,15 @@ class _VerifiedContent {
                 ),
                 const SizedBox(width: 18),
                 // 'Learn' carries no destination in s22's own markup (no
-                // onClick drawn, unlike Add/Orders). Routed to the app's one
-                // general reading surface (FAQ + the surviving plain-
-                // language glossary, R-6) as the closest real match for a
-                // doc-icon "Learn" action.
+                // onClick drawn, unlike Add/Orders). Owner direction
+                // (2026-08-29): opens a dedicated screen listing the three
+                // Kudimata web products below, presented as the same cards
+                // — see learn_screen.dart.
                 _QuickAction(
                   label: 'Learn',
                   icon: 'doc',
                   style: _ActionStyle.tinted,
-                  onTap: () => context.push(Routes.acctFaq),
+                  onTap: () => context.push(Routes.learn),
                 ),
               ],
             ),
@@ -556,24 +544,24 @@ class _VerifiedContent {
             padding: const EdgeInsets.only(right: KSpace.gutter),
             child: Row(
               children: [
-                _GrowCard(
+                KGrowCard(
                   illustration: 'kd-readiness',
                   background: KColor.feature,
                   titleColor: KColor.featureInk,
                   title: 'How ready are you to invest?',
                   cta: 'Check your readiness',
                   ctaColor: KColor.sun,
-                  url: KLinks.readiness,
+                  onTap: () => openExternalLink(KLinks.readiness),
                 ),
                 const SizedBox(width: 12),
-                _GrowCard(
+                KGrowCard(
                   illustration: 'kd-persona',
                   background: KColor.sunTint,
                   titleColor: KColor.ink,
                   title: "What's your money persona?",
                   cta: 'Take the quiz',
                   ctaColor: KColor.indicator,
-                  url: KLinks.persona,
+                  onTap: () => openExternalLink(KLinks.persona),
                 ),
               ],
             ),
@@ -583,7 +571,7 @@ class _VerifiedContent {
       const SizedBox(height: 14),
       Padding(
         padding: _gut,
-        child: _LiteracyRow(onTap: () => _openExternal(KLinks.financialLiteracy)),
+        child: _LiteracyRow(onTap: () => openExternalLink(KLinks.financialLiteracy)),
       ),
       const SizedBox(height: 26),
 
@@ -731,7 +719,7 @@ class _NotVerifiedContent {
                   label: 'Learn',
                   icon: 'doc',
                   style: _ActionStyle.tinted,
-                  onTap: () => context.push(Routes.acctFaq),
+                  onTap: () => context.push(Routes.learn),
                 ),
               ],
             ),
@@ -756,24 +744,24 @@ class _NotVerifiedContent {
             padding: const EdgeInsets.only(right: KSpace.gutter),
             child: Row(
               children: [
-                _GrowCard(
+                KGrowCard(
                   illustration: 'kd-persona',
                   background: KColor.sunTint,
                   titleColor: KColor.ink,
                   title: "What's your money persona?",
                   cta: 'Take the quiz',
                   ctaColor: KColor.indicator,
-                  url: KLinks.persona,
+                  onTap: () => openExternalLink(KLinks.persona),
                 ),
                 const SizedBox(width: 12),
-                _GrowCard(
+                KGrowCard(
                   illustration: 'kd-lesson',
                   background: KColor.feature,
                   titleColor: KColor.featureInk,
                   title: 'How the market works, in 4 minutes',
                   cta: 'Start lesson 1',
                   ctaColor: KColor.sun,
-                  url: KLinks.financialLiteracy,
+                  onTap: () => openExternalLink(KLinks.financialLiteracy),
                 ),
               ],
             ),
@@ -1074,68 +1062,8 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-/// One "Grow with Kudimata"/"While you wait" promo card — a static, external
-/// link (R-29). Never shows a completion/progress figure per that ruling.
-class _GrowCard extends StatelessWidget {
-  const _GrowCard({
-    required this.illustration,
-    required this.background,
-    required this.titleColor,
-    required this.title,
-    required this.cta,
-    required this.ctaColor,
-    required this.url,
-  });
-
-  final String illustration;
-  final Color background;
-  final Color titleColor;
-  final String title;
-  final String cta;
-  final Color ctaColor;
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _openExternal(url),
-      child: Container(
-        width: 220,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(color: background, borderRadius: KRadii.featureR),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(child: SvgPicture.asset('assets/illustrations/$illustration.svg', height: 84)),
-            const SizedBox(height: 10),
-            Text(title,
-                style: KType.cardTitle(color: titleColor, w: KWeight.black)
-                    .copyWith(fontSize: 17, height: 22 / 17)),
-            const SizedBox(height: 10),
-            // The bundled Nunito/Nunito Sans faces carry no U+2192 glyph, so
-            // the canvas's literal "→" (Check your readiness →, etc.) is a
-            // tofu box, not a render — this is a real, offline device
-            // constraint (see pubspec.yaml's font-bundling note), not a
-            // design opinion. A trailing chevron icon carries the same
-            // directional cue with a glyph the app actually ships.
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(cta, style: KType.data(color: ctaColor, w: KWeight.bold).copyWith(fontSize: 13)),
-                const SizedBox(width: 4),
-                KIcon('chevronRight', size: 13, color: ctaColor),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// s22's full-width "Financial literacy" row (distinct shape from the
-/// hscroll _GrowCard above). R-29: the canvas draws "Lesson 3 of 12 · 4
+/// hscroll [KGrowCard] above, lib/widgets/surfaces.dart). R-29: the canvas draws "Lesson 3 of 12 · 4
 /// min" here — the lesson number is per-user progress this app has no
 /// reader for (the lessons live on kudimata.app, not in this app), so only
 /// the non-progress half of that string ships.

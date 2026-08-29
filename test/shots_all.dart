@@ -217,6 +217,10 @@ final List<_RouteSpec> _specs = [
   _RouteSpec('33_notifications', Routes.notifications, 'home/notifications_screen.dart'),
   _RouteSpec('34_search', Routes.search, 'home/search_screen.dart'),
   _RouteSpec('35_orders', Routes.orderStatus, 'portfolio/order_status_screen.dart'),
+  // Home's "Learn" quick action destination (owner direction, 2026-08-29) —
+  // no canvas screen number of its own (no artboard covers it; see
+  // learn_screen.dart's header).
+  _RouteSpec('35b_learn', Routes.learn, 'home/learn_screen.dart'),
   // D-2 (2026-08-27 removals pass, R-16): watchlist_screen.dart dropped —
   // '36_watchlist' no longer exists. See account_screen.dart's 'My alerts'
   // row / price_alerts_screen.dart for the surviving reader.

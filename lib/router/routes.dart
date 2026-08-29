@@ -104,6 +104,13 @@ class Routes {
   // from the header avatar on Home instead of a tab.
   static const String account = '/account';
   static const String notifications = '/notifications';
+  // Learn's destination (owner direction, 2026-08-29 — "the learn should
+  // not be to FAQ but rather open a screen that shows the financial
+  // literacy, kudimata persona and the other one just as the cards are
+  // designed on the home"): lists the three Kudimata web products, styled
+  // like Home's own promo cards (learn_screen.dart). Pushed from Home's
+  // "Learn" quick action.
+  static const String learn = '/learn';
   static const String search = '/search';
   static const String orderStatus = '/orders';
   // watchlist_screen.dart dropped (D-2, SHARED-CHANGES.md 2026-08-27

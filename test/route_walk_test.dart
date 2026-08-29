@@ -55,7 +55,7 @@ void main() {
       // tabs
       '/home', '/portfolio', '/markets', '/wallet', '/account',
       // pushed static
-      '/notifications', '/search', '/orders',
+      '/notifications', '/search', '/orders', '/learn',
       // pushed dynamic
       '/asset/MTNN',
       '/asset/AAPL',

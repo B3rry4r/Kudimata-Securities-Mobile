@@ -10,6 +10,8 @@
 // The public site is kudimata.app (NOT kudimata.com — that host appears in
 // the Kudimata-Web source but the live product site is `.app`; verified
 // against the live site per R-29).
+import 'package:url_launcher/url_launcher.dart';
+
 class KLinks {
   KLinks._();
 
@@ -18,4 +20,17 @@ class KLinks {
   static const String quiz = 'https://www.kudimata.app/quiz';
   static const String financialLiteracy =
       'https://www.kudimata.app/our-app/financial-literacy-quiz';
+}
+
+/// Best-effort hand-off to the device browser for a [KLinks] URL — the one
+/// place this is implemented, so home_screen.dart's promo rail and
+/// learn_screen.dart (Learn's destination) both call this rather than each
+/// keeping its own copy. Same seam as help_support_screen.dart's `_launch`:
+/// a promo card, not a form, has no in-app surface to report failure on.
+Future<void> openExternalLink(String url) async {
+  try {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  } catch (_) {
+    // Silently stays on the current screen — see doc comment above.
+  }
 }

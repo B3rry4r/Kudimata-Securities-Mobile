@@ -61,6 +61,7 @@ import '../screens/account/account_screen.dart';
 
 // Home pushed.
 import '../screens/home/notifications_screen.dart';
+import '../screens/home/learn_screen.dart';
 import '../screens/home/search_screen.dart';
 
 // Markets pushed.
@@ -305,6 +306,10 @@ GoRouter buildRouter(AppState state) {
 
       // ── Pushed detail (top-level — cover the shell, no tab bar) ─────────--
       GoRoute(path: Routes.notifications, builder: (_, _) => themed(() => NotificationsScreen())),
+      // Home's "Learn" quick action (owner direction 2026-08-29) — pushed,
+      // not a tab root, per this file's own "pushed detail screens are
+      // top-level" convention.
+      GoRoute(path: Routes.learn, builder: (_, _) => themed(() => LearnScreen())),
       GoRoute(path: Routes.search, builder: (_, _) => themed(() => SearchScreen())),
       GoRoute(path: Routes.orderStatus, builder: (_, _) => themed(() => OrderStatusScreen())),
       GoRoute(

@@ -192,16 +192,15 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 500));
 
-        // Home itself has a pre-existing, unrelated layout defect — found
-        // incidentally by this test, not caused by it: two hardcoded CTA
-        // strings ("Check your readiness"/"Take the quiz") overflow its
-        // "not verified" feature cards (home_screen.dart's `_GrowCard`,
-        // around line 1122) the instant they paint, on any investor who
-        // reaches Home not yet KYC-verified — reproducible independently of
-        // this onboarding-chain change. Collected here (this test's job is
-        // confirming the onboarding chain lands on Home, not re-auditing
-        // Home's own rendering) rather than fixed, since it's outside this
-        // change's scope; flagged for a separate pass instead.
+        // Home's "not verified" feature cards used to overflow the instant
+        // they painted here — two hardcoded CTA strings ("Check your
+        // readiness"/"Take the quiz") laid out in a Row with no
+        // Flexible/Expanded around the label, so a Row measures a bare Text
+        // child at its full unwrapped width regardless of the card's own
+        // width. Fixed by promoting the card to `KGrowCard`
+        // (lib/widgets/surfaces.dart) with the CTA label wrapped in a
+        // Flexible + ellipsis — see that class's own doc comment. Asserting
+        // zero render errors now, rather than tolerating a known overflow.
         final homeRenderErrors = <FlutterErrorDetails>[];
         final previousOnError = FlutterError.onError;
         FlutterError.onError = homeRenderErrors.add;
@@ -212,14 +211,9 @@ void main() {
         } finally {
           FlutterError.onError = previousOnError;
         }
-        for (final e in homeRenderErrors) {
-          expect(
-            e.exceptionAsString(),
-            contains('RenderFlex overflowed'),
-            reason: 'only the known, pre-existing overflow should surface '
-                'here, nothing new introduced by this change',
-          );
-        }
+        expect(homeRenderErrors, isEmpty,
+            reason: 'Home should render with no layout/paint errors, '
+                'including on its not-verified body');
 
         final loc = router.routerDelegate.currentConfiguration.uri.toString();
         expect(loc, Routes.home);
