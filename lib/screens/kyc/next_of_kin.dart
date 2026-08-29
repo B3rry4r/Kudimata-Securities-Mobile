@@ -33,6 +33,7 @@ import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+import '../onboarding/_pickers.dart';
 import '_kyc_chrome.dart';
 
 class NextOfKinScreen extends StatefulWidget {
@@ -60,6 +61,13 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
   final _email = TextEditingController();
+  // 2026-08-29: next of kin's phone gained the same country picker as
+  // sign_up_screen.dart/personal_details_screen.dart — this field used to
+  // draw a hardcoded `prefix: '+234'` that was purely decorative (the
+  // submitted value was always just the raw digits typed, with no country
+  // code at all, since finalizeDraft's nextOfKin.phone is free text with
+  // no format contract). Defaults to Nigeria, same as everywhere else.
+  KPhoneCountry _phoneCountry = kDefaultPhoneCountry;
   String? _relationship;
   bool _showErrors = false;
   bool _prefilled = false;
@@ -85,9 +93,16 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
     _prefilled = true;
     final form = AppScope.read(context).kycForm;
     _name.text = form.nextOfKinName ?? '';
-    _phone.text = form.nextOfKinPhone ?? '';
+    final storedPhone = form.nextOfKinPhone ?? '';
+    _phoneCountry = countryForE164(storedPhone);
+    _phone.text = storedPhone.isEmpty ? '' : localPartOf(storedPhone, _phoneCountry);
     _email.text = form.nextOfKinEmail ?? '';
     _relationship = form.nextOfKinRelationship;
+  }
+
+  Future<void> _pickCountryCode() async {
+    final picked = await showCountryCodePicker(context, selected: _phoneCountry);
+    if (picked != null) setState(() => _phoneCountry = picked);
   }
 
   Future<void> _pickRelationship() async {
@@ -127,7 +142,9 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
     form.setNextOfKin(
       name: _name.text.trim(),
       relationship: _relationship!,
-      phone: _phone.text.trim(),
+      phone: _phone.text.trim().isEmpty
+          ? ''
+          : composePhoneE164(_phone.text, _phoneCountry.dial),
       email: _email.text.trim().isEmpty ? null : _email.text.trim(),
     );
 
@@ -214,12 +231,11 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
                             Text('Select a relationship', style: KType.data(color: KColor.loss)),
                           ],
                           const SizedBox(height: 16),
-                          KInput(
-                              label: 'Phone number',
-                              prefix: '+234',
-                              placeholder: '802 987 6543',
-                              keyboardType: TextInputType.phone,
+                          KPhoneNumberField(
                               controller: _phone,
+                              country: _phoneCountry,
+                              onCountryTap: _pickCountryCode,
+                              hintText: '802 987 6543',
                               error: _showErrors && _phone.text.trim().isEmpty ? 'Enter a phone number' : null,
                               onChanged: (_) {
                                 if (_showErrors) setState(() {});

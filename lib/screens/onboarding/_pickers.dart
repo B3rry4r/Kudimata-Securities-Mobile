@@ -239,9 +239,231 @@ const List<KPhoneCountry> kPhoneCountries = [
   KPhoneCountry(name: 'Solomon Islands', iso2: 'SB', dial: '677', flag: '🇸🇧'),
 ];
 
-/// Nigeria (+234) — this screen's default phone-country selection.
+/// Nigeria (+234) — the default phone-country selection on every screen
+/// that uses [kPhoneCountries] (sign_up_screen.dart,
+/// personal_details_screen.dart): this is an NGX brokerage, so a Nigerian
+/// investor is overwhelmingly the common case, but the picker lets anyone
+/// change it before typing a number.
 final KPhoneCountry kDefaultPhoneCountry =
     kPhoneCountries.firstWhere((c) => c.iso2 == 'NG');
+
+/// Best-effort match: the [kPhoneCountries] entry whose dial code is a
+/// prefix of [e164]'s digits, preferring the LONGEST matching dial code —
+/// needed because dial codes are not prefix-free (e.g. Jamaica's '1876' vs
+/// the US/Canada's plain '1'). Falls back to [kDefaultPhoneCountry] for a
+/// value with no leading '+' (no explicit country, same as
+/// [composePhoneE164]'s own convention) or an unrecognised code. Used to
+/// split a stored E.164 string back into (country, local part) for
+/// prefill/display — the reverse of composing one.
+KPhoneCountry countryForE164(String e164) {
+  if (!e164.startsWith('+')) return kDefaultPhoneCountry;
+  final digits = e164.substring(1);
+  KPhoneCountry? best;
+  for (final c in kPhoneCountries) {
+    if (digits.startsWith(c.dial) && (best == null || c.dial.length > best.dial.length)) {
+      best = c;
+    }
+  }
+  return best ?? kDefaultPhoneCountry;
+}
+
+/// The national-number portion of [e164] once [country]'s dial code is
+/// stripped — pairs with [countryForE164] to prefill/display a stored
+/// phone back into a country pill + plain-digits field. Returns [e164]
+/// unchanged if it doesn't actually start with that country's dial code
+/// (defensive: callers always pass the country [countryForE164] itself
+/// returned for this same string, so this should only trip on a caller
+/// bug).
+String localPartOf(String e164, KPhoneCountry country) {
+  final prefix = '+${country.dial}';
+  if (!e164.startsWith(prefix)) return e164;
+  return e164.substring(prefix.length);
+}
+
+/// Builds an E.164-shaped string from whatever an investor typed (with or
+/// without a leading '+', local '0'-prefixed, dial-code-prefixed, or bare
+/// national-number digits) plus the picked country's dial code. Does not
+/// judge whether the *result* is a well-formed phone number for that
+/// country — it just prefixes the dial code the same way regardless of
+/// shape. Empty input composes to just `'+$dialCode'`; callers that must
+/// not send a bare dial code should check [raw] is non-empty first (see
+/// sign_up_screen.dart, where phone stays optional and this is the reason
+/// it checks emptiness itself rather than relying on this to signal it).
+///
+/// Kept intentionally permissive (unlike [normalizePhoneToE164] below) so
+/// an investor's optional, not-yet-format-checked sign-up phone reaches the
+/// server as typed-plus-country-code rather than being silently dropped
+/// client-side when it doesn't look quite right — the server's own
+/// `normalizePhone()` (Kudimata-Securities-Backend src/common/phone.ts) is
+/// what actually validates and is what surfaces INVALID_PHONE back onto
+/// the field.
+String composePhoneE164(String raw, String dialCode) {
+  final trimmed = raw.trim();
+  final hasPlus = trimmed.startsWith('+');
+  final digits = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+  if (hasPlus) return '+$digits';
+  if (digits.startsWith(dialCode)) return '+$digits';
+  if (digits.startsWith('0')) return '+$dialCode${digits.substring(1)}';
+  return '+$dialCode$digits';
+}
+
+/// Loose E.164 check mirroring the backend's generic E.164 validator
+/// (Kudimata-Securities-Backend src/common/phone.ts's `E164_PATTERN`).
+final RegExp _e164Pattern = RegExp(r'^\+[1-9]\d{7,14}$');
+
+/// [composePhoneE164], gated on the result actually looking like a phone
+/// number — returns null for empty input or a result that doesn't match
+/// E.164 shape. Used where the phone field is REQUIRED and must gate
+/// Continue (personal_details_screen.dart); sign_up_screen.dart's phone
+/// stays optional and uses the ungated [composePhoneE164] instead so a
+/// value the investor did type is never silently discarded.
+String? normalizePhoneToE164(String raw, String dialCode) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return null;
+  final digits = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+  if (digits.isEmpty) return null;
+  final e164 = composePhoneE164(raw, dialCode);
+  return _e164Pattern.hasMatch(e164) ? e164 : null;
+}
+
+/// Phone-number field: a tappable country-code pill (flag + dial code,
+/// opens [showCountryCodePicker]) beside a plain digits [TextField] —
+/// originally built file-local to the old "A few more details" screen
+/// (personal_details_screen.dart) and promoted here, alongside the picker
+/// and dataset it was always paired with, once sign_up_screen.dart needed
+/// the exact same field (2026-08-29: the sign-up phone step stopped
+/// hardcoding `+234` and gained this same country picker). A shared public
+/// widget rather than a second file-local copy — this codebase's "never
+/// fork a widget, a variant is a prop" rule applies just as much to a
+/// small file-local widget as to anything in lib/widgets/.
+class KPhoneNumberField extends StatefulWidget {
+  const KPhoneNumberField({
+    super.key,
+    required this.controller,
+    required this.country,
+    required this.onCountryTap,
+    this.onChanged,
+    this.error,
+    this.helper,
+    this.hintText = '801 234 5678',
+  });
+
+  final TextEditingController controller;
+  final KPhoneCountry country;
+  final VoidCallback onCountryTap;
+  final ValueChanged<String>? onChanged;
+  final String? error;
+
+  /// Shown under the field when [error] is null. Callers should make this
+  /// country-aware themselves (or omit it) rather than assert something
+  /// only true for one country — see sign_up_screen.dart's own helper,
+  /// which is Nigeria/BVN-specific and only shown when Nigeria is picked.
+  final String? helper;
+
+  /// Static across every country, same as the original field this was
+  /// promoted from — an illustrative example, not a per-country format
+  /// hint.
+  final String hintText;
+
+  @override
+  State<KPhoneNumberField> createState() => _KPhoneNumberFieldState();
+}
+
+class _KPhoneNumberFieldState extends State<KPhoneNumberField> {
+  late final FocusNode _focus = FocusNode()..addListener(() => setState(() {}));
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final focused = _focus.hasFocus;
+    final borderColor = widget.error != null
+        ? KColor.loss
+        : focused
+            ? KColor.ink
+            : KColor.hairline;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Phone number'.upper, style: KType.label(color: KColor.ink2)),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: widget.onCountryTap,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: KColor.paper,
+                  borderRadius: BorderRadius.circular(KRadii.input),
+                  border: Border.all(color: KColor.hairline, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(widget.country.flag, style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 6),
+                    Text(widget.country.dialLabel,
+                        style: KType.body(color: KColor.ink2, w: KWeight.medium).tnum),
+                    const SizedBox(width: 6),
+                    KIcon('arrowDown', size: 14, color: KColor.ink3),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Container(
+                height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: KColor.paper,
+                  borderRadius: BorderRadius.circular(KRadii.input),
+                  border: Border.all(color: borderColor, width: 1),
+                ),
+                alignment: Alignment.centerLeft,
+                child: TextField(
+                  controller: widget.controller,
+                  focusNode: _focus,
+                  onChanged: widget.onChanged,
+                  keyboardType: TextInputType.phone,
+                  cursorColor: KColor.indicator,
+                  cursorWidth: 1.5,
+                  style: KType.body(color: KColor.ink, w: KWeight.medium).copyWith(
+                    letterSpacing: -0.14,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                  decoration: InputDecoration(
+                    isCollapsed: true,
+                    border: InputBorder.none,
+                    hintText: widget.hintText,
+                    hintStyle: KType.body(color: KColor.ink3),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (widget.error != null || widget.helper != null) ...[
+          const SizedBox(height: 7),
+          Text(
+            widget.error ?? widget.helper!,
+            style: KType.micro(color: widget.error != null ? KColor.loss : KColor.ink3)
+                .copyWith(letterSpacing: 0.02 * 10),
+          ),
+        ],
+      ],
+    );
+  }
+}
 
 /// Nigeria's 36 states + the Federal Capital Territory — hardcoded, static,
 /// alphabetical. Matches KycSubmission.state's documented contract

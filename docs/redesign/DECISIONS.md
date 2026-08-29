@@ -835,3 +835,70 @@ decision down was never the missing piece. Someone owning its execution was.
 Instance 3 was caught by the live gate. Instance 4 reached a human first. The
 difference between those two outcomes is the whole value of the gate — and point
 3 above is what would have moved instance 4 into the first column.
+
+### R-42 — No identity field is investor-editable, email included
+*Ruled by the product owner, 2026-08-29.*
+
+An investor cannot change their **name**, **phone number**, **residential
+address**, or **email**. Nothing on Personal details (`s58`) is editable.
+
+`s58` draws edit affordances on these rows. **This ruling outranks the canvas**
+— the artboard shows the screen as originally conceived, and the product
+decision moved. Do not "restore" them.
+
+Why, so nobody re-derives it wrongly:
+
+- Name, phone and address are **KYC-bound**. Phone is this system's identity
+  canon in E.164 form. An investor changing the phone or address their approved
+  KYC submission was checked against silently breaks the tie between the account
+  and the identity that was verified.
+- Email is the **login credential and the password-reset destination**. Changing
+  it without verifying the new address first would trade a locked-field problem
+  for an account-takeover one. There is deliberately no email-change flow; if one
+  is ever wanted it needs OTP verification of the new address, not a re-enabled
+  button.
+
+Enforced in two places, and both are required — a removed button is not a removed
+capability:
+
+1. **Client:** the `Change` affordance is gone from every row on
+   `personal_info_screen.dart`, including email. A control whose only possible
+   outcome is a refusal is a dead control.
+2. **Server:** `firstName`/`middleName`/`lastName`/`phone` are removed from
+   `UpdateMeDto` entirely, so `PATCH /users/me` rejects them with a 400 naming
+   the field. `residentialAddress`/`city`/`state` stay writable **until
+   `kycStatus === 'approved'`** and are frozen after — the KYC utility-bill step
+   is a real pre-approval writer of them, and rejecting it outright would break
+   verification for every new investor.
+
+**Known gap, deliberately open:** there is no staff correction path for these
+fields either. A name misspelled at signup cannot currently be fixed by anyone.
+That needs its own staff-role endpoint — not a reopening of the investor one.
+
+### R-43 — Password policy: 8 characters, one number, one special character
+*Ruled by the product owner, 2026-08-29. Overrides the canvas.*
+
+Sign-up's password checklist shows exactly two lines:
+
+    At least 8 characters
+    One number and one special character
+
+The capital-letter requirement is dropped. The advisory line **"Not a password
+you use elsewhere" is removed** — nothing could ever verify it, and it rendered
+permanently unticked beside two rules that do tick, which teaches the investor
+that the checklist is decorative.
+
+**This overrides `s03p`/`s03pd`**, which draw "At least 10 characters", "One
+capital letter and one number" and the advisory line. The built screen previously
+matched the canvas correctly; this is a product decision that moved, not a
+conformance defect. Do not "restore" the canvas wording.
+
+**The rule must be enforced on the server, not only shown on the client.** Before
+this ruling the backend's only constraint was `@MinLength(8)` on
+`SignupDto.password` — no complexity check anywhere — so the client checklist was
+decorative: a direct `POST /auth/signup` with `12345678` succeeded. A rule the
+API does not enforce is not a rule, it is a suggestion rendered in a tick-box.
+
+The policy lives in **one** place that every password entry point uses — sign-up,
+password reset, and staff invite acceptance. A policy enforced at sign-up but not
+at reset is one an attacker walks around by resetting.

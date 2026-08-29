@@ -179,6 +179,11 @@ class Routes {
   // Statement detail / per-broker breakdown (screen 76) — pushed with a
   // Statement `extra`, same reasoning as contractNote above.
   static const String acctStatementDetail = '/account/statements/detail';
+  // Request a statement (screen 56) — s52's real footer target, now that
+  // POST /statements/request exists. Pushed with no `extra`: the screen
+  // resolves its own period/broker/email state, then pops `true` on a
+  // successful request so statements_screen.dart knows to reload its list.
+  static const String acctRequestStatement = '/account/statements/request';
   // Tax documents (screen 85).
   static const String acctTax = '/account/tax';
   // Price alerts (screen 86). Reachable from Watchlist and Notification

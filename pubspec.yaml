@@ -69,10 +69,19 @@ dependencies:
   url_launcher: ^6.3.2
 
   # Plain (non-interceptor) HTTP client for kyc-id's direct-to-S3 presigned
-  # PUT upload — deliberately NOT the shared ApiClient's Dio instance, whose
-  # auth interceptor would attach this app's own Authorization header to the
-  # S3 request and break the presigned-URL signature.
+  # PUT upload, and for statement/contract-note/tax-document downloads
+  # (statement_detail_screen.dart) — deliberately NOT the shared ApiClient's
+  # Dio instance, whose auth interceptor would attach this app's own
+  # Authorization header to the S3 request and break the presigned-URL
+  # signature.
   http: ^1.2.2
+
+  # Already resolved transitively (via file_picker/share_plus) — pinned
+  # explicitly now that statement_detail_screen.dart imports it directly, to
+  # write a downloaded PDF's bytes to a real on-device file before handing
+  # it to share_plus (2026-08-29, "download should download and not open a
+  # link" — see that screen's own header).
+  path_provider: ^2.1.5
 
   # Refer & earn's "Share invite" (lib/screens/account/refer_earn_screen.dart)
   # — opens the real OS share sheet for the referral code/message, alongside

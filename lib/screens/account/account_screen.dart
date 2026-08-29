@@ -45,8 +45,11 @@ import 'account_widgets.dart';
 /// substitute, so those two rows use 'profile'/'transfer' instead.
 List<(String title, String route, String? icon, String? sub)> _menuRows(int pendingCorpActions) {
   return [
-    // s51: 'doc' · "One per broker, monthly".
-    ('Statements & documents', Routes.acctStatements, 'doc', 'One per broker, monthly'),
+    // s51: 'doc' · "Statements and contract notes" · "One per broker,
+    // monthly" — title corrected to s51's own row text (2026-08-29
+    // exactness pass; this used to read "Statements & documents", a paraphrase
+    // with no ruling behind it).
+    ('Statements and contract notes', Routes.acctStatements, 'doc', 'One per broker, monthly'),
     // s51: 'shield' · "Face ID, passcode, devices" — reworded to this app's
     // own cross-platform toggle name (security_screen.dart deliberately
     // calls it "Biometric unlock", not "Face ID" — Android has no Face ID).
@@ -105,17 +108,23 @@ List<(String title, String route, String? icon, String? sub)> _menuRows(int pend
       'doc',
       'Annual summary, WHT credit notes',
     ),
-    // s51: 'settings' · "Consents, export, deletion".
-    ('Data & privacy', Routes.acctDataPrivacy, 'settings', 'Consents, export, deletion'),
-    // Not an s51 row — kept, real, wired (FAQ + contact channels + file a
-    // complaint).
-    ('Help & support', Routes.acctHelp, 'mail', 'FAQs, contact, file a complaint'),
     // s51 calls this "Terms and disclosures" with a "All eight documents"
     // sub — R-8/C-4 (DECISIONS.md) already ruled the real set is 4
     // documents, not 8, so that clause is not transcribed (would be a
     // false claim). 2026-08-24: trailing document count removed per direct
     // product instruction as a separate, earlier decision.
+    //
+    // 2026-08-29 exactness pass: moved back up to sit directly before "Data
+    // & privacy" — s51's own row order is …Complaints → Terms and
+    // disclosures → Data and privacy (its last drawn row); this used to sit
+    // dead last, after two undrawn rows, which silently reordered the two
+    // drawn rows relative to each other.
     ('Legal', Routes.acctLegal, 'doc', 'Terms, risk disclosure, client agreement'),
+    // s51: 'settings' · "Consents, export, deletion" — s51's own last row.
+    ('Data & privacy', Routes.acctDataPrivacy, 'settings', 'Consents, export, deletion'),
+    // Not an s51 row — kept, real, wired (FAQ + contact channels + file a
+    // complaint).
+    ('Help & support', Routes.acctHelp, 'mail', 'FAQs, contact, file a complaint'),
   ];
 }
 
@@ -153,6 +162,10 @@ class _AccountScreenState extends State<AccountScreen> {
   // this app yet, same as onboarding/welcome_slider_screen.dart's and
   // document_summary_screen.dart's own KLanguageSwitch usage.
   String _lang = 'en';
+
+  // Drives the Log out button's spinner/disabled state while the real
+  // network sign-out call is in flight — see _signOut's doc comment.
+  bool _signingOut = false;
 
   Future<(PersonalInfo, AiCreditStatus, int)> _load() async {
     final infoFuture = _userRepo.personalInfo();
@@ -221,6 +234,10 @@ class _AccountScreenState extends State<AccountScreen> {
               // account_screen.dart's earlier stale-data bug.
               onReturnFromPersonalInfo: _reload,
               onReturnFromPlans: _reload,
+              signingOut: _signingOut,
+              onSignOut: () => _signOut(context, (busy) {
+                if (mounted) setState(() => _signingOut = busy);
+              }),
             );
           },
         ),
@@ -233,7 +250,15 @@ class _AccountScreenState extends State<AccountScreen> {
 /// same endpoint, same tolerance of a failed call, same `signOut()` (NOT
 /// `forceSignOut()`, which would wipe this device's passcode; see
 /// AppState.signOut()'s doc comment).
-Future<void> _signOut(BuildContext context) async {
+///
+/// 2026-08-29 fix: reported live as "logout ... just hangs and shows
+/// nothing until it goes through" — the real `/auth/logout` call is a
+/// network round trip with no feedback while in flight. [onBusyChanged]
+/// lets the caller (a State, since a plain function has nowhere to hold
+/// that flag) show a pressed/disabled spinner button for the duration and
+/// refuse a second tap.
+Future<void> _signOut(BuildContext context, ValueChanged<bool> onBusyChanged) async {
+  onBusyChanged(true);
   final app = AppScope.read(context);
   try {
     await app.apiClient.post('/auth/logout');
@@ -244,6 +269,9 @@ Future<void> _signOut(BuildContext context) async {
   await app.signOut();
   if (!context.mounted) return;
   context.go(Routes.login);
+  // Not reset on this success path — this screen is about to be popped by
+  // the route change above, so there is no surviving mounted instance for
+  // the reset to matter to.
 }
 
 class _AccountBody extends StatelessWidget {
@@ -256,6 +284,8 @@ class _AccountBody extends StatelessWidget {
     required this.onLangChanged,
     required this.onReturnFromPersonalInfo,
     required this.onReturnFromPlans,
+    required this.signingOut,
+    required this.onSignOut,
   });
 
   final PersonalInfo info;
@@ -264,6 +294,12 @@ class _AccountBody extends StatelessWidget {
   final bool verified;
   final String lang;
   final ValueChanged<String> onLangChanged;
+
+  /// Whether the real /auth/logout network call is in flight — drives the
+  /// Log out button's spinner and refusal of a second tap (see _signOut's
+  /// doc comment above).
+  final bool signingOut;
+  final VoidCallback onSignOut;
 
   /// This screen (a persistent tab under StatefulNavigationShell, never
   /// disposed on tab switches) fetched [info] exactly once — reported live
@@ -384,6 +420,12 @@ class _AccountBody extends StatelessWidget {
           // pass against the CURRENT s51, replacing the prior pass's "bare
           // rows, no bubble" note — that note described the OLD, now
           // unrelated #s45; see this file's header for the R-5 correction).
+          //
+          // 2026-08-29 exactness pass: s51's own bubble is a tinted,
+          // border-radius-12 plate (KIconBubble's [tint] prop, added this
+          // pass), not this widget's plain neutral hairline circle — every
+          // row is `--indicator-tint` except Corporate actions, which s51
+          // draws on `--warm-tint` (still with an indicator-coloured icon).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),
             child: KAccountCard(
@@ -392,6 +434,7 @@ class _AccountBody extends StatelessWidget {
                   KAccountRow(
                     title: rows[i].$1,
                     icon: rows[i].$3,
+                    iconTint: rows[i].$2 == Routes.corpActions ? KColor.warmTint : KColor.indicatorTint,
                     sub: rows[i].$4,
                     first: i == 0,
                     onTap: () async {
@@ -420,7 +463,8 @@ class _AccountBody extends StatelessWidget {
               label: 'Log out',
               variant: KButtonVariant.ghost,
               fullWidth: true,
-              onPressed: () => _signOut(context),
+              loading: signingOut,
+              onPressed: signingOut ? null : onSignOut,
             ),
           ),
           const SizedBox(height: 8),

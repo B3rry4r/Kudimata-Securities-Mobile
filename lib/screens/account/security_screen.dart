@@ -63,6 +63,7 @@ import 'package:kudimata_invest/data/biometric_auth.dart';
 import 'package:kudimata_invest/screens/shared/confirm_passcode_sheet.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/biometric_label.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
@@ -75,6 +76,48 @@ class SecurityScreen extends StatefulWidget {
 
 class _SecurityScreenState extends State<SecurityScreen> {
   final _passcodeStore = PasscodeStore();
+
+  // 2026-08-29 fix — this row's description used to read "Unlock with your
+  // face or fingerprint" unconditionally; not literally "Face ID", but not
+  // honest about THIS device either (an iris-only or Touch ID device would
+  // see neither word). Resolved from local_auth via the same
+  // BiometricLabel every other biometric-copy site now reads
+  // (biometric_screen.dart) — see that file for the mapping.
+  String _biometricLabel = BiometricLabel.neutral;
+
+  // Sign-out hits the real /auth/logout endpoint (network, not local) —
+  // this flag drives the button's spinner/disabled state while that's in
+  // flight, per direct product feedback: "it just hangs and shows nothing
+  // until it goes through".
+  bool _signingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricLabel();
+  }
+
+  Future<void> _loadBiometricLabel() async {
+    final label = await BiometricLabel.resolve();
+    if (!mounted) return;
+    setState(() => _biometricLabel = label);
+  }
+
+  /// Turns [_biometricLabel] into this row's "Unlock with ___" description
+  /// without literally saying "unlock" twice — BiometricLabel's own
+  /// Android phrases ("fingerprint unlock", "face unlock", "iris unlock")
+  /// are written to read correctly after a verb like "Turn on", not after
+  /// "Unlock with". The neutral fallback keeps the screen's original,
+  /// still-accurate generic phrasing rather than guessing a specific kind.
+  String get _biometricDescription {
+    final label = _biometricLabel;
+    if (label == BiometricLabel.neutral) return 'Unlock with your face or fingerprint';
+    if (label.endsWith(' unlock')) {
+      final noun = label.substring(0, label.length - ' unlock'.length);
+      return 'Unlock with your $noun';
+    }
+    return 'Unlock with $label'; // Face ID / Touch ID — already proper nouns.
+  }
 
   /// "Change passcode" row: re-enters the create/confirm-passcode flow,
   /// gated behind a "confirm your current passcode" step when a passcode
@@ -130,6 +173,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
   }
 
   Future<void> _signOut(BuildContext context) async {
+    if (_signingOut) return;
+    setState(() => _signingOut = true);
     final app = AppScope.read(context);
     try {
       await app.apiClient.post('/auth/logout');
@@ -144,6 +189,11 @@ class _SecurityScreenState extends State<SecurityScreen> {
     await app.signOut();
     if (!context.mounted) return;
     context.go(Routes.login);
+    // Not reset on the success path deliberately: this screen is about to
+    // be popped by the route change above, and resetting first would just
+    // flash the button back to its idle state for one frame before that
+    // happens. Reset only matters for whatever mounted instance survives —
+    // there isn't one here.
   }
 
   @override
@@ -182,9 +232,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   // oversight). "Face ID" is an Apple-specific term; this
                   // toggle also drives Android fingerprint/face unlock, so
                   // the mockup's iOS-only copy would be wrong on Android.
+                  // 2026-08-29: description resolved from BiometricLabel
+                  // (what THIS device actually has enrolled) instead of the
+                  // static "your face or fingerprint" — see _biometricLabel.
                   child: KSwitch(
                     label: 'Biometric unlock',
-                    description: 'Unlock with your face or fingerprint',
+                    description: _biometricDescription,
                     checked: app.biometricEnabled,
                     // 2026-08-24: was `onChanged: (v) => app.setBiometric(v)`
                     // with the comment "SEAM: real biometric enrolment plugs
@@ -246,10 +299,16 @@ class _SecurityScreenState extends State<SecurityScreen> {
           // s54's second card — chevron rows only ("Change passcode" /
           // "Change transaction PIN"). Only "Change passcode" is real; the
           // transaction-PIN row isn't built (R-31 — see file header).
+          //
+          // 2026-08-29 exactness pass: this row had no leading icon at all —
+          // s54 draws a 'lock' glyph on an indicator-tint plate here (see
+          // KIconBubble's [tint] prop, added this pass).
           KAccountCard(
             children: [
               KAccountRow(
                 title: 'Change passcode',
+                icon: 'lock',
+                iconTint: KColor.indicatorTint,
                 // PasscodeStore (lib/data/api/passcode_store.dart) doesn't
                 // track a last-set timestamp, so this stays a plain, honest
                 // label rather than a fabricated "Last changed N days ago"
@@ -288,8 +347,14 @@ class _SecurityScreenState extends State<SecurityScreen> {
           // a real multi-device feed lands, not copied verbatim.
           KAccountCard(
             children: [
+              // 2026-08-29 exactness pass: s54 draws this row with a green
+              // check-glyph plate (statusApprovedTint background, gain
+              // icon) — this row had no leading icon at all.
               KAccountRow(
                 title: 'This device',
+                icon: 'check',
+                iconTint: KColor.statusApprovedTint,
+                iconColor: KColor.gain,
                 sub: 'Active now',
                 subUppercase: true,
                 first: true,
@@ -332,7 +397,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 label: 'Log out',
                 variant: KButtonVariant.ghost,
                 fullWidth: true,
-                onPressed: () => _signOut(context),
+                loading: _signingOut,
+                onPressed: _signingOut ? null : () => _signOut(context),
               ),
             ],
           ),

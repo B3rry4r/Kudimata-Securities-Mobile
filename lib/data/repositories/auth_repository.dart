@@ -61,12 +61,21 @@ class AuthRepository {
   /// gained the field. Optional, matching
   /// Kudimata-Securities-Backend's `SignupDto` — omit it (or send empty) and
   /// the backend keeps its previous unroutable-placeholder-phone behaviour.
-  /// Not format-validated here: the server's `normalizePhone()`
-  /// (src/common/phone.ts) accepts `0803…`, `803…`, `234803…` and
-  /// `+234803…` alike and is the one place that canonicalises the value, so
-  /// duplicating a shape check here would only risk rejecting something the
-  /// backend would have accepted. Two error paths a caller should expect:
-  /// 400 `INVALID_PHONE` (unparseable) and 409 `PHONE_ALREADY_REGISTERED`
+  ///
+  /// CONTRACT (2026-08-29, once sign_up_screen.dart's phone field gained a
+  /// 186-country picker instead of a hardcoded `+234`): the caller is
+  /// expected to always pass full E.164 (a leading `+` plus the picked
+  /// country's dial code), built client-side by `composePhoneE164`
+  /// (screens/onboarding/_pickers.dart) — not a bare local number. The
+  /// server's `normalizePhone()` (src/common/phone.ts) trusts a leading `+`
+  /// as carrying its own country code and validates it as generic E.164 for
+  /// any country; it keeps a separate Nigeria-only tolerant fallback
+  /// (`0803…`, `803…`, `234803…`, no leading `+`) only for callers with no
+  /// explicit country context. Not format-validated here either way: that
+  /// function is the one place that canonicalises the value, so duplicating
+  /// a shape check here would only risk rejecting something the backend
+  /// would have accepted. Two error paths a caller should expect: 400
+  /// `INVALID_PHONE` (unparseable) and 409 `PHONE_ALREADY_REGISTERED`
   /// (already on another account) — both surface as the usual
   /// [ApiException] and are not caught here.
   Future<void> signUp({

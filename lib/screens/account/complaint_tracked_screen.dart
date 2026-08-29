@@ -225,24 +225,43 @@ class ComplaintTrackedScreen extends StatelessWidget {
           Text(_kEscalationNote, style: KType.data(color: KColor.ink3)),
           const SizedBox(height: 24),
           KButton(
-            label: 'Add more information',
+            label: 'File a related complaint',
             variant: KButtonVariant.secondary,
-            // REAL BACKEND GAP, honestly flagged: appending information to
-            // an already-filed complaint would need its own investor-facing
-            // endpoint (e.g. PATCH /complaints/:id or a
+            // FIXED 2026-08-29 (QA audit): this button used to be labelled
+            // "Add more information" while actually opening the bare
+            // Complaints hub to start an unrelated new complaint — the
+            // control's promised behaviour (appending to *this* case) and
+            // its real behaviour (starting a different one) had quietly
+            // diverged, the exact "control silently repointed at different
+            // behaviour" defect this project has been finding and fixing
+            // elsewhere (the fee, the credential gap, the statement
+            // request). A comment recorded the gap instead of anyone fixing
+            // it; that was the bug.
+            //
+            // REAL BACKEND GAP, still true and still filed: appending
+            // information to an already-filed complaint needs its own
+            // investor-facing endpoint (e.g. PATCH /complaints/:id or a
             // /complaints/:id/notes route) — ComplaintsController only ever
             // exposes upload-url/file/findAll/findOne (see
             // complaints.controller.ts), and staff-side timeline-append
             // endpoints are explicitly out of scope for this backend pass
-            // (complaints.module.ts's header comment). Pushing ComplaintScreen
-            // — now the Complaints hub (s53) rather than the bare form
-            // directly, see complaint_screen.dart's header — is the same
-            // honest stand-in this screen used before it had a live entry
-            // point: it lets the investor start a new, related complaint
-            // today rather than pretending this button appends to the
-            // existing one.
+            // (complaints.module.ts's header comment).
+            //
+            // The fix: stop promising an append this app cannot do. Open
+            // the real filing form directly (ComplaintFormScreen, see
+            // complaint_screen.dart) with this complaint's own topic and
+            // reference pre-filled, and label the button for what it
+            // actually does — starts a new, related complaint linked by
+            // reference, reviewable by the same staff who handle the
+            // original one, rather than silently landing on an unrelated
+            // hub under a misleading label.
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ComplaintScreen()),
+              MaterialPageRoute(
+                builder: (_) => ComplaintFormScreen(
+                  initialTopic: complaint.category,
+                  initialReference: complaint.reference,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 10),

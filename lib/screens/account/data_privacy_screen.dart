@@ -54,11 +54,15 @@
 // message on failure — same technique
 // notifications_settings_screen.dart uses for its own three switches.
 //
-// "Download my data" (canvas screen #93, an emailed-ZIP export) is outside
-// this cluster's 8 screens and has no route/repository anywhere in this app
-// yet — tapping it surfaces a known "not available yet" message, the same
+// "Download my data" is s57's own row ("One file, emailed within 7 days")
+// — NOT a separate old-canvas screen; the prior comment here cited a stale
+// "screen #93" id from the superseded 97-screen canvas (the exact R-5
+// mistake DECISIONS.md warns about) and has been corrected. The row is
+// real and built, but has no route/repository anywhere in this app yet —
+// tapping it surfaces a known "not available yet" message, the same
 // established pattern statements_screen.dart / withdraw_mandate_screen.dart
-// already use for a real, known, unbuilt capability.
+// already use for a real, known, unbuilt capability. Filed as a proper gap
+// in docs/redesign/BACKEND_GAPS.md under "s57 — Data and privacy".
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';

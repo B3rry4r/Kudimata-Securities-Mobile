@@ -149,6 +149,30 @@ class StatementsRepository {
   Future<void> generateThisMonth() =>
       _client.post('/statements/generate-monthly', data: {});
 
+  /// `s56` "Request a statement" (2026-08-29) — POST /statements/request.
+  /// The real custom-date-range generator behind s56's date-range picker
+  /// (Kudimata-Securities-Backend's `StatementGeneratorService.
+  /// generateRange`): renders and stores an actual PDF over `[from, to]`
+  /// (both dates inclusive) and emails it to the investor's own address.
+  /// Unlike [generateThisMonth] (204, no body), this returns the created/
+  /// refreshed Statement directly, since the caller already has everything
+  /// needed to show it without a second round trip.
+  ///
+  /// Throws [ApiException] on a rejected range (`to` after today, `from`
+  /// before the investor's own `memberSince`, or `from` after `to`) — the
+  /// backend's own validation message is real and screen-readable, not a
+  /// generic failure string.
+  Future<Statement> request({required DateTime from, required DateTime to}) async {
+    final response = await _client.post('/statements/request', data: {
+      'from': _dateOnly(from),
+      'to': _dateOnly(to),
+    });
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
+  static String _dateOnly(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   /// The real itemised note behind a `contract_note` Statement. [ref] is
   /// the Statement's own `periodOrTradeRef` (a KDM-CN-xxxx reference).
   Future<ContractNote> contractNote(String ref) async {

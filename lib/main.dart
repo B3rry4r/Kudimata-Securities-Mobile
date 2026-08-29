@@ -12,8 +12,6 @@
 // forceSignOut(). Every screen/repository reaches the client via
 // `AppScope.read(context).apiClient` / `AppScope.of(context).apiClient` — see
 // lib/data/api/README.md; do not construct a second ApiClient anywhere else.
-import 'dart:ui' show PlatformDispatcher;
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -80,22 +78,20 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
       }
     });
     // Theme preference: starts at ThemeMode.system synchronously (see
-    // KThemePreference), then resolves the persisted choice.
-    KThemePreference.instance.addListener(_onState);
+    // KThemePreference), then resolves the persisted choice. Listen to
+    // KThemeRuntime, not KThemePreference directly — KThemeRuntime is the
+    // one object that also reacts to a live OS-brightness flip while the
+    // preference is `system` (see its own doc comment in lib/theme/tokens.dart
+    // for why this used to be two independently-wired listeners that drifted
+    // out of sync and shipped as a real theme-lag bug). Accessing
+    // `.instance` here also constructs it, which synchronously resolves
+    // KColor.active for the very first frame.
+    KThemeRuntime.instance.addListener(_onState);
     KThemePreference.instance.load();
-    // "System" needs a live update if the OS theme flips while the app is
-    // open — WidgetsBindingObserver.didChangePlatformBrightness is the
-    // notification for that; MediaQuery alone wouldn't rebuild anything
-    // outside the widget tree MaterialApp has already built.
     WidgetsBinding.instance.addObserver(this);
   }
 
   void _onState() => setState(() {});
-
-  @override
-  void didChangePlatformBrightness() {
-    if (KThemePreference.instance.mode == ThemeMode.system) setState(() {});
-  }
 
   /// How long the app can sit backgrounded before a foreground resume
   /// demands re-authentication (A-6, 2026-08-29 audit: "passcode or
@@ -161,7 +157,7 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    KThemePreference.instance.removeListener(_onState);
+    KThemeRuntime.instance.removeListener(_onState);
     _state.removeListener(_onState);
     _state.dispose();
     super.dispose();
@@ -170,17 +166,9 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final mode = KThemePreference.instance.mode;
-    // Resolve which palette KColor.x (our own widgets, not MaterialApp's
-    // Material defaults) should read this frame. PlatformDispatcher, not
-    // MediaQuery — this runs before MaterialApp has built anything that
-    // could provide a MediaQuery, same reason MaterialApp itself resolves
-    // `themeMode: system` this way internally.
-    final systemIsDark =
-        PlatformDispatcher.instance.platformBrightness == Brightness.dark;
-    final resolvedDark = mode == ThemeMode.dark || (mode == ThemeMode.system && systemIsDark);
-    // Set the active palette BEFORE the subtree builds so every KColor.x read
-    // (in our custom widgets) returns the themed colour this frame.
-    KColor.active = resolvedDark ? KPalette.dark : KPalette.light;
+    // KThemeRuntime already resolved KColor.active for this frame (against
+    // live OS brightness for `system`) the instant it last notified — see
+    // its doc comment. Nothing to recompute here.
 
     // B-2 (2026-08-29 audit) lives in app_router.dart, not here: a PopScope
     // has to sit INSIDE a route's own widget subtree (it registers itself

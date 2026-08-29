@@ -13,7 +13,7 @@
 // RULINGS.md's evidence for this screen says so explicitly. The form is
 // real, backend-wired functionality the artboard simply doesn't depict
 // (the "artboard depicts one moment" principle in SCREEN-AGENT-BRIEF.md),
-// so it is kept, not dropped — as a pushed sub-screen (`_ComplaintFormScreen`)
+// so it is kept, not dropped — as a pushed sub-screen (`ComplaintFormScreen`)
 // reached by tapping a category row or the footer button.
 //
 // The 4 category rows map onto 5 of the app's real 6 topics one-for-one
@@ -87,7 +87,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
 
   void _openForm({String? topic}) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => _ComplaintFormScreen(initialTopic: topic)),
+      MaterialPageRoute<void>(builder: (_) => ComplaintFormScreen(initialTopic: topic)),
     );
   }
 
@@ -363,17 +363,27 @@ String formatComplaintDate(DateTime d) => '${d.day} ${kComplaintMonths[d.month -
 /// attachment, the SEC-escalation explainer, and Send. Undrawn by s53 (see
 /// file header) but real and backend-wired, so it's kept as a pushed
 /// sub-screen rather than dropped.
-class _ComplaintFormScreen extends StatefulWidget {
-  const _ComplaintFormScreen({this.initialTopic});
+///
+/// Public (not `_ComplaintFormScreen`) because complaint_tracked_screen.dart
+/// also opens it directly, pre-filled, for its "File a related complaint"
+/// button — see that file for why: appending to an already-filed complaint
+/// has no backend endpoint, and the button used to be labelled "Add more
+/// information" while silently opening the bare hub instead, the exact
+/// "control repointed at different behaviour" defect this project has been
+/// finding and fixing elsewhere. Landing here with the topic and reference
+/// pre-filled is the honest version of that same real action.
+class ComplaintFormScreen extends StatefulWidget {
+  const ComplaintFormScreen({super.key, this.initialTopic, this.initialReference});
   final String? initialTopic;
+  final String? initialReference;
 
   @override
-  State<_ComplaintFormScreen> createState() => _ComplaintFormScreenState();
+  State<ComplaintFormScreen> createState() => _ComplaintFormScreenState();
 }
 
-class _ComplaintFormScreenState extends State<_ComplaintFormScreen> {
+class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
   late String _topic = widget.initialTopic ?? _kComplaintTopics.first;
-  final _referenceController = TextEditingController();
+  late final _referenceController = TextEditingController(text: widget.initialReference ?? '');
   final _descriptionController = TextEditingController();
   KFileInfo? _attachment;
   String? _attachmentObjectKey;

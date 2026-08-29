@@ -47,45 +47,111 @@
 // same `Statement.sub` getter contract_note_screen.dart already uses), and
 // one honest explainer for everything else, instead of fabricating broker
 // names, balances or holdings that would look like real money but aren't.
+//
+// DOWNLOAD (2026-08-29, product owner: "download should download and not
+// open a link"): this button used to hand the presigned S3 URL straight to
+// `launchUrl`, which kicks the investor out to a browser tab instead of
+// saving anything. Fixed on Android/iOS: fetch the presigned URL's bytes
+// with a PLAIN `http` client (not the shared ApiClient/Dio — same reasoning
+// kyc-id's direct-to-S3 upload already documents: this app's own
+// Authorization header has no business on a presigned S3 request), write
+// them to a real on-device file, then hand that file to the OS share sheet
+// (share_plus) — save-to-Files/Drive/etc. from there is the investor's own
+// choice, same as any other app's document share. `web` keeps `url_launcher`
+// (a genuinely different mechanism there — the browser owns downloads, not
+// this app). The presigned URL itself is never logged, shown, or passed to
+// Share as text — only the downloaded bytes are shared, as a file.
+//
+// A statement whose PDF was never actually rendered/uploaded (a placeholder
+// row — see StatementsRepository's own header on why some still are) fails
+// the S3 GET with an XML error body, not a PDF; that surfaces as a real,
+// readable error here rather than sharing the error body as if it were the
+// document.
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/app/app_state.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kudimata_invest/data/repositories/statements_repository.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'account_widgets.dart';
 
-class StatementDetailScreen extends StatelessWidget {
+class StatementDetailScreen extends StatefulWidget {
   const StatementDetailScreen({super.key, required this.statement});
   final Statement statement;
 
-  /// Opens the statement's real stored PDF via a short-lived presigned URL
-  /// (GET /statements/:id/download-url). 2026-08-24: this button was an
-  /// inert snackbar because nothing generated a PDF — monthly statements
-  /// are now really rendered and uploaded (see the backend's
-  /// StatementGeneratorService), so the download works. A statement with
-  /// fileSizeBytes == 0 never got a file stored (its render or upload
-  /// failed), and says so rather than opening a broken link.
-  Future<void> _download(BuildContext context) async {
+  @override
+  State<StatementDetailScreen> createState() => _StatementDetailScreenState();
+}
+
+class _StatementDetailScreenState extends State<StatementDetailScreen> {
+  bool _downloading = false;
+
+  Statement get statement => widget.statement;
+
+  /// Downloads the statement's real stored PDF via a short-lived presigned
+  /// URL (GET /statements/:id/download-url), then hands the actual file to
+  /// the OS (see file header). A statement with `fileSizeBytes == 0` never
+  /// got a file stored (its render or upload failed), and says so up front
+  /// rather than attempting a download that can only fail.
+  Future<void> _download() async {
+    if (_downloading) return;
     if (statement.fileSizeBytes == 0) {
-      _notAvailable(context, "This statement's PDF isn't available to download.");
+      _notAvailable("This statement's PDF isn't available to download.");
       return;
     }
+    setState(() => _downloading = true);
     try {
       final url = await StatementsRepository(AppScope.read(context).apiClient)
           .downloadUrl(statement.id);
-      final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      if (!ok && context.mounted) {
-        _notAvailable(context, "Couldn't open the download. Try again.");
+      if (url.isEmpty) {
+        _notAvailable("This statement's PDF isn't available to download.");
+        return;
       }
+
+      if (kIsWeb) {
+        // The browser owns the download surface on web — a different
+        // mechanism entirely, kept as-is (see file header).
+        final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        if (!ok && mounted) _notAvailable("Couldn't open the download. Try again.");
+        return;
+      }
+
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        // S3 returns an XML error body (not a PDF) for an object that was
+        // never actually uploaded — a real, readable failure, not a
+        // silently "successful" share of garbage bytes.
+        _notAvailable("This statement's PDF isn't available to download.");
+        return;
+      }
+
+      final fileName = '${_safeFileName(statement.title)}.pdf';
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(response.bodyBytes, flush: true);
+      if (!mounted) return;
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], fileNameOverrides: [fileName]),
+      );
     } on ApiException catch (e) {
-      if (context.mounted) _notAvailable(context, e.message);
+      if (mounted) _notAvailable(e.message);
+    } catch (_) {
+      if (mounted) _notAvailable("Couldn't download the file. Try again.");
+    } finally {
+      if (mounted) setState(() => _downloading = false);
     }
   }
 
-  void _notAvailable(BuildContext context, String message) {
+  void _notAvailable(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
@@ -98,12 +164,16 @@ class StatementDetailScreen extends StatelessWidget {
       headerTrailing: KIconButton(
         icon: 'download',
         semanticLabel: 'Download',
-        onPressed: () => _download(context),
+        // Disabled (not just re-triggered) while a download is already in
+        // flight — the footer button below carries the real progress
+        // state/spinner for this same action.
+        onPressed: _downloading ? null : _download,
       ),
       footer: KButton(
-        label: 'Download PDF',
+        label: _downloading ? 'Downloading…' : 'Download PDF',
         iconLeft: 'download',
-        onPressed: () => _download(context),
+        loading: _downloading,
+        onPressed: _downloading ? null : _download,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -163,12 +233,17 @@ class StatementDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          // Kept honest rather than removed: unlike a contract note
-          // (emailed automatically on every fill), statements are not
-          // dispatched by email anywhere — that needs a real send
-          // endpoint. Download works, so the investor is not stuck.
+          // 2026-08-29: dropped the blanket "Statements are not emailed"
+          // claim this line used to make. It stopped being universally true
+          // the moment request_statement_screen.dart's flow shipped — a
+          // statement requested there IS emailed (StatementGeneratorService.
+          // generateRange) — and nothing on this resource's wire shape says
+          // which path produced the statement being viewed here, so a
+          // blanket claim either direction would be a guess. What stays
+          // true for every statement regardless of how it was produced:
+          // download keeps a copy on the device.
           Text(
-            'Statements are not emailed. Download keeps a copy on your device.',
+            'Download keeps a copy on your device.',
             style: KType.data(color: KColor.ink3),
             textAlign: TextAlign.center,
           ),
@@ -176,4 +251,14 @@ class StatementDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A statement title ("August 2026 · all brokers") turned into a safe
+/// on-device filename — strips the characters real titles here actually
+/// contain (`·`, `/`, spaces) rather than a generic placeholder name, so a
+/// shared/saved file is still recognisable as the statement it came from.
+String _safeFileName(String title) {
+  final cleaned = title.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-').replaceAll(RegExp(r'-+'), '-');
+  final trimmed = cleaned.replaceAll(RegExp(r'^-|-$'), '');
+  return trimmed.isEmpty ? 'statement' : trimmed;
 }

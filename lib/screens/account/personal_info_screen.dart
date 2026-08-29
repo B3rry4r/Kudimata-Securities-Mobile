@@ -55,6 +55,27 @@
 // not an s58 row at all, but real: the post-signup onboarding step can be
 // skipped or fail with no way back to it, and this is the only other place
 // in the app that completes them.
+//
+// 2026-08-29, product owner ruling: name, phone number and home address
+// cannot be changed by the investor — only email can (identity/KYC-bound
+// fields; the verified BVN/NIN submission was checked against them, and a
+// silent change would break that tie). This OUTRANKS s58, which draws a
+// "Change" affordance on Phone and Home address (per this file's own R-5
+// note above, on old id "#s49" no less) — do not "fix" the missing
+// affordance back in.
+//
+// Legal name was already locked (see _LockedRow below, pre-dating this
+// ruling). Phone and Home address are now the SAME shape — plain,
+// non-tappable value rows — rather than the editable-card shape s58 draws
+// and this screen used to render. Their real, wired edit paths
+// (`UserRepository.updateProfile(phone: …)` / `(residentialAddress: …)`,
+// both live PATCH /users/me calls) are removed from this screen along with
+// the "Change" affordance; the endpoint itself still accepts both fields —
+// see this pass's report re: server-side lockdown being a separate task.
+// Email is the one row that keeps a "Change" tap — still routed to the
+// honest "not available yet" message below, since no email-change endpoint
+// exists either (see this file's own `_emailNotAvailable` note and
+// BACKEND_GAPS.md's "s58 — Personal details: no email-change capability").
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -68,44 +89,19 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 import '../onboarding/_pickers.dart';
 import 'account_widgets.dart';
 
-/// Loose E.164 check mirroring the backend's UpdateMeDto validator
-/// (Kudimata-Securities-Backend src/users/dto/update-me.dto.ts) — same
-/// pattern as onboarding/personal_details_screen.dart's
-/// `_normalizePhoneToE164`, duplicated here rather than shared since neither
-/// file is allowed to grow a shared-utility dependency for this change.
-final RegExp _e164Pattern = RegExp(r'^\+[1-9]\d{7,14}$');
-
-/// Normalizes free-typed input to E.164, tolerating a local Nigerian
-/// `0803...` format rather than rejecting it. Returns null if the result
-/// still isn't a plausible phone number.
-String? _normalizePhoneToE164(String raw) {
-  final trimmed = raw.trim();
-  if (trimmed.isEmpty) return null;
-  final hasPlus = trimmed.startsWith('+');
-  final digits = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
-  if (digits.isEmpty) return null;
-  String e164;
-  if (hasPlus) {
-    e164 = '+$digits';
-  } else if (digits.startsWith('234')) {
-    e164 = '+$digits';
-  } else if (digits.startsWith('0')) {
-    e164 = '+234${digits.substring(1)}';
-  } else {
-    e164 = '+234$digits';
-  }
-  return _e164Pattern.hasMatch(e164) ? e164 : null;
-}
-
-/// Strips a leading country code so the field shows just the local number
-/// next to the KInput `prefix: '+234'` — matching the canvas's
-/// `prefix="+234" value="801 234 5678"` split (2026-08-23 exactness pass;
-/// the prior version showed the full E.164 string in one plain field).
-String _localPhone(String raw) {
-  final trimmed = raw.trim();
-  if (trimmed.startsWith('+234')) return trimmed.substring(4).trim();
-  if (trimmed.startsWith('234')) return trimmed.substring(3).trim();
-  return trimmed;
+/// Splits a stored E.164 phone into "dial label + local number" for
+/// display — matching the canvas's `prefix="+234" value="801 234 5678"`
+/// split (2026-08-23 exactness pass; the prior version showed the full
+/// E.164 string in one plain field). 2026-08-29: this used to hardcode
+/// `+234`, which was wrong the moment sign_up_screen.dart's phone field
+/// stopped defaulting every account to Nigeria — a stored non-Nigerian
+/// number would have rendered as garbage (`+234 +15551234567`). Now uses
+/// the same [countryForE164]/[localPartOf] pair (_pickers.dart) that
+/// splits a phone back apart everywhere else it's re-edited.
+String _displayPhone(String raw) {
+  if (raw.isEmpty) return '—';
+  final country = countryForE164(raw);
+  return '${country.dialLabel} ${localPartOf(raw, country)}';
 }
 
 class PersonalInfoScreen extends StatefulWidget {
@@ -224,39 +220,6 @@ class _PersonalInfoBody extends StatelessWidget {
     if (picked == null) return;
     await repo.updateProfile(avatarKey: picked);
     onSaved();
-  }
-
-  Future<void> _changePhone(BuildContext context) async {
-    final saved = await showKSheet<bool>(
-      context,
-      title: 'Phone number',
-      child: _PhoneEditSheet(repo: repo, info: info),
-    );
-    if (saved == true) onSaved();
-  }
-
-  Future<void> _changeAddress(BuildContext context) async {
-    final saved = await showKSheet<bool>(
-      context,
-      title: 'Residential address',
-      child: _AddressEditSheet(repo: repo, info: info),
-    );
-    if (saved == true) onSaved();
-  }
-
-  /// s58 draws this row with a "Needs an email code" hint and an implied
-  /// change flow. `UserRepository.updateProfile` has no `email` parameter
-  /// at all (checked) — there is no email-change capability anywhere in
-  /// this app yet, real or gated. Filed in BACKEND_GAPS.md; here the row
-  /// still ships (it's real, current data) but "Change" is honest about
-  /// what's actually available, same established pattern as
-  /// data_privacy_screen.dart's "Download my data".
-  void _emailNotAvailable(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Email changes aren't available in the app yet — contact support."),
-      ),
-    );
   }
 
   @override
@@ -398,34 +361,59 @@ class _PersonalInfoBody extends StatelessWidget {
           ),
           const SizedBox(height: 14),
         ],
-        Text('You can change these'.upper, style: KType.label()),
+        // 2026-08-29, product owner ruling (this file's header note): only
+        // email is investor-editable now — Phone and Home address dropped
+        // their "Change" affordance, so this section no longer promises to
+        // change all three. Renamed from "You can change these".
+        Text('Contact details'.upper, style: KType.label()),
         const SizedBox(height: 14),
-        // s58: Phone / Email / Home address, each its own tappable "Change"
-        // row (not inline fields + one page-level Save). s58's own hint
-        // captions ("Needs an SMS code" / "Needs an email code" / "Needs a
-        // recent utility bill") assert verification gates this app doesn't
-        // implement for a post-KYC change — `updateProfile` is a plain
-        // PATCH with no OTP/document step for phone or address, and no
-        // `email` parameter exists at all. Those hints are dropped (R-34's
-        // "claims, not just figures"); "Employment status" (s58's third
-        // field, a Select) stays skipped — no such field exists anywhere in
-        // the backend's User model.
+        // s58: Phone / Email / Home address, each its own card row. s58
+        // draws all three as tappable "Change" rows (not inline fields + one
+        // page-level Save) with hint captions ("Needs an SMS code" / "Needs
+        // an email code" / "Needs a recent utility bill") asserting
+        // verification gates this app doesn't implement — those hints were
+        // already dropped (R-34's "claims, not just figures"); "Employment
+        // status" (s58's third field, a Select) stays skipped — no such
+        // field exists anywhere in the backend's User model.
+        //
+        // Phone and Home address are now READ-ONLY (see this file's header
+        // ruling note) — `onChange: null` renders the value with no
+        // trailing "Change" link, same shape as _LockedRow's facts above
+        // without duplicating that widget's lock-glyph/reason-caption
+        // treatment, which is specifically for BVN/CSCS-sourced facts.
         _EditableFieldRow(
           label: 'Phone',
-          value: info.phone.isEmpty ? '—' : '+234 ${_localPhone(info.phone)}',
-          onChange: () => _changePhone(context),
+          value: _displayPhone(info.phone),
+          onChange: null,
         ),
         const SizedBox(height: 10),
+        // Read-only, like every other field on this screen. Ruled by the
+        // product owner 2026-08-29: nothing here is investor-editable — not
+        // name, phone or address, and not email either.
+        //
+        // This row used to keep a "Change" tap whose only outcome was a
+        // snackbar saying email changes were not available yet. That was
+        // honest while a change flow was still intended; once the ruling
+        // said none is coming, an affordance that can only ever refuse is a
+        // dead control, and a dead control is worse than an absent one — the
+        // investor taps it, learns nothing they could not have been told,
+        // and trusts the next control slightly less.
+        //
+        // Email deliberately has no change flow: it doubles as the login
+        // credential and the password-reset destination, so swapping it
+        // without verifying the new address would trade a locked-field
+        // problem for an account-takeover one. If that changes, it needs an
+        // OTP-verified flow, not a re-enabled button here.
         _EditableFieldRow(
           label: 'Email',
           value: info.email.isEmpty ? '—' : info.email,
-          onChange: () => _emailNotAvailable(context),
+          onChange: null,
         ),
         const SizedBox(height: 10),
         _EditableFieldRow(
           label: 'Home address',
           value: info.residentialAddress,
-          onChange: () => _changeAddress(context),
+          onChange: null,
         ),
         if (missingCityState) ...[
           const SizedBox(height: 10),
@@ -496,15 +484,20 @@ class _LockedRow extends StatelessWidget {
   }
 }
 
-/// One editable field's own bordered row — s58's Phone/Email/Home address
-/// shape (small caption label, bold value, a "Change" link), replacing the
-/// old inline `KInput` + page-level "Save changes" button.
+/// One field's own bordered row — s58's Phone/Email/Home address shape
+/// (small caption label, bold value, a "Change" link), replacing the old
+/// inline `KInput` + page-level "Save changes" button.
+///
+/// [onChange] is nullable (2026-08-29, product owner ruling — see this
+/// file's header note): Phone and Home address are no longer investor-
+/// editable, so they render as a plain value with no trailing "Change"
+/// link, while Email keeps one.
 class _EditableFieldRow extends StatelessWidget {
   const _EditableFieldRow({required this.label, required this.value, required this.onChange});
 
   final String label;
   final String value;
-  final VoidCallback onChange;
+  final VoidCallback? onChange;
 
   @override
   Widget build(BuildContext context) {
@@ -523,154 +516,16 @@ class _EditableFieldRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: onChange,
-            behavior: HitTestBehavior.opaque,
-            child: Text('Change', style: KType.data(color: KColor.indicator, w: KWeight.semibold)),
-          ),
+          if (onChange != null) ...[
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: onChange,
+              behavior: HitTestBehavior.opaque,
+              child: Text('Change', style: KType.data(color: KColor.indicator, w: KWeight.semibold)),
+            ),
+          ],
         ],
       ),
-    );
-  }
-}
-
-/// Phone-only edit sheet, opened from the "Change" link on the Phone row.
-/// Same `_normalizePhoneToE164`/`_localPhone` validation this file already
-/// used inline before the s58 rebuild — unchanged logic, new home.
-class _PhoneEditSheet extends StatefulWidget {
-  const _PhoneEditSheet({required this.repo, required this.info});
-
-  final UserRepository repo;
-  final PersonalInfo info;
-
-  @override
-  State<_PhoneEditSheet> createState() => _PhoneEditSheetState();
-}
-
-class _PhoneEditSheetState extends State<_PhoneEditSheet> {
-  late final _phone = TextEditingController(text: _localPhone(widget.info.phone));
-  bool _showErrors = false;
-  bool _busy = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _phone.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final normalized = _normalizePhoneToE164(_phone.text);
-    if (normalized == null) {
-      setState(() => _showErrors = true);
-      return;
-    }
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      await widget.repo.updateProfile(phone: normalized);
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = e.message;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KInput(
-          label: 'Phone number',
-          prefix: '+234',
-          numeric: true,
-          controller: _phone,
-          onChanged: _showErrors ? (_) => setState(() {}) : null,
-          error: _showErrors && _normalizePhoneToE164(_phone.text) == null
-              ? 'Enter a valid phone number'
-              : null,
-        ),
-        if (_error != null) ...[
-          const SizedBox(height: 10),
-          Text(_error!, style: KType.micro(color: KColor.loss)),
-        ],
-        const SizedBox(height: 22),
-        KButton(label: 'Save', loading: _busy, onPressed: _busy ? null : _save),
-      ],
-    );
-  }
-}
-
-/// Address-only edit sheet, opened from the "Change" link on the Home
-/// address row. Same field/save logic this file already used inline before
-/// the s58 rebuild — unchanged behaviour (an emptied field is sent as
-/// `null`, i.e. "don't touch", not as a clear — pre-existing, not new here).
-class _AddressEditSheet extends StatefulWidget {
-  const _AddressEditSheet({required this.repo, required this.info});
-
-  final UserRepository repo;
-  final PersonalInfo info;
-
-  @override
-  State<_AddressEditSheet> createState() => _AddressEditSheetState();
-}
-
-class _AddressEditSheetState extends State<_AddressEditSheet> {
-  late final _addr = TextEditingController(
-    text: widget.info.residentialAddress == '—' ? '' : widget.info.residentialAddress,
-  );
-  bool _busy = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _addr.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      await widget.repo.updateProfile(
-        residentialAddress: _addr.text.trim().isEmpty ? null : _addr.text.trim(),
-      );
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = e.message;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KInput(label: 'Residential address', controller: _addr),
-        if (_error != null) ...[
-          const SizedBox(height: 10),
-          Text(_error!, style: KType.micro(color: KColor.loss)),
-        ],
-        const SizedBox(height: 22),
-        KButton(label: 'Save', loading: _busy, onPressed: _busy ? null : _save),
-      ],
     );
   }
 }

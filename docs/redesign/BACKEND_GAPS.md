@@ -217,23 +217,25 @@ placeholder copy. Needs: a `brokerId`/`brokerCode` dimension on
 trades/holdings/statements before a real broker filter can ship.
 
 **`s56` "Request a statement" — custom date range and per-broker
-generation.** s56 is a dedicated screen: period presets (This month/This
-year/Choose dates), a from/to date-range picker, and an all-brokers-vs-one
-selector, emailing the result. Checked directly against
-`statements.service.ts` and `statements.controller.ts`: the only real
-generator endpoint is `POST /statements/generate-monthly` (current month
-only, no date-range or broker parameter of any kind). There is also no
-email-dispatch endpoint for statements.
+generation. RESOLVED 2026-08-29** (product owner named this button
+specifically as still wrong). s56 is a dedicated screen: period presets
+(This month/This year/Choose dates), a from/to date-range picker, and an
+all-brokers-vs-one selector, emailing the result. `POST
+/statements/request` (Kudimata-Securities-Backend's
+`StatementGeneratorService.generateRange`) now really renders and stores a
+PDF over an arbitrary `[from, to]` window — reusing the same
+holdings/movements/opening-closing computation `generate-monthly` already
+used — and emails it via `EmailMessageService`'s `document-ready` template.
+`request_statement_screen.dart` is the real `s56` screen, pushed from
+s52's own footer button.
 
-Built: `statements_screen.dart`'s footer button keeps s56's exact label
-("Request a statement") and icon, wired to the one real action that
-exists — generate the current month, in place, no navigation to a new
-screen. Not built: `s56` itself, since it has nothing real to submit to,
-and building a screen whose every control writes nowhere would be the
-same defect class as a fabricated figure. Needs: a
-custom-date-range statement generator endpoint, a broker dimension (see
-above) for the broker selector to mean anything, and an email-dispatch
-endpoint, before `s56` can be built as its own screen.
+The broker selector is real for one side only: "All brokers, one document"
+renders as a fixed confirmation (every statement this backend generates
+already covers the single sponsoring broker), and "Blue Marina only" is
+not built — the broker dimension gap directly above is unchanged, and nothing
+in this pass added a `brokerId`/`brokerCode` column anywhere. A second,
+genuinely selectable broker option still needs that dimension to exist
+first.
 
 ## s41 — Orders hub
 
@@ -505,6 +507,23 @@ an email was sent. Needs: a real notice-of-meeting document + an
 email-dispatch endpoint before this can be wired.
 
 ---
+
+## s57 — Data and privacy: no data-export capability
+
+`s57` draws a "Download my data" row — "One file, emailed within 7 days" —
+as a real, tappable settings row. No route or repository backs it
+anywhere in this app: `NotificationPreferencesRepository` only covers the
+two consent switches, and a grep of `Kudimata-Securities-Backend` found no
+data-export/GDPR-style-download endpoint of any kind.
+
+Built: the row itself (`data_privacy_screen.dart`), real and tappable.
+Not built: the export — tapping it surfaces an honest "Data export isn't
+available yet — contact support" message rather than pretending a file was
+queued or emailed, the same established pattern `s58`'s email-change row
+and `statements_screen.dart`'s request flow already use for a real, known,
+unbuilt capability. Needs: an export endpoint that assembles the
+investor's own records into one file and emails it (or a presigned
+download link), before this row can be self-serve.
 
 ## s19 — Declarations: broker/NGX-employment question has no backend field
 

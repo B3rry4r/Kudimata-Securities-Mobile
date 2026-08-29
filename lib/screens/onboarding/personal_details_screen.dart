@@ -64,32 +64,6 @@ import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import '_pickers.dart';
 
-/// Loose E.164 check mirroring the backend's UpdateMeDto validator, same
-/// pattern as kyc/personal_details.dart's identical constant (duplicated
-/// rather than shared — that file is out of scope to touch, per this
-/// codebase's convention of small per-screen helpers over cross-file
-/// sharing for things this size).
-final RegExp _e164Pattern = RegExp(r'^\+[1-9]\d{7,14}$');
-
-String? _normalizePhoneToE164(String raw, String dialCode) {
-  final trimmed = raw.trim();
-  if (trimmed.isEmpty) return null;
-  final hasPlus = trimmed.startsWith('+');
-  final digits = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
-  if (digits.isEmpty) return null;
-  String e164;
-  if (hasPlus) {
-    e164 = '+$digits';
-  } else if (digits.startsWith(dialCode)) {
-    e164 = '+$digits';
-  } else if (digits.startsWith('0')) {
-    e164 = '+$dialCode${digits.substring(1)}';
-  } else {
-    e164 = '+$dialCode$digits';
-  }
-  return _e164Pattern.hasMatch(e164) ? e164 : null;
-}
-
 const _kMonths = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -151,7 +125,7 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
   }
 
   Future<void> _continue() async {
-    final normalizedPhone = _normalizePhoneToE164(_phone.text, _phoneCountry.dial);
+    final normalizedPhone = normalizePhoneToE164(_phone.text, _phoneCountry.dial);
     final valid = _dob != null &&
         _addr.text.trim().isNotEmpty &&
         _city.text.trim().isNotEmpty &&
@@ -256,13 +230,13 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                             ? 'Select your state'
                             : null),
                     const SizedBox(height: 16),
-                    _PhoneField(
+                    KPhoneNumberField(
                         controller: _phone,
                         country: _phoneCountry,
                         onCountryTap: _pickCountryCode,
                         onChanged: _showErrors ? (_) => setState(() {}) : null,
                         error: _showErrors &&
-                                _normalizePhoneToE164(
+                                normalizePhoneToE164(
                                         _phone.text, _phoneCountry.dial) ==
                                     null
                             ? 'Enter a valid phone number'
@@ -358,120 +332,6 @@ class _TappableField extends StatelessWidget {
         if (error != null) ...[
           const SizedBox(height: 7),
           Text(error!, style: KType.micro(color: KColor.loss).copyWith(letterSpacing: 0.02 * 10)),
-        ],
-      ],
-    );
-  }
-}
-
-/// Same styling as kyc/personal_details.dart's file-local `_PhoneField` —
-/// duplicated for the same reason as `_TappableField` above.
-class _PhoneField extends StatefulWidget {
-  const _PhoneField({
-    required this.controller,
-    required this.country,
-    required this.onCountryTap,
-    this.onChanged,
-    this.error,
-  });
-
-  final TextEditingController controller;
-  final KPhoneCountry country;
-  final VoidCallback onCountryTap;
-  final ValueChanged<String>? onChanged;
-  final String? error;
-
-  @override
-  State<_PhoneField> createState() => _PhoneFieldState();
-}
-
-class _PhoneFieldState extends State<_PhoneField> {
-  late final FocusNode _focus = FocusNode()..addListener(() => setState(() {}));
-
-  @override
-  void dispose() {
-    _focus.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final focused = _focus.hasFocus;
-    final borderColor = widget.error != null
-        ? KColor.loss
-        : focused
-            ? KColor.ink
-            : KColor.hairline;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text('Phone number'.upper, style: KType.label(color: KColor.ink2)),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: widget.onCountryTap,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                height: 50,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: KColor.paper,
-                  borderRadius: BorderRadius.circular(KRadii.input),
-                  border: Border.all(color: KColor.hairline, width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(widget.country.flag, style: const TextStyle(fontSize: 18)),
-                    const SizedBox(width: 6),
-                    Text(widget.country.dialLabel,
-                        style: KType.body(color: KColor.ink2, w: KWeight.medium).tnum),
-                    const SizedBox(width: 6),
-                    KIcon('arrowDown', size: 14, color: KColor.ink3),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Container(
-                height: 50,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: KColor.paper,
-                  borderRadius: BorderRadius.circular(KRadii.input),
-                  border: Border.all(color: borderColor, width: 1),
-                ),
-                alignment: Alignment.centerLeft,
-                child: TextField(
-                  controller: widget.controller,
-                  focusNode: _focus,
-                  onChanged: widget.onChanged,
-                  keyboardType: TextInputType.phone,
-                  cursorColor: KColor.indicator,
-                  cursorWidth: 1.5,
-                  style: KType.body(color: KColor.ink, w: KWeight.medium).copyWith(
-                    letterSpacing: -0.14,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                  decoration: InputDecoration(
-                    isCollapsed: true,
-                    border: InputBorder.none,
-                    hintText: '801 234 5678',
-                    hintStyle: KType.body(color: KColor.ink3),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (widget.error != null) ...[
-          const SizedBox(height: 7),
-          Text(widget.error!,
-              style: KType.micro(color: KColor.loss).copyWith(letterSpacing: 0.02 * 10)),
         ],
       ],
     );

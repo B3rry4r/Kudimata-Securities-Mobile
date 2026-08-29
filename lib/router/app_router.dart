@@ -92,6 +92,7 @@ import '../data/repositories/statements_repository.dart' show Statement;
 
 // Screens 76-97 (2026-08-23 canvas expansion).
 import '../screens/account/statement_detail_screen.dart';
+import '../screens/account/request_statement_screen.dart';
 import '../screens/account/tax_documents_screen.dart';
 import '../screens/markets/price_alerts_screen.dart';
 import '../screens/corporate_actions/corporate_actions_screen.dart';
@@ -109,21 +110,39 @@ import '../screens/account/legal_reference_screens.dart';
 // Shared states (used for missing-data placeholders).
 import '../screens/shared/state_views.dart';
 
-/// Builds the app router. [state] drives the deep-link gate redirect AND the
-/// theme reactivity: every screen is wrapped in a [ListenableBuilder] on [state]
-/// so a theme-mode / system-brightness change rebuilds it (the global KColor
-/// palette alone doesn't push rebuilds through go_router's cached routes or the
-/// shell's preserved branch navigators). Screens are built WITHOUT `const` so a
-/// fresh instance is created on each rebuild (a const instance would be skipped).
+/// Builds the app router. [state] drives the deep-link gate redirect; every
+/// screen is ALSO wrapped in a [ListenableBuilder] merging [state] with
+/// [KThemeRuntime.instance] so a theme-mode / system-brightness change
+/// rebuilds it (the global KColor palette alone doesn't push rebuilds through
+/// go_router's cached routes or the shell's preserved branch navigators).
+/// Screens are built WITHOUT `const` so a fresh instance is created on each
+/// rebuild (a const instance would be skipped).
+///
+/// This used to listen to [state] alone — a stale copy-paste from before
+/// theming existed, since [state] (AppState) never notifies on a theme
+/// change. That's the confirmed root cause of a real shipped bug ("dark and
+/// light mode switch is buggy, i have to switch tabs before everything
+/// changes properly"): nothing here ever ran for a theme toggle, so a screen
+/// only ever picked up the new palette by being freshly (re)built through
+/// ordinary navigation — i.e. by switching to it. [KThemeRuntime] is the
+/// listenable that actually fires for both a preference change AND a live
+/// OS-brightness flip under `ThemeMode.system` — see its doc comment in
+/// lib/theme/tokens.dart. Merging it in here means EVERY mounted screen,
+/// including the three tabs sitting offstage in the shell's IndexedStack,
+/// rebuilds the instant either fires — via ListenableBuilder, which only
+/// replaces its own subtree in place, so no Navigator state, scroll position
+/// or form input is disturbed.
 GoRouter buildRouter(AppState state) {
   final homeKey = GlobalKey<NavigatorState>();
   final marketsKey = GlobalKey<NavigatorState>();
   final portfolioKey = GlobalKey<NavigatorState>();
   final walletKey = GlobalKey<NavigatorState>();
 
-  // Re-theme on every AppState notify (theme toggle / system brightness bump).
+  // Re-theme on every AppState notify (session data) OR theme-runtime notify
+  // (preference change / live OS-brightness flip under `system`).
+  final themeListenable = Listenable.merge([state, KThemeRuntime.instance]);
   Widget themed(Widget Function() build) =>
-      ListenableBuilder(listenable: state, builder: (_, _) => build());
+      ListenableBuilder(listenable: themeListenable, builder: (_, _) => build());
 
   // B-2 (2026-08-29 audit): "why is my own phone back button designed to
   // remove the app and not go back?" Every gated-flow screen (onboarding,
@@ -147,7 +166,7 @@ GoRouter buildRouter(AppState state) {
   // screen's own back arrow or a re-entry flow (confirm_passcode_screen.
   // dart's Security re-entry) calls directly, so those are unaffected.
   Widget themedGated(Widget Function() build) => ListenableBuilder(
-        listenable: state,
+        listenable: themeListenable,
         builder: (context, _) => PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) {
@@ -382,6 +401,12 @@ GoRouter buildRouter(AppState state) {
           }
           return themed(() => StatementDetailScreen(statement: statement));
         },
+      ),
+      GoRoute(
+        // Screen 56 — pushed from statements_screen.dart's footer button,
+        // no `extra` (the screen resolves its own period/email state).
+        path: Routes.acctRequestStatement,
+        builder: (_, _) => themed(() => const RequestStatementScreen()),
       ),
       GoRoute(path: Routes.acctTax, builder: (_, _) => themed(() => TaxDocumentsScreen())),
       GoRoute(path: Routes.priceAlerts, builder: (_, _) => themed(() => PriceAlertsScreen())),
@@ -648,7 +673,10 @@ class _TabShell extends StatelessWidget {
     final active = _navForBranch[navShell.currentIndex];
     return Scaffold(
       backgroundColor: KColor.bg,
-      // The branch builds its own Scaffold/SafeArea body; the nav floats above it.
+      // The branch builds its own Scaffold/SafeArea body; the nav sits flush
+      // at the bottom edge, per the canvas (`#s22`'s nav is edge-to-edge, not
+      // a floating inset pill — see navigation.dart's own header comment for
+      // the full 2026-08-29 reconciliation against that canvas).
       body: Stack(
         children: [
           Positioned.fill(child: navShell),
@@ -656,12 +684,22 @@ class _TabShell extends StatelessWidget {
             left: 0,
             right: 0,
             bottom: 0,
+            // The canvas's own `padding:14px ... 26px` bakes a fixed 26px
+            // bottom content-pad into its static artboard, standing in for
+            // both a comfortable minimum AND a real home-indicator safe
+            // area — a fixed-width, non-interactive artboard cannot tell
+            // those two apart. Splitting them back out for a real device:
+            // KBottomNav's own bottom padding is
+            // a fixed 14 (matches its top padding), and `minimum` here adds
+            // 12 more UNLESS the device's own real safe-area inset is
+            // already bigger — never both added together (would over-pad on
+            // a notched device) and never neither (would crowd the labels
+            // against the edge on a device with no home indicator). A device
+            // with no inset lands at 12 + 14 = 26 — the canvas's own number.
             child: SafeArea(
               top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: KBottomNav(active: active, onChange: _onNav),
-              ),
+              minimum: const EdgeInsets.only(bottom: 12),
+              child: KBottomNav(active: active, onChange: _onNav),
             ),
           ),
         ],

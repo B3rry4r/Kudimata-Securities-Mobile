@@ -249,6 +249,8 @@ final List<_RouteSpec> _specs = [
   // ── Screens 76-97 (2026-08-23 canvas expansion) ─────────────────────────
   _RouteSpec('55_statement_detail', Routes.acctStatementDetail, 'account/statement_detail_screen.dart',
       extra: _monthlyStatement),
+  _RouteSpec('55b_request_statement', Routes.acctRequestStatement,
+      'account/request_statement_screen.dart'),
   _RouteSpec('56_acct_tax', Routes.acctTax, 'account/tax_documents_screen.dart'),
   _RouteSpec('57_price_alerts', Routes.priceAlerts, 'markets/price_alerts_screen.dart'),
   _RouteSpec('58_corp_actions', Routes.corpActions, 'corporate_actions/corporate_actions_screen.dart'),

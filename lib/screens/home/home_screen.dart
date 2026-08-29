@@ -383,23 +383,37 @@ class _HomeBody extends StatelessWidget {
           padding: _gut,
           child: Row(
             children: [
-              GestureDetector(
-                // R-28: the header avatar is Account's only entry point from
-                // Home (the removed "You" tab used to go here).
-                onTap: () => context.push(Routes.account),
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  children: [
-                    data.user.avatarKey != null
-                        ? KAvatar(avatarKey: data.user.avatarKey!, size: 36)
-                        : _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
-                    const SizedBox(width: 10),
-                    Text('Hi $first',
-                        style: KType.cardTitle(w: KWeight.bold).copyWith(fontSize: 17)),
-                  ],
+              Expanded(
+                child: GestureDetector(
+                  // R-28: the header avatar is Account's only entry point
+                  // from Home (the removed "You" tab used to go here). The
+                  // canvas (s22/s22d/s23/s23d) draws no affordance here at
+                  // all — this row was tappable with no visual sign of it,
+                  // so nobody discovered it (owner report, 2026-08-29); the
+                  // trailing chevron uses the same KRowChevron treatment
+                  // (account_widgets.dart) every other navigable row in the
+                  // app already uses, folded into this single tap target
+                  // rather than a second one.
+                  onTap: () => context.push(Routes.account),
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      data.user.avatarKey != null
+                          ? KAvatar(avatarKey: data.user.avatarKey!, size: 36)
+                          : _Avatar(initial: first.isNotEmpty ? first[0] : 'K'),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text('Hi $first',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: KType.cardTitle(w: KWeight.bold).copyWith(fontSize: 17)),
+                      ),
+                      const SizedBox(width: 4),
+                      KIcon('chevronRight', size: 16, color: KColor.ink3),
+                    ],
+                  ),
                 ),
               ),
-              const Spacer(),
               _BellButton(
                 onPressed: () => context.push(Routes.notifications),
                 showBadge: !notVerified,

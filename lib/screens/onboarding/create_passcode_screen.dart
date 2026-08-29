@@ -50,8 +50,17 @@ class CreatePasscodeScreen extends StatefulWidget {
 
 class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
   String _code = '';
+  // Guards against a real double-submit bug: with _code already at 6 digits
+  // (advance already triggered below), a further tap on any digit key left
+  // `_code` unchanged (the `_code.length < 6` guard blocked it) but the
+  // `if (_code.length == 6)` check below still re-ran unconditionally — so
+  // every stray tap while the confirm screen was already loading pushed (or
+  // go()'d) it again. Set synchronously, no `await` in between, so there's
+  // no gap a rapid second tap could land in.
+  bool _navigating = false;
 
   void _onKey(String k) {
+    if (_navigating) return;
     setState(() {
       if (k == 'del') {
         if (_code.isNotEmpty) _code = _code.substring(0, _code.length - 1);
@@ -60,12 +69,18 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
       }
     });
     if (_code.length == 6) {
+      _navigating = true;
       // Hand the chosen passcode to the confirm step (mismatch checked there).
       final args = ConfirmPasscodeArgs(code: _code, reentry: widget.reentry, email: widget.email);
       if (widget.reentry) {
         // Push (not go) so the Security/account stack below stays intact —
-        // confirm's success pops back through both screens to Security.
-        context.push(Routes.confirmPasscode, extra: args);
+        // confirm's success pops back through both screens to Security. A
+        // pushed route can also come back to THIS screen (confirm's own
+        // back arrow just pops once) — when it does, release the guard so
+        // a retry is possible instead of a keypad stuck disabled forever.
+        context.push(Routes.confirmPasscode, extra: args).then((_) {
+          if (mounted) setState(() => _navigating = false);
+        });
       } else {
         context.go(Routes.confirmPasscode, extra: args);
       }

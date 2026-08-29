@@ -28,16 +28,48 @@
 // shape personal_details_screen.dart's own #s10 audit already corrected).
 //
 // Ported from screens.jsx Biometric.
+//
+// 2026-08-29 fix: every string on this screen hardcoded "Face ID" — an
+// Apple-only term that is simply wrong on the Android devices most of this
+// app's users are on (direct product instruction: "face id is generic
+// please finger print if android face id if iOS"). Copy now reads through
+// BiometricLabel.resolve(), which asks `local_auth` what THIS device
+// actually has (fingerprint/face/iris) rather than assuming from platform
+// alone. See lib/widgets/biometric_label.dart for the mapping.
 import 'package:flutter/material.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/biometric_auth.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
+import 'package:kudimata_invest/widgets/biometric_label.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'log_in_screen.dart' show hydrateGatingStateAndRoute;
 import 'onboarding_scaffold.dart';
 
-class BiometricScreen extends StatelessWidget {
+class BiometricScreen extends StatefulWidget {
   const BiometricScreen({super.key});
+
+  @override
+  State<BiometricScreen> createState() => _BiometricScreenState();
+}
+
+class _BiometricScreenState extends State<BiometricScreen> {
+  // Starts neutral (matches BiometricLabel's own fallback) so the screen
+  // never flashes a wrong platform-specific word before the async query
+  // resolves — a "biometric unlock" placeholder is honest at every point in
+  // that window, unlike guessing "Face ID" up front.
+  String _label = BiometricLabel.neutral;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLabel();
+  }
+
+  Future<void> _loadLabel() async {
+    final label = await BiometricLabel.resolve();
+    if (!mounted) return;
+    setState(() => _label = label);
+  }
 
   Future<void> _enable(BuildContext context) async {
     // 2026-08-24: this used to flip the flag with no check at all ("SEAM:
@@ -74,12 +106,12 @@ class BiometricScreen extends StatelessWidget {
               // KStatusView's tone switch). Its default illustration name
               // is irrelevant here since illustrationName overrides it.
               tone: KStatusTone.success,
-              title: 'Unlock with your face',
-              message: 'Faster than typing your passcode.',
+              title: 'Unlock faster',
+              message: 'Use $_label instead of typing your passcode.',
             ),
             const Spacer(),
             KButton(
-              label: 'Turn on Face ID',
+              label: 'Turn on $_label',
               onPressed: () => _enable(context),
             ),
             const SizedBox(height: 10),
@@ -102,7 +134,7 @@ class BiometricScreen extends StatelessWidget {
             // screen's `_enable` does).
             const SizedBox(height: 10),
             Text(
-              "You'll use your passcode to unlock instead. Turn Face ID on "
+              "You'll use your passcode to unlock instead. Turn $_label on "
               'any time from Security.',
               textAlign: TextAlign.center,
               style: KType.body(color: KColor.ink3).copyWith(fontSize: 13, height: 18 / 13),

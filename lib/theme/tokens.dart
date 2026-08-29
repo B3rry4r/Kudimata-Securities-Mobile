@@ -19,7 +19,11 @@
 // `:root` block is exactly as undesigned-dark as the old mobile system's was.
 // The redesign canvas's own dark artboards are the real source for
 // KPalette.dark.
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
+
+import '../data/api/theme_mode_store.dart' show KThemePreference;
 
 /// The semantic palette. [KColor] reads from [KColor.active] so screens keep
 /// using `KColor.paper` etc. unchanged even though there is now only one
@@ -316,6 +320,76 @@ class KColor {
   static List<Color> get ramp => [ramp1, ramp2, ramp3, ramp4, ramp5];
 }
 
+/// Single source of truth for "which palette is active right now" —
+/// resolves [KThemePreference]'s persisted mode (system/light/dark) against
+/// the live OS brightness, keeps [KColor.active] in sync, and is itself a
+/// [Listenable] so anything that needs to repaint the instant either input
+/// changes can subscribe to ONE object instead of two.
+///
+/// This exists because of a real, shipped bug: switching light/dark used to
+/// require changing tabs before it took visual effect everywhere. Root
+/// cause — confirmed by reading both sides —
+///   1. [KColor.active] is a bare mutable static. Setting it notifies
+///      nothing; only whoever assigns it (main.dart, in its own `build()`)
+///      is guaranteed to re-render with the new value.
+///   2. `lib/router/app_router.dart`'s `themed()`/`themedGated()` wrap every
+///      route's screen in a `ListenableBuilder` specifically to force that
+///      re-render everywhere else — its own doc comment already says so
+///      ("a theme-mode / system-brightness change rebuilds it... the global
+///      KColor palette alone doesn't push rebuilds through go_router's
+///      cached routes or the shell's preserved branch navigators"). But it
+///      was listening to `state` (AppState) — a session/session-data
+///      notifier that never fires for a theme change. So nothing on that
+///      side ever actually ran. The only thing that "fixed" it was
+///      switching tabs, because go_router only reconstructs a branch's
+///      screen instance when you navigate into it — which is also why the
+///      fix was per-tab, not immediate: exactly the reported symptom.
+/// [KThemeRuntime.instance] is the listenable app_router.dart now merges
+/// in instead, so every mounted screen (visible or kept alive offstage in
+/// the tab shell's IndexedStack) re-runs `build()` — via ListenableBuilder,
+/// which only replaces its own subtree in place, so no Navigator state,
+/// scroll position or form input is touched — the instant either the
+/// investor's preference or the OS brightness changes.
+///
+/// Pulls in `data/api/theme_mode_store.dart` (a data-layer file) from
+/// `lib/theme/` — a one-off, deliberate exception to the usual layering:
+/// [KThemePreference] is the existing persisted-preference singleton
+/// (referenced the same way from `main.dart` already); this class only
+/// composes it with the OS brightness signal; it parses no wire shape.
+class KThemeRuntime extends ChangeNotifier with WidgetsBindingObserver {
+  KThemeRuntime._() {
+    WidgetsBinding.instance.addObserver(this);
+    KThemePreference.instance.addListener(_recompute);
+    _recompute();
+  }
+
+  static final KThemeRuntime instance = KThemeRuntime._();
+
+  bool _resolvedDark = false;
+
+  /// The palette actually in effect this frame — [KThemePreference.mode]
+  /// already resolved against live OS brightness for `ThemeMode.system`.
+  bool get resolvedDark => _resolvedDark;
+
+  void _recompute() {
+    final mode = KThemePreference.instance.mode;
+    final systemIsDark =
+        PlatformDispatcher.instance.platformBrightness == Brightness.dark;
+    _resolvedDark = mode == ThemeMode.dark || (mode == ThemeMode.system && systemIsDark);
+    KColor.active = _resolvedDark ? KPalette.dark : KPalette.light;
+    notifyListeners();
+  }
+
+  // "System" needs a live update when the OS theme flips while the app is
+  // open and the preference is `system` — PlatformDispatcher/WidgetsBinding
+  // is the only notification for that; nothing about [KThemePreference]
+  // itself changes in that case, so it wouldn't otherwise notify.
+  @override
+  void didChangePlatformBrightness() {
+    if (KThemePreference.instance.mode == ThemeMode.system) _recompute();
+  }
+}
+
 /// Spacing — 8-pt grid, 4 as the half step. tokens/spacing.css (unchanged by
 /// the redesign — the same scale carries forward).
 class KSpace {
@@ -508,6 +582,15 @@ class KType {
   // micro 10/13 +0.04em, Semibold. Nunito Sans.
   static TextStyle micro({Color? color, FontWeight w = KWeight.semibold}) =>
       _base(fontCore, 10, w, color ?? KColor.ink3, letterSpacing: 0.40, height: 13 / 10);
+
+  // nav 11/14, no tracking, weight VARIES by state (700 active / 600
+  // inactive) — the bottom-nav tab label only (redesign-2026-08 canvas,
+  // `#s22`'s nav block). Deliberately distinct from [label], which is 11px
+  // too but reserved for uppercase tracked-caps eyebrows/table headers —
+  // nav labels are sentence case with no tracking, so reusing [label] here
+  // would carry the wrong letter-spacing and force the wrong case semantics.
+  static TextStyle nav({Color? color, FontWeight w = KWeight.semibold}) =>
+      _base(fontCore, 11, w, color ?? KColor.ink3, height: 14 / 11);
 
   // data 14/20 −0.005em, Regular — prices, refs, timestamps outside a hero
   // figure. Nunito Sans, always paired with `.tnum` below.

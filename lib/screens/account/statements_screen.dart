@@ -29,16 +29,15 @@
 //      investor's own document list.
 //   3. s52's footer button reads "Request a statement" and its own caption
 //      note routes it to a dedicated `s56` screen (date-range picker +
-//      broker picker). `s56` needs backend support this app doesn't have —
-//      `POST /statements/generate-monthly` is the only real generator
-//      (statements_repository.dart), there is no custom-date-range or
-//      per-broker generation endpoint anywhere on
-//      Kudimata-Securities-Backend (verified directly against
-//      statements.service.ts). Building `s56` as a new screen is also out
-//      of this file's four-screen scope. So the button keeps its real,
-//      already-working action — generate the current month now — under
-//      s56's exact label/icon, rather than linking to a screen that would
-//      have nothing to submit. Filed below.
+//      broker picker). 2026-08-29: `s56` is now built
+//      (request_statement_screen.dart) — the product owner named this
+//      button specifically ("request statement is still wrong") after an
+//      earlier pass kept it pointed at the plain generate-current-month
+//      action instead of the real screen, because no backend endpoint
+//      existed for a custom date range. `POST /statements/request`
+//      (Kudimata-Securities-Backend's StatementGeneratorService.
+//      generateRange) closes that gap, so the button now pushes to the
+//      real screen, matching s56's own `onClick`.
 //
 // Wired per lib/data/api/README.md's FutureBuilder convention: the two
 // kind-scoped lists (GET /statements?kind=monthly,
@@ -53,10 +52,6 @@
 // second, separate download action. The per-document detail screens
 // (statement_detail_screen.dart, contract_note_screen.dart) carry the real
 // download button.
-//
-// BACKEND GAP — s56 "Request a statement": no endpoint exists for a custom
-// date range or a specific broker (this app is single-broker with no
-// broker dimension at all — see point 2 above). Filed in BACKEND_GAPS.md.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -83,9 +78,9 @@ class _StatementsScreenState extends State<StatementsScreen> {
   bool _generating = false;
 
   /// Pulls the current month on demand rather than waiting for the 1st.
-  /// s52/s56's "Request a statement" button — see file header re: why this
-  /// stays the real generate-now action rather than a link to an unbuilt
-  /// date-range/broker picker screen.
+  /// Backs ONLY the empty-state's own quick action now (s56 exists as its
+  /// own screen — see file header — so s52's real footer button pushes
+  /// there instead of calling this directly).
   Future<void> _generateThisMonth() async {
     setState(() => _generating = true);
     try {
@@ -168,10 +163,15 @@ class _StatementsScreenState extends State<StatementsScreen> {
         return KAccountSubScaffold(
           title: 'Statements',
           footer: KButton(
-            label: _generating ? 'Preparing…' : 'Request a statement',
+            label: 'Request a statement',
             iconLeft: 'plus',
-            loading: _generating,
-            onPressed: _generating ? null : _generateThisMonth,
+            onPressed: () async {
+              // s56 pops `true` on a successful request (see its own
+              // header) — reload so the just-generated statement shows up
+              // without a manual pull-to-refresh.
+              final requested = await context.push<bool>(Routes.acctRequestStatement);
+              if (requested == true && mounted) setState(() => _future = _load());
+            },
           ),
           child: _StatementsBody(
             items: merged,

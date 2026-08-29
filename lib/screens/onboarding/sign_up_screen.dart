@@ -28,6 +28,18 @@
 //    exactly here drops the middle-name box the previous single-step
 //    version of this screen had; `AuthRepository.signUp`'s `middleName` stays
 //    optional and is simply never sent from this screen now.
+//
+// R-43 (docs/redesign/DECISIONS.md, product-owner ruling, 2026-08-29)
+// OVERRIDES the canvas's password rule: #s03p/#s03pd draw "At least 10
+// characters" / "One capital letter and one number" / "Not a password you
+// use elsewhere", but the recorded ruling is 8+ characters, a number AND a
+// special character, no capital-letter requirement, and the "not a
+// password you use elsewhere" advisory line removed entirely. Implemented
+// below (see `_passwordLengthOk`/`_passwordComplexOk` and `_passwordStep`)
+// rather than matching the canvas, per that ruling's own instruction that
+// it outranks the canvas here. The equivalent, previously-decorative,
+// server-side rule is now real too — see
+// Kudimata-Securities-Backend/src/common/password-policy.ts.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -36,6 +48,7 @@ import 'package:kudimata_invest/data/repositories/auth_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+import '_pickers.dart';
 import 'onboarding_scaffold.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -57,6 +70,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   // 4 is the separate OTP screen this flow hands off to.
   int _step = 0;
 
+  // Country for the phone field, picked via showCountryCodePicker
+  // (_pickers.dart) — defaults to Nigeria, same default as
+  // personal_details_screen.dart. 2026-08-29: replaces a hardcoded '+234'
+  // prefix that offered no way to pick anything else (product feedback:
+  // "phone number on the create account is meant to populate the country
+  // codes not just default 234 ... just like it was done on the removed
+  // few more details screen").
+  KPhoneCountry _phoneCountry = kDefaultPhoneCountry;
+
   bool _showErrors = false;
   bool _busy = false;
 
@@ -67,22 +89,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? _phoneError;
 
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-  static final _upperPattern = RegExp(r'[A-Z]');
   static final _digitPattern = RegExp(r'[0-9]');
+
+  // Same explicit ASCII special-character class the backend's
+  // @IsStrongPassword() uses (Kudimata-Securities-Backend
+  // src/common/password-policy.ts) — the traditional printable
+  // punctuation/symbol set plus a literal space. Deliberately not "not
+  // alphanumeric": that function's own doc comment explains why a
+  // non-ASCII symbol or emoji doesn't count (no confirmed guarantee every
+  // hop — an SMTP reset email body, bcrypt's 72-byte truncation, a future
+  // gateway — round-trips arbitrary Unicode). Keeping the two patterns
+  // textually identical is deliberate; if one changes, so must the other.
+  static final _specialPattern = RegExp(r'''[ !"#$%&'()*+,\-./:;<=>?@[\]^_`{|}~]''');
 
   bool get _firstNameValid => _firstName.text.trim().isNotEmpty;
   bool get _lastNameValid => _lastName.text.trim().isNotEmpty;
   bool get _emailValid => _emailPattern.hasMatch(_email.text.trim());
 
-  // Canvas #s03p's live checklist: length + capital/number are real,
-  // programmatically-checkable requirements. The third item ("not a
-  // password you use elsewhere") is advisory only — nothing in this app can
-  // verify that — and the canvas itself renders it permanently unfilled
-  // even in its all-green demo screenshot, so it's shown but never ticked
-  // (see _PasswordRequirement's `met: null`).
-  bool get _passwordLengthOk => _password.text.length >= 10;
+  // R-43 (docs/redesign/DECISIONS.md, product-owner ruling, 2026-08-29):
+  // 8+ characters, a number AND a special character — both real,
+  // programmatically-checkable requirements, matched server-side by
+  // @IsStrongPassword() so this checklist is no longer decorative. The
+  // capital-letter requirement is dropped, and the old third checklist
+  // line ("not a password you use elsewhere") — which nothing in this app
+  // could ever verify, and which the canvas itself rendered permanently
+  // unfilled — is removed entirely rather than kept as dead UI.
+  bool get _passwordLengthOk => _password.text.length >= 8;
   bool get _passwordComplexOk =>
-      _upperPattern.hasMatch(_password.text) && _digitPattern.hasMatch(_password.text);
+      _digitPattern.hasMatch(_password.text) && _specialPattern.hasMatch(_password.text);
   bool get _passwordValid => _passwordLengthOk && _passwordComplexOk;
   bool get _confirmPasswordValid =>
       _confirmPassword.text.isNotEmpty && _confirmPassword.text == _password.text;
@@ -134,6 +168,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
   }
 
+  Future<void> _pickCountryCode() async {
+    final picked = await showCountryCodePicker(context, selected: _phoneCountry);
+    if (picked != null) setState(() => _phoneCountry = picked);
+  }
+
   Future<void> _createAccount() async {
     if (!_passwordValid || !_confirmPasswordValid) {
       setState(() => _showErrors = true);
@@ -142,7 +181,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final firstName = _firstName.text.trim();
     final lastName = _lastName.text.trim();
     final email = _email.text.trim();
-    final phone = _phone.text.trim();
+    // Contract (backend Kudimata-Securities-Backend src/common/phone.ts,
+    // extended 2026-08-29): the client always sends full E.164 — '+' plus
+    // the picked country's dial code plus whatever was typed — now that
+    // the field isn't hardcoded to Nigeria. composePhoneE164 (_pickers.dart)
+    // does the prefixing without judging the result, matching this field's
+    // existing "no client-side format check" contract (see the phone
+    // KPhoneNumberField's comment below): an unparseable value still
+    // reaches the server, which is the one place that validates and
+    // returns INVALID_PHONE.
+    final phone = _phone.text.trim().isEmpty
+        ? ''
+        : composePhoneE164(_phone.text, _phoneCountry.dial);
     final password = _password.text.trim();
     setState(() => _busy = true);
     final repo = AuthRepository(AppScope.read(context).apiClient);
@@ -166,9 +216,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
         setState(() {
           _busy = false;
           _step = 1;
+          // Country-aware (2026-08-29): this used to hardcode "...Nigerian
+          // phone number...", which would have been wrong the moment an
+          // investor picked anything other than Nigeria from the country
+          // picker below. Nigeria keeps its specific example format;
+          // every other country gets a generic message naming it, since
+          // this codebase has no per-country example-format table.
           _phoneError = e.code == 'PHONE_ALREADY_REGISTERED'
               ? 'That number is already registered to another account.'
-              : 'Enter a valid Nigerian phone number, e.g. 0803 123 4567.';
+              : _phoneCountry.iso2 == 'NG'
+                  ? 'Enter a valid Nigerian phone number, e.g. 0803 123 4567.'
+                  : 'Enter a valid phone number for ${_phoneCountry.name}.';
         });
         return;
       }
@@ -267,20 +325,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
       // Live per SHARED-CHANGES.md S-2 — the backend gained an optional
       // `phone` on POST /auth/signup (BR-3). Optional at this step (see
       // file header): no client-side format check, matching artboard
-      // #s03b, which draws no required marker distinct from Email's. The
-      // server's own normalizePhone() accepts any of '0803…', '803…',
-      // '234803…' or '+234803…', with or without spaces, so this doesn't
-      // force one shape either — a 400 INVALID_PHONE / 409
+      // #s03b, which draws no required marker distinct from Email's.
+      //
+      // 2026-08-29: this used to be a KInput with a hardcoded `prefix:
+      // '+234'` — every investor who wasn't Nigerian either lied about
+      // their country code or couldn't sign up with their real number.
+      // Replaced with the same country-code picker + dataset
+      // personal_details_screen.dart already used (KPhoneNumberField,
+      // _pickers.dart's 186-country kPhoneCountries, Nigeria first/default)
+      // rather than forking a second copy of that field. The server's own
+      // normalizePhone() (Kudimata-Securities-Backend src/common/phone.ts)
+      // now accepts full E.164 for any country when a leading '+' is
+      // present (the shape composePhoneE164 below always produces), and
+      // still separately accepts bare Nigerian local formats
+      // ('0803…'/'803…'/'234803…') with no leading '+' for callers that
+      // never send explicit country context — a 400 INVALID_PHONE / 409
       // PHONE_ALREADY_REGISTERED response is surfaced onto this field by
-      // _createAccount instead.
-      KInput(
-        label: 'Phone number',
-        prefix: '+234',
-        placeholder: '801 234 5678',
-        helper: _phoneError == null ? 'Use the line registered to your BVN' : null,
-        error: _phoneError,
+      // _createAccount instead of validated here.
+      KPhoneNumberField(
         controller: _phone,
-        keyboardType: TextInputType.phone,
+        country: _phoneCountry,
+        onCountryTap: _pickCountryCode,
+        // BVN is Nigeria-specific — this helper only makes a promise this
+        // field can actually keep when Nigeria is the picked country.
+        helper: _phoneError == null && _phoneCountry.iso2 == 'NG'
+            ? 'Use the line registered to your BVN'
+            : null,
+        error: _phoneError,
         onChanged: (_) {
           if (_phoneError != null) setState(() => _phoneError = null);
         },
@@ -307,8 +378,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // Live checklist below needs every keystroke, independent of
         // whether a Create-account attempt has surfaced errors yet.
         onChanged: (_) => setState(() {}),
+        // R-43 (2026-08-29): was "Use at least 10 characters with a
+        // capital letter and a number" — updated to match the ruling below
+        // _passwordValid now actually checks.
         error: _showErrors && !_passwordValid
-            ? 'Use at least 10 characters with a capital letter and a number'
+            ? 'Use at least 8 characters with a number and a special character'
             : null,
       ),
       const SizedBox(height: 16),
@@ -320,15 +394,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
         error: _showErrors && !_confirmPasswordValid ? 'Passwords do not match' : null,
       ),
       const SizedBox(height: 16),
+      // R-43 (2026-08-29): exactly two lines now — the third
+      // ("Not a password you use elsewhere") is removed entirely rather
+      // than kept as an always-neutral, never-checkable row. See
+      // _PasswordRequirement below: its `met` is a plain bool now that
+      // nothing renders the old null/advisory state.
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _PasswordRequirement(label: 'At least 10 characters', met: _passwordLengthOk),
+          _PasswordRequirement(label: 'At least 8 characters', met: _passwordLengthOk),
           const SizedBox(height: 9),
           _PasswordRequirement(
-              label: 'One capital letter and one number', met: _passwordComplexOk),
-          const SizedBox(height: 9),
-          const _PasswordRequirement(label: 'Not a password you use elsewhere', met: null),
+              label: 'One number and one special character', met: _passwordComplexOk),
         ],
       ),
       _stepFooter([
@@ -361,18 +438,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
-/// One row of canvas #s03p's password checklist: a filled/tinted check
-/// medallion + label. [met] is null for the one advisory-only requirement
-/// ("not a password you use elsewhere") that nothing here can verify — it
-/// renders permanently in its neutral/unfilled state, matching the canvas.
+/// One row of the password checklist: a filled/tinted check medallion +
+/// label. Both rows are real, programmatically-checkable requirements as
+/// of R-43 (2026-08-29) — [met] was nullable to render a third,
+/// permanently-unfilled advisory row ("not a password you use elsewhere")
+/// that R-43 removed outright, so there is no longer a state this can be
+/// in besides met/not-met.
 class _PasswordRequirement extends StatelessWidget {
   const _PasswordRequirement({required this.label, required this.met});
   final String label;
-  final bool? met;
+  final bool met;
 
   @override
   Widget build(BuildContext context) {
-    final on = met == true;
+    final on = met;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [

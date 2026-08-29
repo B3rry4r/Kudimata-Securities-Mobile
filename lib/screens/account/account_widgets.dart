@@ -6,15 +6,49 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 
 /// 38px hairline circle holding a line icon (design `IconBubble`). Falls back to
 /// a safe KIcon name when the requested glyph isn't in the fixed set.
+///
+/// AUDIT-2026-08-29 (s51/s54 exactness pass): the canvas's own plate for
+/// this exact bubble (`06 Account and Support.dc.html`'s hub/security rows)
+/// is a 40px, border-radius:12 tinted square — `background:var(--indicator-
+/// tint)` (or `--warm-tint` for Corporate actions; a green
+/// approved-tint for Security's "This device" check) with an
+/// indicator/gain-coloured icon and NO hairline border — not this widget's
+/// neutral hairline circle. [tint]/[iconColor] are added as an opt-in pair
+/// (never fork a widget — add a prop) so account_screen.dart/
+/// security_screen.dart can render that exact plate while
+/// corporate_actions_widgets.dart's and bank_accounts_screen.dart's own
+/// call sites — outside this pass's scope — keep today's neutral circle
+/// unchanged by leaving [tint] null.
 class KIconBubble extends StatelessWidget {
-  const KIconBubble(this.icon, {super.key, this.size = 38, this.iconSize = 19});
+  const KIconBubble(this.icon, {super.key, this.size = 38, this.iconSize = 19, this.tint, this.iconColor});
   final String icon;
   final double size;
   final double iconSize;
 
+  /// When set, swaps the neutral hairline circle for the design's tinted,
+  /// border-radius-12 square plate (e.g. `KColor.indicatorTint`,
+  /// `KColor.warmTint`, `KColor.statusApprovedTint`).
+  final Color? tint;
+
+  /// Icon colour to use with [tint]. Defaults to `KColor.indicator` — the
+  /// canvas keeps every hub/security icon indicator-coloured even on the
+  /// one warm-tinted plate (Corporate actions), so only the caller with a
+  /// genuinely different icon colour (Security's green "This device" check)
+  /// needs to pass this.
+  final Color? iconColor;
+
   @override
   Widget build(BuildContext context) {
     final name = KIcon.has(icon) ? icon : 'card';
+    if (tint != null) {
+      return Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(12)),
+        child: KIcon(name, size: iconSize, color: iconColor ?? KColor.indicator),
+      );
+    }
     return Container(
       width: size,
       height: size,
@@ -36,6 +70,8 @@ class KAccountRow extends StatelessWidget {
   const KAccountRow({
     super.key,
     this.icon,
+    this.iconTint,
+    this.iconColor,
     required this.title,
     this.sub,
     this.right,
@@ -47,6 +83,14 @@ class KAccountRow extends StatelessWidget {
   });
 
   final String? icon;
+
+  /// Passed straight through to [KIconBubble.tint] — see that widget's own
+  /// doc comment. Null keeps every existing caller's neutral hairline circle.
+  final Color? iconTint;
+
+  /// Passed straight through to [KIconBubble.iconColor].
+  final Color? iconColor;
+
   final String title;
   final String? sub;
   final Widget? right;
@@ -82,7 +126,7 @@ class KAccountRow extends StatelessWidget {
         crossAxisAlignment: crossAlign,
         children: [
           if (icon != null) ...[
-            KIconBubble(icon!),
+            KIconBubble(icon!, tint: iconTint, iconColor: iconColor),
             const SizedBox(width: 14),
           ],
           Expanded(
