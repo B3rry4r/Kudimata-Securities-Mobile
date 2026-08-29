@@ -7,6 +7,7 @@
 // the 5th tab, "You"; R-28 removed it in favour of the header avatar).
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:go_router/go_router.dart';
 
 import '../app/app_state.dart';
@@ -124,6 +125,38 @@ GoRouter buildRouter(AppState state) {
   Widget themed(Widget Function() build) =>
       ListenableBuilder(listenable: state, builder: (_, _) => build());
 
+  // B-2 (2026-08-29 audit): "why is my own phone back button designed to
+  // remove the app and not go back?" Every gated-flow screen (onboarding,
+  // suitability, KYC) navigates with `context.go()` — a REPLACE, by
+  // deliberate convention (this file's header) — so there is never more
+  // than one entry in Flutter's Navigator on any of them. With nothing
+  // registered to intercept it, Android's hardware back then has no
+  // Navigator entry of its own to pop and falls straight through to the
+  // OS, which closes the app — at EVERY step of that flow, not some edge
+  // case. This was never actually the resume-lock's own PopScope(canPop:
+  // false) (A-6): that one only wraps LogInScreen when `resumeLock: true`
+  // (see its own doc comment) and doesn't touch any other screen.
+  //
+  // Used ONLY for the routes in [_backTargetFor]'s domain — the gated flow
+  // — not [themed]'s other callers (pushed detail/account screens, the tab
+  // roots): those already have a real Navigator back stack from `push()`
+  // and work correctly today; wrapping them too would be scope creep this
+  // pass has no way to verify. `canPop: false` here only intercepts the
+  // SYSTEM back gesture/button (`Navigator.maybePop`, per pop_scope.dart's
+  // own doc comment) — it does NOT block an explicit `context.pop()` a
+  // screen's own back arrow or a re-entry flow (confirm_passcode_screen.
+  // dart's Security re-entry) calls directly, so those are unaffected.
+  Widget themedGated(Widget Function() build) => ListenableBuilder(
+        listenable: state,
+        builder: (context, _) => PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _handleGatedBack(context);
+          },
+          child: build(),
+        ),
+      );
+
   return GoRouter(
     initialLocation: Routes.splash,
     refreshListenable: state,
@@ -132,8 +165,8 @@ GoRouter buildRouter(AppState state) {
       // ── Gated onboarding ──────────────────────────────────────────────--
       GoRoute(path: Routes.splash, builder: (_, _) => themed(() => SplashScreen())),
       GoRoute(path: Routes.welcome, builder: (_, _) => themed(() => WelcomeSliderScreen())),
-      GoRoute(path: Routes.signup, builder: (_, _) => themed(() => SignUpScreen())),
-      GoRoute(path: Routes.otp, builder: (_, _) => themed(() => OtpScreen())),
+      GoRoute(path: Routes.signup, builder: (_, _) => themedGated(() => SignUpScreen())),
+      GoRoute(path: Routes.otp, builder: (_, _) => themedGated(() => OtpScreen())),
       GoRoute(
         path: Routes.legalBundlePreview,
         builder: (_, _) => themed(() => LegalBundlePreviewScreen()),
@@ -156,7 +189,7 @@ GoRouter buildRouter(AppState state) {
         // when the passcode was set — a single transient failure there
         // permanently mis-scoped the passcode, forcing re-onboarding on
         // every future login for that account).
-        builder: (_, st) => themed(() => CreatePasscodeScreen(
+        builder: (_, st) => themedGated(() => CreatePasscodeScreen(
               reentry: st.extra == true,
               email: st.extra is String ? st.extra as String : null,
             )),
@@ -167,7 +200,7 @@ GoRouter buildRouter(AppState state) {
         // GoRouter `extra` as a ConfirmPasscodeArgs.
         builder: (_, st) {
           final args = st.extra;
-          return themed(() => ConfirmPasscodeScreen(
+          return themedGated(() => ConfirmPasscodeScreen(
                 created: args is ConfirmPasscodeArgs ? args.code : null,
                 reentry: args is ConfirmPasscodeArgs ? args.reentry : false,
               ));
@@ -192,19 +225,19 @@ GoRouter buildRouter(AppState state) {
         // hydrateGatingStateAndRoute's own destination instead of a
         // detour that no longer leads anywhere real.
         redirect: (_, _) => kIsWeb ? Routes.home : null,
-        builder: (_, _) => themed(() => BiometricScreen()),
+        builder: (_, _) => themedGated(() => BiometricScreen()),
       ),
       GoRoute(
         path: Routes.onboardingPersonal,
-        builder: (_, _) => themed(() => OnboardingPersonalDetailsScreen()),
+        builder: (_, _) => themedGated(() => OnboardingPersonalDetailsScreen()),
       ),
       GoRoute(
         path: Routes.onboardingAvatar,
-        builder: (_, _) => themed(() => OnboardingAvatarScreen()),
+        builder: (_, _) => themedGated(() => OnboardingAvatarScreen()),
       ),
       GoRoute(
         path: Routes.onboardingNextSteps,
-        builder: (_, _) => themed(() => WhatsNextScreen()),
+        builder: (_, _) => themedGated(() => WhatsNextScreen()),
       ),
       GoRoute(
         path: Routes.login,
@@ -217,27 +250,27 @@ GoRouter buildRouter(AppState state) {
         // other way).
         builder: (_, st) => themed(() => LogInScreen(resumeLock: st.extra == true)),
       ),
-      GoRoute(path: Routes.reset, builder: (_, _) => themed(() => ResetPasscodeScreen())),
+      GoRoute(path: Routes.reset, builder: (_, _) => themedGated(() => ResetPasscodeScreen())),
 
       // ── KYC ───────────────────────────────────────────────────────────--
-      GoRoute(path: Routes.kycIntro, builder: (_, _) => themed(() => KycIntroScreen())),
-      GoRoute(path: Routes.kycChecklist, builder: (_, _) => themed(() => KycChecklistScreen())),
-      GoRoute(path: Routes.kycBvn, builder: (_, _) => themed(() => BvnNinScreen())),
-      GoRoute(path: Routes.kycChn, builder: (_, _) => themed(() => ChnScreen())),
-      GoRoute(path: Routes.kycId, builder: (_, _) => themed(() => IdUploadScreen())),
-      GoRoute(path: Routes.kycLiveness, builder: (_, _) => themed(() => LivenessScreen())),
-      GoRoute(path: Routes.kycChecking, builder: (_, _) => themed(() => CheckingScreen())),
-      GoRoute(path: Routes.kycUtilityBill, builder: (_, _) => themed(() => UtilityBillScreen())),
-      GoRoute(path: Routes.kycBankDcs, builder: (_, _) => themed(() => BankDcsScreen())),
-      GoRoute(path: Routes.kycDeclarations, builder: (_, _) => themed(() => DeclarationsScreen())),
-      GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => themed(() => NextOfKinScreen())),
-      GoRoute(path: Routes.kycSubmitted, builder: (_, _) => themed(() => SubmittedScreen())),
-      GoRoute(path: Routes.kycApproved, builder: (_, _) => themed(() => ApprovedScreen())),
-      GoRoute(path: Routes.kycOutcome, builder: (_, _) => themed(() => KycOutcomeScreen())),
+      GoRoute(path: Routes.kycIntro, builder: (_, _) => themedGated(() => KycIntroScreen())),
+      GoRoute(path: Routes.kycChecklist, builder: (_, _) => themedGated(() => KycChecklistScreen())),
+      GoRoute(path: Routes.kycBvn, builder: (_, _) => themedGated(() => BvnNinScreen())),
+      GoRoute(path: Routes.kycChn, builder: (_, _) => themedGated(() => ChnScreen())),
+      GoRoute(path: Routes.kycId, builder: (_, _) => themedGated(() => IdUploadScreen())),
+      GoRoute(path: Routes.kycLiveness, builder: (_, _) => themedGated(() => LivenessScreen())),
+      GoRoute(path: Routes.kycChecking, builder: (_, _) => themedGated(() => CheckingScreen())),
+      GoRoute(path: Routes.kycUtilityBill, builder: (_, _) => themedGated(() => UtilityBillScreen())),
+      GoRoute(path: Routes.kycBankDcs, builder: (_, _) => themedGated(() => BankDcsScreen())),
+      GoRoute(path: Routes.kycDeclarations, builder: (_, _) => themedGated(() => DeclarationsScreen())),
+      GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => themedGated(() => NextOfKinScreen())),
+      GoRoute(path: Routes.kycSubmitted, builder: (_, _) => themedGated(() => SubmittedScreen())),
+      GoRoute(path: Routes.kycApproved, builder: (_, _) => themedGated(() => ApprovedScreen())),
+      GoRoute(path: Routes.kycOutcome, builder: (_, _) => themedGated(() => KycOutcomeScreen())),
 
       // ── Suitability & agreements ───────────────────────────────────────--
-      GoRoute(path: Routes.questionnaire, builder: (_, _) => themed(() => QuestionnaireScreen())),
-      GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themed(() => SuitabilityResultScreen())),
+      GoRoute(path: Routes.questionnaire, builder: (_, _) => themedGated(() => QuestionnaireScreen())),
+      GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themedGated(() => SuitabilityResultScreen())),
       GoRoute(
         path: Routes.riskDisclaimer,
         // R-8a (DECISIONS.md, 2026-08-27): its own scroll-gated in-app
@@ -263,7 +296,7 @@ GoRouter buildRouter(AppState state) {
         // across the suitability/result/risk-disclaimer hops between OTP
         // and here (see that field's doc comment) rather than this route's
         // `extra`.
-        builder: (_, _) => themed(() => TermsAndPrivacyScreen()),
+        builder: (_, _) => themedGated(() => TermsAndPrivacyScreen()),
       ),
 
       // ── Pushed detail (top-level — cover the shell, no tab bar) ─────────--
@@ -466,6 +499,27 @@ String? _gateRedirect(AppState state, GoRouterState st) {
   };
 
   if (state.signedIn) {
+    // A-6 cold-start fix (2026-08-29, product-owner report: "if i close the
+    // app and reopen, passcode never comes up. It only comes up if the app
+    // is slept or the screen sleeps"). AppState.coldStartPendingUnlock is
+    // true ONLY when [signedIn] just came from a cold-start secure-storage
+    // restore (see its own doc comment) — proof an account exists on this
+    // device, not proof the person holding the phone right now is its
+    // owner. Force a real local unlock, once per process, whenever that's
+    // the case and a passcode exists. This fires for `splash` same as
+    // anywhere else — including the very first redirect evaluation after
+    // startup hydration completes, which is what makes splash_screen.dart's
+    // OWN `_afterBeat` (context.go'ing to Routes.login when passcodeSet) a
+    // moot, never-reached decision for this exact case: this redirect wins
+    // the race every time, for a signed-in + passcode-set investor, and
+    // that's fine — LogInScreen's own `_unlock` still re-verifies the
+    // session server-side before letting anyone through, same check
+    // `_afterBeat` used to make. Routes.login is excluded so the challenge
+    // screen this redirects TO can actually render, instead of redirecting
+    // to itself forever.
+    if (state.coldStartPendingUnlock && state.passcodeSet && loc != Routes.login) {
+      return Routes.login;
+    }
     if (preAuthOnly.contains(loc)) return Routes.home;
     return null;                            // otherwise free roam
   }
@@ -477,6 +531,53 @@ String? _gateRedirect(AppState state, GoRouterState st) {
   if (loc == Routes.legalBundlePreview) return null;
   if (loc.startsWith('/legal-preview/')) return null;
   return Routes.splash;                      // any deep link into the app → splash
+}
+
+// ── B-2: hardware back inside the gated flow ────────────────────────────────
+/// Runs on every hardware-back press on a [themedGated] route. Decides
+/// deliberately per current location, using the exact same destination each
+/// screen's own on-screen back arrow already goes to (Routes.gatedBackTarget
+/// — built by reading every one of them, so the two can never drift apart):
+///   1. A mapped gated-flow location → go there, same as the visible arrow.
+///   2. A true entry/root screen (Routes.backExitAllowed) → let the OS
+///      handle it, i.e. exit. Standard behaviour, not the bug this fixes.
+///   3. Anything else — a screen deliberately built with no back arrow at
+///      all (biometric, the KYC checklist hub, every terminal/status KYC
+///      screen) — block, but say so (Routes.backBlockedMessage), instead of
+///      silently closing the app OR silently doing nothing.
+void _handleGatedBack(BuildContext context) {
+  // Some of these routes are reached BOTH via `go()` (no Navigator entry of
+  // their own — the exact gap this whole handler exists to fix) and via
+  // `push()` from elsewhere, over a real screen that's still there
+  // underneath: Security's "Change passcode" re-entry into createPasscode/
+  // confirmPasscode, personal_info_screen.dart's re-verify push into
+  // kycIntro, riskDisclaimer being pushed both from suitability_result_
+  // screen.dart AND from Home's tradingEligibilityGap prompt. A genuinely
+  // poppable Navigator entry means THIS instance is one of those cases —
+  // popping it the ordinary way is already correct, so do that instead of
+  // running the predecessor-map/block logic below, which is only for the
+  // no-stack `go()` case.
+  final navigator = Navigator.of(context);
+  if (navigator.canPop()) {
+    navigator.pop();
+    return;
+  }
+
+  final loc = GoRouterState.of(context).matchedLocation;
+  final target = Routes.gatedBackTarget[loc];
+  if (target != null) {
+    context.go(target);
+    return;
+  }
+  if (Routes.backExitAllowed.contains(loc)) {
+    SystemNavigator.pop();
+    return;
+  }
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(Routes.backBlockedMessage[loc] ?? 'Use the button on screen to continue.'),
+    ),
+  );
 }
 
 // ── Tab shell scaffold: content + floating KBottomNav ───────────────────────

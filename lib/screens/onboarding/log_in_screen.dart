@@ -806,6 +806,15 @@ Future<void> hydrateGatingStateAndRoute(BuildContext context) async {
   if (!context.mounted) return;
   final app = AppScope.read(context);
   app.setSignedIn(true);
+  // A-6 cold-start fix: every path that reaches this function has just had a
+  // real unlock happen — fresh signup/login completing, or a cold-start
+  // passcode-or-biometric challenge succeeding — so whatever gate
+  // `_gateRedirect` (app_router.dart) was holding a restored session behind
+  // is clear for the rest of this process. See
+  // AppState.coldStartPendingUnlock's doc comment for the bug this closes.
+  // A no-op when this was never set in the first place (every path here
+  // except the genuine cold-start one).
+  app.clearColdStartLock();
 
   // A-7 (2026-08-29 audit) belt-and-suspenders: AppState._hydrateBiometricEnabled
   // already restores this from PasscodeStore at app CONSTRUCTION, which

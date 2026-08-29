@@ -64,8 +64,54 @@ class AppState extends ChangeNotifier {
   /// first. See splash_screen.dart's routing decision.
   late final Future<void> ready;
 
+  /// True exactly when [_hydrateSignedIn] is the reason [signedIn] is
+  /// `true` — a token was found in secure storage at COLD START — and
+  /// nothing has confirmed since that whoever just opened the app is really
+  /// that token's owner. Deliberately NOT set by [setSignedIn] (every
+  /// interactive path: fresh signup, a fresh login, this exact challenge
+  /// succeeding): those already involve the investor doing something —
+  /// typing a passcode, completing OTP — that only its intended flag
+  /// ([passcodeSet]/[loginPasscodeSetup] etc.) needs to track, and a
+  /// synthetic `AppState()..signedIn = true` in tests (there are many)
+  /// represents exactly that "already mid-session" case too, not a cold
+  /// start — this flag correctly stays `false` for every one of them with
+  /// no per-test-file change needed, because none of them go through
+  /// [_hydrateSignedIn]'s actual code path.
+  ///
+  /// `_gateRedirect` (app_router.dart) forces a restored session with a
+  /// passcode set through `Routes.login` for real while this is true (A-6
+  /// follow-up, 2026-08-29: "if i close the app and reopen, passcode never
+  /// comes up"). [clearColdStartLock] clears it once that challenge (or an
+  /// interactive login/signup reaching Home the ordinary way) succeeds —
+  /// see `hydrateGatingStateAndRoute`, log_in_screen.dart, which every one
+  /// of those paths eventually calls.
+  bool coldStartPendingUnlock = false;
+
+  void clearColdStartLock() {
+    coldStartPendingUnlock = false;
+    notifyListeners();
+  }
+
+  /// [signedIn]/[passcodeSet]/[biometricEnabled] each hydrate from their OWN
+  /// secure-storage read and, before this, called [notifyListeners]
+  /// individually the instant THEIR read finished — which meant a redirect
+  /// evaluated in the gap between them (`refreshListenable: state` re-runs
+  /// on every notify) could see [signedIn] already `true` and [passcodeSet]
+  /// still its synchronous `false` default, read that as "no passcode to
+  /// challenge", and send a cold start straight to Home with no unlock at
+  /// all. None of the three hydrate methods below notify on their own any
+  /// more — only this wrapper does, once, after all three have actually
+  /// settled together, and only if one of them actually found something
+  /// (each returns whether it changed anything) — a plain fresh-install
+  /// hydration that found nothing at all stays exactly as silent as it was
+  /// before this existed, which matters for tests that dispose an AppState
+  /// before this Future resolves: an unconditional notify here would fire
+  /// on an already-disposed ChangeNotifier and throw.
   Future<void> _hydrate() async {
-    await Future.wait([_hydrateSignedIn(), _hydratePasscodeSet(), _hydrateBiometricEnabled()]);
+    final changed = await Future.wait(
+      [_hydrateSignedIn(), _hydratePasscodeSet(), _hydrateBiometricEnabled()],
+    );
+    if (changed.any((v) => v)) notifyListeners();
   }
 
   final AuthTokenStore _tokenStore;
@@ -366,12 +412,15 @@ class AppState extends ChangeNotifier {
   /// token has since expired, the first real API call still 401s and
   /// ApiClient's refresh-then-force-sign-out path (see lib/data/api/api_client.dart)
   /// takes over from there.
-  Future<void> _hydrateSignedIn() async {
+  Future<bool> _hydrateSignedIn() async {
     try {
       final token = await _tokenStore.getAccessToken();
       if (token != null && token.isNotEmpty) {
         signedIn = true;
-        notifyListeners();
+        // See [coldStartPendingUnlock]'s doc comment — this is the one
+        // real code path that means it.
+        coldStartPendingUnlock = true;
+        return true;
       }
     } catch (_) {
       // Best-effort, like hydrateWatchlist() below — a secure-storage read
@@ -381,6 +430,7 @@ class AppState extends ChangeNotifier {
       // leave [ready] — and therefore splash_screen.dart's unguarded
       // `await app.ready` — rejected and uncaught.
     }
+    return false;
   }
 
   /// On construction, read the secure passcode store to decide the initial
@@ -390,16 +440,17 @@ class AppState extends ChangeNotifier {
   /// default for the whole process, and splash_screen.dart would route every
   /// cold launch to sign-up — even a returning investor with a valid stored
   /// session and a stored passcode.
-  Future<void> _hydratePasscodeSet() async {
+  Future<bool> _hydratePasscodeSet() async {
     try {
       final has = await _passcodeStore.hasPasscode();
       if (has) {
         passcodeSet = true;
-        notifyListeners();
+        return true;
       }
     } catch (_) {
       // Best-effort — see _hydrateSignedIn()'s identical catch above.
     }
+    return false;
   }
 
   /// On construction, read the secure store to decide the initial
@@ -417,16 +468,17 @@ class AppState extends ChangeNotifier {
   ///     to offer biometric-first either.
   /// Without this hydration, [biometricEnabled] stays at its `false` default
   /// until the investor happens to notice and re-enrol from Security.
-  Future<void> _hydrateBiometricEnabled() async {
+  Future<bool> _hydrateBiometricEnabled() async {
     try {
       final enabled = await _passcodeStore.getBiometricEnabled();
       if (enabled) {
         biometricEnabled = true;
-        notifyListeners();
+        return true;
       }
     } catch (_) {
       // Best-effort — see _hydrateSignedIn()'s identical catch above.
     }
+    return false;
   }
 
   /// Called by ApiClient when a 401 could not be silently resolved (refresh
@@ -481,6 +533,7 @@ class AppState extends ChangeNotifier {
     // into a different investor's session on the same device.
     realtimeClient.disconnect();
     signedIn = false;
+    coldStartPendingUnlock = false;
     loginPasscodeSetup = false;
     pendingSignupEmail = null;
     kycSubmitted = false;

@@ -182,6 +182,14 @@ class _KudimataAppState extends State<KudimataApp> with WidgetsBindingObserver {
     // (in our custom widgets) returns the themed colour this frame.
     KColor.active = resolvedDark ? KPalette.dark : KPalette.light;
 
+    // B-2 (2026-08-29 audit) lives in app_router.dart, not here: a PopScope
+    // has to sit INSIDE a route's own widget subtree (it registers itself
+    // via `ModalRoute.of(context)` — see pop_scope.dart) to intercept that
+    // route's back button at all. Wrapping it around MaterialApp.router
+    // from out here, above go_router's own Navigator entirely, would find
+    // no ModalRoute and silently do nothing — so the fix is `themedGated`,
+    // applied per-route by `buildRouter`, right where each route already
+    // has one.
     return AppScope(
       state: _state,
       child: MaterialApp.router(

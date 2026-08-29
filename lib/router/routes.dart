@@ -207,4 +207,78 @@ class Routes {
   static const String acctLegalReferralTerms = '/account/legal/referral-terms';
   static const String acctLegalDataNotice = '/account/legal/data-notice';
   static const String acctLegalClosureTerms = '/account/legal/closure-terms';
+
+  // ── Hardware back button (B-2, 2026-08-29 audit) ─────────────────────────
+  // "why is my own phone back button designed to remove the app and not go
+  // back?" — every gated-flow screen is reached via `context.go()` (replace,
+  // no back stack, by design — see this file's header), so Android's
+  // hardware back button has no Flutter Navigator entry of its own to pop
+  // and falls through to the OS, which exits the app. Each screen already
+  // draws its OWN correct back arrow for the SAME destination listed below
+  // (confirmed by reading every one — e.g. confirm_passcode_screen.dart's
+  // `onBack: () => context.go(Routes.createPasscode)`); this table lets
+  // app_router.dart's `_handleGatedBack` (wired per-route via `themedGated`)
+  // send the hardware button to that exact same place instead of guessing,
+  // so the two can never drift apart.
+  //
+  // A location that is NOT a key here either genuinely has nothing to go
+  // back to (see [backExitAllowed] below — exiting there is the same
+  // standard behaviour every other app has at its own entry/root screens)
+  // or was deliberately built with no back arrow at all (biometric_screen.
+  // dart's `s06` draws none; the KYC checklist hub and every terminal/
+  // status KYC screen the same) — `_handleGatedBack` blocks the hardware
+  // button there too, but WITH an on-screen message, never a silent close.
+  static const Map<String, String> gatedBackTarget = {
+    signup: welcome,
+    otp: signup,
+    questionnaire: otp,
+    suitabilityResult: questionnaire,
+    // riskDisclaimer has no entry here on purpose — every path that reaches
+    // it (suitability_result_screen.dart's Continue AND Home's
+    // tradingEligibilityGap prompt, home_screen.dart) uses `context.push()`,
+    // so it always has a real Navigator entry underneath and
+    // app_router.dart's `_handleGatedBack` pops it normally before ever
+    // consulting this map.
+    termsOfService: riskDisclaimer,
+    createPasscode: termsOfService,
+    confirmPasscode: createPasscode,
+    reset: login,
+    kycBvn: kycIntro,
+    kycChn: kycBvn,
+    kycId: kycChn,
+    kycLiveness: kycId,
+    kycChecking: kycLiveness,
+    kycUtilityBill: kycLiveness,
+    kycBankDcs: kycUtilityBill,
+    kycDeclarations: kycBankDcs,
+    kycNextOfKin: kycDeclarations,
+  };
+
+  /// True entry/root screens — nothing legitimate to go back TO, so the
+  /// hardware button falling through to the OS (exiting the app) is
+  /// correct, ordinary behaviour here, not the B-2 bug. `login` covers only
+  /// the plain unlock/sign-in entry (`resumeLock: false`); the resume-lock
+  /// challenge (`resumeLock: true`, A-6) has its own PopScope(canPop: false)
+  /// on the screen itself, which intercepts the button before
+  /// `_handleGatedBack` ever sees it — see LogInScreen.resumeLock's doc
+  /// comment.
+  static const Set<String> backExitAllowed = {welcome, login, home, markets, portfolio, wallet};
+
+  /// A short, honest, on-screen reason for the hardware-back block on a
+  /// location that is neither in [gatedBackTarget] nor [backExitAllowed] —
+  /// "it must never silently kill the app" (B-2 audit), and a block with no
+  /// explanation reads exactly like the bug this fixes. Keyed by the
+  /// specific screens this pass could confirm draw no back arrow by design;
+  /// everything else mid-flow falls back to a generic line rather than a
+  /// guess at wording that belongs to a screen this pass doesn't own. Note
+  /// `kycChecking` is NOT here even though it draws no back arrow either —
+  /// it IS in [gatedBackTarget] (checking.dart's own onBack points back to
+  /// kycLiveness), which is consulted first, so it navigates rather than
+  /// blocking.
+  static const Map<String, String> backBlockedMessage = {
+    biometric: 'Choose an option above to continue.',
+    kycSubmitted: 'Your application has been submitted.',
+    kycApproved: 'Tap Start investing above to continue.',
+    kycOutcome: 'Review the options above to continue.',
+  };
 }

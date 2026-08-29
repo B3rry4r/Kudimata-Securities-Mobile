@@ -25,6 +25,13 @@ void main() {
       ..suitabilityComplete = true
       ..riskDisclosureAccepted = true
       ..signedIn = true;
+      // Note: this deliberately does NOT go through AppState._hydrateSignedIn
+      // (the real cold-start path), so AppState.coldStartPendingUnlock stays
+      // at its default `false` — exactly right for what this test is
+      // actually representing (BUG-04: an investor already mid-session,
+      // "however it happens... to a pre-auth-only screen", not a fresh cold
+      // start needing the A-6 unlock challenge). See that field's doc
+      // comment in app_state.dart.
     final router = buildRouter(state);
     await tester.pumpWidget(
       AppScope(

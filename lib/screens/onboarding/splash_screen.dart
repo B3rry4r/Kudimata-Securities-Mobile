@@ -41,6 +41,17 @@ class _SplashScreenState extends State<SplashScreen> {
   // force a local sign-out and fall back to the same signed-out routing the
   // rest of this method already does. If `signedIn` is false, there is
   // nothing to confirm — go straight to the existing routing decision.
+  //
+  // A-6 cold-start fix (2026-08-29): for a signed-in investor with a
+  // passcode set, app_router.dart's `_gateRedirect` now bounces THIS screen
+  // straight to Routes.login itself, the instant startup hydration settles
+  // — usually well inside this screen's own 1400ms brand beat, so the
+  // `app.signedIn` branch below rarely gets to run before that redirect
+  // wins. It stays as a defensive fallback for the rare case hydration is
+  // slower than the beat (a cold OS cache, a first-run device): the
+  // destination it computes is identical either way, and LogInScreen's own
+  // `_unlock` re-verifies the session server-side regardless of which path
+  // got it there.
   Future<void> _afterBeat() async {
     if (!mounted) return;
     final app = AppScope.read(context);

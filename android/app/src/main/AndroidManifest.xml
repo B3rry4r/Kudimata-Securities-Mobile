@@ -13,7 +13,33 @@
     <application
         android:label="Kudimata Invest"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false">
+        <!-- allowBackup/fullBackupContent false — 2026-08-29, a coordinator-
+             traced live bug (product owner: a fresh install signing into a
+             seeded account was "never asked to create a passcode"). Unset,
+             this defaulted to Android's Auto Backup (allowBackup true),
+             which by default includes app-private shared_prefs — the file
+             flutter_secure_storage's Android implementation
+             (EncryptedSharedPreferences) writes PasscodeStore's
+             hash/salt/owner and AuthTokenStore's tokens to. On a device
+             signed into the same Google account as a prior install, that
+             file came back transparently on what looked, to both the
+             investor and the app, like a genuinely fresh install:
+             PasscodeStore.belongsTo(email) matched the restored owner,
+             log_in_screen.dart's `reuseExisting` branch (_completeLogin)
+             skipped local passcode creation entirely, and from there every
+             control that depends on a passcode existing on THIS device (the
+             R-31 transaction PIN, the A-6 resume/cold-start lock, the A-7
+             biometric offer) silently had nothing to enforce. Disabling
+             backup is the fix, not a client-side heuristic trying to tell a
+             real same-device re-login apart from a backup-restored one — the
+             legitimate "sign out, sign back in as the same person" case
+             (AppState.signOut(), which deliberately never wipes
+             PasscodeStore — see that file's header) never depended on
+             backup surviving a reinstall to begin with; it works purely off
+             data untouched by the reinstall in the first place. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

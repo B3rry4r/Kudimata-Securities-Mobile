@@ -153,24 +153,36 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
         );
         context.pop(); // dismiss Confirm.
         context.pop(); // dismiss Create -> back to Security.
-      } else if (app.loginPasscodeSetup) {
-        // Fresh login re-entry — see file header. Consume the flag before
-        // handing off so it can never leak into a later, unrelated flow.
-        app.setLoginPasscodeSetup(false);
-        await hydrateGatingStateAndRoute(context);
       } else if (kIsWeb) {
         // No local_auth backing store on web — skip straight past biometric
         // enrolment, same as BiometricScreen's own "Maybe later" path,
-        // straight to Home. 2026-08-24: this used to detour through
-        // "a few more details" (personal_details_screen.dart) first, with
-        // an `alreadyComplete` check to skip it for a returning investor
-        // whose device just needed a fresh local passcode. That whole
-        // detour is gone now — DOB/address/city/state/phone are collected
-        // as part of starting KYC instead (kyc_intro.dart's `_start()`),
-        // not as a gate on reaching Home at all — so there's nothing left
-        // to conditionally skip here.
+        // straight to Home, for BOTH first-time signup and a fresh login
+        // setting up its first local passcode on this device
+        // (loginPasscodeSetup) — same reasoning either way: there's no
+        // biometric capability to offer here at all. 2026-08-24: signup used
+        // to detour through "a few more details"
+        // (personal_details_screen.dart) first; that whole detour is gone —
+        // DOB/address/city/state/phone are collected as part of starting KYC
+        // instead (kyc_intro.dart's `_start()`) — so there's nothing left to
+        // conditionally skip here. Consume loginPasscodeSetup (a harmless
+        // no-op write when it was never set, i.e. the signup path) so it can
+        // never leak into a later, unrelated flow.
+        app.setLoginPasscodeSetup(false);
         await hydrateGatingStateAndRoute(context);
       } else {
+        // B-1 fix (2026-08-29 audit — "where is the ask for biometrics...
+        // on new sign in?"): this used to send loginPasscodeSetup straight to
+        // hydrateGatingStateAndRoute, skipping Biometric entirely for a
+        // fresh sign-in setting up its FIRST local passcode on THIS device —
+        // exactly the moment the owner expects the ask (a device with
+        // biometrics available but not yet enabled for this account). Both
+        // first-time signup and this case now reach Biometric the same way;
+        // BiometricScreen itself calls hydrateGatingStateAndRoute once the
+        // investor answers either way (enable or "Maybe later" — see its
+        // file header). loginPasscodeSetup is consumed here (a no-op write
+        // when it was never set) so it can never leak into a later,
+        // unrelated flow.
+        app.setLoginPasscodeSetup(false);
         context.go(Routes.biometric);
       }
     } else {
