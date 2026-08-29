@@ -66,6 +66,13 @@ class Finding:
         return f"{self.path}:{self.line}" if self.line else self.path
 
 
+# Every path any gate actually opened. A harness that cannot say what it looked
+# at cannot be believed when it says it found nothing -- a glob that matches no
+# files prints GATES PASSED and exits 0, which is the most dangerous output this
+# program has. See the zero-file check at the end of main().
+SCANNED: set = set()
+
+
 @dataclass
 class Context:
     """What every check gets. Keeps checks free of path/config plumbing."""
@@ -97,6 +104,7 @@ class Context:
             if p not in seen:
                 seen.add(p)
                 uniq.append(p)
+        SCANNED.update(uniq)
         return uniq
 
     def rel(self, p: Path) -> str:
@@ -233,8 +241,20 @@ def main() -> int:
     ran = [n for n, _ in discover(config, args.gate)]
     print()
     print("─" * 72)
-    print(f"gates run: {len(ran)}   findings: {len(failures)} fail, "
-          f"{len(new) - len(failures)} warn, {len(old)} accepted")
+    print(f"gates run: {len(ran)}   files scanned: {len(SCANNED)}   "
+          f"findings: {len(failures)} fail, {len(new) - len(failures)} warn, "
+          f"{len(old)} accepted")
+
+    if not SCANNED:
+        # Zero files is never a clean bill of health, it is a broken config --
+        # almost always a `files.source` glob pointing at a directory layout this
+        # repo does not have. Passing here would hand back a green light that
+        # means nothing, which is worse than no gate at all.
+        print("\033[31mGATES INCONCLUSIVE.\033[0m No files matched `files.source` in "
+              f"{CONFIG_PATH.name} -- the globs do not fit this repo's layout.")
+        print("Nothing was examined, so nothing was cleared. Fix the globs and re-run.")
+        return 2
+
     if failures:
         print("\033[31mGATES FAILED.\033[0m Fix them, or `--accept` them with an owner and a reason.")
     else:
