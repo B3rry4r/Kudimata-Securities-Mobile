@@ -156,6 +156,16 @@ def main() -> int:
         help="test/shots_substates.dart's output (docs/redesign/DECISIONS.md B-3/B-4). "
         "Optional — skipped silently if the file doesn't exist.",
     )
+    ap.add_argument(
+        "--flow-captures",
+        type=Path,
+        default=Path("build/shots/_flow_captures.json"),
+        help="test/shots_flows.dart's output — modal-sheet flows (buy/sell/add-money/"
+        "withdraw, confirm-passcode, glossary) that are never GoRoutes, so shots_all.dart's "
+        "route walk cannot see them (2026-08-29 audit). Same per-capture record shape as "
+        "--substate-captures, folded in the same way. Optional — skipped silently if the "
+        "file doesn't exist.",
+    )
     ap.add_argument("--rulings", type=Path, default=Path("docs/redesign/RULINGS.md"))
     ap.add_argument("--out", type=Path, default=Path("build/shots/manifest.json"))
     args = ap.parse_args()
@@ -216,7 +226,19 @@ def main() -> int:
         substate_captures = json.loads(args.substate_captures.read_text(encoding="utf-8"))
         substate_entries = build_substate_entries(substate_captures)
 
-    manifest = screen_entries + substate_entries
+    # Flow entries (test/shots_flows.dart, 2026-08-29) — same per-capture
+    # record shape as substate_captures, so the same grouping function
+    # applies unmodified. Kept as its own list (not merged into
+    # substate_entries) purely so this script's own summary can report a
+    # flow-specific count, per that file's own audit brief ("report your
+    # own numbers"); every entry still lands in the one manifest.json list
+    # a screen agent already knows to read.
+    flow_entries: list[dict] = []
+    if args.flow_captures.is_file():
+        flow_captures = json.loads(args.flow_captures.read_text(encoding="utf-8"))
+        flow_entries = build_substate_entries(flow_captures)
+
+    manifest = screen_entries + substate_entries + flow_entries
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -231,6 +253,10 @@ def main() -> int:
     substate_captured = sum(1 for e in substate_entries if e["rendered"])
     substate_unrenderable = substate_total - substate_captured
 
+    flow_total = len(flow_entries)
+    flow_captured = sum(1 for e in flow_entries if e["rendered"])
+    flow_unrenderable = flow_total - flow_captured
+
     print(f"wrote {args.out}")
     print(f"  screens captured:      {captured}")
     print(f"  screens unrenderable:  {unrenderable}")
@@ -238,6 +264,8 @@ def main() -> int:
     print(f"  screens with no artboard (needs-ruling / restyle-only / no-action / unmapped): {no_artboard}")
     print(f"  sub-states captured:      {substate_captured}")
     print(f"  sub-states unrenderable:  {substate_unrenderable}")
+    print(f"  flow steps captured:      {flow_captured}")
+    print(f"  flow steps unrenderable:  {flow_unrenderable}")
     if unrenderable:
         print("  UNRENDERABLE (screens):")
         for e in screen_entries:
@@ -246,6 +274,11 @@ def main() -> int:
     if substate_unrenderable:
         print("  UNRENDERABLE (sub-states):")
         for e in substate_entries:
+            if not e["rendered"]:
+                print(f"    - {e['name']} ({e['route']}, {e['dartFile']}): {e['unrenderableReason']}")
+    if flow_unrenderable:
+        print("  UNRENDERABLE (flow steps):")
+        for e in flow_entries:
             if not e["rendered"]:
                 print(f"    - {e['name']} ({e['route']}, {e['dartFile']}): {e['unrenderableReason']}")
     if lookup_misses:
@@ -258,10 +291,11 @@ def main() -> int:
 
     # One line a human or an agent can trust without re-deriving it —
     # scripts/design/shots.sh's own required summary line (docs/redesign/
-    # DECISIONS.md B-3/B-4: "N screens, N sub-states, N unrenderable").
+    # DECISIONS.md B-3/B-4: "N screens, N sub-states, N unrenderable"; flow
+    # steps added 2026-08-29 alongside test/shots_flows.dart).
     print(
-        f"SUMMARY: {total} screens, {substate_total} sub-states, "
-        f"{unrenderable + substate_unrenderable} unrenderable"
+        f"SUMMARY: {total} screens, {substate_total} sub-states, {flow_total} flow steps, "
+        f"{unrenderable + substate_unrenderable + flow_unrenderable} unrenderable"
     )
 
     return 0

@@ -504,6 +504,57 @@ Map<String, dynamic> _kycDraft() => {
       'currentStep': 5,
       'totalSteps': 5,
       'verificationSignals': {'nin': true, 'bvn': true, 'name': true, 'dob': true, 'liveness': true},
+      // resolvedName/resolvedDob/resolvedPhone — BR-4 (MOBILE-REQUESTS.md
+      // 2026-08-27), wired into KycRepository/bvn_nin.dart's `s13`
+      // confirmation 2026-08-29 (A-2 audit fix). Real values here so that
+      // screen's screenshot exercises the actual rendered content instead
+      // of the "—" fallback.
+      'resolvedName': 'Adebayo Okonkwo',
+      'resolvedDob': '1994-06-12',
+      'resolvedPhone': '+2348031234567',
+    };
+
+/// A draftStep1 response for a real bvn/nin verification failure — see the
+/// sentinel-BVN branch in [MockApiAdapter.fetch] above. Freshly-created
+/// (not the fully-populated [_kycDraft] draft, which is meant to represent
+/// a much-later point in the flow): a fresh step-1 draft has no documents,
+/// no chn, none of steps 2-7 done yet — only bvn/nin were just attempted,
+/// and both failed.
+Map<String, dynamic> _kycDraftBvnVerificationFailed() => {
+      'id': 'KYC-FAILED',
+      'userId': 'U1',
+      'bvn': '00000000000',
+      'nin': '00000000000',
+      'chn': null,
+      'pepSelfDeclared': null,
+      'tier': 'Tier 1',
+      'documentType': null,
+      'documents': const [],
+      'name': 'Adebayo Okonkwo',
+      'dob': null,
+      'address': null,
+      'city': null,
+      'state': null,
+      'nextOfKin': null,
+      'vendorDecision': 'no_decision',
+      'vendorDetail': null,
+      'status': 'draft',
+      'flagReason': null,
+      'flagDetail': null,
+      'submittedAt': '2026-03-14T09:00:00.000Z',
+      'assignedTo': null,
+      'attemptCount': 0,
+      'maxAttempts': 3,
+      'livenessMatchPct': null,
+      'providerChecks': {'bvnLookup': 'NOT_CONFIRMED', 'sanctionsPep': 'not_checked', 'duplicateAccount': 'not_checked'},
+      'reviewerChecks': null,
+      'internalNote': null,
+      'currentStep': 2,
+      'totalSteps': 5,
+      'verificationSignals': {'nin': false, 'bvn': false, 'name': null, 'dob': null, 'liveness': null},
+      'resolvedName': null,
+      'resolvedDob': null,
+      'resolvedPhone': null,
     };
 
 // GET /legal-documents/content/:kind (and the /public/ mirror) — the four
@@ -634,6 +685,31 @@ class MockApiAdapter implements HttpClientAdapter {
       return Completer<ResponseBody>().future;
     }
     final path = options.path;
+    // A-2 (2026-08-29 audit) gating test support: draftStep1 always returns
+    // 200 even on a real bvn/nin mismatch (verification is a same-call
+    // synchronous check surfaced via `verificationSignals`, never an HTTP
+    // error — see kyc_repository.dart's KycRepository.draftStep1 doc
+    // comment) — a real ApiException from this mock therefore can't stand
+    // in for that case the way it does elsewhere. Sentinel: an all-zero BVN
+    // (never a real Nigerian BVN) submitted to POST /kyc-submissions/draft
+    // gets a 200 with `verificationSignals.bvn: false`, exactly like the
+    // real backend's own multi-provider check failing would, so
+    // bvn_nin_test.dart can drive the blocking `_Step.failed` path.
+    if (options.method == 'POST' && path == '/kyc-submissions/draft' && requestStream != null) {
+      final bytes = await requestStream.expand((chunk) => chunk).toList();
+      if (bytes.isNotEmpty) {
+        final data = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+        if (data['bvn'] == '00000000000') {
+          return ResponseBody.fromString(
+            jsonEncode(_kycDraftBvnVerificationFailed()),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+      }
+    }
     final body = _resolve(path, options.queryParameters);
     return ResponseBody.fromString(
       jsonEncode(body),
