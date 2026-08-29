@@ -243,7 +243,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
       if (!mounted) return;
       app.toggleWatch(widget.ticker); // revert the optimistic local flip
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
+        SnackBar(content: Text(e.displayMessage)),
       );
     }
   }

@@ -107,7 +107,7 @@ class _ExplainScreenState extends State<ExplainScreen> {
       await showBuyFlow(context, asset);
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     } finally {
       if (mounted) setState(() => _launchingBuy = false);
     }

@@ -53,6 +53,7 @@ import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/auth_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/data/password_policy.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 import 'onboarding_scaffold.dart';
@@ -136,7 +137,15 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
   bool get _confirmMismatch =>
       _confirmPassword.isNotEmpty && _confirmPassword != _newPassword;
   bool get _resetValid =>
-      _code.trim().isNotEmpty && _newPassword.length >= 8 && !_confirmMismatch && _confirmPassword.isNotEmpty;
+      _code.trim().isNotEmpty &&
+      // R-43, via the ONE shared rule. This line checked only
+      // `length >= 8`, so it accepted a password the server then
+      // rejected for having no special character — and the investor
+      // saw "Validation failed" with no reason, on the screen they
+      // were on because they could not get in.
+      passwordAcceptable(_newPassword) &&
+      !_confirmMismatch &&
+      _confirmPassword.isNotEmpty;
 
   Future<void> _sendCode() async {
     if (!_emailValid || _busy) return;
@@ -151,7 +160,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     }
   }
 
@@ -189,7 +198,7 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     }
   }
 
@@ -289,9 +298,9 @@ class _ResetPasscodeScreenState extends State<ResetPasscodeScreen> {
       KInput(
         key: const ValueKey('reset-new-password-input'),
         label: 'New password',
-        placeholder: 'At least 8 characters',
+        placeholder: kPasswordRuleLabel,
         icon: 'lock',
-        helper: 'At least 8 characters, one number',
+        helper: kPasswordRuleLabel,
         obscure: true,
         controller: _newPasswordController,
         value: _newPassword,

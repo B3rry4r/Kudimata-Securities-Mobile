@@ -110,7 +110,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => prefs.improveAppConsent = previous);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     } catch (_) {
       if (!mounted) return;
       setState(() => prefs.improveAppConsent = previous);
@@ -128,7 +128,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => prefs.productEmailsConsent = previous);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     } catch (_) {
       if (!mounted) return;
       setState(() => prefs.productEmailsConsent = previous);

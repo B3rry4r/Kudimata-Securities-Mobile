@@ -493,7 +493,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       );
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     } finally {
       if (mounted) setState(() => _receiptBusy = false);
     }

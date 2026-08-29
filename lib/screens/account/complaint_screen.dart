@@ -481,7 +481,7 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _sending = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     }
   }
 

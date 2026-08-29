@@ -143,7 +143,7 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
       _onOrderUpdate(cancelled);
     } on ApiException catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     }
   }
 

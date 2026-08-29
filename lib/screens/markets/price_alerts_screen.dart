@@ -159,7 +159,7 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => alerts.insert(index, removed));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     }
   }
 
@@ -553,7 +553,7 @@ class _SetPriceAlertScreenState extends State<SetPriceAlertScreen> {
       Navigator.of(context).maybePop();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

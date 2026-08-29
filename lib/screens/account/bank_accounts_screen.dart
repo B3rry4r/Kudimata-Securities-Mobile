@@ -85,7 +85,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
       _reload();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     }
   }
 

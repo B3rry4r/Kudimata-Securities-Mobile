@@ -44,6 +44,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
+import 'package:kudimata_invest/data/password_policy.dart';
 import 'package:kudimata_invest/data/repositories/auth_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -114,7 +115,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   // line ("not a password you use elsewhere") — which nothing in this app
   // could ever verify, and which the canvas itself rendered permanently
   // unfilled — is removed entirely rather than kept as dead UI.
-  bool get _passwordLengthOk => _password.text.length >= 8;
+  // Both from lib/data/password_policy.dart — the one definition R-43 lives
+  // in, shared with the reset-password screen and mirrored by the backend.
+  bool get _passwordLengthOk => passwordLongEnough(_password.text);
   bool get _passwordComplexOk =>
       _digitPattern.hasMatch(_password.text) && _specialPattern.hasMatch(_password.text);
   bool get _passwordValid => _passwordLengthOk && _passwordComplexOk;
@@ -232,7 +235,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
+        SnackBar(content: Text(e.displayMessage)),
       );
     }
   }

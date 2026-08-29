@@ -137,7 +137,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       if (!mounted) return;
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
+        SnackBar(content: Text(e.displayMessage)),
       );
     }
   }

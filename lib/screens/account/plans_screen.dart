@@ -56,7 +56,7 @@ class _PlansScreenState extends State<PlansScreen> {
       if (e.code == 'INSUFFICIENT_BALANCE') {
         _showInsufficientBalanceSheet(planName);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -74,7 +74,7 @@ class _PlansScreenState extends State<PlansScreen> {
       _reload();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.displayMessage)));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
