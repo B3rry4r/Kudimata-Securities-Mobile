@@ -11,8 +11,12 @@ name: Build & Release Android
 #   • KEYSTORE_PASSWORD — keystore (store) password.
 #   • KEY_PASSWORD       — key password.
 #   • KEY_ALIAS          — alias of the key inside the keystore.
-# Without these, the workflow falls back to Android's debug keys (sideload-only,
-# not accepted by Play Store) — same as local builds without android/key.properties.
+# Without these, the workflow still builds, but DEBUG-SIGNED (sideload-only, and
+# Play Store will reject it). That path is now explicit rather than silent: the
+# "Decide signing identity" step below sets ALLOW_DEBUG_SIGNED_RELEASE and emits
+# a run annotation, and the published release names itself debug-signed. A local
+# build without android/key.properties fails outright instead — there is no CI
+# annotation to read on a laptop.
 on:
   # Manual only. A `v*` tag used to build and publish a release automatically;
   # a tag is easy to push by reflex, and a release is not something to trigger
@@ -73,18 +77,36 @@ jobs:
       - name: Run tests
         run: flutter test
 
-      - name: Decode release keystore
+      # Runs unconditionally, and decides the signing identity out loud.
+      #
+      # This used to be `if: env.KEYSTORE_BASE64 != ''`, so with no secret the
+      # step simply vanished and Gradle quietly fell back to Android's debug
+      # keys -- a debug-signed .apk with a release filename, indistinguishable
+      # from the real thing until Play rejects it. The Gradle script now refuses
+      # that fallback unless it is asked for explicitly, so this step has to say
+      # which build it is producing rather than leave it to be inferred.
+      - name: Decide signing identity
+        id: signing
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        if: env.KEYSTORE_BASE64 != ''
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
-          {
-            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}"
-            echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
-            echo "keyAlias=${{ secrets.KEY_ALIAS }}"
-            echo "storeFile=upload-keystore.jks"
-          } > android/key.properties
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            # Consumed by android/app/build.gradle.kts: opts in to debug signing
+            # and makes Gradle print its own loud warning too.
+            echo "ALLOW_DEBUG_SIGNED_RELEASE=true" >> "$GITHUB_ENV"
+            echo "::warning title=Debug-signed build::No KEYSTORE_BASE64 secret is set, so this run produces a DEBUG-SIGNED apk/aab. It is sideload-only and Play Store will reject it. Set the four signing secrets to cut a real release."
+          else
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+            {
+              echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}"
+              echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
+              echo "keyAlias=${{ secrets.KEY_ALIAS }}"
+              echo "storeFile=upload-keystore.jks"
+            } > android/key.properties
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "Release keystore decoded - this is a real, upload-signed build."
+          fi
 
       - name: Build release APK
         run: flutter build apk --release --dart-define=API_BASE_URL=https://alpha.kudimatasecurities.com
@@ -106,8 +128,15 @@ jobs:
           echo "Release tag: $TAG"
 
       - name: Stage artifacts
+        env:
+          SIGNED: ${{ steps.signing.outputs.signed }}
         run: |
           TAG="${{ steps.meta.outputs.tag }}"
+          # A debug-signed artifact says so in its own filename. Someone finds
+          # these on a Releases page months later with no run log next to them,
+          # and "release" in the name is the only thing they will read.
+          if [ "$SIGNED" != "true" ]; then TAG="${TAG}-debugsigned"; fi
+          echo "ARTIFACT_TAG=${TAG}" >> "$GITHUB_ENV"
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk \
              "dist/kudimata-securities-${TAG}.apk"
@@ -131,5 +160,9 @@ jobs:
           body: |
             Android release build for Kudimata Securities.
 
-            • `kudimata-securities-${{ steps.meta.outputs.tag }}.apk` — sideload on Android
-            • `kudimata-securities-${{ steps.meta.outputs.tag }}.aab` — Play Store upload
+            ${{ steps.signing.outputs.signed == 'true'
+              && 'Signed with the release upload keystore. The .aab can be uploaded to Play Store.'
+              || '**DEBUG-SIGNED — not a real release.** No signing keystore was available to this run, so these were signed with Android''s debug key. Sideload only: Play Store will reject the .aab, and this cannot update an installed store build. Set the four signing secrets and re-run to cut a real release.' }}
+
+            • `kudimata-securities-${{ env.ARTIFACT_TAG }}.apk` — sideload on Android
+            • `kudimata-securities-${{ env.ARTIFACT_TAG }}.aab` — Play Store upload format
