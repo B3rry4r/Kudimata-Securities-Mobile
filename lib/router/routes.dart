@@ -266,7 +266,28 @@ class Routes {
     // and "Maybe later" exits), so this is the one real predecessor.
     onboardingAvatar: biometric,
     reset: login,
+    // kycBvn is the true first step — reached with no draft in progress yet,
+    // so there is nothing on the checklist hub worth showing; kycIntro (its
+    // own real predecessor) stays its back target.
     kycBvn: kycIntro,
+    // 2026-08-29 (R-45, product-owner audit — "the draft screens should be
+    // properly disconnected... now on resume I can now go back to old
+    // things I have done before by pressing the back button"). These entries
+    // are the LINEAR-predecessor targets — correct within one continuous run
+    // through the flow: "on the flow they can go back" (the owner's own
+    // correction to this ruling), so an investor who just did the ID upload
+    // and is now on liveness can still press back into it normally to fix a
+    // mistake just made. What is NOT correct is walking back into a step
+    // that was already complete BEFORE this session's flow was entered
+    // (i.e. after an app restart) — those are locked instead, overriding
+    // this map. See `kycBackTarget` (lib/screens/kyc/_kyc_chrome.dart),
+    // AppState.kycForm.lockedStepRoutes (kyc_form_state.dart), and
+    // kyc_intro.dart's resume check (where the lock snapshot is taken) for
+    // the actual per-request decision — app_router.dart's `_handleGatedBack`
+    // and every one of these screens' own on-screen back arrow both call
+    // that ONE function so hardware back and the visible arrow can never
+    // disagree, same guarantee this map's own header already makes for
+    // every other gated route.
     kycChn: kycBvn,
     kycId: kycChn,
     kycLiveness: kycId,
@@ -275,6 +296,21 @@ class Routes {
     kycBankDcs: kycUtilityBill,
     kycDeclarations: kycBankDcs,
     kycNextOfKin: kycDeclarations,
+  };
+
+  /// The KYC step routes [kycBackTarget] (lib/screens/kyc/_kyc_chrome.dart)
+  /// applies session-lock awareness to — every step after the true first
+  /// one (kycBvn keeps its own fixed kycIntro target; nothing to lock before
+  /// any draft exists).
+  static const Set<String> kycLockableSteps = {
+    kycChn,
+    kycId,
+    kycLiveness,
+    kycChecking,
+    kycUtilityBill,
+    kycBankDcs,
+    kycDeclarations,
+    kycNextOfKin,
   };
 
   /// True entry/root screens — nothing legitimate to go back TO, so the
@@ -294,10 +330,12 @@ class Routes {
   /// specific screens this pass could confirm draw no back arrow by design;
   /// everything else mid-flow falls back to a generic line rather than a
   /// guess at wording that belongs to a screen this pass doesn't own. Note
-  /// `kycChecking` is NOT here even though it draws no back arrow either —
-  /// it IS in [gatedBackTarget] (checking.dart's own onBack points back to
-  /// kycLiveness), which is consulted first, so it navigates rather than
-  /// blocking.
+  /// `kycChecking` is NOT here even though it's a non-interactive
+  /// interstitial (auto-verifies on mount) — it DOES draw a real back arrow
+  /// (checking.dart's own KycTopBar) and IS in [gatedBackTarget]
+  /// (`kycLiveness`, its linear predecessor — see that map's own R-45 note,
+  /// and `kycBackTarget` for the session-lock override on top of it), so it
+  /// navigates rather than blocking.
   static const Map<String, String> backBlockedMessage = {
     biometric: 'Choose an option above to continue.',
     kycSubmitted: 'Your application has been submitted.',

@@ -17,20 +17,17 @@
 //
 // PROGRESS — derived from real data, nothing invented:
 //   step 1 BVN & NIN   — a draft exists at all (draftStep1 always sets both).
-//   step 2 CHN         — optional; treated done once the draft has moved
-//                         past it (`currentStep > 2`) OR chn is set. CHN's
-//                         own screen always leads into ID upload whether
-//                         filled or skipped, so by the time id upload has
-//                         registered there is no way to still be "on" CHN.
+//   step 2 CHN         — draft.chn != null, OR a primary-ID document exists
+//                         (proof the investor already moved past CHN via a
+//                         deliberate skip, which leaves chn permanently
+//                         null — see _loadChecklistSteps's own note on
+//                         `chnDone`).
 //   step 3 Documents   — ID + address, ONE checklist item per s11's own
-//                         "Documents uploaded · ID · utility bill" row.
-//                         `KycSubmissionStatus.currentStep` (server-computed
-//                         milestone; see kyc_intro.dart's own derivation
-//                         comment) reaches 5 ("ready to finalize") only once
-//                         BOTH the id document and the utility bill are in —
-//                         done = currentStep >= 5.
-//   step 4 Selfie      — currentStep >= 4 (liveness done, milestone "no
-//                         utility bill yet" or later).
+//                         "Documents uploaded · ID · utility bill" row. Done
+//                         once `draft.documents` contains BOTH a primary-ID
+//                         kind (nin/passport/drivers_licence/voters_card)
+//                         AND a proof_of_address kind.
+//   step 4 Selfie      — draft.documents contains a liveness_selfie kind.
 //   step 5 Bank & DCS  — a primary BankAccountSummary exists
 //                         (BankAccountsRepository.list()).
 //   step 6 Declarations — pepSelfDeclared != null (a Yes/No has actually
@@ -44,6 +41,28 @@
 //                         finalizeDraft() submits next-of-kin AND leaves
 //                         'draft' in the same call, so this is always the
 //                         last remaining item once 1-6 are done.
+//
+// 2026-08-29 (product-owner audit — resume loop: "did the document upload,
+// went to liveness, closed the app... reopened, did documents again, did
+// the selfie, went to checking, and it took me back to document upload
+// again!"): steps 2-4 above used to be read off `draft.currentStep`
+// (`cs`) — the backend's PHASED-KYC counter — instead of the real document
+// evidence now used: `chnDone = cs > 2`, `documentsDone = cs >= 5`,
+// `selfieDone = cs >= 4`. That counter is a single sequential number
+// (computeCurrentStep(), kyc-submissions.service.ts): it only reaches 4
+// once liveness is VERIFIED (not merely uploaded — `livenessVerifiedSignal`
+// set, which only happens once checking.dart's own POST /kyc-submissions/
+// draft/liveness call completes), and only reaches 5 once liveness AND the
+// utility bill are BOTH done. So `documentsDone` (an item that has nothing
+// to do with liveness) silently required liveness to ALSO be verified, and
+// if that verification call was ever slow, retried, or interrupted (app
+// killed mid-check, exactly as reported), `cs` stayed stuck below 4-5 even
+// though the ID document really was uploaded — sending `nextKycStepRoute`
+// back to Documents forever. `draft.documents` (already parsed —
+// KycRepository, KycDocumentSummary) carries the real per-document
+// evidence directly and is used for every one of steps 2-4 now; none of
+// them reads `currentStep` any more. Per-item "done" can never regress
+// once evidence exists, which a single derived counter could.
 //
 // NOTE — steps 3 and 4 are not always done in canvas order. The app's own
 // real navigation chain reaches liveness (step 4) BEFORE utility_bill.dart
@@ -93,20 +112,42 @@ class _ChecklistStep {
   final String route;
 }
 
+/// Document kinds that count as a "primary ID" for the Documents checklist
+/// item — matches Prisma's `KycDocumentKind`/`KycSubmissionDocumentType`
+/// enums (`Kudimata-Securities-Backend/prisma/schema.prisma`) and
+/// id_upload.dart's own picker (including 'voters_card', added 2026-08-29).
+const _primaryIdDocumentKinds = {'nin', 'passport', 'drivers_licence', 'voters_card'};
+
 /// The real per-step "done" derivation — shared by this screen's own hub UI
 /// and [nextKycStepRoute] below. See this file's header for the per-step
-/// rules and the out-of-order-completion note.
+/// rules, the 2026-08-29 fix away from the backend's `currentStep` counter,
+/// and the out-of-order-completion note.
 Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client) async {
   final kycRepo = KycRepository(client);
   final bankRepo = BankAccountsRepository(client);
   final draft = await kycRepo.getDraft();
   final accounts = draft == null ? const <BankAccountSummary>[] : await bankRepo.list();
 
-  final cs = draft?.currentStep;
+  final documents = draft?.documents ?? const <KycDocumentSummary>[];
+  final hasIdDocument = documents.any((d) => _primaryIdDocumentKinds.contains(d.documentKind));
+  final hasUtilityBill = documents.any((d) => d.documentKind == 'proof_of_address');
+  final hasLivenessSelfie = documents.any((d) => d.documentKind == 'liveness_selfie');
+
   final bvnDone = draft != null;
-  final chnDone = draft != null && ((cs != null && cs > 2) || draft.chn != null);
-  final documentsDone = cs != null && cs >= 5;
-  final selfieDone = cs != null && cs >= 4;
+  // CHN has no "skipped" flag of its own — a skip leaves chn permanently
+  // null, exactly like never having reached this step at all. The other
+  // real evidence that the investor is PAST it: chn_screen.dart's own
+  // Continue/Skip both always advance into id_upload.dart next (filled or
+  // skipped alike — see that file's own A-8 header note), so a primary ID
+  // document existing is unambiguous proof CHN was already left behind,
+  // filled or not. Without this, an investor who deliberately skips CHN
+  // would show it "not done" forever and nextKycStepRoute would send them
+  // back to it after every later step — the same species of resume-loop
+  // bug this file's 2026-08-29 fix above exists to prevent, just for CHN's
+  // own indirect signal instead of the backend's currentStep counter.
+  final chnDone = draft?.chn != null || hasIdDocument;
+  final documentsDone = hasIdDocument && hasUtilityBill;
+  final selfieDone = hasLivenessSelfie;
   final bankDone = accounts.any((a) => a.primary);
   final declarationsDone = draft?.pepSelfDeclared != null;
 
@@ -129,7 +170,7 @@ Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client) async {
       // Sends you to whichever half is still outstanding, not always the
       // ID screen — see this file's header note on out-of-order steps.
       done: documentsDone,
-      route: documentsDone ? Routes.kycId : (selfieDone ? Routes.kycUtilityBill : Routes.kycId),
+      route: !hasIdDocument ? Routes.kycId : (!hasUtilityBill ? Routes.kycUtilityBill : Routes.kycId),
     ),
     _ChecklistStep(
       title: 'Take a selfie',
@@ -169,6 +210,18 @@ Future<String> nextKycStepRoute(ApiClient client) async {
   final steps = await _loadChecklistSteps(client);
   final nextIndex = steps.indexWhere((s) => !s.done);
   return nextIndex == -1 ? steps.last.route : steps[nextIndex].route;
+}
+
+/// R-45 as amended (DECISIONS.md, 2026-08-29): the routes of every step
+/// that is ALREADY done, from the same real per-item derivation
+/// [_loadChecklistSteps] uses for everything else. Called exactly once, by
+/// kyc_intro.dart's resume check, to snapshot [AppState.kycForm]'s
+/// `lockedStepRoutes` — "old work from a previous session" the investor
+/// should not be able to walk back into, as opposed to a step finished
+/// during the CURRENT session, which stays reachable by back.
+Future<Set<String>> doneKycStepRoutes(ApiClient client) async {
+  final steps = await _loadChecklistSteps(client);
+  return steps.where((s) => s.done).map((s) => s.route).toSet();
 }
 
 /// C-3 fix (2026-08-29 product-owner audit — "the kyc count on unverified
@@ -244,6 +297,19 @@ class _KycChecklistScreenState extends State<KycChecklistScreen> {
                   final doneCount = steps.where((s) => s.done).length;
                   final nextIndex = steps.indexWhere((s) => !s.done);
                   final next = nextIndex == -1 ? steps.last : steps[nextIndex];
+                  // R-45 as amended (DECISIONS.md, 2026-08-29 — owner's
+                  // correction: "they can go back but on restart they
+                  // shouldn't be able to do so... on the flow they can go
+                  // back"): a step this session already had done when it
+                  // entered the flow (AppState.kycForm.lockedStepRoutes,
+                  // snapshotted once by kyc_intro.dart's resume check) is
+                  // "old work from a previous session" and gets no tap
+                  // target here, same as it gets no back-button target
+                  // (kycBackTarget, _kyc_chrome.dart). A step finished
+                  // DURING this session is NOT in that set, so it stays
+                  // tappable — an investor correcting a mistake just made
+                  // must still be able to.
+                  final locked = AppScope.read(context).kycForm.lockedStepRoutes;
                   return SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(KSpace.gutter, 8, KSpace.gutter, KSpace.gutter),
                     child: Column(
@@ -268,7 +334,21 @@ class _KycChecklistScreenState extends State<KycChecklistScreen> {
                                     ? _RowState.current
                                     : _RowState.upcoming,
                             isLast: i == steps.length - 1,
-                            onTap: i <= nextIndex || (nextIndex == -1)
+                            // Tappable when it's the current outstanding
+                            // step OR it was done DURING this session
+                            // (never a step still ahead of `nextIndex`, and
+                            // never a locked one — see this file's R-45
+                            // note above). A done row still renders fully
+                            // (tick, note, colour — unchanged above) even
+                            // when locked; it simply has no tap target,
+                            // rather than a handler wired to do nothing.
+                            // This depends entirely on `done` reflecting
+                            // REAL evidence (see _loadChecklistSteps's own
+                            // 2026-08-29 note on the resume-loop fix) — a
+                            // wrongly-"done" step would lock an investor out
+                            // of one they still need, which is worse than
+                            // the bug this fixes.
+                            onTap: (i <= nextIndex || nextIndex == -1) && !locked.contains(steps[i].route)
                                 ? () => context.go(steps[i].route)
                                 : null,
                           ),

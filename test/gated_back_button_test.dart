@@ -12,21 +12,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/data/api/api_client.dart';
 import 'package:kudimata_invest/router/app_router.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/kyc/chn_screen.dart';
+import 'package:kudimata_invest/screens/kyc/kyc_checklist_screen.dart';
+import 'package:kudimata_invest/screens/kyc/kyc_form_state.dart';
 import 'package:kudimata_invest/screens/onboarding/otp_screen.dart';
 import 'package:kudimata_invest/screens/onboarding/sign_up_screen.dart';
 import 'package:kudimata_invest/screens/onboarding/biometric_screen.dart';
 import 'package:kudimata_invest/screens/kyc/kyc_intro.dart';
 import 'package:kudimata_invest/screens/kyc/bvn_nin.dart';
 import 'package:kudimata_invest/theme/app_theme.dart';
+import 'package:kudimata_invest/widgets/widgets.dart';
 
-Future<GoRouter> _mount(WidgetTester tester, String location) async {
-  final state = AppState();
-  final router = buildRouter(state);
+import 'fixtures/mock_api_adapter.dart';
+
+Future<GoRouter> _mount(WidgetTester tester, String location, {AppState? state}) async {
+  final appState = state ?? AppState();
+  final router = buildRouter(appState);
   await tester.pumpWidget(
     AppScope(
-      state: state,
+      state: appState,
       child: MaterialApp.router(theme: KTheme.light(), routerConfig: router),
     ),
   );
@@ -96,6 +103,82 @@ void main() {
       expect(find.text(Routes.backBlockedMessage[Routes.biometric]!), findsWidgets);
     },
   );
+
+  group('R-45 as amended — session-lock-aware KYC back (DECISIONS.md, 2026-08-29)', () {
+    // "the draft screens should be properly disconnected... now on resume I
+    // can now go back to old things I have done before by pressing the back
+    // button" — corrected by the owner to: "they can go back but on restart
+    // they shouldn't be able to do so... on the flow they can go back."
+    testWidgets(
+      'a step locked from a PREVIOUS session sends hardware back to the checklist hub, not its predecessor',
+      (tester) async {
+        final state = AppState()
+          ..signedIn = true
+          ..passcodeSet = true
+          ..apiClient = (ApiClient()..dio.httpClientAdapter = MockApiAdapter())
+          ..kycForm = (KycFormState()..lockSteps({Routes.kycChn}));
+        await _mount(tester, Routes.kycChn, state: state);
+        expect(find.byType(ChnScreen), findsOneWidget);
+
+        await _pressHardwareBack(tester);
+
+        expect(find.byType(ChnScreen), findsNothing);
+        expect(find.byType(KycChecklistScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a step finished DURING this session still sends hardware back to its normal predecessor',
+      (tester) async {
+        final state = AppState()
+          ..signedIn = true
+          ..passcodeSet = true
+          ..apiClient = (ApiClient()..dio.httpClientAdapter = MockApiAdapter())
+          ..kycForm = KycFormState(); // lockedStepRoutes empty — nothing locked yet.
+        await _mount(tester, Routes.kycChn, state: state);
+        expect(find.byType(ChnScreen), findsOneWidget);
+
+        await _pressHardwareBack(tester);
+
+        // Routes.gatedBackTarget[kycChn] == kycBvn — the ordinary linear
+        // predecessor, unaffected when nothing is locked.
+        expect(find.byType(ChnScreen), findsNothing);
+        expect(find.byType(BvnNinScreen), findsOneWidget);
+        expect(find.byType(KycChecklistScreen), findsNothing);
+      },
+    );
+
+    testWidgets(
+      "chn_screen.dart's own on-screen back arrow agrees with hardware back for a locked step",
+      (tester) async {
+        final state = AppState()
+          ..signedIn = true
+          ..passcodeSet = true
+          ..apiClient = (ApiClient()..dio.httpClientAdapter = MockApiAdapter())
+          ..kycForm = (KycFormState()..lockSteps({Routes.kycChn}));
+        await _mount(tester, Routes.kycChn, state: state);
+
+        // The visible back chevron — KycTopBar's GestureDetector, found via
+        // its own KIcon('back', ...) child rather than assumed tree order
+        // (an unscoped/first-of-type GestureDetector lookup can land on an
+        // unrelated one). A real tap, not the hardware-back simulation
+        // above, so this drives the SAME
+        // `onBack: () => context.go(kycBackTarget(...))` a finger tap would.
+        await tester.tap(
+          find.ancestor(
+            of: find.byWidgetPredicate((w) => w is KIcon && w.name == 'back'),
+            matching: find.byType(GestureDetector),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(ChnScreen), findsNothing);
+        expect(find.byType(KycChecklistScreen), findsOneWidget);
+      },
+    );
+  });
 
   test('welcome (a true entry point) has nothing to go back to — exit is correct there', () {
     // welcome has nothing to go back TO — Routes.backExitAllowed — so

@@ -14,15 +14,28 @@
 //
 // Rebuilt from the earlier sheet-picker + separate dropzone layout to match
 // s14's actual structure (2026-08-27 redesign pass) — see the row list
-// below. Three options only, not four: s14 draws NIN slip / Driver's
-// licence / International passport, with no Voter's card row anywhere
-// (confirmed: zero "Voter's card" matches in the canvas). This isn't just a
-// design gap — Kudimata-Securities-Backend's own `documentKind` enum
-// (registry.json) is `nin|passport|drivers_licence|proof_of_address|
-// liveness_selfie`; there has never been a `voters_card` value, so the
-// previous 4th chip could never have registered successfully server-side.
-// Dropping it matches both the artboard and reality; not a BACKEND_GAPS.md
-// entry since nothing here needs a backend change.
+// below. s14 itself draws only three rows (NIN slip / Driver's licence /
+// International passport) with no Voter's card anywhere.
+//
+// 2026-08-29 (product-owner audit, 7th false comment this pass caught): a
+// prior pass dropped a 4th Voter's card chip here on the claimed grounds
+// that Kudimata-Securities-Backend's `documentKind` enum was
+// `nin|passport|drivers_licence|proof_of_address|liveness_selfie` with "no
+// voters_card value, ever". That was false — checked against the schema,
+// not memory: `prisma/schema.prisma`'s `KycSubmissionDocumentType` AND
+// `KycDocumentKind` both carry `voters_card`, `common/types/enums.ts`
+// mirrors it, `KYC_DOCUMENT_KIND_VALUES` (kyc-documents/dto/upload-url.dto.
+// ts) validates it via `@IsIn`, and kyc-submissions.service.ts's own
+// computeCurrentStep() already treats it as a primary ID alongside
+// nin/passport/drivers_licence. None of the KYC identity providers
+// (Dojah/YouVerify/LumiID adapters) verify the ID *document image* at
+// all — they only verify the BVN/NIN *number* — so there is no vendor-side
+// gap either; a voter's card upload is registered and reviewed exactly
+// like the other three. The row is back, matching both the schema and the
+// fact that a Nigerian voter's card is an ordinary primary ID here. This
+// IS a design-canvas gap (s14 draws only three rows) rather than a backend
+// one, since the backend already supports it — not filed in
+// BACKEND_GAPS.md, which is for backend gaps, not canvas ones.
 //
 // Registers the uploaded document IMMEDIATELY (POST /kyc-documents), unlike
 // the old flow — a real draft KycSubmission already exists by this point
@@ -32,19 +45,24 @@
 // 2026-08-29 (A-4 audit fix): this screen used to forward straight to
 // Routes.kycUtilityBill on success. That's wrong against the backend's own
 // gating — KycSubmissionsService.computeCurrentStep() (the source of
-// `currentStep`/`documentType`, which the checklist hub's "documents
-// done"/"selfie done" derivation reads) checks liveness BEFORE it ever
-// looks at the utility bill: no ID doc -> step 2; ID doc but no liveness ->
-// step 3; liveness done but no utility bill -> step 4; else done. Reaching
+// `currentStep`/`documentType`) checks liveness BEFORE it ever looks at the
+// utility bill: no ID doc -> step 2; ID doc but no liveness -> step 3;
+// liveness done but no utility bill -> step 4; else done. Reaching
 // utility_bill.dart before liveness left `currentStep` stuck at 3 forever
 // (its own gate short-circuits there), even after the utility bill
-// uploaded — the checklist hub's "Documents uploaded" row could never
-// self-report done via this path. liveness.dart's own back button already
-// pointed here (`onBack: () => context.go(Routes.kycId)`) and
-// utility_bill.dart's own back button already pointed at liveness
-// (`onBack: () => context.go(Routes.kycLiveness)`) — both were written
-// assuming THIS screen forwards into liveness next; only the forward wiring
-// here disagreed. Now forwards to Routes.kycLiveness, matching both of
+// uploaded. (The checklist hub's "documents done"/"selfie done" rows no
+// longer read `currentStep` at all as of the resume-loop fix in
+// kyc_checklist_screen.dart — they read the real per-document evidence
+// directly — but the underlying
+// forward-order problem this paragraph fixes is unchanged.) liveness.dart's
+// own back button used to point here (`onBack: () => context.go(Routes.
+// kycId)`) and utility_bill.dart's own back button used to point at
+// liveness (`onBack: () => context.go(Routes.kycLiveness)`) — both were
+// written assuming THIS screen forwards into liveness next; only the
+// forward wiring here disagreed (both back targets have since moved to the
+// checklist hub — see routes.dart gatedBackTarget's 2026-08-29 note; this
+// paragraph is about FORWARD order, which is unaffected). Now forwards to
+// Routes.kycLiveness, matching both of
 // those and the backend's real step order (id -> liveness -> utility bill).
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -78,11 +96,15 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
   // the KYC check verifies the NIN number, not the physical slip, so the
   // plainer label is the accurate one; canvas literally says "NIN slip").
   // "International passport" and "Driver's licence" already match the
-  // canvas verbatim.
+  // canvas verbatim. "Voter's card" is a 4th row the canvas doesn't draw at
+  // all — added 2026-08-29 per direct product-owner instruction, backed by
+  // a verified backend schema check (see this file's header) rather than
+  // canvas conformance.
   static const _types = [
     _IdType('nin', 'NIN', subtitle: 'Fastest to verify'),
     _IdType('licence', "Driver's licence"),
     _IdType('passport', 'International passport'),
+    _IdType('voters_card', "Voter's card"),
   ];
 
   String? _type;
@@ -93,9 +115,14 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
 
   late final _repo = KycDocumentRepository(AppScope.read(context).apiClient);
 
-  // id_upload.dart's local chip ids are 'nin' | 'passport' | 'licence';
-  // KycSubmission.documentType (and KycDocument.documentKind) is
-  // enum(nin,passport,drivers_licence,...) — map 'licence' accordingly.
+  // id_upload.dart's local chip ids are 'nin' | 'passport' | 'licence' |
+  // 'voters_card'; KycSubmission.documentType (and KycDocument.
+  // documentKind) is enum(nin,passport,drivers_licence,voters_card,...) —
+  // map 'licence' accordingly. 'voters_card' is already spelled exactly
+  // like the wire enum, so it passes through unchanged; a near-miss spelling
+  // here would pass client-side but fail the backend's `@IsIn` validator,
+  // and the failure would look like a broken upload, not a typo, so this
+  // stays a single explicit mapping rather than a "looks the same" pass-through.
   String _documentKindFor(String type) => type == 'licence' ? 'drivers_licence' : type;
 
   @override
@@ -107,7 +134,10 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(
-              onBack: () => context.go(Routes.kycChn),
+              // R-45 as amended: locked (pre-restart) goes to the checklist
+              // hub, in-session goes to the normal predecessor — see
+              // kycBackTarget's own doc comment.
+              onBack: () => context.go(kycBackTarget(context, Routes.kycId)),
               stepLabel: 'Verification · 3 of 7',
             ),
             const KycStepProgress(total: 7, current: 3),
@@ -275,6 +305,7 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
         'nin' => 'NIN',
         'passport' => 'International passport',
         'drivers_licence' => "Driver's licence",
+        'voters_card' => "Voter's card",
         _ => kind,
       };
 

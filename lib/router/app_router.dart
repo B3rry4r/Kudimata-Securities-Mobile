@@ -32,6 +32,7 @@ import '../screens/onboarding/reset_passcode_screen.dart';
 import '../screens/onboarding/legal_preview_screen.dart';
 
 // KYC.
+import '../screens/kyc/_kyc_chrome.dart' show kycBackTarget;
 import '../screens/kyc/kyc_intro.dart';
 import '../screens/kyc/kyc_checklist_screen.dart';
 import '../screens/kyc/bvn_nin.dart';
@@ -621,6 +622,15 @@ void _handleGatedBack(BuildContext context) {
   }
 
   final loc = GoRouterState.of(context).matchedLocation;
+  // R-45 as amended (DECISIONS.md, 2026-08-29): a KYC step route needs the
+  // session-lock-aware decision (kycBackTarget, lib/screens/kyc/
+  // _kyc_chrome.dart) instead of a bare static-map lookup — the SAME
+  // function every one of these screens' own on-screen back arrow calls,
+  // so hardware back and the visible arrow can never disagree.
+  if (Routes.kycLockableSteps.contains(loc)) {
+    context.go(kycBackTarget(context, loc));
+    return;
+  }
   final target = Routes.gatedBackTarget[loc];
   if (target != null) {
     context.go(target);

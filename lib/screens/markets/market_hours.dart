@@ -17,13 +17,49 @@ import 'package:flutter/widgets.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
+/// NGX's real session, in WAT minutes from midnight. The ONE definition —
+/// `isNgxOpenNow()` below and every user-visible label both read these, so a
+/// label can no longer disagree with the open/closed state it sits beside.
+///
+/// It could, and did — in both directions, which is the interesting part.
+///
+/// markets_screen.dart carried its own `const _ngxCloseTime = '4:30pm'`, copied
+/// from artboard s24, while `isNgxOpenNow()` here closed the session at 14:30.
+/// The label and the state disagreed, so the pill could read "Open till 4:30pm"
+/// while the app believed the market had shut two hours earlier.
+///
+/// **16:30 is correct** — ruled by the product owner 2026-08-29 ("NGX CLOSES
+/// 16:30 NOT 14"), and the canvas agreed with them all along. The bug was the
+/// code, not the design. Worth recording because the first fix went the wrong
+/// way: seeing a hardcoded label beside a computed time, the label looked like
+/// the copied-from-a-mockup error and the computation looked authoritative. It
+/// was the other way round. A number in code is not evidence merely because it
+/// is in code.
+const int kNgxOpenMinutes = 10 * 60;        // 10:00 WAT
+const int kNgxCloseMinutes = 16 * 60 + 30;  // 16:30 WAT (R-46)
+
+/// [kNgxCloseMinutes] as the app writes times to investors, e.g. "2:30pm".
+String get ngxCloseLabel => _clockLabel(kNgxCloseMinutes);
+
+/// [kNgxOpenMinutes] in the same form, e.g. "10:00".
+String get ngxOpenLabel => _clockLabel(kNgxOpenMinutes, twentyFour: true);
+
+String _clockLabel(int minutes, {bool twentyFour = false}) {
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (twentyFour) return '$h:${m.toString().padLeft(2, '0')}';
+  final suffix = h >= 12 ? 'pm' : 'am';
+  final h12 = h % 12 == 0 ? 12 : h % 12;
+  return '$h12:${m.toString().padLeft(2, '0')}$suffix';
+}
+
 bool isNgxOpenNow() {
   final wat = DateTime.now().toUtc().add(const Duration(hours: 1));
   if (wat.weekday == DateTime.saturday || wat.weekday == DateTime.sunday) {
     return false;
   }
   final minutesSinceMidnight = wat.hour * 60 + wat.minute;
-  return minutesSinceMidnight >= (10 * 60) && minutesSinceMidnight < (14 * 60 + 30);
+  return minutesSinceMidnight >= kNgxOpenMinutes && minutesSinceMidnight < kNgxCloseMinutes;
 }
 
 const _weekdayNames = <int, String>{

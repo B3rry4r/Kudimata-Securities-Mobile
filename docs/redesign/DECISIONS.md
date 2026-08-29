@@ -955,3 +955,127 @@ pass that removes or rewrites a navigation call must account for every
 destination that call was the only route to — and a destination left with no
 callers is reported, never silently accepted. `personal_details_screen.dart` was
 stranded by the same rewrite and is still open at the time of this ruling.
+
+### R-45 — Steps completed in a PREVIOUS session are disconnected
+*Ruled by the product owner, 2026-08-29. Amended the same day — see below.*
+
+The distinguishing fact is **when** a step was completed, not merely whether it
+is done.
+
+- **Within one continuous run, back works normally.** An investor who has just
+  uploaded an ID and is now on liveness can press back and return to it. That is
+  how someone corrects a mistake they just made, and it must keep working.
+- **After an app restart, the steps that were already complete when the app
+  opened are disconnected.** Back does not walk into them and the hub does not
+  route to them. That is finished work from a previous session, not part of the
+  run in progress. Owner's words: *"the draft screens should be properly
+  disconnected... they can go back but on restart they shouldn't be able to do
+  so — on the flow they can go back."*
+
+**Amendment note, kept deliberately:** this ruling was first written as "a
+completed step is always terminal", which would have blocked an investor from
+stepping back to fix an upload they had made sixty seconds earlier. The owner
+corrected it before it was built. Recorded rather than silently rewritten,
+because the over-strict version is the one an agent will re-derive from the
+phrase "properly disconnected" if the reasoning is not here.
+
+Implementation: on entering the flow, snapshot which steps the draft already
+shows complete — that snapshot is the locked set for this run, held **in memory
+only**. A restart re-derives it from the draft, which is exactly the wanted
+behaviour with nothing to persist; persisting it would defeat the rule, since a
+restart is the event that should clear the session's own progress from it.
+
+- **Back** from a locked step returns to `Routes.kycChecklist`. Back from a step
+  completed during this run goes to the previous step, as normal. The gated flow
+  navigates with `context.go()` and so has no back stack at all — which is why
+  this is derived from state rather than from history.
+- **The hub** routes to outstanding steps and to steps completed during this
+  run. A locked step renders as complete and carries no tap target at all — not
+  a disabled one, because a control that does nothing is worse than an absent
+  one.
+
+**This ruling depends entirely on the completion derivation being correct**, and
+at the time it was made it was not. `kyc_checklist_screen.dart` inferred
+completion from the backend's `currentStep` — the stale 5-step phased counter
+that has not matched the real 7-step flow since 2026-08-24, and the same figure
+behind the "4/5" defect reported three times. Documents required `cs >= 5` while
+the selfie required `cs >= 4`, so uploading documents never marked them done, and
+the investor was returned to document upload forever. Completion now comes from
+the draft's real `documents` list, which the backend has always sent.
+
+Getting that order wrong inverts the ruling: applied on top of a wrong
+derivation, this locks an investor out of a step they still need — worse than the
+bug it fixes.
+
+**Known cost, deliberately accepted:** an investor who uploads the wrong document
+and then restarts the app cannot replace it themselves. In-session they can. The backend has a `resubmission` value in
+`KycSubmissionDocumentType`, so a path may exist; if it does not, it is filed in
+`BACKEND_GAPS.md` rather than solved by quietly re-opening completed steps.
+
+### R-46 — NGX closes at 16:30 WAT, not 14:30
+*Ruled by the product owner, 2026-08-29: "NGX CLOSES 16:30 NOT 14".*
+
+The session is **10:00–16:30 WAT, Monday to Friday**. The code had 14:30 and had
+been shutting the market two hours early — in the mobile client
+(`isNgxOpenNow()`), in the backend (`computeAutoOpen`), and in the copy on
+`price_moved_screen.dart` that told an investor their order was held "until
+14:30 today".
+
+**The interesting part is which source was right.** `markets_screen.dart` carried
+`const _ngxCloseTime = '4:30pm'`, copied from artboard `s24`, sitting beside a
+computed open/closed state that used 14:30. The two disagreed, so the header
+could read "Open till 4:30pm" while the app believed the market had closed at
+half past two.
+
+Confronted with a hardcoded label next to a computed time, the first fix went the
+**wrong way** — the label looked like the copied-from-a-mockup error and the
+computation looked authoritative, so the label was changed to match the code. It
+was the other way round: the canvas was right and the arithmetic was wrong. The
+owner caught it immediately.
+
+Recorded because the general lesson is not the one this project keeps repeating.
+The usual failure is trusting a design over a fact. This was the opposite:
+**a number in code is not evidence merely because it is in code.** A computation
+is as capable of being wrong as a string, and it is more persuasive while being
+so. Where a label and a computation disagree, the answer is to find out which is
+true — not to assume the executable one is.
+
+There is now **one** definition, `kNgxOpenMinutes`/`kNgxCloseMinutes` in
+`market_hours.dart`, and every user-visible label derives from it, so a label can
+no longer drift from the state it sits beside. The backend has a matching test
+covering both boundaries, 15:00 (which the old close wrongly excluded), and the
+21:35 case the owner reported. There was no test at all before, which is how it
+survived.
+
+**Separately:** the live database has `MarketStatusOverride` set to
+`forced_open` (2026-08-24). That is a deliberate pre-launch staff switch so
+document, statement and receipt flows can be exercised outside a short real
+session — but it means the app reports the market open at any hour, and it is
+still on.
+
+### R-47 — The Account ("You") screen keeps a back button
+*Ruled by the product owner, 2026-08-29: "add the back button".*
+
+`s51` draws "You" with no back affordance, and the screen briefly matched it
+after the 2026-08-29 conformance pass. That match was wrong, and this ruling
+restores the control.
+
+**The artboard is not mistaken — it is answering a different question.** It draws
+Account as a **tab destination**, where a back arrow would mean nothing. R-28
+then took Account off the tab bar and made it a screen pushed from Home's header
+avatar. A pushed screen with no visible way out leaves edge-swipe and the
+hardware key as the only exits: invisible to anyone who does not already know
+them, and on a gesture-navigation Android the swipe competes with the system's
+own back gesture.
+
+The title keeps s51's treatment — 26px/800, left-aligned, under the status bar,
+not the centred `KDetailHeader` used by true detail screens — and gains the same
+circular back control those screens use, so it reads as the same app.
+
+**Why this is worth writing down rather than just fixing:** the comment removed
+by this change argued, correctly on its own terms, that R-28 "only rules HOW this
+screen is reached, not what its own header renders". That is true and it still
+led to the wrong answer, because how a screen is reached is exactly what decides
+whether it needs a way back. An artboard drawn for one navigation model does not
+transfer unchanged to another — the same trap as R-44's orphaned avatar screen,
+where a flow rewrite silently stranded a destination.

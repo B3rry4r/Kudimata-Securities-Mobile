@@ -48,7 +48,9 @@ const _gut = EdgeInsets.symmetric(horizontal: KSpace.gutter);
 /// NGX's own daily trading close — a real, fixed market-hours constant
 /// (already used identically by this screen's own "Open till 4:30pm" /
 /// "Opens tomorrow at 10:00" banners), not per-instrument data.
-const _ngxCloseTime = '4:30pm';
+// Was `const _ngxCloseTime = '4:30pm'` — s24 draws that time, NGX closes at
+// 14:30. Now derived from market_hours.dart's kNgxCloseMinutes, the same
+// value isNgxOpenNow() uses, so the label cannot disagree with the state.
 
 class MarketsScreen extends StatefulWidget {
   const MarketsScreen({super.key});
@@ -294,7 +296,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
               name: assets[i].name,
               ticker: marketOpen
                   ? assets[i].ticker
-                  : '${assets[i].ticker} · closed at $_ngxCloseTime',
+                  : '${assets[i].ticker} · closed at $ngxCloseLabel',
               initialsSource: marketOpen ? null : assets[i].ticker,
               price: assets[i].price,
               change: assets[i].change,
@@ -321,7 +323,7 @@ class _MarketStatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = KColor.active.brightness == Brightness.dark;
-    final label = open ? 'Open till $_ngxCloseTime' : 'Closed · opens ${marketNextOpenLabel()}';
+    final label = open ? 'Open till $ngxCloseLabel' : 'Closed · opens ${marketNextOpenLabel()}';
     final fg = open ? (dark ? KColor.gainOnInk : KColor.gain) : KColor.ink2;
     final bg = open ? KColor.statusApprovedTint : KColor.track;
     return Container(

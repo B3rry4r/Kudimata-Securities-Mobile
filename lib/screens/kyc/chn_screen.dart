@@ -11,9 +11,22 @@
 // kyc-submissions.service.ts's draftStep1 doc comment).
 //
 // "No, or I'm not sure" needs no network call at all — chn already defaults
-// to null on a fresh draft; nothing to PATCH. "Skip — create one for me"
-// (ghost button) is the same no-op-and-move-on, always available regardless
-// of the radio/input state, per the canvas's own two-CTA design.
+// to null on a fresh draft; nothing to PATCH.
+//
+// 2026-08-29 (A-8 audit fix — "if user has no CHN they can't skip and two
+// buttons are confusing on a no or yes thing"): this used to draw TWO
+// footer buttons — Continue and a ghost "Skip — create one for me" — on top
+// of the two Yes/No radio rows above them. With "No" selected, _continue()
+// fell straight into the same `_goToNextStep()` the Skip button called, so
+// the two controls did the identical thing while one was labelled "Skip",
+// implying a different, faster path that never existed. There was no real
+// BLOCKER behind this — Continue was never disabled and no hidden
+// validation fired for "No" — only the confusion of two controls with one
+// job. The radio rows already express the choice; the footer now carries
+// ONE action, its label naming what happens for the current selection:
+// "Continue" (persists the CHN) when Yes is picked, "Skip — create one for
+// me" (the real no-op-and-move-on) when No is picked. No second button, and
+// "Skip" only ever appears when the tap truly skips.
 //
 // 2026-08-29 (A-4 audit fix — "two foolish screens that can interrupt when
 // you want to go to the next thing"): step-complete navigation used to go
@@ -110,8 +123,6 @@ class _ChnScreenState extends State<ChnScreen> {
     }
   }
 
-  void _skip() => _goToNextStep();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,7 +132,10 @@ class _ChnScreenState extends State<ChnScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(
-              onBack: () => context.go(Routes.kycBvn),
+              // R-45 as amended: locked (pre-restart) goes to the checklist
+              // hub, in-session goes to the normal predecessor — see
+              // kycBackTarget's own doc comment.
+              onBack: () => context.go(kycBackTarget(context, Routes.kycChn)),
               stepLabel: 'Verification · 2 of 7 · optional',
             ),
             const KycStepProgress(total: 7, current: 2),
@@ -180,16 +194,14 @@ class _ChnScreenState extends State<ChnScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   KSpace.gutter, 0, KSpace.gutter, KSpace.gutter),
-              child: Column(
-                children: [
-                  KButton(label: 'Continue', loading: _busy, onPressed: _busy ? null : _continue),
-                  const SizedBox(height: 10),
-                  KButton(
-                    label: 'Skip — create one for me',
-                    variant: KButtonVariant.ghost,
-                    onPressed: _busy ? null : _skip,
-                  ),
-                ],
+              child: KButton(
+                // ONE footer action — see this file's A-8 header note. Its
+                // label always names what THIS tap will do for the current
+                // radio selection, so "Skip" only ever shows when the tap
+                // truly skips (nothing to persist).
+                label: _hasChn ? 'Continue' : 'Skip — create one for me',
+                loading: _busy,
+                onPressed: _busy ? null : _continue,
               ),
             ),
           ],

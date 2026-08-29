@@ -9,6 +9,7 @@
 // than skipping it) means the visual design is ready the moment that real
 // trigger is built — see docs/redesign/PLAN.md.
 import 'package:flutter/material.dart';
+import 'package:kudimata_invest/screens/markets/market_hours.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
 
@@ -68,7 +69,7 @@ class PriceMovedScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Nothing was bought and nothing was charged. Your $heldAmount is '
-                      'still held for this order until 14:30 today.',
+                      'still held for this order until $ngxCloseLabel today.',
                       style: KType.body(color: KColor.ink2),
                     ),
                   ],

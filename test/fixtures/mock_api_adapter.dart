@@ -467,13 +467,16 @@ Map<String, dynamic> _kycDocument({
 /// A fully-populated in-progress draft — every field the new review/chn/
 /// declarations screens read has a realistic, non-null value so their
 /// screenshots exercise the real rendered content, not the "not provided
-/// yet" fallback text.
-Map<String, dynamic> _kycDraft() => {
+/// yet" fallback text. [chn] defaults to the original hard-coded value so
+/// every pre-existing call site is unaffected — kyc_chn_single_action_test.
+/// dart's [MockApiAdapter.kycChn] override is the only caller that passes
+/// `null`, for the "no CHN yet" single-button scenario.
+Map<String, dynamic> _kycDraft({String? chn = '1234567890'}) => {
       'id': 'KYC1',
       'userId': 'U1',
       'bvn': '22143459901',
       'nin': '77889012345',
-      'chn': '1234567890',
+      'chn': chn,
       'pepSelfDeclared': false,
       'tier': 'Tier 2',
       'documentType': 'drivers_licence',
@@ -639,12 +642,17 @@ class MockApiAdapter implements HttpClientAdapter {
     this.network = MockNetwork.ok,
     this.notifications = MockNotifications.populated,
     this.priceAlerts = MockPriceAlerts.populated,
+    this.kycChn = '1234567890',
   });
 
   final MockKyc kyc;
   final MockPortfolio portfolio;
   final MockMarket market;
   final MockNetwork network;
+  // See _kycDraft's own doc comment — null reproduces a fresh draft with no
+  // CHN recorded yet (chn_screen.dart's "No" state), everything else
+  // untouched. Threaded straight to _kycDraft(chn: kycChn) below.
+  final String? kycChn;
   final MockNotifications notifications;
   final MockPriceAlerts priceAlerts;
 
@@ -833,7 +841,7 @@ class MockApiAdapter implements HttpClientAdapter {
     // review_submit_screen.dart (2026-08-24) to render every summary row
     // with real-looking data, and for chn_screen.dart/declarations_screen.dart's
     // resume-prefill fetch.
-    if (path == '/kyc-submissions/draft') return _kycDraft();
+    if (path == '/kyc-submissions/draft') return _kycDraft(chn: kycChn);
     if (path.startsWith('/legal-documents/content/') ||
         path.startsWith('/public/legal-documents/content/')) {
       return _legalDocument(path.split('/').last);

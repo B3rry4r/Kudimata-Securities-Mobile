@@ -51,8 +51,9 @@ class KycDocumentRepository {
 
   /// POST /kyc-documents/upload-url — requests a presigned upload URL for
   /// one KYC document. [documentKind] is one of nin | passport |
-  /// drivers_licence | proof_of_address | liveness_selfie per
-  /// registry.json's `KycDocument` resource. Goes through the shared
+  /// drivers_licence | voters_card | proof_of_address | liveness_selfie per
+  /// registry.json's `KycDocument` resource (Prisma's `KycDocumentKind`
+  /// enum, `common/types/enums.ts`). Goes through the shared
   /// `ApiClient`, so failures surface as [ApiException] as usual.
   Future<KycUploadUrl> requestUploadUrl({
     required String documentKind,

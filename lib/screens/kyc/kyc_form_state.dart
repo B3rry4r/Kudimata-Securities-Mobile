@@ -34,6 +34,34 @@ class KycFormState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// R-45 as amended (DECISIONS.md, 2026-08-29 — owner's correction: "they
+  /// can go back but on restart they shouldn't be able to do so... on the
+  /// flow they can go back"): the KYC step ROUTES that were already
+  /// complete the moment THIS session's flow was entered — snapshotted
+  /// exactly once by kyc_intro.dart's resume check (`_checkResume`/`_start`)
+  /// against the real draft state (`kyc_checklist_screen.dart`'s
+  /// `doneKycStepRoutes`), never recomputed afterward. A route in this set
+  /// is "old work from a previous session" — `kycBackTarget`
+  /// (_kyc_chrome.dart) sends both hardware back and every step screen's
+  /// own on-screen arrow to the checklist hub instead of the linear
+  /// predecessor for it, and the checklist hub itself does not route to it
+  /// either. A step finished DURING this session is deliberately NOT added
+  /// here — it stays reachable by back for the rest of the session, exactly
+  /// like today, since correcting a mistake just made must keep working.
+  ///
+  /// Empty by default (a genuine first-timer has nothing to lock — nothing
+  /// is done yet) and in-memory only, same as [draftId] — a restart
+  /// naturally re-derives it from the draft via the next resume check
+  /// rather than needing to be persisted anywhere, which is exactly the
+  /// behaviour wanted: persisting it would defeat the "on restart" trigger
+  /// entirely.
+  Set<String> lockedStepRoutes = const {};
+
+  void lockSteps(Set<String> routes) {
+    lockedStepRoutes = routes;
+    notifyListeners();
+  }
+
   // ── Added 2026-08-24 (re-sequencing to the canvas's real 8-step flow) ────
   // Next-of-kin (step 8) no longer finalizes the draft itself — Review &
   // submit (the new final screen) does, so these three fields have to
@@ -114,6 +142,9 @@ class KycFormState extends ChangeNotifier {
     pepWho = null;
     pepPosition = null;
     brokerOrNgxEmployed = false;
+    // A fresh attempt has nothing locked either — see [lockedStepRoutes]'s
+    // own doc comment.
+    lockedStepRoutes = const {};
     notifyListeners();
   }
 }

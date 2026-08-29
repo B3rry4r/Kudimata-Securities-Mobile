@@ -214,24 +214,49 @@ class _AccountScreenState extends State<AccountScreen> {
     final kycApproved = AppScope.of(context).kycApproved;
     return Scaffold(
       backgroundColor: KColor.bg,
-      // AUDIT-2026-08-29 (s51 exactness pass): s51 draws "You" as a plain
-      // 26px/800-weight title sitting directly under the status bar — NOT a
-      // `KDetailHeader` bar with a back chevron (the prior comment here
-      // defended that chevron by citing R-28's "pushed from Home's header
-      // avatar", but R-28 only rules HOW this screen is reached, not what
-      // its own header renders; s51 itself has no back affordance drawn
-      // anywhere, same as every other tab-root screen — see
-      // markets_screen.dart's identical bare `Text(_, style: KType.title())`
-      // pattern, reused here rather than forking a new header widget).
-      // Going back still works exactly as before: edge-swipe and hardware
-      // back were never wired through the chevron in the first place.
+      // R-47 (2026-08-29): s51 draws "You" with no back affordance, and this
+      // screen briefly matched it. The owner reversed that the same day —
+      // "add the back button".
+      //
+      // The artboard is not wrong; it is answering a different question. It
+      // draws Account as a TAB destination, where a back arrow would be
+      // meaningless. R-28 then moved Account off the tab bar and made it a
+      // pushed screen reached from Home's header avatar. A pushed screen with
+      // no visible way out leaves edge-swipe and the hardware key as the only
+      // exits — invisible to anyone who does not already know them, and on a
+      // gesture-nav Android the swipe competes with the system back gesture.
+      //
+      // So the title keeps s51's treatment (26px/800, left-aligned, sitting
+      // under the status bar — not the centred KDetailHeader used by detail
+      // screens) and gains the same circular back control those screens use.
+      // The canvas is authoritative for the UI; a recorded ruling outranks it,
+      // and the reason is written here so the next conformance pass does not
+      // "restore" s51 and strand the investor again.
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(KSpace.gutter, 14, KSpace.gutter, 0),
-              child: Align(alignment: Alignment.centerLeft, child: Text('You', style: KType.title())),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).maybePop(),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: KColor.track,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Center(child: KIcon('back', size: 19, color: KColor.ink)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('You', style: KType.title())),
+                ],
+              ),
             ),
             Expanded(
               child: FutureBuilder<(PersonalInfo, AiCreditStatus, int)>(

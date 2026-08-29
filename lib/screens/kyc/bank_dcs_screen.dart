@@ -182,7 +182,10 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(
-              onBack: () => context.go(Routes.kycUtilityBill),
+              // R-45 as amended: locked (pre-restart) goes to the checklist
+              // hub, in-session goes to the normal predecessor — see
+              // kycBackTarget's own doc comment.
+              onBack: () => context.go(kycBackTarget(context, Routes.kycBankDcs)),
               stepLabel: 'Verification · 5 of 7',
             ),
             const KycStepProgress(total: 7, current: 5),

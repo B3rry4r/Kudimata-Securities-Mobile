@@ -3,8 +3,36 @@
 // "STEP n OF 5" progress strip (mirrors StepProgress in kyc-screens.jsx).
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:kudimata_invest/app/app_state.dart';
+import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+
+/// R-45 as amended (DECISIONS.md, 2026-08-29 — owner's correction to the
+/// original ruling: "they can go back but on restart they shouldn't be able
+/// to do so... on the flow they can go back"): the real back target for a
+/// KYC step, given [currentRoute]. A step that was already complete BEFORE
+/// this session's flow was entered — i.e. finished in a previous session,
+/// found again on resume after a restart — is "locked"
+/// (AppState.kycForm.lockedStepRoutes, snapshotted once by kyc_intro.dart's
+/// resume check) and goes to the checklist hub instead of its normal
+/// predecessor, so an investor can't walk back into old, already-accepted
+/// work. A step finished DURING this session is not in that set, so it
+/// keeps using [Routes.gatedBackTarget]'s ordinary linear-predecessor chain
+/// — pressing back right after finishing a step, to fix a mistake just
+/// made, must keep working exactly as it does today.
+///
+/// Called by BOTH every KYC step screen's own on-screen back arrow (each
+/// `onBack: () => context.go(kycBackTarget(context, Routes.kycX))`) AND
+/// app_router.dart's hardware-back handler (`_handleGatedBack`) — the ONE
+/// place this decision is made, so the two can never disagree, the same
+/// guarantee [Routes.gatedBackTarget]'s own header comment already makes
+/// for every other gated route.
+String kycBackTarget(BuildContext context, String currentRoute) {
+  final locked = AppScope.read(context).kycForm.lockedStepRoutes.contains(currentRoute);
+  if (locked) return Routes.kycChecklist;
+  return Routes.gatedBackTarget[currentRoute] ?? Routes.kycChecklist;
+}
 
 /// Slim 44px top bar with a single back affordance. The `onBack ?? maybePop`
 /// fallback below only works for a PUSHED route — every KYC screen advances

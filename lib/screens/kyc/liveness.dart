@@ -141,7 +141,10 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(
-              onBack: () => context.go(Routes.kycId),
+              // R-45 as amended: locked (pre-restart) goes to the checklist
+              // hub, in-session goes to the normal predecessor — see
+              // kycBackTarget's own doc comment.
+              onBack: () => context.go(kycBackTarget(context, Routes.kycLiveness)),
               stepLabel: 'Verification · 4 of 7',
               onFeature: true,
             ),

@@ -300,7 +300,7 @@ class AppState extends ChangeNotifier {
   /// by GET /market-status (2026-08-24) so a staff override set from the
   /// admin dashboard's Settings screen — "force open"/"force closed", for
   /// testing document/statement/receipt flows without waiting for the real
-  /// 10:00-14:30 WAT window — is reflected everywhere in the app that used
+  /// 10:00-16:30 WAT window — is reflected everywhere in the app that used
   /// to call isNgxOpenNow() directly. Falls back to that same local clock
   /// calc if the backend hasn't answered yet (or is unreachable), so the
   /// app still shows a sensible open/closed state offline.

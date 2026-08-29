@@ -824,3 +824,47 @@ never disagree with each other. This costs the banner two extra requests
 `GET /kyc-submissions/me|draft` (the account/personal screen, staff-side
 tooling, anything not yet built) rather than only the one client-side
 workaround above.
+
+## KYC checklist hub — no way to replace a wrong document mid-draft
+
+R-45 (DECISIONS.md, 2026-08-29) makes a completed KYC step terminal within
+the draft — the checklist hub no longer routes to a step once its real
+evidence exists, closing the "walk back into a done step and re-upload"
+hole the back-button fix (same date) closed for hardware/visible back. The
+owner asked what happens to an investor who uploaded the WRONG document
+(bad photo, wrong ID entirely) before that evidence exists, given they can
+no longer just tap back into the step and redo it. Checked, not assumed:
+
+- `Kudimata-Securities-Backend/src/kyc-documents/kyc-documents.service.ts`
+  has exactly one write path for a `KycDocument` row — `create` (line ~95).
+  No `update`, `upsert`, or `delete` exists anywhere in that service.
+  `kyc-documents.controller.ts` exposes no `DELETE`/`PUT`/`PATCH` route
+  either — only the two POSTs (`upload-url`, register).
+- Re-registering a document of the same kind does not replace the earlier
+  row — it inserts a SECOND row of that kind alongside it. Every "has a
+  document of kind X" check in this app (`_loadChecklistSteps`,
+  `computeCurrentStep()`) is `.any()`/`.some()`, so a bad first upload
+  followed by a good second one would still leave the bad one sitting in
+  `documents` — invisible to the checklist (which only asks "does one
+  exist"), but presumably still visible to a human reviewer, and with no
+  way for the investor or the app to mark or remove the bad one.
+- `KycSubmissionDocumentType`'s `resubmission` enum value (prisma/
+  schema.prisma) is NOT a per-document replace mechanism — it's the whole
+  old, pre-phased, all-at-once `POST /kyc-submissions` flow's
+  `documentType` field (kyc_repository.dart's own header comment:
+  "the old all-at-once... still exists server-side but is superseded").
+  It marks an entire NEW submission as a resubmission of a previously
+  rejected one, not a fix to one wrong document inside an in-progress
+  draft.
+
+**Net effect: there is no real path today for an investor to correct a
+single wrong document while status stays `'draft'`.** The only working
+escape hatch found is starting over at whatever grain the backend
+supports (a brand-new draft, or — once rejected/flagged — the existing
+resubmission flow's `attemptCount`/`maxAttempts`), not a targeted fix.
+Nothing was built to paper over this — R-45 was implemented as specified
+(a completed step has no tap target), and this gap is reported rather than
+solved with an invented "replace" flow. Needs a backend
+`DELETE /kyc-documents/:id` (or an upsert-by-kind on register) before a
+mid-draft correction can exist at all, plus a decision on whether the
+checklist hub should expose it once it does.

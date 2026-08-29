@@ -6,7 +6,7 @@
 // Backs GET /market-status (2026-08-24) — the real WAT-clock open/closed
 // computation moved server-side so a staff member can force open/closed
 // from the admin dashboard (Settings -> Market status) to test document/
-// statement/receipt flows without waiting for the real 10:00-14:30 WAT
+// statement/receipt flows without waiting for the real 10:00-16:30 WAT
 // trading window. See lib/screens/markets/market_hours.dart for how
 // AppState consumes this.
 import '../api/api_client.dart';

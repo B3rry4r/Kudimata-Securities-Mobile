@@ -3,6 +3,9 @@
 // just reading source. See docs/redesign/AUDIT-2026-08-29.md.
 //
 //   flutter test test/kyc_flow_walk_test.dart
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +15,7 @@ import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_client.dart';
 import 'package:kudimata_invest/router/app_router.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/kyc/chn_screen.dart';
 import 'package:kudimata_invest/screens/kyc/kyc_checklist_screen.dart';
 import 'package:kudimata_invest/screens/kyc/kyc_form_state.dart';
 import 'package:kudimata_invest/screens/kyc/next_of_kin.dart';
@@ -39,16 +43,21 @@ void _mockPlatformChannels() {
   );
 }
 
-Future<GoRouter> _mount(WidgetTester tester, String initialLocation) async {
+Future<GoRouter> _mount(
+  WidgetTester tester,
+  String initialLocation, {
+  HttpClientAdapter? adapter,
+  KycFormState? kycForm,
+}) async {
   _mockPlatformChannels();
   KColor.active = KPalette.light;
-  final apiClient = ApiClient()..dio.httpClientAdapter = MockApiAdapter();
+  final apiClient = ApiClient()..dio.httpClientAdapter = adapter ?? MockApiAdapter();
   final state = AppState()
     ..signedIn = true
     ..passcodeSet = true
     ..biometricEnabled = false
     ..apiClient = apiClient
-    ..kycForm = KycFormState();
+    ..kycForm = kycForm ?? KycFormState();
   final router = buildRouter(state);
   await tester.pumpWidget(
     AppScope(
@@ -76,15 +85,66 @@ void main() {
   group('A-1 — kyc_intro no longer detours through "a few more details"', () {
     testWidgets('Start never reaches onboarding/personal', (tester) async {
       final router = await _mount(tester, Routes.kycIntro);
-      await tester.tap(find.text('Start'));
       await _settle(tester);
 
       // The mock's /kyc-submissions/draft GET always returns an existing
-      // draft, so a real resume lands on the checklist hub — the point is
-      // it never routes through Routes.onboardingPersonal on the way.
+      // draft, so a real resume lands on the checklist hub automatically —
+      // see the A-9 group below for the "no tap needed, hero never shown"
+      // assertion. The point here is it never routes through
+      // Routes.onboardingPersonal on the way.
       final loc = router.routerDelegate.currentConfiguration.uri.toString();
       expect(loc, isNot(Routes.onboardingPersonal));
       expect(find.byType(KycChecklistScreen), findsOneWidget);
+    });
+  });
+
+  group('A-9 — kyc_intro no longer reappears mid-flow', () {
+    // Product-owner report: "that let's start verifying your kyc should not
+    // be showing when user has begun and not completed... I click continue
+    // and I still see that screen then the state screen again". kyc_intro.
+    // dart used to always render its "Let's verify your identity" hero and
+    // wait for a Start tap before checking for an in-progress draft — so a
+    // resuming investor saw the hero every single time, then had to tap
+    // through it. It now runs that same draft check automatically on entry
+    // instead (see kyc_intro.dart's `_checkResume`).
+    testWidgets('a resuming investor never sees the hero, lands on the checklist hub directly',
+        (tester) async {
+      await _mount(tester, Routes.kycIntro);
+      await _settle(tester);
+
+      expect(find.text("Let's verify your identity"), findsNothing);
+      expect(find.text('Start'), findsNothing);
+      expect(find.byType(KycChecklistScreen), findsOneWidget);
+    });
+
+    testWidgets('a genuine first-timer (no draft yet) still sees the hero and Start',
+        (tester) async {
+      _mockPlatformChannels();
+      // No mocked /kyc-submissions/draft response returning a real draft —
+      // a bare 404-ish null body reproduces "no draft exists yet".
+      final apiClient = ApiClient()..dio.httpClientAdapter = _NoDraftAdapter();
+      final state = AppState()
+        ..signedIn = true
+        ..passcodeSet = true
+        ..biometricEnabled = false
+        ..apiClient = apiClient
+        ..kycForm = KycFormState();
+      final router = buildRouter(state);
+      await tester.pumpWidget(
+        AppScope(
+          state: state,
+          child: MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            theme: KTheme.light(),
+            routerConfig: router,
+          ),
+        ),
+      );
+      router.go(Routes.kycIntro);
+      await _settle(tester);
+
+      expect(find.text("Let's verify your identity"), findsOneWidget);
+      expect(find.text('Start'), findsOneWidget);
     });
   });
 
@@ -126,9 +186,14 @@ void main() {
   });
 
   group('A-4 — a completed step advances to the next step, not the checklist hub', () {
-    testWidgets('CHN "Skip" never lands on the checklist hub', (tester) async {
+    testWidgets('CHN "Continue" never lands on the checklist hub', (tester) async {
       final router = await _mount(tester, Routes.kycChn);
-      await tester.tap(find.text('Skip — create one for me'));
+      // The mock's default draft already has a chn value, so chn_screen.dart
+      // prefills `_hasChn = true` and its single footer button (see the A-8
+      // single-action fix) reads "Continue" here, not "Skip" — see
+      // kyc_chn_single_action_test.dart for the "no chn yet" / "Skip" case
+      // this file doesn't need to re-cover.
+      await tester.tap(find.text('Continue'));
       await _settle(tester);
 
       // With the mock's fully-populated draft (chn/documents/selfie/bank/
@@ -140,6 +205,61 @@ void main() {
       expect(find.byType(KycChecklistScreen), findsNothing);
       expect(find.byType(NextOfKinScreen), findsOneWidget);
     });
+  });
+
+  group('R-45 as amended — checklist hub tap targets (DECISIONS.md, 2026-08-29)', () {
+    // "the draft screens should be properly disconnected... now on resume I
+    // can now go back to old things I have done before" — the hub half of
+    // the fix (the back-button half lives in gated_back_button_test.dart).
+    testWidgets(
+      'a step locked from a previous session shows done and non-tappable; only the outstanding step routes',
+      (tester) async {
+        // The mock's default draft has EVERY real per-item signal already
+        // set (chn, id+utility documents, liveness, a primary bank account,
+        // pepSelfDeclared) except next-of-kin, which is never independently
+        // "done" while status=='draft' (see kyc_checklist_screen.dart's own
+        // header) — so this is the exact case the owner described: a draft
+        // with documents and a selfie already recorded.
+        final locked = {
+          Routes.kycChn,
+          Routes.kycId,
+          Routes.kycLiveness,
+          Routes.kycUtilityBill,
+          Routes.kycBankDcs,
+          Routes.kycDeclarations,
+        };
+        await _mount(tester, Routes.kycChecklist, kycForm: KycFormState()..lockSteps(locked));
+
+        // A locked, done row (CHN) has no tap target — tapping it must NOT
+        // navigate away from the hub.
+        await tester.tap(find.text('CHN'));
+        await _settle(tester);
+        expect(find.byType(KycChecklistScreen), findsOneWidget);
+
+        // The one real outstanding step (Next of kin) still routes, via
+        // either its own row or the footer "Continue" button.
+        await tester.tap(find.text('Next of kin'));
+        await _settle(tester);
+        expect(find.byType(KycChecklistScreen), findsNothing);
+        expect(find.byType(NextOfKinScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a step done THIS session (nothing locked yet) stays tappable from the hub',
+      (tester) async {
+        // Fresh KycFormState — lockedStepRoutes empty, as it is before
+        // kyc_intro.dart's resume check ever runs (a step finished during
+        // the current session was never snapshotted as "already done
+        // before this session", so it must not be treated as locked).
+        await _mount(tester, Routes.kycChecklist, kycForm: KycFormState());
+
+        await tester.tap(find.text('CHN'));
+        await _settle(tester);
+        expect(find.byType(KycChecklistScreen), findsNothing);
+        expect(find.byType(ChnScreen), findsOneWidget);
+      },
+    );
   });
 
   group('A-5 — every KYC step screen agrees on "of 7"', () {
@@ -161,4 +281,30 @@ void main() {
       });
     }
   });
+}
+
+/// A minimal [HttpClientAdapter] reproducing "no draft exists yet" — a
+/// genuine first-timer, as opposed to [MockApiAdapter]'s always-populated
+/// draft (used everywhere else in this file). GET /kyc-submissions/draft
+/// returns a bare `null` body, matching KycRepository.getDraft()'s own
+/// "`if (data == null) return null;`" handling of that real backend
+/// response shape. Nothing else this screen touches needs a real value.
+class _NoDraftAdapter implements HttpClientAdapter {
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return ResponseBody.fromString(
+      'null',
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
 }

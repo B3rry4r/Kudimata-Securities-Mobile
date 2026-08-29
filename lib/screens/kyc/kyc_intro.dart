@@ -7,16 +7,24 @@
 // SHARED-CHANGES.md).
 //
 // RESUME (2026-08-20, phased-KYC directive: "so users who goes out and
-// comes back don't have to start all over"): "Start" first checks
-// GET /kyc-submissions/draft SOLELY to populate AppState.kycForm.draftId —
-// every step screen past step 1 needs that set before it can upload
-// anything (see AppState.kycDraftStep's own doc comment for the incident
-// this fixed). It then hands off to the checklist hub rather than jumping
-// straight to a specific step itself (X-5, SHARED-CHANGES.md, 2026-08-27):
-// the hub already re-derives exactly which step is next from the same real
-// draft/account data and is the one place that logic should live, now that
-// it exists as its own re-enterable screen instead of computing it here
-// too.
+// comes back don't have to start all over"): checks GET /kyc-submissions/
+// draft SOLELY to populate AppState.kycForm.draftId — every step screen
+// past step 1 needs that set before it can upload anything (see
+// AppState.kycDraftStep's own doc comment for the incident this fixed). It
+// then hands off to the checklist hub rather than jumping straight to a
+// specific step itself (X-5, SHARED-CHANGES.md, 2026-08-27): the hub already
+// re-derives exactly which step is next from the same real draft/account
+// data and is the one place that logic should live, now that it exists as
+// its own re-enterable screen instead of computing it here too.
+//
+// 2026-08-29 (product-owner audit — "that let's start verifying your kyc
+// should not be showing when user has begun"): this resume check used to
+// run only on a "Start" TAP, which meant a resuming investor always saw the
+// full "Let's verify your identity" hero first regardless. It now runs
+// automatically on entry ([_checkResume]) — see that method's own doc
+// comment. "Start" (renamed logic to [_start] below) still exists and still
+// runs the identical check, for the genuine-first-timer case this screen's
+// hero is now reserved for.
 //
 // 2026-08-29 (A-1 audit fix — "why is there a few more details screen? why
 // is that still there"): this used to detour a fresh "Start" tap through
@@ -40,8 +48,32 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
+import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+import 'kyc_checklist_screen.dart' show doneKycStepRoutes;
+
+/// R-45 as amended (DECISIONS.md, 2026-08-29): the ONE place the "already
+/// done before this session" snapshot is taken — kyc_intro.dart is the
+/// single entry point onto an in-progress draft (AppState.
+/// tradingEligibilityGap always routes here, never straight to a step
+/// screen), so this is the one moment that can tell "old work from a
+/// previous session" apart from "finished just now". Stored on
+/// AppState.kycForm.lockedStepRoutes and read from there for the rest of
+/// the session by kycBackTarget (_kyc_chrome.dart) and the checklist hub's
+/// own tap-target rule (kyc_checklist_screen.dart) — never recomputed
+/// after this.
+Future<void> _lockAlreadyDoneSteps(AppState app) async {
+  try {
+    final done = await doneKycStepRoutes(app.apiClient);
+    app.kycForm.lockSteps(done);
+  } catch (_) {
+    // Best-effort, same reasoning as the resume fetch around this call —
+    // if this one extra request fails, nothing gets locked (an investor
+    // can still walk back into every step this session, same as before
+    // R-45 existed) rather than blocking the resume itself on it.
+  }
+}
 
 class KycIntroScreen extends StatefulWidget {
   const KycIntroScreen({super.key});
@@ -53,6 +85,59 @@ class KycIntroScreen extends StatefulWidget {
 class _KycIntroScreenState extends State<KycIntroScreen> {
   bool _busy = false;
 
+  // 2026-08-29 (product-owner audit — "that let's start verifying your kyc
+  // should not be showing when user has begun and not completed... I click
+  // continue and I still see that screen then the state screen again"):
+  // AppState.tradingEligibilityGap ALWAYS routes an in-progress investor
+  // here (app_state.dart's own comment explains why: every step screen past
+  // step 1 needs AppState.kycForm.draftId, and this screen's resume fetch is
+  // the one place that gets populated) — so this screen can't stop being
+  // the entry point. What it CAN stop doing is painting "Let's verify your
+  // identity" and waiting for a Start tap before running that fetch. True
+  // while the SAME resume check `_start()` always ran on a tap is now
+  // running automatically instead — see [_checkResume]. Only a genuine
+  // first-timer (no draft yet) ever sees the hero below; a resuming
+  // investor never sees this screen's content at all, just a brief loading
+  // state before landing on the checklist hub.
+  bool _checkingResume = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkResume();
+  }
+
+  /// The exact same "does a draft already exist" check [_start] runs on a
+  /// tap, run automatically on entry instead. A draft found here means an
+  /// investor resuming mid-flow — redirect straight to the checklist hub
+  /// (setting [AppState.kycForm]'s draftId first, same as [_start] always
+  /// did) WITHOUT ever building the hero UI. No draft means a genuine
+  /// first-timer: reveal the normal "Let's verify your identity" + Start
+  /// screen, whose own [_start] handler re-runs this same fetch on tap (kept
+  /// as its own re-check, not skipped, in case state changed between this
+  /// screen loading and the tap — the exact defensiveness [_start]'s own
+  /// doc comment already relies on).
+  Future<void> _checkResume() async {
+    final app = AppScope.read(context);
+    try {
+      final draft = await KycRepository(app.apiClient).getDraft();
+      if (!mounted) return;
+      if (draft != null && draft.id != null) {
+        app.kycForm.setDraftId(draft.id!);
+        await _lockAlreadyDoneSteps(app);
+        if (!mounted) return;
+        context.go(Routes.kycChecklist);
+        return;
+      }
+    } catch (_) {
+      // Best-effort, same reasoning as _start()'s own catch below — a
+      // failed resume check just falls through to the normal first-timer
+      // hero rather than stranding the investor on a loading state forever.
+    }
+    if (!mounted) return;
+    setState(() => _checkingResume = false);
+  }
+
   Future<void> _start() async {
     setState(() => _busy = true);
     final app = AppScope.read(context);
@@ -61,6 +146,8 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
       if (!mounted) return;
       if (draft != null && draft.id != null) {
         app.kycForm.setDraftId(draft.id!);
+        await _lockAlreadyDoneSteps(app);
+        if (!mounted) return;
         context.go(Routes.kycChecklist);
         return;
       }
@@ -84,6 +171,13 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // See [_checkingResume]'s own doc comment: a resuming investor is
+    // redirected before this ever renders the hero below, so all this state
+    // shows is a brief, silent loading view — never "Let's verify your
+    // identity" for someone who already started.
+    if (_checkingResume) {
+      return Scaffold(backgroundColor: KColor.bg, body: const KLoadingView());
+    }
     return Scaffold(
       backgroundColor: KColor.bg,
       body: SafeArea(

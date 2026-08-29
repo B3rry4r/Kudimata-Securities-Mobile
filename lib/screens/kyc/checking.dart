@@ -79,7 +79,10 @@ class _CheckingScreenState extends State<CheckingScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KycTopBar(
-              onBack: () => context.go(Routes.kycLiveness),
+              // R-45 as amended: locked (pre-restart) goes to the checklist
+              // hub, in-session goes to the normal predecessor — see
+              // kycBackTarget's own doc comment.
+              onBack: () => context.go(kycBackTarget(context, Routes.kycChecking)),
               stepLabel: 'Verification · 4 of 7',
             ),
             const KycStepProgress(total: 7, current: 4),
