@@ -101,7 +101,7 @@ class LogInScreen extends StatefulWidget {
   State<LogInScreen> createState() => _LogInScreenState();
 }
 
-class _LogInScreenState extends State<LogInScreen> {
+class _LogInScreenState extends State<LogInScreen> with PasscodeBusyState<LogInScreen> {
   // ── Mode decision ─────────────────────────────────────────────────────
   // null while deciding; true = email+password form; false = local unlock.
   bool? _showEmailLogin;
@@ -114,10 +114,30 @@ class _LogInScreenState extends State<LogInScreen> {
   String? _firstName;
   String? _avatarKey;
 
-  // ── Local unlock (existing passcode-dots flow — unchanged) ────────────
+  // ── Local unlock (passcode-dots flow) ───────────────────────────────────
   String _code = '';
-  bool _verifying = false;
   bool _error = false;
+  String _errorText = 'Incorrect passcode';
+
+  // `busy`/`showSpinner`/`startBusy`/`settleBusy` come from
+  // [PasscodeBusyState] (onboarding_scaffold.dart, shared with
+  // confirm_passcode_screen.dart's identical fix). 2026-08-30 ("the login
+  // passcode screen has no loading state" — a colleague of the product
+  // owner saw a full row of filled dots and assumed the app had frozen).
+  //
+  // What the delay here actually consists of (all inside [_unlock], in
+  // order, for the ordinary non-biometric path): a secure-storage read
+  // (PasscodeStore.hasPasscode), a salted-hash compare against another
+  // secure-storage read (PasscodeStore.verifyPasscode) — both local, both
+  // fast — then, once the passcode itself is confirmed correct, TWO real
+  // network round trips this screen didn't have before the "real-login
+  // pass" (see file header): GET /users/me (session-still-valid check) and
+  // then [hydrateGatingStateAndRoute], which itself fetches KYC/suitability
+  // state and a dormancy check before it can even choose a route. That's
+  // materially more than confirm_passcode_screen.dart's mostly-local delay,
+  // and on a slow connection it's exactly the shape of "the app looks
+  // frozen" — so the same threshold/min-visible spinner treatment applies,
+  // just covering a longer real span.
 
   // ── Email+password login (new) ─────────────────────────────────────────
   final _email = TextEditingController();
@@ -245,6 +265,7 @@ class _LogInScreenState extends State<LogInScreen> {
 
   @override
   void dispose() {
+    disposeBusy();
     _email.dispose();
     _password.dispose();
     _stepUpController.dispose();
@@ -254,7 +275,7 @@ class _LogInScreenState extends State<LogInScreen> {
   }
 
   void _onKey(String k) {
-    if (_verifying) return;
+    if (busy) return; // keypad refuses input while a submission is in flight
     setState(() {
       if (k == 'del') {
         if (_code.isNotEmpty) _code = _code.substring(0, _code.length - 1);
@@ -292,23 +313,31 @@ class _LogInScreenState extends State<LogInScreen> {
   // is no typed code to check) — biometric unlock still passes through the
   // session-validity check same as always.
   Future<void> _unlock({bool viaBiometric = false}) async {
-    if (_verifying) return;
+    // Set synchronously (no `await` before it) so there is no gap a second
+    // near-simultaneous call could land in — same double-submit fix
+    // confirm_passcode_screen.dart's _evaluate documents. `busy` also backs
+    // the keypad's own guard in [_onKey].
+    if (busy) return;
     final app = AppScope.read(context);
 
     if (!app.signedIn) {
       // No stored session at all — nothing to unlock into. Clear any stray
       // state and fall back to the real email login form (this screen's
       // own [_showEmailLogin] mode), not the old Sign Up dead end.
+      setState(startBusy);
       await app.forceSignOut();
+      await settleBusy();
       if (!mounted) return;
       setState(() {
+        busy = false;
+        showSpinner = false;
         _showEmailLogin = true;
         _code = '';
       });
       return;
     }
 
-    setState(() => _verifying = true);
+    setState(startBusy);
 
     if (viaBiometric) {
       // CRITICAL FIX (2026-08-24). This branch used to be the `if
@@ -325,9 +354,11 @@ class _LogInScreenState extends State<LogInScreen> {
       // error path, so there is no way for a fault to read as success.
       final ok = await BiometricAuth.authenticate();
       if (!ok) {
+        await settleBusy();
         if (!mounted) return;
         setState(() {
-          _verifying = false;
+          busy = false;
+          showSpinner = false;
           _code = '';
         });
         return;
@@ -337,10 +368,17 @@ class _LogInScreenState extends State<LogInScreen> {
       if (hasPasscode) {
         final localMatch = await _passcodeStore.verifyPasscode(_code);
         if (!localMatch) {
+          // The one failure path that must be common and fast: return to an
+          // interactive keypad, not a spinner — see this method's own doc
+          // comment for why network calls never even happen on a wrong
+          // passcode (they're gated behind this exact check).
+          await settleBusy();
           if (!mounted) return;
           setState(() {
-            _verifying = false;
+            busy = false;
+            showSpinner = false;
             _error = true;
+            _errorText = 'Incorrect passcode';
             _code = '';
           });
           return;
@@ -354,8 +392,11 @@ class _LogInScreenState extends State<LogInScreen> {
     } on ApiException catch (e) {
       if (e.isSessionExpired || e.statusCode == 401) {
         await app.forceSignOut();
+        await settleBusy();
         if (!mounted) return;
         setState(() {
+          busy = false;
+          showSpinner = false;
           _showEmailLogin = true;
           _code = '';
         });
@@ -364,8 +405,10 @@ class _LogInScreenState extends State<LogInScreen> {
       // Any other failure (network/timeout/5xx) isn't a session-invalid
       // signal — don't lock a returning user out over a transient error;
       // fall through to the same unlock a healthy call would have produced.
-    } finally {
-      if (mounted) setState(() => _verifying = false);
+    } catch (_) {
+      // A non-ApiException failure from repo.me() itself — same posture as
+      // the transient-error branch above: not evidence the passcode was
+      // wrong, so fall through rather than stranding the investor.
     }
 
     if (!mounted) return;
@@ -374,19 +417,50 @@ class _LogInScreenState extends State<LogInScreen> {
       // already was — no gating re-hydration, no route to Home. That state
       // was never lost (the app process stayed alive in the background);
       // re-fetching it here would only cost time and risk visibly resetting
-      // a screen the investor is about to land back on unchanged.
+      // a screen the investor is about to land back on unchanged. Nothing
+      // else async happens on this branch, so settle here before popping.
+      await settleBusy();
+      if (!mounted) return;
+      setState(() {
+        busy = false;
+        showSpinner = false;
+      });
       context.pop();
       return;
     }
-    // Re-hydrate kyc/suitability from the server before landing on Home —
-    // those AppState flags are in-memory only (not persisted), so on a cold
-    // start they've reset to their `false` defaults even for an
-    // already-fully-onboarded returning investor. Without this, Home's
-    // "Complete your KYC" prompt would wrongly show every relaunch.
-    // hydrateGatingStateAndRoute already does exactly this and lands on
-    // Home unconditionally; app.signedIn is already true here (required to
-    // even reach this unlock screen), so its setSignedIn(true) is a no-op.
-    await hydrateGatingStateAndRoute(context);
+    try {
+      // Re-hydrate kyc/suitability from the server before landing on Home —
+      // those AppState flags are in-memory only (not persisted), so on a cold
+      // start they've reset to their `false` defaults even for an
+      // already-fully-onboarded returning investor. Without this, Home's
+      // "Complete your KYC" prompt would wrongly show every relaunch.
+      // hydrateGatingStateAndRoute already does exactly this and lands on
+      // Home unconditionally; app.signedIn is already true here (required to
+      // even reach this unlock screen), so its setSignedIn(true) is a no-op.
+      //
+      // Makes its own (variable-length) network calls and navigates
+      // internally once it's done — no settle() on the success path: the
+      // busy/spinner state stays up through that whole call, exactly as it
+      // should for the slowest branch this method has, and simply vanishes
+      // with this screen once it navigates away.
+      await hydrateGatingStateAndRoute(context);
+    } catch (_) {
+      // A genuinely correct passcode must never leave the investor stuck
+      // behind a spinner that never comes down just because this follow-up
+      // gating fetch blew up — return to an interactive keypad with a
+      // readable reason instead, same posture
+      // confirm_passcode_screen.dart's catch-all takes for its own
+      // post-write failures.
+      await settleBusy();
+      if (!mounted) return;
+      setState(() {
+        busy = false;
+        showSpinner = false;
+        _error = true;
+        _errorText = "Couldn't finish signing you in. Please try again.";
+        _code = '';
+      });
+    }
   }
 
   // ── Email+password login ────────────────────────────────────────────────
@@ -549,9 +623,20 @@ class _LogInScreenState extends State<LogInScreen> {
                 const SizedBox(height: 18),
                 if (_error)
                   Text(
-                    'Incorrect passcode',
+                    _errorText,
+                    textAlign: TextAlign.center,
                     style: KType.body(color: KColor.loss, w: KWeight.medium),
-                  ),
+                  )
+                else if (showSpinner)
+                  // No busy state is drawn on `s08` in the canvas — same
+                  // borrowed spinner/caption language
+                  // confirm_passcode_screen.dart's identical fix uses (see
+                  // [PasscodeBusyState]'s doc comment), occupying the same
+                  // slot the error text uses. "Signing you in…" rather than
+                  // "Confirming…" since this screen's slow path is real
+                  // network work (GET /users/me + gating hydration), not a
+                  // local hash compare.
+                  const KPasscodeBusyRow(label: 'Signing you in…'),
                 const SizedBox(height: 12),
                 // Canvas #s08: "Forgot password?" sits directly under the
                 // dots, above the keypad — not below it. Plain text link
@@ -576,6 +661,7 @@ class _LogInScreenState extends State<LogInScreen> {
                   constraints: const BoxConstraints(maxWidth: 300),
                   child: KKeypad(
                     onKey: _onKey,
+                    busy: busy,
                     leftAction: app.biometricEnabled && _biometricAvailable
                         ? KFingerprint(size: 26, stroke: 1.6, color: KColor.ink)
                         : null,

@@ -24,10 +24,19 @@
 //    (terms_and_privacy_screen.dart, reached via Routes.termsOfService
 //    right after OTP verification).
 //  - Middle name: the canvas's #s03 draws only First/Last name fields (no
-//    middle name field anywhere in the name step). Matching the artboard
-//    exactly here drops the middle-name box the previous single-step
-//    version of this screen had; `AuthRepository.signUp`'s `middleName` stays
-//    optional and is simply never sent from this screen now.
+//    middle name field anywhere in the name step). 2026-08-30 (product
+//    owner, via colleague dogfooding): re-added anyway — a deliberate
+//    product addition on top of the design, not a conformance fix, since
+//    the backend has always accepted it (`SignupDto.middleName?`) and
+//    investors with one had no way to give it at signup. Styled to match
+//    the First/Last fields around it (same KInput, same "(official)"-less
+//    plain label, no helper) rather than inventing a new look. It is
+//    genuinely optional: absent from `_firstNameValid`/`_lastNameValid`'s
+//    gate on Continue (see below), and `AuthRepository.signUp` already
+//    omits the key entirely when empty rather than sending `""` — the
+//    backend's `@IsString()` with no `@MinLength` would actually accept an
+//    empty string too, but omitting is the honest "wasn't given" shape and
+//    matches how `phone` is already handled two lines below it.
 //
 // R-43 (docs/redesign/DECISIONS.md, product-owner ruling, 2026-08-29)
 // OVERRIDES the canvas's password rule: #s03p/#s03pd draw "At least 10
@@ -61,6 +70,7 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _firstName = TextEditingController();
+  final _middleName = TextEditingController();
   final _lastName = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
@@ -105,6 +115,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool get _firstNameValid => _firstName.text.trim().isNotEmpty;
   bool get _lastNameValid => _lastName.text.trim().isNotEmpty;
+  // Deliberately no _middleNameValid: the field is optional and must never
+  // enter the chain that gates Continue (product owner: "watch out
+  // validation should not be blocked please!").
   bool get _emailValid => _emailPattern.hasMatch(_email.text.trim());
 
   // R-43 (docs/redesign/DECISIONS.md, product-owner ruling, 2026-08-29):
@@ -127,6 +140,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void dispose() {
     _firstName.dispose();
+    _middleName.dispose();
     _lastName.dispose();
     _email.dispose();
     _phone.dispose();
@@ -182,6 +196,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
     final firstName = _firstName.text.trim();
+    // Empty stays '' here and is turned into "don't send the key at all"
+    // by AuthRepository.signUp (`middleName.isNotEmpty` check) — not sent
+    // as an empty string. See this file's header note on why that split
+    // matters even though the backend's own validator would tolerate "".
+    final middleName = _middleName.text.trim();
     final lastName = _lastName.text.trim();
     final email = _email.text.trim();
     // Contract (backend Kudimata-Securities-Backend src/common/phone.ts,
@@ -204,6 +223,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: email,
         password: password,
         firstName: firstName,
+        middleName: middleName,
         lastName: lastName,
         phone: phone,
       );
@@ -293,6 +313,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
         controller: _firstName,
         onChanged: _showErrors ? (_) => setState(() {}) : null,
         error: _showErrors && !_firstNameValid ? 'Enter your first name' : null,
+      ),
+      const SizedBox(height: 16),
+      // Optional (product addition, 2026-08-30 — see file header): not in
+      // `_firstNameValid`/`_lastNameValid`'s Continue-gating chain, no
+      // error prop wired at all, so `_showErrors` can never touch it.
+      KInput(
+        label: 'Middle name (optional)',
+        placeholder: 'Chinedu',
+        controller: _middleName,
       ),
       const SizedBox(height: 16),
       KInput(

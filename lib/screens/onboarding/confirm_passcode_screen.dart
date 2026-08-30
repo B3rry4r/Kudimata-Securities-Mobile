@@ -37,8 +37,6 @@
 // KYC/suitability state from the server and routes to wherever that state
 // actually says they belong (KYC, suitability, or straight to Home for an
 // already-fully-onboarded account) instead of always restarting Biometric/KYC.
-import 'dart:async';
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -48,7 +46,6 @@ import 'package:kudimata_invest/data/api/passcode_store.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
-import 'package:kudimata_invest/widgets/widgets.dart' show KSpinner;
 import 'log_in_screen.dart' show hydrateGatingStateAndRoute;
 import 'onboarding_scaffold.dart';
 
@@ -89,7 +86,8 @@ class ConfirmPasscodeScreen extends StatefulWidget {
   State<ConfirmPasscodeScreen> createState() => _ConfirmPasscodeScreenState();
 }
 
-class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
+class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen>
+    with PasscodeBusyState<ConfirmPasscodeScreen> {
   String _code = '';
   bool _error = false;
   String _errorText = "That didn't match. Try the six digits again.";
@@ -104,31 +102,19 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
   // route anywhere. None of that showed on screen: the dots just sat full
   // while the handler ran, which is exactly what "frozen" looks like.
   //
-  // [_busy] is set the instant evaluation starts (before any `await`, so
-  // there's no async gap for a second call to slip through) and gates the
-  // keypad immediately — no visual flicker risk there, it's just "reject
-  // taps while a submission is in flight". [_showSpinner] is the visual
-  // half: it only flips on if the work is still running after
-  // [_spinnerThreshold], so a secure-storage write that resolves in a few
-  // ms (the common signup/login path — no network call at all, see
-  // [_evaluate]'s non-reentry branches) never flashes a spinner it doesn't
-  // need. Once shown, [_settle] holds it up for [_minSpinnerVisible] so a
-  // call that finishes just after the threshold doesn't flash off again a
-  // beat later.
-  bool _busy = false;
-  bool _showSpinner = false;
-  Timer? _spinnerTimer;
-  static const _spinnerThreshold = Duration(milliseconds: 150);
-  static const _minSpinnerVisible = Duration(milliseconds: 300);
+  // `busy`/`showSpinner`/`startBusy`/`settleBusy` come from
+  // [PasscodeBusyState] (onboarding_scaffold.dart) — extracted 2026-08-30
+  // once log_in_screen.dart's own unlock delay needed the identical
+  // threshold/min-visible timing, rather than a second hand-copied version.
 
   @override
   void dispose() {
-    _spinnerTimer?.cancel();
+    disposeBusy();
     super.dispose();
   }
 
   void _onKey(String k) {
-    if (_busy) return; // keypad refuses input while a submission is in flight
+    if (busy) return; // keypad refuses input while a submission is in flight
     setState(() {
       if (k == 'del') {
         if (_code.isNotEmpty) _code = _code.substring(0, _code.length - 1);
@@ -141,23 +127,8 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
     if (_code.length == 6) _evaluate();
   }
 
-  /// Cancels the pending spinner timer and, if the spinner actually made it
-  /// on screen, waits out whatever's left of [_minSpinnerVisible] before the
-  /// caller flips [_busy]/[_showSpinner] back off or navigates away — so a
-  /// call that resolves just after [_spinnerThreshold] doesn't show a
-  /// one-frame flash instead of a real busy state.
-  Future<void> _settle(DateTime started) async {
-    _spinnerTimer?.cancel();
-    if (_showSpinner) {
-      final elapsed = DateTime.now().difference(started);
-      if (elapsed < _minSpinnerVisible) {
-        await Future.delayed(_minSpinnerVisible - elapsed);
-      }
-    }
-  }
-
   Future<void> _evaluate() async {
-    // Defensive: _onKey already refuses input once _busy is true, but this
+    // Defensive: _onKey already refuses input once `busy` is true, but this
     // keeps _evaluate itself safe against any other caller and makes the
     // guard obvious at the one place all the side effects happen. Set
     // synchronously (no `await` before it) so there is no gap a second
@@ -166,24 +137,20 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
     // keypress once _code was already 6 digits (a stray tap while the
     // first call was still in flight re-drove the whole hash/store/route
     // sequence a second time).
-    if (_busy) return;
-    setState(() => _busy = true);
-    final started = DateTime.now();
-    _spinnerTimer = Timer(_spinnerThreshold, () {
-      if (mounted) setState(() => _showSpinner = true);
-    });
+    if (busy) return;
+    setState(startBusy);
 
     final created = widget.created;
     // No created code available (e.g. deep link): accept as the demo path.
     final matches = created == null || _code == created;
     if (!matches) {
-      await _settle(started);
+      await settleBusy();
       if (!mounted) return;
       setState(() {
         _error = true;
         _errorText = "That didn't match. Try the six digits again.";
-        _busy = false;
-        _showSpinner = false;
+        busy = false;
+        showSpinner = false;
       });
       return;
     }
@@ -229,7 +196,7 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
         // back on Security with the account tab/shell intact. Nothing else
         // async happens on this branch, so settle here (not before the
         // if/else) so the elapsed time it measures covers the whole wait.
-        await _settle(started);
+        await settleBusy();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Passcode updated')),
@@ -274,7 +241,7 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
         // Nothing else async happens on this branch, so settle here (not
         // before the if/else) so the elapsed time it measures covers the
         // whole wait.
-        await _settle(started);
+        await settleBusy();
         if (!mounted) return;
         context.go(Routes.biometric);
       }
@@ -286,11 +253,11 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
       // forever, exactly the "hangs" bug this whole pass exists to fix,
       // except unrecoverable instead of just unexplained. Return to an
       // interactive state with a visible reason instead.
-      await _settle(started);
+      await settleBusy();
       if (!mounted) return;
       setState(() {
-        _busy = false;
-        _showSpinner = false;
+        busy = false;
+        showSpinner = false;
         _error = true;
         _errorText = "Couldn't save your passcode. Please try again.";
       });
@@ -313,7 +280,7 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
               // corrupt anything (every await already checks `mounted`),
               // but it would silently abandon a passcode-set/route decision
               // the investor just triggered.
-              onBack: _busy
+              onBack: busy
                   ? () {}
                   : () => widget.reentry
                       ? context.pop()
@@ -341,7 +308,7 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
                       textAlign: TextAlign.center,
                       style: KType.body(color: KColor.loss, w: KWeight.medium),
                     ),
-                  ] else if (_showSpinner) ...[
+                  ] else if (showSpinner) ...[
                     // No busy state is drawn on `s05` in the canvas (it
                     // draws no confirm step at all — see file header), so
                     // this borrows the same spinner/caption language the
@@ -353,32 +320,14 @@ class _ConfirmPasscodeScreenState extends State<ConfirmPasscodeScreen> {
                     // threshold, so by the time it could show, _evaluate has
                     // already returned).
                     const SizedBox(height: 10),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        KSpinner(size: 16, color: KColor.ink3),
-                        const SizedBox(width: 8),
-                        Text('Confirming…', style: KType.body(color: KColor.ink3)),
-                      ],
-                    ),
+                    const KPasscodeBusyRow(label: 'Confirming…'),
                   ],
                   const SizedBox(height: 28),
                   KPasscodeDots(filled: _code.length, error: _error),
                   const Spacer(),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 300),
-                    // IgnorePointer backs up the _onKey guard at the hit-test
-                    // level (belt-and-suspenders, not load-bearing on its
-                    // own); the dimming is what actually tells a sighted user
-                    // the keypad isn't listening right now.
-                    child: IgnorePointer(
-                      ignoring: _busy,
-                      child: Opacity(
-                        opacity: _busy ? 0.5 : 1,
-                        child: KKeypad(onKey: _onKey),
-                      ),
-                    ),
+                    child: KKeypad(onKey: _onKey, busy: busy),
                   ),
                 ],
               ),

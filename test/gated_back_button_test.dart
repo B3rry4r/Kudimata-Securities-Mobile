@@ -29,6 +29,17 @@ import 'package:kudimata_invest/widgets/widgets.dart';
 import 'fixtures/mock_api_adapter.dart';
 
 Future<GoRouter> _mount(WidgetTester tester, String location, {AppState? state}) async {
+  // A phone-shaped surface — flutter_test's ~800×600 desktop-shaped default
+  // triggers unrelated pre-existing overflow warnings on width/height-
+  // sensitive screens (e.g. sign_up_screen.dart's name step, three KInputs
+  // tall since the 2026-08-30 middle-name addition), which have nothing to
+  // do with what this test is checking (hardware-back routing). Same fix
+  // security_persistence_test.dart's A-6 mountUnlocked already applies, for
+  // the same documented reason.
+  tester.view.physicalSize = const Size(1170, 2640); // 390×880 @ 3x
+  tester.view.devicePixelRatio = 3.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   final appState = state ?? AppState();
   final router = buildRouter(appState);
   await tester.pumpWidget(

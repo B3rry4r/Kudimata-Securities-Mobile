@@ -2,9 +2,91 @@
 // Lucide-idiom fingerprint glyph, and the slim mid-flow top bar. Ported 1:1 from
 // the design's shared.jsx (these live here, not in lib/widgets, since they are
 // onboarding-only). Monochrome; purple only where the spec calls for it.
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+
+/// Shared busy/spinner timing for a passcode-verification screen's async
+/// evaluate step. Extracted 2026-08-30 from confirm_passcode_screen.dart's
+/// original fix ("confirm pin shows all the pin entered but users dont know
+/// something is happening") once log_in_screen.dart's [_unlock] needed the
+/// identical treatment for its own — longer, network-touching — delay,
+/// rather than a second hand-copied version drifting from the first.
+///
+/// A submission sets [busy] synchronously via [startBusy] (call it from
+/// inside the caller's own `setState`, with no `await` before it, so there
+/// is no async gap a second near-simultaneous call could land in — that gap
+/// is what let a stray keypress double-submit before this existed). The
+/// visible [showSpinner] only flips on if the work is still running after
+/// [spinnerThreshold], so a fast local check (a secure-storage read/hash
+/// compare, the common case) never flickers a spinner it doesn't need.
+/// [settleBusy] cancels the pending timer and, once [showSpinner] has
+/// actually turned on, waits out whatever's left of [minSpinnerVisible]
+/// before the caller flips [busy]/[showSpinner] back off or navigates away
+/// — so a call that resolves just after the threshold doesn't flash the
+/// spinner on and immediately off again.
+mixin PasscodeBusyState<T extends StatefulWidget> on State<T> {
+  bool busy = false;
+  bool showSpinner = false;
+  Timer? _spinnerTimer;
+  DateTime? _startedAt;
+
+  static const spinnerThreshold = Duration(milliseconds: 150);
+  static const minSpinnerVisible = Duration(milliseconds: 300);
+
+  /// Sets [busy] and starts the spinner-threshold timer. Call synchronously
+  /// (e.g. `setState(startBusy)`) at the very top of the evaluate handler,
+  /// before any `await`.
+  void startBusy() {
+    busy = true;
+    _startedAt = DateTime.now();
+    _spinnerTimer = Timer(spinnerThreshold, () {
+      if (mounted) setState(() => showSpinner = true);
+    });
+  }
+
+  /// Await before clearing [busy]/[showSpinner] (or navigating away) at the
+  /// end of every branch the evaluate handler can take, success or failure
+  /// alike.
+  Future<void> settleBusy() async {
+    _spinnerTimer?.cancel();
+    if (showSpinner) {
+      final elapsed = DateTime.now().difference(_startedAt ?? DateTime.now());
+      if (elapsed < minSpinnerVisible) {
+        await Future.delayed(minSpinnerVisible - elapsed);
+      }
+    }
+  }
+
+  /// Call from the host State's `dispose()`.
+  void disposeBusy() => _spinnerTimer?.cancel();
+}
+
+/// Spinner + caption row for the slot a passcode screen's mismatch/error
+/// text occupies while [PasscodeBusyState.showSpinner] is true — the two
+/// never show together (an error means the async work already returned).
+/// [label] is verb-specific per call site ("Confirming…" vs "Signing you
+/// in…") since confirm_passcode_screen.dart and log_in_screen.dart are
+/// doing genuinely different work, not copies of the same screen.
+class KPasscodeBusyRow extends StatelessWidget {
+  const KPasscodeBusyRow({super.key, required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        KSpinner(size: 16, color: KColor.ink3),
+        const SizedBox(width: 8),
+        Text(label, style: KType.body(color: KColor.ink3)),
+      ],
+    );
+  }
+}
 
 /// Fingerprint glyph in the Lucide idiom (1.5px, no fill). KIcon has 'fingerprint'
 /// but the design draws it directly; we reuse KIcon for consistency.
@@ -107,10 +189,24 @@ class KPasscodeDots extends StatelessWidget {
 
 /// Numeric keypad. Optional bottom-left action node (biometric on login).
 class KKeypad extends StatelessWidget {
-  const KKeypad({super.key, required this.onKey, this.leftAction, this.onLeftAction});
+  const KKeypad({
+    super.key,
+    required this.onKey,
+    this.leftAction,
+    this.onLeftAction,
+    this.busy = false,
+  });
   final ValueChanged<String> onKey; // digit '0'..'9' or 'del'
   final Widget? leftAction;
   final VoidCallback? onLeftAction;
+
+  /// Dims and stops accepting taps while a submission is in flight — added
+  /// 2026-08-30 alongside [PasscodeBusyState] so a caller doesn't have to
+  /// hand-wrap this widget in its own IgnorePointer/Opacity (confirm_
+  /// passcode_screen.dart used to; log_in_screen.dart's unlock keypad never
+  /// had any busy affordance at all, which is the bug this prop exists to
+  /// fix there). A variant of this widget is a prop, not a second copy.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -176,7 +272,7 @@ class KKeypad extends StatelessWidget {
           ],
         );
 
-    return Column(
+    final pad = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         row([digit('1'), digit('2'), digit('3')]),
@@ -197,6 +293,15 @@ class KKeypad extends StatelessWidget {
           ),
         ]),
       ],
+    );
+
+    // IgnorePointer backs up each key's own onTap-guard callers may also
+    // have (belt-and-suspenders, not load-bearing on its own); the dimming
+    // is what actually tells a sighted investor the keypad isn't listening
+    // right now.
+    return IgnorePointer(
+      ignoring: busy,
+      child: Opacity(opacity: busy ? 0.5 : 1, child: pad),
     );
   }
 }
