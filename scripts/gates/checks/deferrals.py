@@ -51,6 +51,30 @@ TIER_B = [
     (r"\b(?:wire|implement|replace|hook|swap)\b", "deferred wiring"),
 ]
 
+# A comment recording something that ALREADY HAPPENED is not a deferral. It is
+# the most valuable kind of comment in a repo — it tells the next reader what a
+# line used to do and why it stopped — and this gate used to punish it, because
+# an accurate note about a removed promise necessarily quotes the promise.
+#
+# Observed: an agent removed a false "we will email you" promise, wrote a comment
+# explaining the removal, and the gate flagged its own explanation. It reworded
+# the comment into vagueness to appease the check rather than saying the check
+# was wrong. Both available moves — delete the history, or blur it — make the
+# codebase worse, and the gate was steering toward them.
+#
+# So: a match is suppressed when the same line, or one immediately around it,
+# carries evidence that the thing is DONE. Deliberately narrow. A bare "fixed"
+# would let anyone wave a TODO through, so this wants a citation (a ruling or
+# request id), an explicit past-tense removal, or a dated record.
+RESOLUTION_MARKER = re.compile(
+    r"\b(?:R-\d+|BR-\d+|C-\d+|S-\d+|X-\d+)\b"          # cites a recorded ruling
+    r"|\b(?:removed|deleted|dropped|replaced|corrected|resolved)\b"
+    r"\s+(?:on|in|by|per|—|-)"                            # ...attributed, not asserted
+    r"|\b(?:used to|previously|formerly|no longer|until \d{4}-\d{2}-\d{2})\b"
+    r"|\b\d{4}-\d{2}-\d{2}\b",                            # a date: this is a record
+    re.IGNORECASE,
+)
+
 DEFERRAL_MARKER = re.compile(
     r"\b(?:later|until|once|eventually|when (?:we|the|it|this)|temporar\w+|pending|"
     r"before (?:ship|launch|prod|release)|in v\d|next (?:pass|wave|release|sprint)|"
@@ -97,12 +121,23 @@ def run(ctx: Context) -> Iterator[Finding]:
         if not include_tests and ctx.is_test(path):
             continue
         rel = ctx.rel(path)
-        for lineno, line in ctx.lines(path):
+        lines = [ln for _, ln in ctx.lines(path)]
+        for idx, line in enumerate(lines):
+            lineno = idx + 1
             if _is_comment(line):
                 target = _comment_part(line)
                 hit = next((lbl for rx, lbl in tier_a if rx.search(target)), None)
                 if hit is None and DEFERRAL_MARKER.search(target):
                     hit = next((lbl for rx, lbl in tier_b if rx.search(target)), None)
+                # A record of something already done is not a deferral. Look at
+                # the neighbours too: an explanation usually runs several lines,
+                # and the citation that resolves it often sits on a different
+                # one from the phrase that matched.
+                if hit and any(
+                    RESOLUTION_MARKER.search(lines[i])
+                    for i in range(max(0, idx - 3), min(len(lines), idx + 4))
+                ):
+                    hit = None
                 if hit:
                     yield Finding(
                         gate=NAME,
