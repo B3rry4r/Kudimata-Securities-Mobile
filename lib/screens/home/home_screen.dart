@@ -815,8 +815,9 @@ class _VerifyBanner extends StatefulWidget {
 }
 
 class _VerifyBannerState extends State<_VerifyBanner> {
-  late final Future<(int, int)?> _progress =
-      kycProgressSummary(AppScope.read(context).apiClient);
+  late final Future<(int, int)?> _progress = kycProgressSummary(
+      AppScope.read(context).apiClient,
+      chnSkipped: AppScope.read(context).kycForm.chnSkippedThisSession);
 
   @override
   Widget build(BuildContext context) {

@@ -299,20 +299,28 @@ Map<String, dynamic> _kycMeResponse(MockKyc kyc) {
         'totalSteps': 5,
       };
     case MockKyc.rejected:
+      // R-50 (DECISIONS.md, 2026-08-31): maxAttempts is 5, not 3, and every
+      // failed/rejected outcome now offers a retry while attempts remain —
+      // see outcome_not_approved.dart's _buildFailure.
       return {
         'status': 'rejected',
         'submittedAt': '2026-03-01T09:00:00.000Z',
         'flagReason': 'Document unclear',
         'flagDetail': "The uploaded ID photo was too blurry to verify against your BVN record.",
         'attemptCount': 1,
-        'maxAttempts': 3,
+        'maxAttempts': 5,
       };
     case MockKyc.flagged:
+      // attemptCount/maxAttempts now present here too (R-50 removed the
+      // old rule that 'flagged' never offered a retry at all) — 2 of 5
+      // used, so a retry is still available.
       return {
         'status': 'flagged',
         'submittedAt': '2026-03-01T09:00:00.000Z',
         'flagReason': 'Manual review required',
         'flagDetail': 'Your submission needs a closer look from our compliance team.',
+        'attemptCount': 2,
+        'maxAttempts': 5,
       };
     case MockKyc.expired:
       return {
@@ -471,7 +479,7 @@ Map<String, dynamic> _kycDocument({
 /// every pre-existing call site is unaffected — kyc_chn_single_action_test.
 /// dart's [MockApiAdapter.kycChn] override is the only caller that passes
 /// `null`, for the "no CHN yet" single-button scenario.
-Map<String, dynamic> _kycDraft({String? chn = '1234567890'}) => {
+Map<String, dynamic> _kycDraft({String? chn = '1234567890', List<Map<String, dynamic>>? documents}) => {
       'id': 'KYC1',
       'userId': 'U1',
       'bvn': '22143459901',
@@ -480,11 +488,12 @@ Map<String, dynamic> _kycDraft({String? chn = '1234567890'}) => {
       'pepSelfDeclared': false,
       'tier': 'Tier 2',
       'documentType': 'drivers_licence',
-      'documents': [
-        _kycDocument(kind: 'drivers_licence', name: "Driver's licence", uploadedAt: '2026-03-14T09:30:00.000Z'),
-        _kycDocument(kind: 'liveness_selfie', name: 'Face liveness check', uploadedAt: '2026-03-14T09:35:00.000Z'),
-        _kycDocument(kind: 'proof_of_address', name: 'IBEDC bill', uploadedAt: '2026-02-20T00:00:00.000Z'),
-      ],
+      'documents': documents ??
+          [
+            _kycDocument(kind: 'drivers_licence', name: "Driver's licence", uploadedAt: '2026-03-14T09:30:00.000Z'),
+            _kycDocument(kind: 'liveness_selfie', name: 'Face liveness check', uploadedAt: '2026-03-14T09:35:00.000Z'),
+            _kycDocument(kind: 'proof_of_address', name: 'IBEDC bill', uploadedAt: '2026-02-20T00:00:00.000Z'),
+          ],
       'name': 'Adebayo Okonkwo',
       'dob': '1994-06-12',
       'address': '14 Adeola Odeku Street, Victoria Island',
@@ -643,6 +652,8 @@ class MockApiAdapter implements HttpClientAdapter {
     this.notifications = MockNotifications.populated,
     this.priceAlerts = MockPriceAlerts.populated,
     this.kycChn = '1234567890',
+    this.kycDocuments,
+    this.kycMeOverride,
   });
 
   final MockKyc kyc;
@@ -653,6 +664,21 @@ class MockApiAdapter implements HttpClientAdapter {
   // CHN recorded yet (chn_screen.dart's "No" state), everything else
   // untouched. Threaded straight to _kycDraft(chn: kycChn) below.
   final String? kycChn;
+  // null reproduces this file's ORIGINAL fully-populated document list
+  // (drivers_licence/liveness_selfie/proof_of_address already present) —
+  // see _kycDraft's own default. kyc_chn_single_action_test.dart's "no CHN,
+  // no documents yet" case (a genuinely fresh draft, matching an investor
+  // who has only just reached chn_screen.dart) is the one caller that
+  // passes `const []` — every pre-existing call site is unaffected.
+  final List<Map<String, dynamic>>? kycDocuments;
+  // Merged (shallow) over `_kycMeResponse(kyc)`'s own fields for GET
+  // /kyc-submissions/me — R-50 (DECISIONS.md, 2026-08-31): lets a caller
+  // exercise a shape MockKyc's fixed enum doesn't have a case for, e.g. a
+  // `failureReasons` array (BR-10, BACKEND_GAPS.md — not shipped by the
+  // real backend yet) or a custom attemptCount, without adding a new
+  // MockKyc value per scenario. Null (the default) leaves every existing
+  // call site byte-for-byte unaffected.
+  final Map<String, dynamic>? kycMeOverride;
   final MockNotifications notifications;
   final MockPriceAlerts priceAlerts;
 
@@ -834,14 +860,17 @@ class MockApiAdapter implements HttpClientAdapter {
         'completedAt': '2025-11-02T00:00:00.000Z',
       };
     }
-    if (path == '/kyc-submissions/me') return _kycMeResponse(kyc);
+    if (path == '/kyc-submissions/me') {
+      final base = _kycMeResponse(kyc);
+      return kycMeOverride == null ? base : {...base, ...kycMeOverride!};
+    }
     // GET (resume)/POST (draftStep1)/PATCH (updateDraftFields) all resolve
     // by path only — see this file's header — so one fixture answers all
     // three for '/kyc-submissions/draft'. Realistic enough for
     // review_submit_screen.dart (2026-08-24) to render every summary row
     // with real-looking data, and for chn_screen.dart/declarations_screen.dart's
     // resume-prefill fetch.
-    if (path == '/kyc-submissions/draft') return _kycDraft(chn: kycChn);
+    if (path == '/kyc-submissions/draft') return _kycDraft(chn: kycChn, documents: kycDocuments);
     if (path.startsWith('/legal-documents/content/') ||
         path.startsWith('/public/legal-documents/content/')) {
       return _legalDocument(path.split('/').last);

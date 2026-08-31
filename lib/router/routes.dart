@@ -80,11 +80,12 @@ class Routes {
   // md's R-8a (2026-08-27) put risk disclosure in its own scroll-gated
   // screen ahead of the legal documents; the product owner reversed that on
   // 2026-08-29 ("risk disclosure should be part of the legal docs screen
-  // not a standalone before them"). Risk disclosure is now one row in
-  // termsOfService's document list (terms_and_privacy_screen.dart), opened
-  // in-app with the same scroll-to-bottom gate it always had
-  // (risk_disclaimer_screen.dart's RiskDisclosureScrollScreen) before its
-  // checkbox unlocks — see that file's header for the full trace.
+  // not a standalone before them"), then again on 2026-08-31 ("the risk
+  // disclosure should be a PDF too not a screen"). Risk disclosure is now
+  // one row in termsOfService's document list
+  // (terms_and_privacy_screen.dart), opened the exact same way as the other
+  // three documents — the phone's native viewer over a real presigned file
+  // — see legal_acceptance_screen.dart's header for the full trace.
   static const String suitabilityResult = '/suitability/result';
 
   // ── Tab roots (StatefulShellRoute / indexedStack) ────────────────────────

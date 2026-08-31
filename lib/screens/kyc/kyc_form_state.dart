@@ -101,6 +101,28 @@ class KycFormState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Bug fix (2026-08-31, "CHN does not still work on skip"): set the
+  /// instant chn_screen.dart's investor picks "No, or I'm not sure" and
+  /// taps the skip control. Session-local, in-memory only — same pattern
+  /// as [lockedStepRoutes]/[selfieCapturedAt] above, for the same reason:
+  /// the backend has no "CHN was skipped" field of its own (chn_screen.dart's
+  /// own header — a skip leaves `chn` permanently null, indistinguishable
+  /// from never having reached the step). kyc_checklist_screen.dart's
+  /// `_loadChecklistSteps` used to infer "past CHN" only from a primary-ID
+  /// document existing on the draft — real evidence, but evidence that
+  /// cannot exist yet at the exact moment a skip is happening, since
+  /// id_upload.dart is the NEXT screen. That made `nextKycStepRoute` re-read
+  /// "CHN not done" immediately after the skip it was supposed to act on,
+  /// routing the investor straight back to the screen they just left —
+  /// indistinguishable from Skip doing nothing. This flag closes that one
+  /// tick of the gap; [reset] below clears it same as the rest.
+  bool chnSkippedThisSession = false;
+
+  void markChnSkipped() {
+    chnSkippedThisSession = true;
+    notifyListeners();
+  }
+
   /// The PEP declaration's free-text detail (screen 20 "Declarations · PEP")
   /// — see review_submit_screen.dart's own doc comment: `pepSelfDeclared`
   /// itself IS persisted (KycRepository.updateDraftFields), but who/what
@@ -145,6 +167,7 @@ class KycFormState extends ChangeNotifier {
     // A fresh attempt has nothing locked either — see [lockedStepRoutes]'s
     // own doc comment.
     lockedStepRoutes = const {};
+    chnSkippedThisSession = false;
     notifyListeners();
   }
 }

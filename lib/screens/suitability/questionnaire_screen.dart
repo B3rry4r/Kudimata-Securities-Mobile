@@ -207,82 +207,125 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 // footer's own bottom inset, not the content column's
                 // (which has none).
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
-                child: Column(
-                  children: [
-                    Text(q.prompt, style: KType.title()),
-                    if (q.glossaryTerm != null) ...[
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => showGlossaryExplainSheet(
-                          context,
-                          q.glossaryTerm!,
-                          allowAiFollowUp: false,
-                        ),
-                        child: Text(
-                          'What does this mean?',
-                          style: KType.data(color: KColor.indicator)
-                              .copyWith(decoration: TextDecoration.underline),
-                        ),
-                      ),
-                    ],
-                    // Canvas: the title/options-list/ExplainTrigger column
-                    // uses a uniform gap:18px between all three children —
-                    // was 16 then 14, matching neither.
-                    const SizedBox(height: 18),
-                    for (int i = 0; i < q.options.length; i++) ...[
-                      if (i != 0) const SizedBox(height: 10),
-                      _OptionRow(
-                        label: q.options[i],
-                        selected: _answers[_index] == i,
-                        onTap: () => setState(() => _answers[_index] = i),
-                      ),
-                    ],
-                    // 2026-08-24: a KExplainTrigger reading "What is this
-                    // question for?" used to sit here on EVERY question,
-                    // opening a hardcoded "Why we ask this" sheet. Removed
-                    // on direct instruction ("What is this question for is
-                    // not needed"). It also wore the AI-comprehension
-                    // styling (sparkle + dashed underline) despite calling
-                    // no AI at all, which is the same mislabelling that was
-                    // just taken off the legal documents. Only question 3
-                    // genuinely needed explaining, and it now carries a
-                    // hand-written glossary link under its title instead.
-                    const Spacer(),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        SizedBox(
-                          // 100 (the original "editorial mono" figure) is 1.4px
-                          // too narrow for "Back" in Nunito Sans semibold — the
-                          // "Soft Landing" redesign's font swap renders very
-                          // slightly wider at the same nominal size. Found live
-                          // via route_walk_test.dart's overflow check.
-                          width: 112,
-                          child: KButton(
-                            label: 'Back',
-                            variant: KButtonVariant.secondary,
-                            fullWidth: true,
-                            onPressed: _submitting ? null : _back,
+                // LayoutBuilder + minHeight + IntrinsicHeight, not a bare
+                // SingleChildScrollView: this column ends in a Spacer() that
+                // pins the footer to the bottom, and a Spacer inside an
+                // unbounded scroll view throws. This shape keeps both — the
+                // Spacer still pushes the footer down when the content is
+                // short, and the whole thing scrolls when it is not.
+                //
+                // It could not overflow before because the copy was fixed;
+                // the intro below made it 41px too tall on question one, and
+                // the longest option set was already close.
+                child: LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: [
+                            // Question one only, above the prompt — not a screen of
+                            // its own. Reported 2026-08-31: an investor arrives at a
+                            // question with no idea why they are being asked, and
+                            // "what is this question for" was already reported once
+                            // on 2026-08-24 about a single question.
+                            //
+                            // Says what the answers are FOR, not that a regulator
+                            // demands them. "SEC requires it" tells the investor
+                            // nothing they can use and reads as the app passing
+                            // blame — and R-2 forbids the profiling framing that
+                            // would otherwise be the honest reason, since these
+                            // answers produce no score or classification.
+                            if (_index == 0) ...[
+                              Text('A few questions first', style: KType.title()),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Four short questions about your experience, what '
+                                'you want your money to do, and how long you can '
+                                'leave it invested. They take about a minute, and '
+                                'you need to answer them before you can start.',
+                                style: KType.body(color: KColor.ink2),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                              Text(q.prompt, style: KType.title()),
+                              if (q.glossaryTerm != null) ...[
+                                const SizedBox(height: 8),
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () => showGlossaryExplainSheet(
+                                    context,
+                                    q.glossaryTerm!,
+                                    allowAiFollowUp: false,
+                                  ),
+                                  child: Text(
+                                    'What does this mean?',
+                                    style: KType.data(color: KColor.indicator)
+                                        .copyWith(decoration: TextDecoration.underline),
+                                  ),
+                                ),
+                              ],
+                              // Canvas: the title/options-list/ExplainTrigger column
+                              // uses a uniform gap:18px between all three children —
+                              // was 16 then 14, matching neither.
+                              const SizedBox(height: 18),
+                              for (int i = 0; i < q.options.length; i++) ...[
+                                if (i != 0) const SizedBox(height: 10),
+                                _OptionRow(
+                                  label: q.options[i],
+                                  selected: _answers[_index] == i,
+                                  onTap: () => setState(() => _answers[_index] = i),
+                                ),
+                              ],
+                              // 2026-08-24: a KExplainTrigger reading "What is this
+                              // question for?" used to sit here on EVERY question,
+                              // opening a hardcoded "Why we ask this" sheet. Removed
+                              // on direct instruction ("What is this question for is
+                              // not needed"). It also wore the AI-comprehension
+                              // styling (sparkle + dashed underline) despite calling
+                              // no AI at all, which is the same mislabelling that was
+                              // just taken off the legal documents. Only question 3
+                              // genuinely needed explaining, and it now carries a
+                              // hand-written glossary link under its title instead.
+                              const Spacer(),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    // 100 (the original "editorial mono" figure) is 1.4px
+                                    // too narrow for "Back" in Nunito Sans semibold — the
+                                    // "Soft Landing" redesign's font swap renders very
+                                    // slightly wider at the same nominal size. Found live
+                                    // via route_walk_test.dart's overflow check.
+                                    width: 112,
+                                    child: KButton(
+                                      label: 'Back',
+                                      variant: KButtonVariant.secondary,
+                                      fullWidth: true,
+                                      onPressed: _submitting ? null : _back,
+                                    ),
+                                  ),
+                                  // Canvas footer row: gap:12px between the two buttons.
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: KButton(
+                                      label: 'Next question',
+                                      loading: _submitting,
+                                      // A mandatory regulatory intake must reflect an
+                                      // answer the investor actually chose — disabled
+                                      // until this question has one (see _answers'
+                                      // doc comment: -1 = unanswered, no more
+                                      // pre-selected defaults).
+                                      onPressed: _submitting || _answers[_index] == -1 ? null : _next,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        // Canvas footer row: gap:12px between the two buttons.
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: KButton(
-                            label: 'Next question',
-                            loading: _submitting,
-                            // A mandatory regulatory intake must reflect an
-                            // answer the investor actually chose — disabled
-                            // until this question has one (see _answers'
-                            // doc comment: -1 = unanswered, no more
-                            // pre-selected defaults).
-                            onPressed: _submitting || _answers[_index] == -1 ? null : _next,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ],
                 ),
               ),
             ),

@@ -66,6 +66,7 @@ class KycSubmissionStatus {
     this.currentStep,
     this.totalSteps,
     this.verificationSignals,
+    this.failureReasons,
     this.resolvedName,
     this.resolvedDob,
     this.resolvedPhone,
@@ -106,6 +107,16 @@ class KycSubmissionStatus {
   /// reject/flag. See outcome_not_approved.dart's _failedChecks for how
   /// this becomes plain-language copy.
   final KycVerificationSignals? verificationSignals;
+
+  /// R-50 (DECISIONS.md, 2026-08-31) / BR-10 (BACKEND_GAPS.md): the
+  /// structured per-reason breakdown outcome_not_approved.dart is built
+  /// against — see [KycFailureReason]'s own doc comment for the full
+  /// trace. Null until the backend ships `failureReasons` on this
+  /// response (true of every submission today); an empty list is a real,
+  /// meaningful "the backend sent the structured field but named nothing",
+  /// distinct from "hasn't shipped yet" — so this stays nullable rather
+  /// than defaulting to `const []`.
+  final List<KycFailureReason>? failureReasons;
 
   /// The BVN/NIN registry's OWN resolved name/date-of-birth/phone from the
   /// most recent lookup (BR-4, MOBILE-REQUESTS.md 2026-08-27 — added for
@@ -166,6 +177,57 @@ class KycVerificationSignals {
   final bool? name;
   final bool? dob;
   final bool? liveness;
+}
+
+/// One reason a KYC submission failed/was flagged, in words an investor can
+/// act on — R-50 (DECISIONS.md, 2026-08-31): "the app tells them what
+/// actually went wrong... the investor has to know what to do differently,
+/// or the retry is a lottery." Requested from the backend as BR-10
+/// (BACKEND_GAPS.md); this app is built against this shape ahead of the
+/// backend shipping it (`GET /kyc-submissions/me|draft`'s `failureReasons`,
+/// a JSON array of `{code, message, retryable}`) per the owner's own
+/// instruction — "build the screen against what you would want to
+/// receive... the wire should fit the UI, not the reverse."
+///
+/// Replaces two things this app already had, neither of which is investor
+/// -facing copy on its own: [KycVerificationSignals]'s bare per-check
+/// booleans (a signal, not a sentence), and `flagDetail`/`flagReason` free
+/// text, which has shipped as a raw internal debug dump — literally
+/// `"nin=true, bvn=true, liveness=false, name=true"` — rather than
+/// something written for an investor to read. outcome_not_approved.dart's
+/// `_resolveFailureReasons` still derives reasons from those two today
+/// (this field is null until BR-10 lands), but never DISPLAYS anything
+/// that looks like that debug shape — see `_looksLikeDebugDump`.
+class KycFailureReason {
+  const KycFailureReason({required this.code, required this.message, required this.retryable});
+
+  factory KycFailureReason.fromJson(Map<String, dynamic> json) => KycFailureReason(
+        code: json['code'] as String? ?? '',
+        message: json['message'] as String? ?? '',
+        retryable: json['retryable'] as bool? ?? true,
+      );
+
+  /// A stable machine code ('liveness_mismatch', 'proof_of_address_unreadable',
+  /// 'name_mismatch', 'compliance_hold', ...) — not rendered, for the app's
+  /// own logic/telemetry only. The investor reads [message].
+  final String code;
+
+  /// Investor-facing, plain language, specific enough to act on — "your
+  /// selfie didn't match your ID photo", not "verification failed". For a
+  /// sanctions/AML hold this is the backend's own deliberately generic
+  /// copy (R-50's one exception, below) and is rendered verbatim — this
+  /// app must never try to make it more specific.
+  final String message;
+
+  /// False for a decision the investor cannot change by trying again — a
+  /// sanctions/AML match most of all (R-50: naming that specific reason is
+  /// "tipping off", an offence under Nigerian AML law, so the backend
+  /// deliberately sends a generic [message] with `retryable: false`
+  /// instead of a real reason). When ANY reason on a submission is
+  /// non-retryable, outcome_not_approved.dart treats the WHOLE case as a
+  /// decision, never mixes a "try again" control into the same screen as
+  /// a reason nobody can act on.
+  final bool retryable;
 }
 
 /// One registered KycDocument (registry.json) — see
@@ -331,6 +393,13 @@ class KycRepository {
       verificationSignals: json['verificationSignals'] != null
           ? KycVerificationSignals.fromJson(json['verificationSignals'] as Map<String, dynamic>)
           : null,
+      // BR-10 — see KycFailureReason's own doc comment. Not shipped by the
+      // backend yet, so this is null for every real response today; kept
+      // nullable (not `?? const []`) so a future empty array is still
+      // distinguishable from "the backend hasn't sent this field at all".
+      failureReasons: (json['failureReasons'] as List<dynamic>?)
+          ?.map((r) => KycFailureReason.fromJson(r as Map<String, dynamic>))
+          .toList(),
       resolvedName: json['resolvedName'] as String?,
       resolvedDob: json['resolvedDob'] as String?,
       resolvedPhone: json['resolvedPhone'] as String?,

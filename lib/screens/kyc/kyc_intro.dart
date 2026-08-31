@@ -65,7 +65,8 @@ import 'kyc_checklist_screen.dart' show doneKycStepRoutes;
 /// after this.
 Future<void> _lockAlreadyDoneSteps(AppState app) async {
   try {
-    final done = await doneKycStepRoutes(app.apiClient);
+    final done =
+        await doneKycStepRoutes(app.apiClient, chnSkipped: app.kycForm.chnSkippedThisSession);
     app.kycForm.lockSteps(done);
   } catch (_) {
     // Best-effort, same reasoning as the resume fetch around this call —

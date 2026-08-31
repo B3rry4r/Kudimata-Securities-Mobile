@@ -87,8 +87,9 @@ class _ChnScreenState extends State<ChnScreen> {
     }).catchError((_) {});
   }
 
-  Future<void> _goToNextStep() async {
-    final next = await nextKycStepRoute(AppScope.read(context).apiClient);
+  Future<void> _goToNextStep({bool chnSkipped = false}) async {
+    final next =
+        await nextKycStepRoute(AppScope.read(context).apiClient, chnSkipped: chnSkipped);
     if (!mounted) return;
     context.go(next);
   }
@@ -100,7 +101,17 @@ class _ChnScreenState extends State<ChnScreen> {
     }
     if (!_hasChn) {
       // Nothing to persist — chn already defaults to null on the draft.
-      await _goToNextStep();
+      // Bug fix (2026-08-31, "CHN does not still work on skip"): mark the
+      // skip on KycFormState BEFORE resolving the next route. Without this,
+      // nextKycStepRoute's own derivation had no evidence yet that CHN was
+      // just left behind (draft.chn stays null by design, and the OTHER
+      // evidence it falls back to — a primary ID document — cannot exist
+      // this early either, since id_upload.dart is the very next screen),
+      // so it resolved back to THIS screen — Skip looked like it did
+      // nothing. See kyc_checklist_screen.dart's `chnDone` for the full
+      // trace.
+      AppScope.read(context).kycForm.markChnSkipped();
+      await _goToNextStep(chnSkipped: true);
       return;
     }
     setState(() {

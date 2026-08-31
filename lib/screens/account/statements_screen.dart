@@ -73,6 +73,12 @@ class StatementsScreen extends StatefulWidget {
 
 class _StatementsScreenState extends State<StatementsScreen> {
   late final _repo = StatementsRepository(AppScope.read(context).apiClient);
+
+  /// R-49 — statements exist for a verified account. Read from AppState
+  /// rather than re-fetching: it is already hydrated on every entry to
+  /// this screen, and a second network call to answer a question the app
+  /// already knows would make the empty state slower than the full one.
+  bool get _kycApproved => AppScope.read(context).kycApproved;
   late Future<(List<Statement> statements, List<Statement> notes)> _future = _load();
 
   bool _generating = false;
@@ -147,14 +153,33 @@ class _StatementsScreenState extends State<StatementsScreen> {
                       'Contract notes appear as soon as an order fills.',
                   illustrationName: 'empty-statements',
                 ),
-                const SizedBox(height: 12),
-                KButton(
-                  label: _generating ? 'Preparing…' : "Prepare this month's statement",
-                  variant: KButtonVariant.secondary,
-                  fullWidth: true,
-                  loading: _generating,
-                  onPressed: _generating ? null : _generateThisMonth,
-                ),
+                // R-49 (2026-08-31): the screen stays reachable before KYC —
+                // every screen does — but preparing a statement does not. It
+                // is not a passive read: it renders a PDF, uploads it and
+                // emails it, for an account that has verified nothing and
+                // traded nothing. Reported by the owner, who generated one on
+                // an unverified account.
+                //
+                // The control is ABSENT rather than disabled. A dead button
+                // fails this repo's own gate and, more to the point, tells the
+                // investor nothing about why. The line below does.
+                if (!_kycApproved) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Statements start once your account is verified.',
+                    textAlign: TextAlign.center,
+                    style: KType.body(color: KColor.ink3),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 12),
+                  KButton(
+                    label: _generating ? 'Preparing…' : "Prepare this month's statement",
+                    variant: KButtonVariant.secondary,
+                    fullWidth: true,
+                    loading: _generating,
+                    onPressed: _generating ? null : _generateThisMonth,
+                  ),
+                ],
               ],
             ),
           );
@@ -162,7 +187,11 @@ class _StatementsScreenState extends State<StatementsScreen> {
 
         return KAccountSubScaffold(
           title: 'Statements',
-          footer: KButton(
+          // R-49: no request control until the account is verified. Same
+          // reasoning as the prepare button above.
+          footer: !_kycApproved
+              ? null
+              : KButton(
             label: 'Request a statement',
             iconLeft: 'plus',
             onPressed: () async {

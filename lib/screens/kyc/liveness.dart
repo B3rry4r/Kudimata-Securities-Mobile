@@ -30,6 +30,7 @@ import 'package:camera/camera.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
@@ -107,6 +108,28 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
         enableAudio: false,
       );
       await controller.initialize();
+      // Bug 1 fix (2026-08-31, "the image is bad, not the integration" —
+      // livenessMatchPct scoring ~0.02-0.06, effectively no face found, on a
+      // provider that scores a genuine selfie 96.4): traced the whole
+      // upload path — _capture() reads real bytes straight off
+      // controller.takePicture() (never a widget/ClipOval screenshot), and
+      // those bytes go to Dio's raw-Uint8List fast path (dio_mixin.dart's
+      // `_transformData` — "Handle binary data which does not need to be
+      // transformed") untouched: no crop, no resize, no re-encode. What's
+      // NOT pinned down anywhere in that chain is orientation: without a
+      // lock, the plugin infers upright from the device's live sensor
+      // reading at the instant of capture, and this screen (like the rest
+      // of the app) never constrains device orientation — a selfie is
+      // routinely shot with the phone tilted off-vertical at exactly that
+      // instant. A capture that lands rotated 90°, with the face pixels
+      // themselves rotated (not just an EXIF tag some downstream decoder
+      // may or may not honour), is indistinguishable from "no face" to a
+      // detector that isn't rotation-invariant — which matches a
+      // near-zero score far better than "low quality." Locking capture
+      // orientation removes that ambiguity outright: every photo this
+      // screen takes is now encoded upright in portrait regardless of how
+      // the phone was actually held.
+      await controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
       if (!mounted) {
         await controller.dispose();
         return;

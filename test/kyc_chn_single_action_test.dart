@@ -44,9 +44,14 @@ void _mockPlatformChannels() {
   );
 }
 
-Future<GoRouter> _mount(WidgetTester tester, {String? kycChn}) async {
+Future<GoRouter> _mount(
+  WidgetTester tester, {
+  String? kycChn,
+  List<Map<String, dynamic>>? kycDocuments,
+}) async {
   _mockPlatformChannels();
-  final apiClient = ApiClient()..dio.httpClientAdapter = MockApiAdapter(kycChn: kycChn);
+  final apiClient = ApiClient()
+    ..dio.httpClientAdapter = MockApiAdapter(kycChn: kycChn, kycDocuments: kycDocuments);
   final state = AppState()
     ..signedIn = true
     ..passcodeSet = true
@@ -137,6 +142,42 @@ void main() {
 
     final loc = router.routerDelegate.currentConfiguration.uri.toString();
     expect(loc, isNot(Routes.kycChn));
+    expect(find.byType(ChnScreen), findsNothing);
+  });
+
+  testWidgets(
+      'skip on a genuinely FRESH draft (no chn, no documents yet) advances to Documents, not back to itself',
+      (tester) async {
+    // Regression test (2026-08-31) — reported broken TWICE ("CHN does not
+    // still work on skip") and the test above did not catch it: its
+    // MockApiAdapter draft always carried a drivers_licence/liveness_selfie/
+    // proof_of_address document set regardless of `kycChn`, so
+    // hasIdDocument was already true and masked the real bug.
+    // kyc_checklist_screen.dart's `chnDone` used to be
+    // `draft?.chn != null || hasIdDocument` — for a REAL fresh investor at
+    // this screen (chn null AND no documents yet, since id_upload.dart is
+    // the NEXT screen), both are false the instant Skip is tapped, so
+    // nextKycStepRoute resolved right back to Routes.kycChn — the tap looked
+    // like it did nothing. Fixed via KycFormState.chnSkippedThisSession
+    // (chn_screen.dart marks it before resolving the next route; chnDone
+    // now also checks it). This drives the real screen with a draft that
+    // has NO documents at all, so nothing but that fix can get this test to
+    // land on kycId.
+    final router = await _mount(tester, kycChn: null, kycDocuments: const []);
+
+    await tester.tap(find.text('Skip — create one for me'));
+    await pumpUntil(
+      tester,
+      () => router.routerDelegate.currentConfiguration.uri.toString() != Routes.kycChn,
+      'navigation away from /kyc/chn after Skip, on a genuinely fresh draft',
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final loc = router.routerDelegate.currentConfiguration.uri.toString();
+    expect(loc, Routes.kycId,
+        reason: 'a fresh draft has no CHN and no documents; the next real '
+            'step is Documents (kycId), never back to kycChn itself');
     expect(find.byType(ChnScreen), findsNothing);
   });
 }

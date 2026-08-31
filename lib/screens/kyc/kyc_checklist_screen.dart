@@ -122,7 +122,7 @@ const _primaryIdDocumentKinds = {'nin', 'passport', 'drivers_licence', 'voters_c
 /// and [nextKycStepRoute] below. See this file's header for the per-step
 /// rules, the 2026-08-29 fix away from the backend's `currentStep` counter,
 /// and the out-of-order-completion note.
-Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client) async {
+Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client, {bool chnSkipped = false}) async {
   final kycRepo = KycRepository(client);
   final bankRepo = BankAccountsRepository(client);
   final draft = await kycRepo.getDraft();
@@ -145,7 +145,20 @@ Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client) async {
   // back to it after every later step — the same species of resume-loop
   // bug this file's 2026-08-29 fix above exists to prevent, just for CHN's
   // own indirect signal instead of the backend's currentStep counter.
-  final chnDone = draft?.chn != null || hasIdDocument;
+  //
+  // 2026-08-31 fix ("CHN does not still work on skip"): hasIdDocument is
+  // real evidence, but it cannot exist yet at the one moment this actually
+  // mattered — chn_screen.dart's own _goToNextStep(), called synchronously
+  // off the skip tap, before id_upload.dart (the next screen) has ever run.
+  // At that exact moment draft.chn is still null (by design — see
+  // chn_screen.dart's header) AND hasIdDocument is still false, so chnDone
+  // came back false and nextKycStepRoute sent the investor right back to
+  // the CHN screen they had just left — Skip doing nothing. chnSkipped is
+  // KycFormState.chnSkippedThisSession, set by chn_screen.dart the instant
+  // it decides to skip; it plugs exactly that one-tick gap for the rest of
+  // this session, the same session-local pattern lockedStepRoutes already
+  // uses for a fact the backend has no field of its own for.
+  final chnDone = draft?.chn != null || hasIdDocument || chnSkipped;
   final documentsDone = hasIdDocument && hasUtilityBill;
   final selfieDone = hasLivenessSelfie;
   final bankDone = accounts.any((a) => a.primary);
@@ -206,8 +219,12 @@ Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client) async {
 /// itself; when every step is done this returns the last step's route
 /// (next_of_kin.dart), same as the hub's own "Continue" button falls back
 /// to today.
-Future<String> nextKycStepRoute(ApiClient client) async {
-  final steps = await _loadChecklistSteps(client);
+/// `chnSkipped` — [KycFormState.chnSkippedThisSession] — lets a caller that
+/// just acted on a CHN skip (chn_screen.dart) tell this derivation about it
+/// a beat before the draft's own downstream evidence can; see
+/// `_loadChecklistSteps`'s 2026-08-31 note on `chnDone`.
+Future<String> nextKycStepRoute(ApiClient client, {bool chnSkipped = false}) async {
+  final steps = await _loadChecklistSteps(client, chnSkipped: chnSkipped);
   final nextIndex = steps.indexWhere((s) => !s.done);
   return nextIndex == -1 ? steps.last.route : steps[nextIndex].route;
 }
@@ -219,8 +236,8 @@ Future<String> nextKycStepRoute(ApiClient client) async {
 /// `lockedStepRoutes` — "old work from a previous session" the investor
 /// should not be able to walk back into, as opposed to a step finished
 /// during the CURRENT session, which stays reachable by back.
-Future<Set<String>> doneKycStepRoutes(ApiClient client) async {
-  final steps = await _loadChecklistSteps(client);
+Future<Set<String>> doneKycStepRoutes(ApiClient client, {bool chnSkipped = false}) async {
+  final steps = await _loadChecklistSteps(client, chnSkipped: chnSkipped);
   return steps.where((s) => s.done).map((s) => s.route).toSet();
 }
 
@@ -240,9 +257,9 @@ Future<Set<String>> doneKycStepRoutes(ApiClient client) async {
 /// trust), so the two surfaces can never disagree about what "done" means.
 /// Returns null on any fetch failure so the caller can omit the figure
 /// entirely rather than show a stale or guessed one (R-34).
-Future<(int done, int total)?> kycProgressSummary(ApiClient client) async {
+Future<(int done, int total)?> kycProgressSummary(ApiClient client, {bool chnSkipped = false}) async {
   try {
-    final steps = await _loadChecklistSteps(client);
+    final steps = await _loadChecklistSteps(client, chnSkipped: chnSkipped);
     return (steps.where((s) => s.done).length, steps.length);
   } catch (_) {
     return null;
@@ -251,9 +268,12 @@ Future<(int done, int total)?> kycProgressSummary(ApiClient client) async {
 
 class _KycChecklistScreenState extends State<KycChecklistScreen> {
   late final ApiClient _client = AppScope.read(context).apiClient;
-  late Future<List<_ChecklistStep>> _future = _loadChecklistSteps(_client);
+  bool get _chnSkipped => AppScope.read(context).kycForm.chnSkippedThisSession;
+  late Future<List<_ChecklistStep>> _future =
+      _loadChecklistSteps(_client, chnSkipped: _chnSkipped);
 
-  void _retry() => setState(() => _future = _loadChecklistSteps(_client));
+  void _retry() =>
+      setState(() => _future = _loadChecklistSteps(_client, chnSkipped: _chnSkipped));
 
   @override
   Widget build(BuildContext context) {

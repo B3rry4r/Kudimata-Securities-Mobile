@@ -189,7 +189,7 @@ void main() {
       // exemption — and broke exactly this: termsOfService's own accept
       // handler (legal_acceptance_screen.dart's `_accept()`, when `kinds`
       // includes 'risk_disclosure' — every run of the onboarding legal
-      // screen since 2026-08-29, see risk_disclaimer_screen.dart's header)
+      // screen since 2026-08-29, see legal_acceptance_screen.dart's header)
       // flips AppState.signedIn to true BEFORE passcode/biometric ever run,
       // so a signedIn=true + passcodeSet=false moment is legitimately
       // reached mid-flow, not just as a bug. This state is built directly

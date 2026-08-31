@@ -3,23 +3,23 @@
 // checkbox (2026-08-20 consolidation; see legal_acceptance_screen.dart for
 // the general shape).
 //
-// RISK DISCLOSURE'S PLACE HERE HAS MOVED TWICE. R-8 (DECISIONS.md,
+// RISK DISCLOSURE'S PLACE HERE HAS MOVED THREE TIMES. R-8 (DECISIONS.md,
 // 2026-08-26) originally put it in this bundle. R-8a (2026-08-27) pulled it
-// OUT into its own scroll-gated screen (risk_disclaimer_screen.dart), run
-// right after suitability, ahead of this one — settling a three-way
-// conflict with R-1a and the firm's SEC-intake instruction. **2026-08-29,
-// product owner, verbatim: "risk disclosure should be part of the legal
-// docs screen not a standalone before them they should be in on user opens
-// and then can click on the checkmark leave the scroll thing please."**
-// DECISIONS.md records this as a note superseding R-8a rather than editing
-// it away. So risk disclosure is back in this bundle's `kinds` — one row
-// among the other three, opened then checked off the same way — but it is
-// NOT handed off to the phone's native viewer the way the other three are:
-// legal_acceptance_screen.dart special-cases its row to push
-// risk_disclaimer_screen.dart's `RiskDisclosureScrollScreen`, an in-app
-// scroll-to-bottom-gated view of the real content, exactly preserving "the
-// scroll thing" the owner asked to keep. See that file's header for the
-// full trace and legal_acceptance_screen.dart's for the mechanics.
+// OUT into its own scroll-gated screen, run right after suitability, ahead
+// of this one — settling a three-way conflict with R-1a and the firm's
+// SEC-intake instruction. 2026-08-29, product owner, verbatim: "risk
+// disclosure should be part of the legal docs screen not a standalone
+// before them they should be in on user opens and then can click on the
+// checkmark leave the scroll thing please." — folded back into this
+// bundle's `kinds`, one row among the other three, but still special-cased
+// to open an in-app hand-authored view of its text rather than a real file.
+// 2026-08-31, product owner, verbatim: "the risk disclosure should be a PDF
+// too not a screen" — the special case is gone; every document in this
+// bundle, risk disclosure included, is now opened the exact same way (the
+// phone's native viewer, over a real presigned file). See
+// legal_acceptance_screen.dart's own header for the full trace and what
+// that trades for the literal scroll gate, and DECISIONS.md's R-8a
+// 2026-08-31 addendum for the ruling.
 //
 // The onboarding order is now: signup → OTP → suitability → result → THIS
 // SCREEN → passcode → biometric → (optional avatar picker, R-44) → Home.

@@ -868,3 +868,78 @@ solved with an invented "replace" flow. Needs a backend
 `DELETE /kyc-documents/:id` (or an upsert-by-kind on register) before a
 mid-draft correction can exist at all, plus a decision on whether the
 checklist hub should expose it once it does.
+
+---
+
+## BR-10 — `GET /kyc-submissions/me|draft` needs a structured `failureReasons`
+## field; today's `flagDetail` has shipped a raw debug string
+
+*Requested 2026-08-31, per R-50 (DECISIONS.md) — "the app tells them what
+actually went wrong... build the screen against what you would want to
+receive... the wire should fit the UI, not the reverse."*
+
+**What's live in production today, confirmed against a real flagged
+submission:** `flagDetail` has carried the literal internal signal dump —
+`"nin=true, bvn=true, liveness=false, name=true"` — not investor-facing copy.
+`verificationSignals` gives per-check booleans (`nin`/`bvn`/`name`/`dob`/
+`liveness`), which is real data but not a sentence, and carries no way to
+mark a decision (a sanctions/AML match) as one the investor cannot retry.
+
+**What outcome_not_approved.dart (mobile) is now built against, ahead of the
+backend shipping it** — `KycFailureReason` (`lib/data/repositories/
+kyc_repository.dart`), parsed from a new `failureReasons` array on both
+`GET /kyc-submissions/me` and `GET /kyc-submissions/draft`:
+
+```json
+"failureReasons": [
+  {
+    "code": "liveness_mismatch",
+    "message": "Your selfie didn't match your ID photo. Retake it in good light, facing the camera directly.",
+    "retryable": true
+  },
+  {
+    "code": "proof_of_address_unreadable",
+    "message": "We couldn't read your utility bill. Upload a clearer, more recent copy.",
+    "retryable": true
+  }
+]
+```
+
+- `code` — a stable machine string (`liveness_mismatch`,
+  `proof_of_address_unreadable`, `name_mismatch`, `nin_unverified`,
+  `bvn_unverified`, `compliance_hold`, ...). Not rendered; for the app's own
+  logic/telemetry, and for staff tooling to filter/report on later.
+- `message` — investor-facing, specific enough to act on differently next
+  attempt. Rendered verbatim, never reworded client-side.
+- `retryable` — `false` for a decision the investor cannot change by trying
+  again. **The sanctions/AML case is the reason this field exists as a
+  boolean rather than being inferred from `code`:** R-50 requires that case
+  to carry a deliberately generic `message` ("We couldn't approve your
+  application. Please contact support.") with no specific reason — naming
+  the real one is tipping-off, an offence under Nigerian AML law. The
+  mobile app renders whatever `message` this carries for a `retryable:
+  false` entry completely unmodified; it must never be enriched, and this
+  endpoint must never send a `code`/`message` pair for that case that is
+  more specific than the generic copy above.
+- **When any entry is `retryable: false`, the whole submission is a
+  decision, not a mix.** The mobile client does not attempt to reconcile a
+  non-retryable entry sitting alongside retryable ones on the same
+  submission — that shape should not be sent. One decision-in-progress
+  submission carries exactly one `failureReasons` entry, `retryable: false`.
+- Absent submission-wide gate: an empty `failureReasons` array is a real,
+  meaningful "structured, and nothing failed" (distinct from the array
+  being omitted entirely, which the mobile model treats as "not shipped
+  yet" and falls back to today's `verificationSignals`/`flagDetail`
+  derivation — see `outcome_not_approved.dart`'s `_resolveFailureReasons`).
+
+**Also requested by the same ruling:** `maxAttempts` rises from 3 to 5
+(`KycSubmission.maxAttempts`'s default/ceiling, wherever that 3 is set
+server-side) — the mobile app only ever reads this value, so no mobile
+change is needed once the backend's default changes.
+
+**Not requested:** any change to how `attemptCount` advances, or to which
+statuses (`rejected`/`flagged`) are eligible for a retry — R-50 makes every
+failed/rejected outcome retryable until attempts are spent, and the mobile
+side of that is already built (`outcome_not_approved.dart`'s `_buildFailure`
+now serves both statuses identically); this gap is about the REASON text
+only.

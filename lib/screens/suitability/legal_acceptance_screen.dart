@@ -30,18 +30,24 @@
 // acceptance signal than scroll-to-bottom-of-real-text and is intentionally
 // not overstated as equivalent.
 //
-// RISK DISCLOSURE IS THE ONE EXCEPTION TO THAT PATTERN (2026-08-29,
-// DECISIONS.md's R-8a superseded note): it was pulled out into its own
-// scroll-gated screen ahead of this one on 2026-08-27, then folded back
-// into this list on direct product instruction — "risk disclosure should
-// be part of the legal docs screen not a standalone before them... leave
-// the scroll thing please". So its row is 'opened' by the same open-then-
-// checkbox mechanic as the other three, but tapping it pushes
-// risk_disclaimer_screen.dart's `RiskDisclosureScrollScreen` (an in-app,
-// scroll-to-bottom-gated view of the real content) instead of handing off
-// to the phone's native viewer — see `_open` below. It is the one document
-// here for which "opened" still means "genuinely scrolled to the end",
-// exactly as strong an acceptance signal as it always was.
+// RISK DISCLOSURE WAS AN EXCEPTION TO THAT PATTERN FROM 2026-08-29 TO
+// 2026-08-31 (DECISIONS.md's R-8a superseded note, then its own 2026-08-31
+// addendum): it was pulled out into its own scroll-gated screen on
+// 2026-08-27, folded back into this list on 2026-08-29 ("...leave the
+// scroll thing please") but STILL special-cased to push an in-app,
+// hand-authored view of its `sections` text instead of the real file. Owner,
+// 2026-08-31, verbatim: "the risk disclosure should be a PDF too not a
+// screen" — `legal/risk-disclosure-v1.pdf` is a real, already-uploaded file
+// (registry.json's LegalDocument, same as the other three), so there is no
+// reason left for it to be the one document rendered from hand-authored
+// `sections` in a bespoke widget rather than opened as what it actually is.
+// It is now opened by the exact same `_open` path as the other three below
+// — download-url + the phone's native viewer — with no special case. See
+// DECISIONS.md's R-8a 2026-08-31 addendum for what that trades away (a
+// literal scroll-to-the-end signal, which no app can observe once the
+// document is handed to an external viewer) and what still gates
+// acceptance instead (the same "confirmed launch of a real, present file"
+// signal every other document here already relies on).
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -53,7 +59,6 @@ import 'package:kudimata_invest/data/repositories/legal_documents_repository.dar
 import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/screens/onboarding/onboarding_scaffold.dart' show KOnboardTopBar;
-import 'risk_disclaimer_screen.dart' show RiskDisclosureScrollScreen;
 
 /// Display titles per kind — canvas s05's document-list row labels.
 const Map<String, String> _kDocTitle = {
@@ -110,13 +115,12 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
   String? _error;
 
   /// Kinds the investor has tapped open at least once — the acceptance-
-  /// evidence gate under R-8 (see file header). A kind with no content
+  /// evidence gate under R-8 (see file header). A kind with no file
   /// attached yet can't be opened at all, so it's excluded from this
   /// requirement rather than permanently blocking acceptance of the other,
-  /// available documents. "No content" means `fileObjectKey.isEmpty` for
-  /// the three phone-viewer documents, but `sections.isEmpty` for
-  /// risk_disclosure — it has no file to speak of, it's rendered in-app
-  /// from `sections` (see [_unavailable]).
+  /// available documents — see [_unavailable]. Uniform across all four
+  /// documents since 2026-08-31 (DECISIONS.md R-8a's addendum) — risk
+  /// disclosure no longer carries its own rule.
   final Set<String> _opened = {};
   String? _openingKind;
 
@@ -126,31 +130,22 @@ class _LegalAcceptanceScreenState extends State<LegalAcceptanceScreen> {
     return Future.wait(widget.kinds.map(_legalRepo.getContent));
   }
 
-  /// True when [d] has no real content behind it yet — see [_opened]'s doc
-  /// comment for why risk_disclosure checks a different field than the
-  /// other three.
-  bool _unavailable(LegalDocument d) =>
-      d.kind == 'risk_disclosure' ? d.sections.isEmpty : d.fileObjectKey.isEmpty;
+  /// True when [d] has no real file behind it yet.
+  bool _unavailable(LegalDocument d) => d.fileObjectKey.isEmpty;
 
   bool _allOpened(List<LegalDocument> docs) => docs.every(
         (d) => _unavailable(d) || _opened.contains(d.kind),
       );
 
+  /// Opens [doc] in the phone's native viewer — the one mechanism every
+  /// document here uses since 2026-08-31 (risk disclosure included; see
+  /// file header). `_opened` is set once [launchUrl] itself reports
+  /// success, exactly the same evidence the other three documents have
+  /// always relied on — see this class's own R-8 doc comment on what that
+  /// signal is (and is not).
   Future<void> _open(LegalDocument doc) async {
     if (_unavailable(doc)) {
       _snack("${_kDocTitle[doc.kind] ?? doc.title} hasn't been uploaded yet.");
-      return;
-    }
-    // Risk disclosure: in-app scroll-gated viewer, not the phone's native
-    // file viewer — see file header. `_opened` is only set on a `true` pop,
-    // i.e. genuinely scrolled to the end, never on a bare back-out.
-    if (doc.kind == 'risk_disclosure') {
-      final result = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(builder: (_) => RiskDisclosureScrollScreen(document: doc)),
-      );
-      if (result == true && mounted) {
-        setState(() => _opened.add(doc.kind));
-      }
       return;
     }
     setState(() => _openingKind = doc.kind);

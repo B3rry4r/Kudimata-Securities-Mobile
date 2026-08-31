@@ -682,6 +682,43 @@ questionnaire, which is what R-1a was about — it is a safety net behind it.
 > reversal of the evidentiary standard — the old arrangement above is kept
 > verbatim for history; it is no longer what the app does.
 
+> **ADDENDUM 2026-08-31 — product owner, verbatim:** *"the risk disclosure
+> should be a PDF too not a screen."*
+>
+> `legal/risk-disclosure-v1.pdf` is a real, already-uploaded file — R-38
+> already converted all four legal documents to PDF and seeded them at
+> fixed keys, risk disclosure included (`legal-documents.seed-data.ts`), so
+> risk disclosure has been served by the SAME mechanism as the other three
+> since R-38 landed. The one thing that hadn't caught up was this one
+> screen: `legal_acceptance_screen.dart` kept special-casing the
+> `risk_disclosure` row to push an in-app view of its `sections` text
+> (`RiskDisclosureScrollScreen`, now deleted) instead of opening the real
+> file the way it opens the other three. That special case is gone. Every
+> document in the bundle, risk disclosure included, is now opened by the
+> exact same `_open` path: `GET /legal-documents/:id/download-url` then the
+> phone's native viewer, marked "opened" the instant that launch succeeds.
+>
+> **What this trades away, said plainly rather than left implicit:** "leave
+> the scroll thing please" (the note above) asked for evidence that the
+> investor was genuinely shown the text, measured by literal scroll
+> position. That is not obtainable for a document handed to an external,
+> OS-level viewer — no return channel reports what happened inside it, the
+> same limitation this file's own R-8 entry already states for the other
+> three documents ("the app can confirm a document was launched... but
+> cannot confirm the investor read it"). Risk disclosure now carries
+> exactly that same limitation and no more.
+>
+> **What IS still enforced, and is not weaker than what the other three
+> documents already rely on:** the shared checkbox
+> (`legal_acceptance_screen.dart`'s `_allOpened`) still will not unlock
+> until every document in the bundle — risk disclosure included — has been
+> tapped open and its launch has genuinely succeeded. A document that was
+> never tapped, or whose launch failed, still blocks acceptance. This is
+> the identical "confirmed launch of a real, present file" standard the
+> other three documents in this same list have used since R-8 — risk
+> disclosure is no longer a stronger-than-the-rest exception, it is exactly
+> as strong as the rest.
+
 ---
 
 ## Rulings 2026-08-27 (evening) — the simulation phase
@@ -1079,3 +1116,103 @@ led to the wrong answer, because how a screen is reached is exactly what decides
 whether it needs a way back. An artboard drawn for one navigation model does not
 transfer unchanged to another — the same trap as R-44's orphaned avatar screen,
 where a flow rewrite silently stranded a destination.
+
+### R-48 — A failed liveness selfie is retried, not rejected
+*Ruled by the product owner, 2026-08-31.*
+
+When the liveness selfie is the **only** failing signal — NIN, BVN and name all
+verified — the investor is told the photo did not pass and can **retake it
+immediately**, up to the 3 attempts `maxAttempts` already allows. Only after
+three failures does the case go to a human.
+
+**Why:** a liveness check fails for ordinary reasons — bad light, a moving hand,
+a camera that will not focus. The registry checks having passed means the
+identity is established; what failed is a photograph. Blocking a verified person
+out of a brokerage account over a bad selfie is not a defensible outcome, and it
+is what happened to the owner on 2026-08-31.
+
+**What this replaces.** The submission became `status = flagged` with
+`vendorDecision = rejected`, and:
+
+- the app said "manual review is under way" — while the dashboard's queue is
+  built from `status: pending`/`review` only, so `flagged` rows were
+  **structurally invisible** to every reviewer. Nobody was reviewing it, and
+  nobody could have been.
+- the 3-attempt budget was unreachable, because `attemptCount` only advances
+  inside the staff decision endpoint — and staff never saw the case.
+- no notification of any kind was sent, because `autoApproveSideEffects()` fires
+  only on an approved vendor decision.
+
+Every one of those is a defect and is being fixed separately. This ruling is
+about the remaining question they exposed: what a single failed signal *means*.
+
+**The general rule, stated so it is not re-derived per signal:** a failed check
+that a person can reasonably retry is a retry, not a rejection. A failed check
+they cannot influence — a sanctions match, a name that does not match the
+registry — is a decision. Liveness is the first kind. Do not extend this to the
+second without a new ruling.
+
+**Retry must be real, not implied.** An investor told they can try again must
+have a control that starts a new attempt and a count of what remains. The
+previous arrangement technically permitted three attempts and offered no way to
+spend one, which is worse than offering none.
+
+### R-49 — Statements are visible before KYC, but cannot be generated
+*Ruled by the product owner, 2026-08-31.*
+
+The statements screen stays **reachable** for an unverified investor, as every
+screen does. It shows an honest empty state — there is nothing to report yet —
+and the **generate** and **request a statement** controls are unavailable until
+`kycStatus === 'approved'`.
+
+This follows the owner's existing rule for the whole app: *"they're reachable...
+but interactions are gated, that's the design."* Statements were the one
+investor feature that escaped it, because a statement reads like a document
+rather than an action. It is not passive: it renders a PDF, uploads it to object
+storage, and emails it — for an account that has verified nothing and traded
+nothing.
+
+**Both halves, and the second is the one that counts.** The controls come off the
+screen AND the API refuses. Orders and transactions already gate server-side
+(`assertEligibleToTrade` / `assertEligibleToTransact`); statements checked only
+that the caller was a logged-in investor. A removed button is not a removed
+capability — the same finding as R-42, where phone and address edit affordances
+were taken out of the app while `PATCH /users/me` went on accepting both.
+
+**Not a security hole, but not nothing.** An unverified account cannot trade,
+fund or withdraw, so a statement it generates describes an empty account. The
+cost is a real PDF rendered, stored and emailed on demand by anyone with a login,
+and a document that says nothing being presented as a record.
+
+### R-50 — Every failed KYC can be retried, and the app says what went wrong
+*Ruled by the product owner, 2026-08-31. Supersedes and widens R-48.*
+
+**Five attempts.** `maxAttempts` becomes 5, not 3.
+
+**Every failed or rejected outcome offers a retry** — not only the liveness-only
+case R-48 carved out. Whatever failed, the investor can start again until the
+five attempts are spent. KYC is restartable: a fresh attempt collects the steps
+again rather than stranding them at the step that failed.
+
+**The app tells them what actually went wrong.** Not "verification failed" — the
+specific thing, in words they can act on: the selfie did not match, the utility
+bill was unreadable, the name on the document does not match the BVN. The
+investor has to know what to do differently, or the retry is a lottery.
+
+R-48's narrower rule — retry only when liveness alone failed — is replaced. Its
+reasoning still holds and is worth keeping in view: *a failed check a person can
+reasonably retry is a retry, not a rejection.* The owner has now applied that to
+every check rather than one.
+
+**One deliberate limit on "say what went wrong", and it is not a hedge.** Where
+a decision rests on a **sanctions or AML match**, the investor is told the
+application could not be approved and to contact support — not which list
+matched. Disclosing that is "tipping off", it is a real offence under Nigerian
+AML law, and it is the one case where being specific is not allowed. Every other
+failure is stated plainly. If a future reader finds this vague, that is why:
+it is the exception, not the pattern.
+
+**When the five are spent** the case goes to a human, with the full history of
+what failed each time. That is a case genuinely worth a person's attention,
+unlike the first failure — which under the previous arrangement was routed to a
+queue no reviewer could see (see R-48's record of that defect).

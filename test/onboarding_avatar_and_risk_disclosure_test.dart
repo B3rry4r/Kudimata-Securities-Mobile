@@ -1,12 +1,16 @@
-// Two real-tap flow-walk tests for the 2026-08-29 product-owner changes:
+// Two real-tap flow-walk tests:
 //
-//   1. Risk disclosure lives IN the legal-documents screen now, not as its
-//      own standalone step before it (DECISIONS.md's R-8a superseded
-//      note). Tapping its row must push the in-app scroll-gated viewer
-//      (risk_disclaimer_screen.dart's RiskDisclosureScrollScreen) — never
-//      hand off to the phone's native file viewer the other three
-//      documents use — and only count as "opened" once that viewer is
-//      genuinely scrolled to the end and dismissed.
+//   1. Risk disclosure lives IN the legal-documents screen (DECISIONS.md's
+//      R-8a superseded note, 2026-08-29), and since its 2026-08-31 addendum
+//      ("the risk disclosure should be a PDF too not a screen") it is
+//      opened the EXACT SAME WAY as the other three documents in that
+//      list — the phone's native viewer over a real presigned file, marked
+//      'opened' the instant that launch reports success — not a bespoke
+//      in-app scroll-gated view of hand-authored text. This drives the
+//      real screen and asserts on that: the tap reaches
+//      LegalDocumentsRepository.downloadUrl (a real network call, through
+//      the mock adapter) and a successful launchUrl, with no separate
+//      in-app viewer route or widget appearing at all.
 //   2. The avatar picker is back in ONBOARDING, reached from
 //      biometric_screen.dart's two exits, never from KYC (R-44).
 //
@@ -19,6 +23,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_client.dart';
@@ -32,6 +38,24 @@ import 'package:kudimata_invest/theme/app_theme.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 
 import 'fixtures/mock_api_adapter.dart';
+
+/// Swaps in for [UrlLauncherPlatform.instance] so legal_acceptance_screen.
+/// dart's real `launchUrl()` call resolves without a real platform channel
+/// behind it (none is registered in a plain widget test) — the standard
+/// url_launcher testing seam. Records every URL it was asked to open so a
+/// test can assert on it, and always reports success.
+class _FakeUrlLauncher extends UrlLauncherPlatform {
+  final List<String> launchedUrls = [];
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    launchedUrls.add(url);
+    return true;
+  }
+}
 
 void _mockPlatformChannels() {
   final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
@@ -109,9 +133,16 @@ Future<GoRouter> _mount(
 void main() {
   group('Risk disclosure is a row inside the legal documents screen', () {
     testWidgets(
-      'tapping it opens the in-app scroll-gated viewer, not the phone '
-      'file viewer, and only counts as opened once that viewer confirms it',
+      'tapping it opens the phone\'s native viewer over a real presigned '
+      'file — the SAME mechanism as the other three documents, not a '
+      'bespoke in-app screen — and counts as opened once that launch '
+      'succeeds',
       (tester) async {
+        final fakeLauncher = _FakeUrlLauncher();
+        final previousLauncher = UrlLauncherPlatform.instance;
+        UrlLauncherPlatform.instance = fakeLauncher;
+        addTearDown(() => UrlLauncherPlatform.instance = previousLauncher);
+
         await _mount(tester, Routes.termsOfService);
 
         await pumpUntil(
@@ -123,37 +154,27 @@ void main() {
         expect(find.text('Open every document above to continue.'), findsOneWidget);
 
         await tester.tap(find.text('Risk Disclosure'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
         await pumpUntil(
           tester,
-          () => find.text('Important regulatory & risk notice').evaluate().isNotEmpty,
-          'the in-app risk-disclosure viewer to open — never the phone file '
-          'viewer the other three documents use',
-        );
-
-        // Drag the scrollable to its end (the mock's single short section
-        // may already satisfy the "nothing to scroll to" branch on a full
-        // phone-sized viewport — either way, once _scrolledToBottom is
-        // true, "I've read this" is enabled).
-        await tester.drag(
-          find.text('Important regulatory & risk notice'),
-          const Offset(0, -2000),
+          () => fakeLauncher.launchedUrls.isNotEmpty,
+          'legal_acceptance_screen.dart to call launchUrl() for the '
+          "risk_disclosure row's real presigned file — never a separate "
+          'in-app viewer',
         );
         await tester.pump(const Duration(milliseconds: 200));
 
-        await tester.tap(find.text("I've read this"));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await pumpUntil(
-          tester,
-          () => find.text('Open every document above to continue.').evaluate().isNotEmpty,
-          'the pop back to the legal documents list',
-        );
+        // No bespoke risk-disclosure screen exists any more — the whole
+        // interaction is this list plus the OS-level launch above.
+        expect(find.text('Important regulatory & risk notice'), findsNothing,
+            reason: 'risk disclosure is opened externally now, not rendered '
+                'in-app from hand-authored sections text');
+        expect(find.text("I've read this"), findsNothing);
 
-        // Back on the list: risk_disclosure is now 'opened', but the other
-        // three (never tapped — they use the phone's native viewer, out of
-        // scope for this test) are not, so the shared gate still blocks.
+        // Back on (still on) the list: risk_disclosure is now 'opened', but
+        // the other three (never tapped) are not, so the shared gate still
+        // blocks — exactly the same evidence-per-row rule as before, just
+        // uniform across all four now instead of risk_disclosure being the
+        // one exception.
         expect(
           find.text('Open every document above to continue.'),
           findsOneWidget,

@@ -110,6 +110,15 @@ dev_dependencies:
   integration_test:
     sdk: flutter
 
+  # Pinned explicitly (2026-08-31, already resolved transitively via
+  # url_launcher) so test/onboarding_avatar_and_risk_disclosure_test.dart
+  # can swap UrlLauncherPlatform.instance for a fake — the standard way to
+  # test a launchUrl() call without a real platform channel/plugin behind
+  # it in a widget test. Needed once risk_disclosure started using the same
+  # phone-viewer launchUrl() path the other three legal documents already
+  # did (legal_acceptance_screen.dart, R-8a's 2026-08-31 addendum).
+  url_launcher_platform_interface: ^2.3.2
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
