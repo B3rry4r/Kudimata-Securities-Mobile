@@ -275,7 +275,7 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const KEyebrow('Bank'),
+            const KFieldLabel('Bank', required: true),
             const SizedBox(height: 10),
             GestureDetector(
               onTap: banks.isEmpty ? null : () => _pickBank(banks),
@@ -315,6 +315,7 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
                 setState(() {});
                 _maybeResolveName();
               },
+              required: true,
             ),
             // s18's resolved-name confirmation — a distinct gain-tinted
             // pill (check + the name in caps), not inline helper text under

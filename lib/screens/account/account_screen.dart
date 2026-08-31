@@ -29,6 +29,7 @@ import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/ai_repository.dart';
 import 'package:kudimata_invest/data/repositories/corporate_actions_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
+import 'package:kudimata_invest/k_links.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -130,7 +131,14 @@ List<(String title, String route, String? icon, String? sub)> _menuRows(int pend
     // disclosures → Data and privacy (its last drawn row); this used to sit
     // dead last, after two undrawn rows, which silently reordered the two
     // drawn rows relative to each other.
-    ('Terms and disclosures', Routes.acctLegal, 'doc', 'Terms, risk disclosure, client agreement'),
+    //
+    // R-51 (DECISIONS.md, 2026-08-31): opens KLinks.legal in the device
+    // browser now, not a pushed in-app screen — legal_screen.dart and
+    // Routes.acctLegal are both gone. The `route` slot below carries the
+    // URL instead of a route path; the row-tap handler below (`_menuRows`'
+    // one caller) checks for an `http` prefix to tell this one row apart
+    // from every other row's real in-app route.
+    ('Terms and disclosures', KLinks.legal, 'doc', 'Terms, risk disclosure, client agreement'),
     // s51: 'settings' · "Consents, export, deletion" — s51's own last row.
     // 2026-08-29 exactness pass: "Data & privacy" -> "Data and privacy" —
     // s51 spells it out, no ampersand; no ruling authorises the shorthand.
@@ -524,6 +532,14 @@ class _AccountBody extends StatelessWidget {
                     sub: rows[i].$4,
                     standalone: true,
                     onTap: () async {
+                      // R-51 (DECISIONS.md, 2026-08-31): "Terms and
+                      // disclosures" carries a real URL (KLinks.legal) in
+                      // this slot, not an in-app route — open it externally
+                      // instead of pushing a page that doesn't exist.
+                      if (rows[i].$2.startsWith('http')) {
+                        await openExternalLink(rows[i].$2);
+                        return;
+                      }
                       await context.push(rows[i].$2);
                       if (rows[i].$2 == Routes.acctPersonal) {
                         onReturnFromPersonalInfo();

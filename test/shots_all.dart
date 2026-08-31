@@ -22,9 +22,9 @@
 //   - test/shots_onboarding.dart: signed-out mount for pre-auth screens,
 //     since the default signed-in mount's _gateRedirect bounces
 //     splash/welcome/signup/otp/reset straight to /home.
-//   - test/shots_kyc.dart: per-screen (kycSubmitted, kycApproved,
-//     suitabilityComplete) tuples matching what a real investor actually
-//     has AT that point in the flow (router gating only checks signedIn,
+//   - test/shots_kyc.dart: per-screen (kycSubmitted, kycApproved) tuples
+//     matching what a real investor actually has AT that point in the flow
+//     (router gating only checks signedIn,
 //     so these flags don't gate navigation — they gate what the SCREEN
 //     ITSELF renders, e.g. approved.dart's status card).
 // A fresh mount per (route, theme) pair — rather than one shared mount
@@ -113,7 +113,6 @@ class _RouteSpec {
     this.signedIn = true,
     this.kycSubmitted = true,
     this.kycApproved = true,
-    this.suitabilityComplete = true,
     this.extra,
     String? rulingKey,
   }) : rulingKey = rulingKey ?? dartFile;
@@ -125,28 +124,27 @@ class _RouteSpec {
   final bool signedIn;
   final bool kycSubmitted;
   final bool kycApproved;
-  final bool suitabilityComplete;
   final Object? extra;
 }
 
-// Every GoRoute registered in lib/router/app_router.dart (76 total as of
-// the 2026-08-27 flow pass, which added kycChecklist/onboardingNextSteps/
-// setPriceAlert — 73 before; the errorBuilder's RouteNotFoundScreen is a
-// fallback, not a registered route, and is deliberately excluded). Grouped
-// to match the state each screen is actually reached with in the real
-// flow — see the file header.
+// Every GoRoute registered in lib/router/app_router.dart (75 total: 76 as
+// of the 2026-08-27 flow pass, which added kycChecklist/onboardingNextSteps/
+// setPriceAlert — 73 before — minus onboardingNextSteps itself, removed
+// 2026-08-31 along with whats_next_screen.dart per direct product-owner
+// instruction; see DECISIONS.md's superseding note under R-33. The
+// errorBuilder's RouteNotFoundScreen is a fallback, not a registered route,
+// and is deliberately excluded). Grouped to match the state each screen is
+// actually reached with in the real flow — see the file header.
 final List<_RouteSpec> _specs = [
   // ── Onboarding / pre-auth (signed out, matching shots_onboarding.dart) ──
   _RouteSpec('01_splash', Routes.splash, 'onboarding/splash_screen.dart', signedIn: false),
   _RouteSpec('02_welcome', Routes.welcome, 'onboarding/welcome_slider_screen.dart', signedIn: false),
   _RouteSpec('03_signup', Routes.signup, 'onboarding/sign_up_screen.dart', signedIn: false),
   _RouteSpec('04_otp', Routes.otp, 'onboarding/otp_screen.dart', signedIn: false),
-  _RouteSpec('05_legal_bundle_preview', Routes.legalBundlePreview,
-      'onboarding/legal_preview_screen.dart', signedIn: false),
-  _RouteSpec('06_legal_preview_kind', '/legal-preview/terms_of_service',
-      'onboarding/legal_preview_screen.dart', signedIn: false),
-  _RouteSpec('07_terms', Routes.termsOfService, 'suitability/terms_and_privacy_screen.dart',
-      signedIn: false),
+  // 05_legal_bundle_preview/06_legal_preview_kind/07_terms no longer exist
+  // (R-51, DECISIONS.md, 2026-08-31) — legal_preview_screen.dart,
+  // terms_and_privacy_screen.dart and their routes are all gone. otp above
+  // hands straight to passcode creation below.
   _RouteSpec('08_passcode_create', Routes.createPasscode, 'onboarding/create_passcode_screen.dart',
       signedIn: false),
   _RouteSpec('09_passcode_confirm', Routes.confirmPasscode, 'onboarding/confirm_passcode_screen.dart',
@@ -162,10 +160,10 @@ final List<_RouteSpec> _specs = [
   _RouteSpec('12_onboarding_personal', Routes.onboardingPersonal,
       'onboarding/personal_details_screen.dart'),
   _RouteSpec('13_onboarding_avatar', Routes.onboardingAvatar, 'onboarding/avatar_screen.dart'),
-  // s07 "Your account is ready" (X-4, SHARED-CHANGES.md 2026-08-27) — sits
-  // between avatar selection and KYC start.
-  _RouteSpec('13b_onboarding_next_steps', Routes.onboardingNextSteps,
-      'onboarding/whats_next_screen.dart'),
+  // s07 "Your account is ready" (X-4, SHARED-CHANGES.md 2026-08-27) used to
+  // sit here, between avatar selection and KYC start — removed 2026-08-31
+  // (DECISIONS.md's superseding note under R-33): both of avatar_screen.
+  // dart's exits now go straight to Home.
   _RouteSpec('14_login', Routes.login, 'onboarding/log_in_screen.dart', signedIn: false),
   _RouteSpec('15_reset', Routes.reset, 'onboarding/reset_passcode_screen.dart', signedIn: false),
 
@@ -173,45 +171,40 @@ final List<_RouteSpec> _specs = [
   //    shots_kyc.dart's table — router gating only checks signedIn, so these
   //    flags drive what each screen itself shows, not navigation) ──────────
   _RouteSpec('16_kyc_intro', Routes.kycIntro, 'kyc/kyc_intro.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   // s11 checklist hub (S-8, SHARED-CHANGES.md 2026-08-27) — the flow's
   // spine, re-entered after every completed step; same in-progress flags
   // as kyc_intro above.
   _RouteSpec('16b_kyc_checklist', Routes.kycChecklist, 'kyc/kyc_checklist_screen.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('17_kyc_bvn', Routes.kycBvn, 'kyc/bvn_nin.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('18_kyc_chn', Routes.kycChn, 'kyc/chn_screen.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('19_kyc_id', Routes.kycId, 'kyc/id_upload.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('20_kyc_liveness', Routes.kycLiveness, 'kyc/liveness.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('21_kyc_checking', Routes.kycChecking, 'kyc/checking.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('22_kyc_utility_bill', Routes.kycUtilityBill, 'kyc/utility_bill.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('23_kyc_bank_dcs', Routes.kycBankDcs, 'kyc/bank_dcs_screen.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('24_kyc_declarations', Routes.kycDeclarations, 'kyc/declarations_screen.dart',
-      kycSubmitted: false, kycApproved: false, suitabilityComplete: false),
+      kycSubmitted: false, kycApproved: false),
   // D-1 (2026-08-27 removals pass, R-9): review_submit_screen.dart dropped
   // — Next of kin (above) is now the last collection step and submits
   // directly, so the '26_kyc_review' capture no longer exists.
   _RouteSpec('27_kyc_submitted', Routes.kycSubmitted, 'kyc/submitted.dart',
-      kycApproved: false, suitabilityComplete: false),
-  _RouteSpec('28_kyc_approved', Routes.kycApproved, 'kyc/approved.dart', suitabilityComplete: false),
-  _RouteSpec('29_kyc_outcome', Routes.kycOutcome, 'kyc/outcome_not_approved.dart',
-      suitabilityComplete: false),
-  _RouteSpec('30_questionnaire', Routes.questionnaire, 'suitability/questionnaire_screen.dart',
-      suitabilityComplete: false),
-  _RouteSpec('31_suitability_result', Routes.suitabilityResult,
-      'suitability/suitability_result_screen.dart', suitabilityComplete: false),
-  // 2026-08-29 (DECISIONS.md's R-8a superseded note): risk disclosure is no
-  // longer its own standalone screen/route between suitability result and
-  // the legal documents — it's one of the documents '07_terms' above
-  // already captures (terms_and_privacy_screen.dart's `kinds` now include
-  // 'risk_disclosure'). '32_risk_disclaimer' no longer exists.
+      kycApproved: false),
+  _RouteSpec('28_kyc_approved', Routes.kycApproved, 'kyc/approved.dart'),
+  _RouteSpec('29_kyc_outcome', Routes.kycOutcome, 'kyc/outcome_not_approved.dart'),
+  // '30_questionnaire'/'31_suitability_result'/'32_risk_disclaimer' no
+  // longer exist (R-51, DECISIONS.md, 2026-08-31): the suitability
+  // questionnaire, its result screen and the legal-documents/risk-disclosure
+  // chain they used to hand off to are all removed — see routes.dart's own
+  // header notes.
 
   // ── Pushed detail (fully onboarded investor) ────────────────────────────
   _RouteSpec('33_notifications', Routes.notifications, 'home/notifications_screen.dart'),
@@ -244,7 +237,10 @@ final List<_RouteSpec> _specs = [
   _RouteSpec('46_acct_security', Routes.acctSecurity, 'account/security_screen.dart'),
   _RouteSpec('47_acct_notifications', Routes.acctNotifications,
       'account/notifications_settings_screen.dart'),
-  _RouteSpec('48_acct_legal', Routes.acctLegal, 'account/legal_screen.dart'),
+  // '48_acct_legal' no longer exists (R-51, DECISIONS.md, 2026-08-31) —
+  // legal_screen.dart and Routes.acctLegal are gone; the "Terms and
+  // disclosures" row opens KLinks.legal externally instead of pushing an
+  // in-app screen (account_screen.dart's own note on that row).
   _RouteSpec('49_acct_statements', Routes.acctStatements, 'account/statements_screen.dart'),
   _RouteSpec('50_acct_freeze', Routes.acctFreeze, 'account/freeze_account_screen.dart'),
   _RouteSpec('51_security_alert', Routes.securityAlert, 'account/security_alert_screen.dart'),
@@ -376,8 +372,6 @@ Future<_Mounted> _mount(WidgetTester tester, _RouteSpec spec, ThemeMode mode) as
     ..passcodeSet = spec.signedIn
     ..kycSubmitted = spec.kycSubmitted
     ..kycApproved = spec.kycApproved
-    ..suitabilityComplete = spec.suitabilityComplete
-    ..riskDisclosureAccepted = spec.suitabilityComplete
     ..apiClient = apiClient
     // declarations_screen.dart/next_of_kin.dart/review_submit_screen.dart
     // read AppScope.read(context).kycForm at build time (2026-08-24) — main.

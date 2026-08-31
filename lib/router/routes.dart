@@ -20,21 +20,23 @@ class Routes {
   static const String welcome = '/welcome';
   static const String signup = '/signup';
   static const String otp = '/otp';
-  // ALL FOUR legal documents (terms of service, privacy policy, risk
-  // disclosure, client agreement) — ONE combined screen/tick (2026-08-20
-  // consolidation, final pass; risk disclosure folded back in 2026-08-29,
-  // see terms_and_privacy_screen.dart and DECISIONS.md's R-8a superseded
-  // note), reached right after the suitability result, before passcode/KYC.
-  // Path segment still says "suitability" for historical reasons.
-  static const String termsOfService = '/suitability/terms';
+  // termsOfService ('/suitability/terms', the combined 4-document legal
+  // acceptance screen) removed 2026-08-31 (R-51, DECISIONS.md — owner:
+  // "remove the assessment and also remove the risk disclosure too... we're
+  // simplifying"). OTP now hands straight to createPasscode below; the one
+  // consent record left is sign_up_screen.dart's own checkbox, which opens
+  // KLinks.legal (lib/k_links.dart) rather than an in-app screen.
   static const String createPasscode = '/passcode/create';
   static const String confirmPasscode = '/passcode/confirm';
   static const String biometric = '/biometric';
   static const String onboardingPersonal = '/onboarding/personal';
   static const String onboardingAvatar = '/onboarding/avatar';
-  // "Your account is ready" / three-step checklist (screen s07) — X-4,
-  // SHARED-CHANGES.md. Sits between avatar selection and KYC start.
-  static const String onboardingNextSteps = '/onboarding/next-steps';
+  // "Your account is ready" / three-step checklist (screen s07) used to
+  // live at '/onboarding/next-steps' — X-4, SHARED-CHANGES.md. Removed
+  // 2026-08-31 per direct product-owner instruction (see DECISIONS.md's
+  // superseding note under R-33): onboarding now ends at Home. The route
+  // constant is gone along with whats_next_screen.dart — nothing else
+  // pointed at it.
   static const String login = '/login';
   static const String reset = '/reset';
 
@@ -73,20 +75,10 @@ class Routes {
   static const String kycApproved = '/kyc/approved';
   static const String kycOutcome = '/kyc/outcome';
 
-  // ── Suitability ──────────────────────────────────────────────────────────
-  static const String questionnaire = '/suitability';
-  // suitabilityResult's own Continue action goes straight to termsOfService
-  // now. There is no standalone risk-disclaimer route any more — DECISIONS.
-  // md's R-8a (2026-08-27) put risk disclosure in its own scroll-gated
-  // screen ahead of the legal documents; the product owner reversed that on
-  // 2026-08-29 ("risk disclosure should be part of the legal docs screen
-  // not a standalone before them"), then again on 2026-08-31 ("the risk
-  // disclosure should be a PDF too not a screen"). Risk disclosure is now
-  // one row in termsOfService's document list
-  // (terms_and_privacy_screen.dart), opened the exact same way as the other
-  // three documents — the phone's native viewer over a real presigned file
-  // — see legal_acceptance_screen.dart's header for the full trace.
-  static const String suitabilityResult = '/suitability/result';
+  // Suitability questionnaire/result ('/suitability', '/suitability/result')
+  // removed 2026-08-31 (R-51, DECISIONS.md) along with the whole legal
+  // acceptance chain they used to hand off to — see this file's header note
+  // above termsOfService's own removal.
 
   // ── Tab roots (StatefulShellRoute / indexedStack) ────────────────────────
   // R-28: 4 tabs, Markets before Portfolio. "Assets" (the old nav label on
@@ -127,28 +119,18 @@ class Routes {
   static String setPriceAlert(String ticker) => '/asset/$ticker/alert';
   static String holdingDetail(String ticker) => '/portfolio/holding/$ticker';
   static String transactionDetail(String id) => '/wallet/txn/$id';
-  // Read-only legal-document preview, pushed from sign_up_screen.dart's
-  // "By continuing..." links — the one place a document needs to be
-  // readable before an account (and thus a token) exists. [kind] is one of
-  // 'terms_of_service' | 'privacy_policy' | 'risk_disclosure'. Unlike the
-  // other dynamic routes above, this one is reachable while signed out, so
-  // it also needs an entry in app_router.dart's `_gateRedirect`.
-  static String legalPreview(String kind) => '/legal-preview/$kind';
-
-  // 2026-08-24: sign-up's "By continuing..." line used to be 4 separate
-  // inline links, each pushing legalPreview directly — direct feedback
-  // wanted "the old structure... all in one screen where they scroll see
-  // all and click" instead. One scrollable row-list of all 4 documents;
-  // each row still opens the same legalPreview detail. Reachable
-  // pre-signup, same as legalPreview — also needs a _gateRedirect entry.
-  static const String legalBundlePreview = '/legal-preview';
+  // legalPreview/legalBundlePreview ('/legal-preview/:kind', '/legal-preview')
+  // removed 2026-08-31 (R-51, DECISIONS.md) along with
+  // legal_preview_screen.dart — nothing pushed either route any more even
+  // before this pass (sign_up_screen.dart's own "By continuing..." links
+  // were already gone per R-11), and the checkbox that replaces them opens
+  // KLinks.legal (lib/k_links.dart) directly rather than an in-app preview.
 
   // Path patterns for GoRoute registration (the router agent uses these).
   static const String assetDetailPath = '/asset/:ticker';
   static const String setPriceAlertPath = '/asset/:ticker/alert';
   static const String holdingDetailPath = '/portfolio/holding/:ticker';
   static const String transactionDetailPath = '/wallet/txn/:id';
-  static const String legalPreviewPath = '/legal-preview/:kind';
 
   // ── Account sub-pages (pushed) ───────────────────────────────────────────
   static const String acctPersonal = '/account/personal';
@@ -158,7 +140,10 @@ class Routes {
   static const String acctFaq = '/account/help/faq';
   static const String acctSecurity = '/account/security';
   static const String acctNotifications = '/account/notifications';
-  static const String acctLegal = '/account/legal';
+  // acctLegal ('/account/legal') removed 2026-08-31 (R-51, DECISIONS.md)
+  // along with legal_screen.dart — Account's "Terms and disclosures" row
+  // opens KLinks.legal (lib/k_links.dart) directly now, same URL sign-up's
+  // checkbox opens, instead of pushing an in-app screen.
   static const String acctStatements = '/account/statements';
 
   // ── "Soft Landing" redesign additions (2026-08-22) ───────────────────────
@@ -248,18 +233,11 @@ class Routes {
   // button there too, but WITH an on-screen message, never a silent close.
   static const Map<String, String> gatedBackTarget = {
     signup: welcome,
+    // questionnaire/suitabilityResult/termsOfService entries removed
+    // 2026-08-31 (R-51, DECISIONS.md) along with the routes themselves —
+    // otp now hands straight to createPasscode.
     otp: signup,
-    questionnaire: otp,
-    suitabilityResult: questionnaire,
-    // termsOfService is reached two ways: suitability_result_screen.dart's
-    // Continue action `context.go()`es here directly (no risk-disclaimer
-    // hop any more — 2026-08-29), which is what this entry is for; it's
-    // ALSO pushed as Home's tradingEligibilityGap fallback prompt
-    // (home_screen.dart) with `context.push()`, which leaves a real
-    // Navigator entry underneath, so app_router.dart's `_handleGatedBack`
-    // pops that instance normally before ever consulting this map.
-    termsOfService: suitabilityResult,
-    createPasscode: termsOfService,
+    createPasscode: otp,
     confirmPasscode: createPasscode,
     // R-44 (2026-08-29): avatar_screen.dart's own on-screen back arrow
     // `context.go(Routes.biometric)`s — biometric_screen.dart is the only

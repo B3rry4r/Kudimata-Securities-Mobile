@@ -243,6 +243,7 @@ class _RequestStatementScreenState extends State<RequestStatementScreen> {
                       text: _shortDate(from),
                       highlighted: _preset == _Preset.custom,
                       onTap: () => _pickFrom(earliest, today),
+                      required: true,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -252,6 +253,7 @@ class _RequestStatementScreenState extends State<RequestStatementScreen> {
                       text: _shortDate(to),
                       highlighted: _preset == _Preset.custom,
                       onTap: () => _pickTo(earliest, today),
+                      required: true,
                     ),
                   ),
                 ],
@@ -323,18 +325,38 @@ class _DateField extends StatelessWidget {
     required this.text,
     required this.highlighted,
     required this.onTap,
+    this.required = false,
   });
   final String label;
   final String text;
   final bool highlighted;
   final VoidCallback onTap;
 
+  /// See KInput.required — renders a red asterisk beside the label.
+  final bool required;
+
   @override
   Widget build(BuildContext context) {
+    final labelStyle =
+        KType.data(color: KColor.ink3, w: KWeight.semibold).copyWith(fontSize: 13);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: KType.data(color: KColor.ink3, w: KWeight.semibold).copyWith(fontSize: 13)),
+        required
+            ? Semantics(
+                label: '$label, required',
+                excludeSemantics: true,
+                child: RichText(
+                  text: TextSpan(
+                    text: label,
+                    style: labelStyle,
+                    children: [
+                      TextSpan(text: ' *', style: labelStyle.copyWith(color: KColor.loss)),
+                    ],
+                  ),
+                ),
+              )
+            : Text(label, style: labelStyle),
         const SizedBox(height: 6),
         GestureDetector(
           onTap: onTap,

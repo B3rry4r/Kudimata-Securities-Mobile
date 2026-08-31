@@ -107,6 +107,11 @@ The suitability questionnaire survives the redesign. It becomes the **last step
 of the KYC flow**, or another point that does not break the flow. It is restyled
 to the new design system.
 
+> **SUPERSEDED 2026-08-31 — see R-51.** The questionnaire does not survive
+> after all: removed entirely, with nothing replacing it, per direct
+> product-owner instruction ("we're simplifying"). Recorded there as a real
+> compliance gap pending SEC sign-off, not a silent removal.
+
 ### R-2 — No profiling framing anywhere
 *Ruled by the product owner, 2026-08-26.*
 
@@ -121,6 +126,11 @@ and displays a risk classification is a removal candidate — see the
 This is a product rule, not a screen decision: it applies to copy, headings,
 iconography and result screens equally, and it should end up as an executable
 check in `scripts/gates/` so it cannot be reintroduced by a later agent.
+
+> **Effectively moot as of R-51 (2026-08-31)** — there is no more
+> questionnaire or result screen for a profiling framing to appear on. The
+> rule itself (no risk-classification UI) still holds for whatever, if
+> anything, eventually replaces the questionnaire.
 
 ### R-3 — Undesigned screens: no default, rule each one
 *Ruled by the product owner, 2026-08-26.*
@@ -163,6 +173,10 @@ Still true from R-1/R-2: the quiz survives, restyled; it produces **no** risk
 classification, and `SuitabilityResult.profile` — still computed and persisted
 today with no reader — is removed from the backend.
 
+> **SUPERSEDED 2026-08-31 — see R-51.** This ruling's placement question is
+> moot: the questionnaire it was placing is removed entirely, along with the
+> legal-documents screen it used to run ahead of.
+
 ### R-8 — Legal documents: 4 only, opened in the phone's file viewer
 *Ruled by the product owner, 2026-08-26. Covers C-4 and D-8.*
 
@@ -175,6 +189,14 @@ so `document_summary_screen.dart`'s in-app parsed rendering is superseded.
 **Consequence to watch:** the app loses scroll-gated acceptance evidence. If
 compliance later needs proof an investor actually read a document, that proof no
 longer exists. Flagged, not blocked.
+
+> **SUPERSEDED 2026-08-31 — see R-51.** The 4-document legal-documents
+> screen this ruling shaped (`legal_screen.dart`,
+> `legal_acceptance_screen.dart`, `terms_and_privacy_screen.dart`) is removed
+> entirely, along with Account → Legal's in-app version of the same list. A
+> checkbox at sign-up links out to a backend-served `/legal` page instead
+> (not yet live); risk disclosure specifically is acknowledged again at the
+> point of first trade, linking `/legal/risk`.
 
 ### R-9 — KYC: keep CHN and next of kin, drop review-before-submit
 *Ruled by the product owner, 2026-08-26.*
@@ -392,6 +414,33 @@ without further rulings:
 
 Also confirmed: the new canvas contains **zero email templates** (the old one had
 10), so nothing there is out of scope to route elsewhere.
+
+> **SUPERSEDED (partially) 2026-08-31 — product owner, verbatim:** *"remove
+> the screen that says start... look around, please user should just go to
+> the home page after onboarding."*
+>
+> This removes `s07` ("What happens next" — "Your account is ready", the
+> three-step checklist with "Start step 1" / "Look around" exits) from the
+> app entirely. `s07` is still a valid artboard in the design canvas — this
+> is a product decision to not build/keep it in the app, not a correction to
+> what the canvas draws or to this ruling's reasoning for the other five
+> screens, which are unaffected.
+>
+> `whats_next_screen.dart` (`WhatsNextScreen`), its route
+> (`Routes.onboardingNextSteps`, `/onboarding/next-steps`), and its `GoRoute`
+> registration are deleted. `avatar_screen.dart`'s two exits (`_skip()` and
+> the end of `_continue()`), which used to `context.go` this screen, now go
+> straight to `Routes.home` — onboarding's real linear flow is now Face ID →
+> avatar → **Home**, with no intermediate "here's what's next" stop. Nothing
+> else pointed at the removed route (confirmed by tracing every
+> `context.go`/`context.push` call, not just the route table — R-44 is the
+> standing reminder of why that distinction matters here).
+>
+> Home already carries its own KYC/first-trade prompt (`home_screen.dart`'s
+> not-verified card — "Complete your KYC" / readiness checklist), so a fresh
+> investor landing there still has a clear next action; the three-step
+> checklist this screen drew is not re-created elsewhere, since Home's own
+> prompt already covers the same job.
 
 ### R-34 — A designed figure with no data source is omitted and filed, never invented
 *Precedent set on the `s24` pilot, 2026-08-26.*
@@ -718,6 +767,19 @@ questionnaire, which is what R-1a was about — it is a safety net behind it.
 > other three documents in this same list have used since R-8 — risk
 > disclosure is no longer a stronger-than-the-rest exception, it is exactly
 > as strong as the rest.
+
+> **SUPERSEDED 2026-08-31 — see R-51.** The legal-documents bundle this
+> ruling placed risk disclosure inside of is removed entirely — there is no
+> more "one of four documents" row for it to be. Risk-disclosure
+> acknowledgement moves to the trade-confirmation checkbox
+> (`trade_flows.dart`, at the point of first trade) instead, linking the
+> same real PDF via a new backend-served `/legal/risk` page (not yet live).
+> **This is not a retreat from the acceptance-evidence standard this whole
+> ruling defended** — it is arguably a stronger placement (a regulator
+> expects risk acknowledgement near the trade it concerns, not a screen
+> shown once at onboarding) — but the mechanism is the same weaker-than-
+> scroll "confirmed launch of a real file" signal this ruling's own 2026-08-31
+> addendum already accepted for every document in the old bundle.
 
 ---
 
@@ -1216,3 +1278,195 @@ it is the exception, not the pattern.
 what failed each time. That is a case genuinely worth a person's attention,
 unlike the first failure — which under the previous arrangement was routed to a
 queue no reviewer could see (see R-48's record of that defect).
+
+---
+
+### R-51 — Onboarding simplified: no legal screen, no risk-disclosure step, no suitability assessment; consent moves to two linked checkboxes
+*Ruled by the product owner, 2026-08-31. Supersedes R-8a, R-1a, R-2, and R-8
+(the four-document legal-documents screen and its whole acceptance chain).*
+
+Direct instruction, verbatim:
+
+> "the terms and agreement the whole legal screen, remove it entirely... just
+> add a [checkbox] on a reasonable section to click on By clicking this you
+> agree to... the way it is done normally... add it to the last screen that
+> creates the account, and please remove the assessment and also remove the
+> risk disclosure too, remove the legal break down, and legal on account
+> screen should also open a link... you can just use the domain of the
+> backend with a /legal route... we're simplifying"
+
+Then, once this pass was under way, a second, narrower correction on the risk
+checkbox specifically — the owner had not meant to drop that acknowledgement,
+only to relocate and reshape it (see "What actually happened to risk
+disclosure" below).
+
+**What's removed, permanently, with no replacement:**
+
+- `questionnaire_screen.dart` + `suitability_result_screen.dart` and their
+  routes (`Routes.questionnaire`, `Routes.suitabilityResult`) — the 4-question
+  Client Suitability Assessment R-1/R-1a kept alive through three redesign
+  passes.
+- `terms_and_privacy_screen.dart` + `legal_acceptance_screen.dart` (the shared
+  scaffold R-8/R-8a built) and `Routes.termsOfService` — the combined
+  4-document legal-acceptance screen.
+- `legal_screen.dart` (Account → Legal's in-app 4-document list) and
+  `Routes.acctLegal`.
+- `legal_preview_screen.dart` (`LegalPreviewScreen` + `LegalBundlePreviewScreen`,
+  the pre-signup document preview) and its routes — already unreferenced from
+  anywhere before this pass (sign_up_screen.dart's "By continuing..." links
+  were removed under R-11 with nothing put in their place), so this is a
+  dead-code removal as much as a design one.
+- `AppState.suitabilityComplete` and the questionnaire-gate half of
+  `tradingEligibilityGap` — nothing produces a real value for this flag any
+  more, so the flag is gone rather than left to strand every new investor
+  (exactly the R-44 failure mode: a gate nothing can satisfy).
+- `AppState.pendingSignupEmail` — existed only to carry the onboarding email
+  across the now-deleted questionnaire→result→legal hops; otp_screen.dart
+  hands the email to `Routes.createPasscode` directly again, as it did before
+  R-1a introduced those hops.
+- `SuitabilityRepository`/`SuitabilityResult`/`SuitabilityAnswer` and
+  `ComplianceRepository` (mobile client only — `POST /suitability-result`,
+  `GET /suitability-result/me`, `POST /compliance-acknowledgements`, `GET
+  /compliance-acknowledgements/me`) — every mobile caller of these was one of
+  the deleted screens. **The backend endpoints themselves are untouched** —
+  out of scope for this pass, and a staff dashboard or reporting surface may
+  still read `SuitabilityResult` server-side. Removing the client call is not
+  removing the resource.
+
+**`legal_reference_screens.dart` is explicitly KEPT, not removed** — checked,
+not assumed. Two of its four screens (`AccountClosureTermsScreen`,
+`DataNoticeScreen`) are pushed directly from `close_account_screen.dart` and
+`data_privacy_screen.dart` respectively, real in-context explainers unrelated
+to the legal-documents list this ruling removes. Deleting the file would have
+turned two live screens into dead ends. (`PartnerDisclosuresScreen` has no
+pusher anywhere and was already orphaned before this pass — not this ruling's
+doing, not fixed by it either; a separate finding.)
+
+**What replaces it — one consent record, genuinely gating:**
+
+`sign_up_screen.dart`'s password step (the one that actually calls
+`AuthRepository.signUp`) now carries an unticked checkbox: *"I agree to the
+**Terms and Disclosures**"*. **Terms and Disclosures** is a tappable link
+opening `KLinks.legal` (`https://alpha.kudimatasecurities.com/legal`) in the
+device browser. `_createAccount()` refuses to run until it's ticked — the
+same `_showErrors`-on-attempt pattern this screen's own password validation
+already uses, not a separately disabled button.
+
+Account → "Terms and disclosures" now opens the same `KLinks.legal` URL
+externally instead of pushing `AccountScreen`'s old in-app list.
+
+**Neither URL is live yet.** By the owner's own instruction: put the correct
+URLs in `k_links.dart` now, in advance of the site shipping — no fallback, no
+reachability check, no gating the UI on whether they respond. **No backend
+work was done in this pass** — an earlier version of this ruling's own
+instructions asked for a `GET /legal` page on
+`Kudimata-Securities-Backend`; the product owner corrected that mid-pass
+("this was my error, not a change of mind... do not touch
+Kudimata-Securities-Backend at all") before any backend edit was made. The
+`/legal` route is a future piece of work, not part of this ruling's scope.
+
+**What actually happened to risk disclosure — read this before assuming it
+was dropped.** The first draft of this ruling removed the risk-disclosure
+acknowledgement outright, on the reading that "remove the risk disclosure
+too" meant the acknowledgement itself. The owner's follow-up correction: the
+existing real, live compliance checkbox at the point of first trade
+(`trade_flows.dart`, order-confirmation step, previously labelled "I
+understand the risks", gating `Place order` via `_agreed`) is where this
+belongs — **at the point of first trade, which is where a regulator would
+expect it**, not buried in onboarding days or weeks before an investor
+places a single order. That checkbox is retitled to the same read-the-
+document pattern as sign-up's: *"I have read the **Risk Disclosure**"*,
+**Risk Disclosure** opening `KLinks.legalRisk`
+(`https://alpha.kudimatasecurities.com/legal/risk`). It still gates
+`Place order` exactly as before — nothing about the gate itself weakened,
+only the label and the fact that it now links the real document instead of
+asserting understanding with no way to check it.
+
+**The two linked checkboxes are one shared widget, not two copies.**
+`KLinkedCheckbox` (`lib/widgets/forms.dart`) takes a prefix, a link label and
+a URL; both sign-up and trade-confirmation construct it with different text
+and different `KLinks` targets. This repo gates against exactly the
+alternative (a fork per screen).
+
+**The compliance paragraph, written plainly, and corrected from this
+ruling's first draft:**
+
+The suitability questionnaire and the risk-disclosure acceptance are
+compliance artefacts, not only UX — a broker's suitability question is how it
+evidences it asked what a client is investing for before letting them trade;
+the risk-disclosure acceptance is the record they were shown the risks
+before trading. **Risk disclosure is not being weakened by this ruling** —
+the acknowledgement moves to the point of first trade, arguably a more
+defensible place for a regulator to find it than a screen shown once, days
+before an account is even funded, and it is now a read-the-document
+acknowledgement (a tappable link to the real PDF) rather than a bare "I
+understand" assertion with nothing behind it to actually read. **The
+suitability questionnaire is the one artefact genuinely removed, with
+nothing replacing it.** A tick on a checkbox — at sign-up or at trade time —
+cannot stand in for answers about investment experience, objective, horizon
+and risk tolerance that are simply never collected any more. The owner is
+pre-licence and simplifying deliberately; this is recorded here, on the
+record, precisely so it is a decision nobody has to rediscover before SEC
+sign-off rather than something nobody remembers removing.
+
+### R-52 — The risk-disclosure checkbox is once per investor, not once per order
+*Refines R-51's "point of first trade" placement, 2026-08-31.*
+
+R-51 moved the risk-disclosure acknowledgement (trade_flows.dart's
+order-confirmation `KLinkedCheckbox`, "I have read the **Risk Disclosure**")
+out of onboarding and onto `_BuyReviewSheet`, calling that "the point of
+first trade." Taken literally, the shipped code showed it on every single
+order — the owner's actual intent, confirmed directly: a one-time
+acknowledgement, asked once and never again, not a per-order confirmation.
+
+**Where it's recorded, and why there instead of on tick.** A new
+`RiskDisclosureStore` (`lib/data/api/risk_disclosure_store.dart`, same
+`flutter_secure_storage` wrapper shape as `PasscodeStore`/`ThemeModeStore`)
+persists the acceptance. `_BuyReviewSheetState._confirm` writes it
+immediately after `OrderPlacementRepository.placeOrder` **returns
+successfully** — not when the checkbox is ticked, not when `Place order` is
+tapped, not when the passcode is entered. Ticking the box only proves an
+investor read the document; it does not prove they went on to actually
+trade. An investor who ticks it and then the order is rejected server-side,
+or who cancels or is dismissed from the passcode prompt, or who backs out of
+the sheet entirely, has not placed an order — the acknowledgement was never
+consumed by a real trade, so the next attempt must show the checkbox again.
+Recording on tick would have let an investor "accept" the disclosure
+without ever having placed an order at all, which defeats the entire point
+R-51 already established: this is a compliance record of what was shown
+immediately before a real trade, not a UX nicety.
+
+**Scope: per investor, not per device.** `RiskDisclosureStore` follows
+`PasscodeStore`'s existing scoping (its own header explains why:
+`ThemeModeStore`-style device-global storage is right for "light/dark",
+wrong for a compliance acknowledgement that belongs to one person) rather
+than inventing a third pattern: a single owner-tagged slot, keyed to
+`PasscodeStore.owner` (the same "who is this device's current investor"
+identity `log_in_screen.dart` already relies on via `belongsTo`), read
+before `_BuyReviewSheet` is even shown. A second investor signing into the
+same device — which already forces a fresh create/confirm passcode flow,
+per `PasscodeStore`'s own header — reads as unaccepted regardless of what
+the first investor did, so a shared or resold handset cannot leak one
+investor's acceptance into another's session. `AppState.forceSignOut` (a
+genuine security-relevant sign-out — session invalid, or a
+just-reset password) wipes the record alongside the passcode hash, same
+reasoning as that existing wipe: once a security-relevant sign-out decides
+this device's local shortcuts aren't trustworthy, that applies to this
+record too. A plain voluntary "Sign out" leaves it in place, same as it
+leaves the passcode in place — the owner-scoped read makes that safe
+either way. A missing record — reinstall, cleared storage, no owner on
+file yet — always reads as "not accepted": the safe fallback is to ask
+again, never to assume.
+
+**Not `AppState.riskDisclosureAccepted`.** That field was deleted by R-51
+itself for gating onboarding, and stays deleted — nothing here resurrects
+it or routes on it. The new record only ever decides whether one checkbox
+renders on the *next* order; no router redirect, no gate, reads it.
+
+**Test evidence added** (`test/risk_disclosure_test.dart`, alongside
+`test/shots_flows.dart`'s existing buy specs, which this ruling redescribes
+as first-order-only rather than rewrites): a never-traded investor sees the
+checkbox and cannot place until it's ticked; an investor who has already
+traded sees no checkbox at all and can place directly; and a first order
+that fails at placement, or is abandoned at the passcode prompt, does not
+record acceptance — the next attempt still asks.

@@ -16,6 +16,7 @@ import 'package:flutter/widgets.dart';
 import '../data/api/api_client.dart';
 import '../data/api/auth_token_store.dart';
 import '../data/api/passcode_store.dart';
+import '../data/api/risk_disclosure_store.dart';
 import '../data/realtime/realtime_client.dart';
 import '../data/repositories/market_status_repository.dart';
 import '../data/repositories/watchlist_repository.dart';
@@ -31,6 +32,7 @@ class AppState extends ChangeNotifier {
     Set<String>? watchlistTickers,
     AuthTokenStore? tokenStore,
     PasscodeStore? passcodeStore,
+    RiskDisclosureStore? riskDisclosureStore,
     RealtimeClient? realtimeClient,
     // `?? {}` — this used to default to a hardcoded {'MTNN', 'GTCO',
     // 'ZENITHBANK', 'DANGCEM'} mock set, never hydrated from the real
@@ -43,6 +45,7 @@ class AppState extends ChangeNotifier {
   })  : _watchlist = watchlistTickers ?? {},
         _tokenStore = tokenStore ?? AuthTokenStore(),
         _passcodeStore = passcodeStore ?? PasscodeStore(),
+        _riskDisclosureStore = riskDisclosureStore ?? RiskDisclosureStore(),
         // Shares the SAME (possibly caller-supplied) `tokenStore` param
         // ApiClient is built with in main.dart, not [_tokenStore] above —
         // Dart's initializer list can't reference an already-initialized
@@ -133,6 +136,7 @@ class AppState extends ChangeNotifier {
 
   final AuthTokenStore _tokenStore;
   final PasscodeStore _passcodeStore;
+  final RiskDisclosureStore _riskDisclosureStore;
 
   /// The single shared [ApiClient] — assigned exactly once, at app startup,
   /// by `main.dart`'s `_KudimataAppState.initState` (which wires this same
@@ -176,22 +180,21 @@ class AppState extends ChangeNotifier {
   bool biometricEnabled = false;
   bool kycSubmitted = false;
   bool kycApproved = false;
-  bool suitabilityComplete = false;
 
-  /// Whether this investor has accepted the Statutory Risk Disclaimer
-  /// (Rule 76 compliance), added 2026-08-24 per the firm's real SEC-facing
-  /// compliance intake. Set by legal_acceptance_screen.dart's own
-  /// `_accept()` when its `kinds` include 'risk_disclosure' — since
-  /// 2026-08-29 that's every run of the onboarding legal-documents screen
-  /// (terms_and_privacy_screen.dart; risk disclosure was its own
-  /// standalone screen before that, see risk_disclaimer_screen.dart's
-  /// header and DECISIONS.md's R-8a superseded note). In-memory only, same
-  /// as every other gate flag here — hydrated for a RETURNING investor by
-  /// refreshKycGatingState (log_in_screen.dart) via GET
-  /// /compliance-acknowledgements/me, same "don't re-block someone who
-  /// already cleared this in a past session" reasoning kycApproved/
-  /// suitabilityComplete already handle.
-  bool riskDisclosureAccepted = false;
+  // REMOVED 2026-08-31 (R-51, DECISIONS.md — owner: "remove the assessment
+  // and also remove the risk disclosure too... we're simplifying"):
+  // `suitabilityComplete` and `riskDisclosureAccepted` used to gate
+  // tradingEligibilityGap below, set by the now-deleted suitability
+  // questionnaire/result screens and legal_acceptance_screen.dart. Both
+  // gates are gone, not just their setters — see R-51 for what still
+  // replaces each: the trade-confirmation risk checkbox
+  // (lib/screens/trade/trade_flows.dart) now carries the risk-disclosure
+  // acknowledgement, at the point of first trade rather than onboarding;
+  // nothing replaces the suitability questionnaire, which is a genuine,
+  // recorded compliance gap pending SEC sign-off. Leaving either flag
+  // behind with nothing left to set it would have reproduced R-44 (a gate
+  // nothing can ever satisfy strands every new investor) — see this
+  // repo's own commit history for that exact failure.
 
   /// Which of the 5 phased-KYC steps (2026-08-20) an in-progress draft is
   /// resuming at, and the fixed total — both null when there's no known
@@ -242,18 +245,12 @@ class AppState extends ChangeNotifier {
   /// security-reentry passcode change.
   bool loginPasscodeSetup = false;
 
-  /// The email being onboarded, set by otp_screen.dart right after a
-  /// successful verify. R-8a (DECISIONS.md, 2026-08-27) put suitability +
-  /// its result + the risk disclosure BETWEEN OTP and the other three legal
-  /// documents, so the email otp_screen.dart used to hand straight to
-  /// terms_and_privacy_screen.dart via a single GoRouter `extra` now has to
-  /// survive several hops it isn't otherwise involved in (questionnaire →
-  /// result → risk disclaimer → terms). Threaded via AppState rather than
-  /// re-plumbing `extra` through every one of those screens, same reasoning
-  /// as [loginPasscodeSetup] above. terms_and_privacy_screen.dart reads it
-  /// (via `AppScope.read`) when it hands off to Routes.createPasscode,
-  /// which is the one screen downstream that actually needs it.
-  String? pendingSignupEmail;
+  // REMOVED 2026-08-31 (R-51, DECISIONS.md): `pendingSignupEmail` used to
+  // carry the onboarding email across the questionnaire → result → legal
+  // hops between otp_screen.dart and terms_and_privacy_screen.dart, both
+  // gone now — otp_screen.dart hands straight to Routes.createPasscode
+  // with the email as that route's own `extra` again, same as before R-8a
+  // ever introduced the hop this field existed to survive.
 
   // Live watchlist (tickers).
   final Set<String> _watchlist;
@@ -359,16 +356,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSuitabilityComplete(bool v) {
-    suitabilityComplete = v;
-    notifyListeners();
-  }
-
-  void setRiskDisclosureAccepted(bool v) {
-    riskDisclosureAccepted = v;
-    notifyListeners();
-  }
-
   /// Sets both together — a draft's step/total are only ever meaningful as
   /// a pair (see [kycDraftStep]'s doc comment). Pass `null` for both to
   /// clear (no known in-progress draft).
@@ -395,15 +382,14 @@ class AppState extends ChangeNotifier {
   /// `kycStatus` enum, not the KycSubmission's own `flagReason`
   /// (needed for [kycOutcomeStatus]'s "still has a retry" nuance —
   /// KycSubmissionStatus.isRejectedWithRoomToRetry, kyc_repository.dart),
-  /// nor suitability/risk-disclosure completion. Those three
-  /// ([suitabilityComplete], [riskDisclosureAccepted], [kycDraftStep]/
-  /// [kycDraftTotal]) are left untouched here — home_screen.dart's own 8s
-  /// `_kycPollTimer` used to also keep them current but was removed as
-  /// redundant (this method already covers everything that poll was
-  /// actually for — see home_screen.dart's doc comment on the removal);
-  /// these three now stay owned by [refreshKycGatingState] itself, run
-  /// once at Home's initial load and once more on each realtime
-  /// reconnect (home_screen.dart's `_reconnectSub`) — the one legitimate
+  /// nor the draft-progress pair. [kycDraftStep]/[kycDraftTotal] are left
+  /// untouched here — home_screen.dart's own 8s `_kycPollTimer` used to
+  /// also keep them current but was removed as redundant (this method
+  /// already covers everything that poll was actually for — see
+  /// home_screen.dart's doc comment on the removal); they now stay owned
+  /// by [refreshKycGatingState] itself, run once at Home's initial load
+  /// and once more on each realtime reconnect (home_screen.dart's
+  /// `_reconnectSub`) — the one legitimate
   /// fetch a reconnect earns, since events missed while disconnected
   /// can't be replayed.
   void applyRealtimeKycStatus(RealtimeKycStatus status) {
@@ -449,11 +435,6 @@ class AppState extends ChangeNotifier {
 
   void setLoginPasscodeSetup(bool v) {
     loginPasscodeSetup = v;
-    notifyListeners();
-  }
-
-  void setPendingSignupEmail(String? v) {
-    pendingSignupEmail = v;
     notifyListeners();
   }
 
@@ -548,8 +529,18 @@ class AppState extends ChangeNotifier {
   /// the passcode from scratch, defeating its purpose as a fast re-entry
   /// shortcut. Splits are keyed to "was this sign-out because something's
   /// actually wrong" vs "the investor just chose to sign out."
+  ///
+  /// Also wipes the on-device risk-disclosure acceptance record
+  /// (RiskDisclosureStore, trade_flows.dart's order-confirmation checkbox)
+  /// alongside the passcode — same reasoning as the passcode wipe just
+  /// above: once a security-relevant sign-out has decided this device's
+  /// local shortcuts are no longer trustworthy, that applies to this record
+  /// too, not just the passcode. A voluntary sign-out leaves it in place
+  /// (RiskDisclosureStore.hasAccepted is owner-scoped regardless, so a
+  /// different investor signing in afterwards is asked again either way).
   Future<void> forceSignOut() async {
     await _passcodeStore.clearPasscode();
+    await _riskDisclosureStore.clearAccepted();
     await _resetSessionState();
   }
 
@@ -567,7 +558,7 @@ class AppState extends ChangeNotifier {
 
   /// Shared by [forceSignOut]/[signOut] — everything about ending a session
   /// EXCEPT the passcode decision, which differs between the two (see their
-  /// doc comments). Resets kycSubmitted/kycApproved/suitabilityComplete/
+  /// doc comments). Resets kycSubmitted/kycApproved/
   /// biometricEnabled/the watchlist too (2026-08-10) — these used to survive
   /// a sign-out, so signing into/creating a DIFFERENT account in the same
   /// browser tab (web has no natural process restart between accounts)
@@ -586,10 +577,8 @@ class AppState extends ChangeNotifier {
     signedIn = false;
     coldStartPendingUnlock = false;
     loginPasscodeSetup = false;
-    pendingSignupEmail = null;
     kycSubmitted = false;
     kycApproved = false;
-    suitabilityComplete = false;
     kycDraftStep = null;
     kycOutcomeStatus = null;
     accountStatus = null;
@@ -621,8 +610,8 @@ class AppState extends ChangeNotifier {
 }
 
 /// Where an investor should go next to become eligible to trade/fund, or
-/// null if they already can ([AppState.kycApproved] &&
-/// [AppState.suitabilityComplete]). Browsing itself is never gated —
+/// null if they already can ([AppState.kycApproved]). Browsing itself is
+/// never gated —
 /// this only matters at the specific points that need it: home_screen.dart's
 /// prompt card, and the Buy/Sell/Add money/Withdraw entry points
 /// (trade_flows.dart, wallet_flows.dart), which all call this so the copy
@@ -739,32 +728,16 @@ TradingEligibilityGap? tradingEligibilityGap(AppState app) {
       route: Routes.kycSubmitted,
     );
   }
-  // RESTORED 2026-08-24 (direct product instruction, after the firm's real
-  // SEC-facing compliance intake made it mandatory: "please make the
-  // suitability mandatory"). This block had been off since 2026-08-20
-  // ("make the assessment optional or hide it for now") — that directive
-  // is superseded, not this one silently reversing it. A returning
-  // investor who was already fully onboarded under the old optional regime
-  // (kycApproved=true, but never took the questionnaire) is exactly who
-  // this now correctly re-gates.
-  if (!app.suitabilityComplete) {
-    return const TradingEligibilityGap(
-      title: 'Complete your suitability assessment',
-      message: 'A quick suitability assessment is required before you can invest',
-      route: Routes.questionnaire,
-    );
-  }
-  if (!app.riskDisclosureAccepted) {
-    // Routes to the legal-documents screen, not a standalone risk-
-    // disclosure screen — 2026-08-29, DECISIONS.md's R-8a superseded note:
-    // risk disclosure is one of the documents in terms_and_privacy_screen
-    // .dart's list now, not its own step ahead of it.
-    return const TradingEligibilityGap(
-      title: 'Accept the risk disclosure',
-      message: 'Please review and accept the statutory risk notice',
-      route: Routes.termsOfService,
-    );
-  }
+  // REMOVED 2026-08-31 (R-51, DECISIONS.md — owner: "remove the assessment
+  // and also remove the risk disclosure too... we're simplifying"). This
+  // used to gate here on `!app.suitabilityComplete` (routing to the
+  // now-deleted questionnaire) and `!app.riskDisclosureAccepted` (routing
+  // to the now-deleted legal-documents screen). Neither gate survives:
+  // suitability has no replacement at all (a real, recorded compliance gap
+  // — see R-51) and risk-disclosure acknowledgement moved to the trade
+  // confirmation step itself (trade_flows.dart's own checkbox), which is
+  // where a regulator would expect it — at the point of first trade, not
+  // buried in onboarding. kycApproved above is the last check now.
   return null;
 }
 

@@ -72,8 +72,6 @@ void main() {
         ..biometricEnabled = true
         ..kycSubmitted = true
         ..kycApproved = true
-        ..suitabilityComplete = true
-        ..riskDisclosureAccepted = true
         ..signedIn = true
         ..apiClient = ApiClient()
         ..kycForm = KycFormState();

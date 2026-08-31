@@ -499,6 +499,21 @@ class KIllo {
   static Color get plateWarm => KColor.warmTint; // nudges, personal moments
   static Color get plateSun => KColor.sunTint; // milestones
 
+  /// Literal, theme-INVARIANT white — deliberately not `KColor.paper`
+  /// (`#26242A` in dark mode) and not any of the three plate tints above
+  /// (each collapses to a low-alpha wash over the dark background in dark
+  /// mode — see KPalette.dark's indicatorTint/warmTint/sunTint). Kudimata's
+  /// persona-style art (2026-08-31: the KYC-intro illustration and every
+  /// selectable avatar in assets/illustrations/avatars/, sourced from
+  /// kudimata.app's own persona set) is drawn with dark ink on a
+  /// TRANSPARENT background for a light surface — the identical rule
+  /// enforced on the website itself, see kudimata.app's
+  /// components/kudi-persona/kudiPersona.module.css: "The white is
+  /// deliberately literal ... so the illustration never sits on a
+  /// matching-dark ground." Any of the tint plates above would make that
+  /// ink vanish in dark mode; this does not, by never being dark.
+  static const Color platePaper = Color(0xFFFFFFFF);
+
   /// Drawn size per role — the drawing, not the plate.
   static const double hero = 200; // onboarding slide, Explain-this opening
   static const double state = 160; // empty / waiting / outcome states

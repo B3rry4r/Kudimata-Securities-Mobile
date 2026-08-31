@@ -138,6 +138,11 @@ Future<void> _fillAndSubmit(WidgetTester tester, {String? middleName}) async {
   await tester.enterText(passwordFields.at(0), 'Passw0rd!');
   await tester.enterText(passwordFields.at(1), 'Passw0rd!');
   await tester.pump();
+  // R-51 (DECISIONS.md, 2026-08-31): Create account is genuinely gated on
+  // the consent checkbox now — tap its prefix text (KLinkedCheckbox,
+  // lib/widgets/forms.dart) to tick it, same as a real investor would.
+  await tester.tap(find.text('I agree to the'));
+  await tester.pump();
   await tester.tap(find.text('Create account'));
   await tester.pump();
 }

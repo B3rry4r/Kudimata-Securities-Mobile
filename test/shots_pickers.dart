@@ -257,8 +257,6 @@ Future<_Mounted> _mount(WidgetTester tester, PickerSpec spec, ThemeMode mode) as
     ..passcodeSet = true
     ..kycSubmitted = spec.kycSubmitted
     ..kycApproved = spec.kycApproved
-    ..suitabilityComplete = true
-    ..riskDisclosureAccepted = true
     ..apiClient = apiClient
     ..kycForm = KycFormState();
 

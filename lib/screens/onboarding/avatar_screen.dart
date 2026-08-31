@@ -21,12 +21,16 @@
 // via `context.go` from `Routes.biometric`, so "back" returns there
 // instead, the nearest real equivalent of "the step before this one".
 //
-// Both exits go to Routes.onboardingNextSteps (X-4, SHARED-CHANGES.md
-// 2026-08-27) — "s07"/whats_next_screen.dart's "Your account is ready"
-// checklist, which sits between avatar selection and KYC start in the
-// canvas's own linear flow, and was itself never stranded (it has no other
-// caller, so restoring this screen's entry point restores its reachability
-// too).
+// Both exits go straight to Routes.home. They used to go to
+// Routes.onboardingNextSteps (X-4, SHARED-CHANGES.md 2026-08-27) —
+// "s07"/whats_next_screen.dart's "Your account is ready" checklist, which
+// sat between avatar selection and KYC start in the canvas's own linear
+// flow. Removed 2026-08-31 per direct product-owner instruction ("remove
+// the screen that says start... look around, please user should just go to
+// the home page after onboarding") — see DECISIONS.md's superseding note
+// under R-33 (the ruling that originally built s07) for the full record.
+// whats_next_screen.dart, its route, and the onboardingNextSteps constant
+// are all deleted; nothing else pointed at that route.
 //
 // Entirely optional (still true under R-44 — "choosing one is optional...
 // the screen offers a choice, it does not gate Home") — both "Skip"
@@ -62,7 +66,7 @@ class _OnboardingAvatarScreenState extends State<OnboardingAvatarScreen> {
   String? _chosen;
   bool _busy = false;
 
-  void _skip() => context.go(Routes.onboardingNextSteps);
+  void _skip() => context.go(Routes.home);
 
   Future<void> _continue() async {
     if (_chosen == null) {
@@ -80,7 +84,7 @@ class _OnboardingAvatarScreenState extends State<OnboardingAvatarScreen> {
       return;
     }
     if (!mounted) return;
-    context.go(Routes.onboardingNextSteps);
+    context.go(Routes.home);
   }
 
   @override
@@ -172,18 +176,24 @@ class _AvatarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 2026-08-31: KAvatar now draws its own literal-white plate for these
+    // persona characters (KIllo.platePaper — see its doc comment), so this
+    // tile no longer needs to supply a background of its own. The
+    // selection state is an OUTER ring instead of the old inset tint fill
+    // — matching kudimata.app's own avatar-pick tile (assessment.module.css:
+    // "the selection ring is drawn as an OUTER ring ... so it sits outside
+    // the art instead of hiding behind it").
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(KRadii.card + 4),
           border: Border.all(
             color: selected ? KColor.indicator : Colors.transparent,
             width: 2,
           ),
-          color: selected ? KColor.indicatorTint : Colors.transparent,
         ),
         child: Center(child: KAvatar(avatarKey: avatarKey, size: 72)),
       ),

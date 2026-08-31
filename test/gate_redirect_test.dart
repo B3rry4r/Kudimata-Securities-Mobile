@@ -22,8 +22,6 @@ void main() {
       ..biometricEnabled = true
       ..kycSubmitted = true
       ..kycApproved = true
-      ..suitabilityComplete = true
-      ..riskDisclosureAccepted = true
       ..signedIn = true;
       // Note: this deliberately does NOT go through AppState._hydrateSignedIn
       // (the real cold-start path), so AppState.coldStartPendingUnlock stays

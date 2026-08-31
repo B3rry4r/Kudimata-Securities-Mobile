@@ -43,10 +43,10 @@
 //      and the investor is routed into LOCAL passcode creation
 //      (Routes.createPasscode) since this device has none yet.
 //
-// Real gating-state hydration (kycSubmitted/kycApproved/suitabilityComplete
-// — all in-memory-only AppState flags that default false and would
-// otherwise wrongly re-run KYC/suitability for an already-approved
-// investor on a fresh device) happens right after that new local passcode
+// Real gating-state hydration (kycSubmitted/kycApproved — in-memory-only
+// AppState flags that default false and would otherwise wrongly re-run KYC
+// for an already-approved investor on a fresh device) happens right after
+// that new local passcode
 // is confirmed — see [hydrateGatingStateAndRoute] below, called from
 // confirm_passcode_screen.dart once AppState.loginPasscodeSetup (set by
 // [_completeLogin]) tells it this was a fresh login rather than first-time
@@ -61,9 +61,7 @@ import 'package:kudimata_invest/data/api/auth_token_store.dart';
 import 'package:kudimata_invest/data/api/passcode_store.dart';
 import 'package:kudimata_invest/data/biometric_auth.dart';
 import 'package:kudimata_invest/data/repositories/auth_repository.dart';
-import 'package:kudimata_invest/data/repositories/compliance_repository.dart';
 import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
-import 'package:kudimata_invest/data/repositories/suitability_repository.dart';
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -965,7 +963,6 @@ Future<String?> hydrateGatingState(BuildContext context) async {
 Future<void> refreshKycGatingState(BuildContext context) async {
   final app = AppScope.read(context);
   final kycRepo = KycRepository(app.apiClient);
-  final suitabilityRepo = SuitabilityRepository(app.apiClient);
 
   KycSubmissionStatus? kyc;
   // Only a real 404 means "never submitted" — anything else (a transient
@@ -1002,38 +999,17 @@ Future<void> refreshKycGatingState(BuildContext context) async {
     final kycSubmitted = kyc != null && !kyc.isDraft;
     final kycApproved = kyc?.isApproved ?? false;
 
-    bool suitabilityComplete = false;
-    if (kycApproved) {
-      try {
-        await suitabilityRepo.me();
-        suitabilityComplete = true;
-      } on ApiException {
-        // 404 -> genuinely not submitted yet.
-        suitabilityComplete = false;
-      }
-    }
-
-    // Added 2026-08-24 alongside the restored mandatory suitability gate
-    // (see AppState.tradingEligibilityGap) — without this, a returning
-    // investor who already accepted the risk disclaimer in a past session
-    // would be wrongly re-gated on every fresh app boot (AppState.
-    // riskDisclosureAccepted is in-memory only). Only worth checking once
-    // suitability is genuinely complete — the gate gets to that check
-    // second anyway.
-    var riskDisclosureAccepted = false;
-    if (suitabilityComplete) {
-      try {
-        final kinds = await ComplianceRepository(app.apiClient).myAcknowledgedKinds();
-        riskDisclosureAccepted = kinds.contains('risk_disclosure');
-      } on ApiException {
-        riskDisclosureAccepted = false;
-      }
-    }
+    // REMOVED 2026-08-31 (R-51, DECISIONS.md — owner: "remove the
+    // assessment and also remove the risk disclosure too... we're
+    // simplifying"). This used to also hydrate `suitabilityComplete`
+    // (GET /suitability-result/me) and, nested inside that, a returning
+    // investor's `riskDisclosureAccepted` (GET
+    // /compliance-acknowledgements/me) — both gates AppState.
+    // tradingEligibilityGap no longer checks; see that function's own note
+    // on what replaces (and does not replace) each one.
 
     app.setKycSubmitted(kycSubmitted);
     app.setKycApproved(kycApproved);
-    app.setSuitabilityComplete(suitabilityComplete);
-    app.setRiskDisclosureAccepted(riskDisclosureAccepted);
     // Step only. The backend's `totalSteps` (KYC_TOTAL_STEPS = 5) is
     // deliberately NOT carried into AppState: it has never matched the real
     // 7-step flow, and every time it was stored something eventually

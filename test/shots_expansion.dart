@@ -40,7 +40,11 @@ const _routes = <String, String>{
   '96_data_notice': Routes.acctLegalDataNotice,
   '97_closure_terms': Routes.acctLegalClosureTerms,
   '45_account_hub': Routes.account, // Data & privacy row spot-check
-  '52_legal_hub': Routes.acctLegal, // screens 94-97 entry rows spot-check
+  // '52_legal_hub' (Routes.acctLegal) no longer exists (R-51, DECISIONS.md,
+  // 2026-08-31) — legal_screen.dart and its route are gone; the screens
+  // 94-97 rows this used to spot-check from now have no in-app entry point
+  // through that hub any more (see legal_reference_screens.dart's own
+  // header on which of those four are still reachable elsewhere).
 };
 
 Future<void> _loadFonts() async {
@@ -120,8 +124,6 @@ Future<_Mounted> _mount(WidgetTester tester) async {
     ..passcodeSet = true
     ..kycSubmitted = true
     ..kycApproved = true
-    ..suitabilityComplete = true
-    ..riskDisclosureAccepted = true
     ..apiClient = apiClient;
   final router = buildRouter(state);
   final key = GlobalKey();

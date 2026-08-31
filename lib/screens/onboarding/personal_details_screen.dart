@@ -49,11 +49,15 @@
 // BR-4's resolved value is absent) is now asked directly on bvn_nin.dart's
 // confirm step when needed, and this screen has no forward entry point left
 // in the app. Kept, not deleted, per the audit's own instruction — reported
-// as a removal candidate. Its route (`Routes.onboardingPersonal`) and the
-// avatar/what's-next chain after it (`onboardingAvatar`/`onboardingNextSteps`)
-// stay registered/walked by test/route_walk_test.dart since they're still
-// directly reachable (avatar_screen.dart's own back arrow, a deep link),
-// just no longer part of any screen's forward navigation.
+// as a removal candidate. Its route (`Routes.onboardingPersonal`) and
+// `onboardingAvatar` after it stay registered/walked by
+// test/route_walk_test.dart since they're still directly reachable (a deep
+// link), just no longer part of any screen's forward navigation.
+// `onboardingAvatar`'s own two exits go straight to Home now — the
+// "Your account is ready" screen that used to sit between them
+// (whats_next_screen.dart, s07) was removed 2026-08-31; see
+// avatar_screen.dart's header and DECISIONS.md's superseding note under
+// R-33.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -201,7 +205,8 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                         onTap: _pickDob,
                         error: _showErrors && _dob == null
                             ? 'Enter your date of birth'
-                            : null),
+                            : null,
+                        required: true),
                     const SizedBox(height: 16),
                     KInput(
                         label: 'Residential address',
@@ -210,7 +215,8 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                         onChanged: _showErrors ? (_) => setState(() {}) : null,
                         error: _showErrors && _addr.text.trim().isEmpty
                             ? 'Enter your residential address'
-                            : null),
+                            : null,
+                        required: true),
                     const SizedBox(height: 16),
                     KInput(
                         label: 'City',
@@ -219,7 +225,8 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                         onChanged: _showErrors ? (_) => setState(() {}) : null,
                         error: _showErrors && _city.text.trim().isEmpty
                             ? 'Enter your city'
-                            : null),
+                            : null,
+                        required: true),
                     const SizedBox(height: 16),
                     _TappableField(
                         label: 'State',
@@ -228,7 +235,8 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                         onTap: _pickState,
                         error: _showErrors && _residenceState == null
                             ? 'Select your state'
-                            : null),
+                            : null,
+                        required: true),
                     const SizedBox(height: 16),
                     KPhoneNumberField(
                         controller: _phone,
@@ -240,7 +248,8 @@ class _OnboardingPersonalDetailsScreenState extends State<OnboardingPersonalDeta
                                         _phone.text, _phoneCountry.dial) ==
                                     null
                             ? 'Enter a valid phone number'
-                            : null),
+                            : null,
+                        required: true),
                   ],
                 ),
               ),
@@ -287,6 +296,7 @@ class _TappableField extends StatelessWidget {
     required this.placeholder,
     required this.onTap,
     this.error,
+    this.required = false,
   });
 
   final String label;
@@ -295,6 +305,9 @@ class _TappableField extends StatelessWidget {
   final VoidCallback onTap;
   final String? error;
 
+  /// See KInput.required — renders a red asterisk beside the label.
+  final bool required;
+
   @override
   Widget build(BuildContext context) {
     final borderColor = error != null ? KColor.loss : KColor.hairline;
@@ -302,7 +315,7 @@ class _TappableField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label.upper, style: KType.label(color: KColor.ink2)),
+        KFieldLabel(label, required: required, color: KColor.ink2),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: onTap,

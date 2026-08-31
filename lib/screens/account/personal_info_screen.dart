@@ -13,16 +13,17 @@
 // wasn't adopted verbatim.
 //
 // Screen title stays "Personal info", NOT s58's own "Personal details" —
-// suitability_result_screen.dart and dormant_account_screen.dart (both out
-// of this pass's scope) already say "Account › Personal info" verbatim;
-// see account_screen.dart's own note on the same row. SHARED-CHANGE
-// REQUEST filed in the report (a repo-wide rename is a separate, reviewed
-// pass, not a silent one-file drift).
+// dormant_account_screen.dart (out of this pass's scope) already says
+// "Account › Personal info" verbatim; see account_screen.dart's own note on
+// the same row. SHARED-CHANGE REQUEST filed in the report (a repo-wide
+// rename is a separate, reviewed pass, not a silent one-file drift).
 //
 // 2026-08-24: dropped the "Investor profile · {profile}" card + Retake
-// link (direct product instruction, "we don't need that anymore") — the
-// suitability questionnaire is still reachable from its own account row
-// and from Home's onboarding prompt, just not surfaced a second time here.
+// link (direct product instruction, "we don't need that anymore"). The
+// suitability questionnaire this used to point at (as still reachable
+// elsewhere) is itself gone now — removed entirely, 2026-08-31, R-51,
+// DECISIONS.md — so there is no "retake" affordance anywhere any more, not
+// just not surfaced a second time here.
 //
 // Wired to GET /users/me (UserRepository.personalInfo — firstName/middleName/lastName/email/
 // phone/dob/residentialAddress) and GET /kyc-submissions/me

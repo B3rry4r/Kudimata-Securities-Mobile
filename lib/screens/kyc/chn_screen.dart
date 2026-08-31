@@ -186,6 +186,7 @@ class _ChnScreenState extends State<ChnScreen> {
                         onChanged: (_) {
                           if (_showErrors) setState(() {});
                         },
+                        required: true,
                       ),
                     ],
                     if (_error != null) ...[

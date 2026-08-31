@@ -36,7 +36,6 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/home/home_screen.dart';
 import 'package:kudimata_invest/screens/onboarding/create_passcode_screen.dart';
 import 'package:kudimata_invest/screens/onboarding/welcome_slider_screen.dart';
-import 'package:kudimata_invest/screens/suitability/terms_and_privacy_screen.dart';
 import 'package:kudimata_invest/theme/app_theme.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 
@@ -180,21 +179,20 @@ void main() {
 
   testWidgets(
     'the invariant does not hijack the LEGITIMATE fresh-signup flow: '
-    'termsOfService itself sets signedIn TRUE (when its documents include '
-    'risk_disclosure), still ahead of passcode creation — that hop must '
-    'still render, not bounce back to Create passcode',
+    'otp_screen.dart itself sets signedIn TRUE right after verify, still '
+    'ahead of passcode creation — that hop must still render, not bounce '
+    'back to Create passcode',
     (tester) async {
-      // A first version of this fix used a hand-picked allowlist of just
-      // {createPasscode, confirmPasscode} for the signedIn-without-passcode
-      // exemption — and broke exactly this: termsOfService's own accept
-      // handler (legal_acceptance_screen.dart's `_accept()`, when `kinds`
-      // includes 'risk_disclosure' — every run of the onboarding legal
-      // screen since 2026-08-29, see legal_acceptance_screen.dart's header)
-      // flips AppState.signedIn to true BEFORE passcode/biometric ever run,
-      // so a signedIn=true + passcodeSet=false moment is legitimately
-      // reached mid-flow, not just as a bug. This state is built directly
-      // (not via real hydration/secure storage) to isolate the router's OWN
-      // decision from that unrelated screen's behaviour — same style as
+      // R-51 (DECISIONS.md, 2026-08-31) removed the questionnaire/result/
+      // legal-acceptance chain this test used to exercise via
+      // Routes.termsOfService — otp_screen.dart's own `_verify()` now flips
+      // AppState.signedIn straight to true the instant OTP verifies (moved
+      // up from the deleted legal-acceptance screen's accept handler), so a
+      // signedIn=true + passcodeSet=false moment is legitimately reached the
+      // moment OTP succeeds, before Routes.createPasscode ever renders — not
+      // just as a bug. This state is built directly (not via real
+      // hydration/secure storage) to isolate the router's OWN decision from
+      // otp_screen.dart's own behaviour — same style as
       // test/gate_redirect_test.dart's `pumpAt`.
       final state = AppState()
         ..signedIn = true
@@ -209,17 +207,17 @@ void main() {
       );
       await tester.pump();
 
-      router.go(Routes.termsOfService);
+      router.go(Routes.createPasscode);
       await pumpUntil(
         tester,
-        () => find.byType(TermsAndPrivacyScreen).evaluate().isNotEmpty,
-        'the terms hop to resolve',
+        () => find.byType(CreatePasscodeScreen).evaluate().isNotEmpty,
+        'the createPasscode hop to resolve',
       );
       expect(
-        find.byType(TermsAndPrivacyScreen),
+        find.byType(CreatePasscodeScreen),
         findsOneWidget,
-        reason: 'the legitimate mid-signup hop must render, not be bounced '
-            'back to Create passcode',
+        reason: 'the legitimate post-OTP hop must render, not be bounced '
+            'anywhere else',
       );
 
       // The invariant itself must still hold for this exact state: Home is

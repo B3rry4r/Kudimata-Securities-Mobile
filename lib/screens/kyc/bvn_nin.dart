@@ -304,6 +304,7 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
             onChanged: (_) {
               if (_showErrors) setState(() {});
             },
+            required: true,
           ),
           const SizedBox(height: 20),
           KInput(
@@ -318,6 +319,7 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
             onChanged: (_) {
               if (_showErrors) setState(() {});
             },
+            required: true,
           ),
           if (_error != null) ...[
             const SizedBox(height: 16),
@@ -489,7 +491,15 @@ class _DobPickerRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text('Date of birth', style: KType.data(color: KColor.ink2)),
+            RichText(
+              text: TextSpan(
+                text: 'Date of birth',
+                style: KType.data(color: KColor.ink2),
+                children: [
+                  TextSpan(text: ' *', style: KType.data(color: KColor.loss)),
+                ],
+              ),
+            ),
             const Spacer(),
             Text(
               value ?? 'Select',

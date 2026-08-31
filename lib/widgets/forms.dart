@@ -1,6 +1,7 @@
 // Checkbox, Radio, Switch. Ported from components/forms/{Checkbox,Radio,Switch}.jsx.
 // Purple owns the "on" state across all three.
 import 'package:flutter/widgets.dart';
+import '../k_links.dart' show openExternalLink;
 import '../theme/tokens.dart';
 import 'k_icon.dart';
 
@@ -73,6 +74,92 @@ class KCheckbox extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A [KCheckbox] whose label carries exactly one tappable link out to an
+/// external document — "I agree to the **Terms and Disclosures**" (sign-up's
+/// account-creation checkbox) / "I have read the **Risk Disclosure**"
+/// (trade confirmation's risk checkbox). Built once here (R-51, DECISIONS.md,
+/// 2026-08-31) rather than forked per screen — both callers needed the exact
+/// same "checkbox + a link inside the label" shape, and this repo's forks
+/// gate covers exactly that kind of duplication.
+///
+/// [prefixText] and [linkText] are deliberately two SEPARATE `Text` widgets
+/// laid out in a [Wrap] rather than one `Text.rich` — not a styling choice,
+/// a hit-testing one: [linkText] carries its own [GestureDetector] that
+/// opens [url] and must never also toggle [checked], and two independent
+/// widgets give each its own unambiguous tap target instead of relying on
+/// where an inline span happens to land inside a merged run of text.
+/// Tapping the checkbox glyph or [prefixText] toggles [checked]; tapping
+/// [linkText] opens [url] via [openExternalLink] (k_links.dart) and does
+/// not toggle.
+class KLinkedCheckbox extends StatelessWidget {
+  const KLinkedCheckbox({
+    super.key,
+    required this.checked,
+    required this.onChanged,
+    required this.prefixText,
+    required this.linkText,
+    required this.url,
+  });
+
+  final bool checked;
+  final ValueChanged<bool> onChanged;
+  final String prefixText;
+  final String linkText;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = KType.body(color: KColor.ink, w: KWeight.medium).copyWith(height: 20 / 14);
+    final linkStyle = labelStyle.copyWith(
+      color: KColor.indicator,
+      decoration: TextDecoration.underline,
+    );
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => onChanged(!checked),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: checked ? KColor.indicator : KColor.paper,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: checked ? KColor.indicator : KColor.hairline, width: 1.5),
+            ),
+            child: checked ? KIcon('check', size: 14, stroke: 2.6, color: KColor.featureInk) : null,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => onChanged(!checked),
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(prefixText, style: labelStyle),
+                ),
+                GestureDetector(
+                  onTap: () => openExternalLink(url),
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(linkText, style: linkStyle),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

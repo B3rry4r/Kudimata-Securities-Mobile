@@ -18,11 +18,15 @@
 //    asterisk, no client-side required check) blocks Continue either, and
 //    the backend itself treats it as optional (`SignupDto.phone?`) — so
 //    Continue here still gates on email alone, same as before.
-//  - Terms acceptance is NOT collected here. The canvas's #s03p draws a
-//    pre-OTP "I have read and agree..." checkbox; R-11 says do not adopt
-//    it — acceptance stays the dedicated post-OTP screen
-//    (terms_and_privacy_screen.dart, reached via Routes.termsOfService
-//    right after OTP verification).
+//  - Terms acceptance: R-11 originally kept this off the password step,
+//    since acceptance lived on a dedicated post-OTP screen
+//    (terms_and_privacy_screen.dart). That screen — and the standalone
+//    legal-acceptance chain generally — is gone (R-51, DECISIONS.md,
+//    2026-08-31: "remove the assessment and also remove the risk
+//    disclosure too... add [a checkbox] on the last screen that creates
+//    the account"). This step (`_passwordStep`, the one that actually
+//    calls `_createAccount`) is now that last screen: it carries the
+//    checkbox R-11 used to defer, gating account creation on it directly.
 //  - Middle name: the canvas's #s03 draws only First/Last name fields (no
 //    middle name field anywhere in the name step). 2026-08-30 (product
 //    owner, via colleague dogfooding): re-added anyway — a deliberate
@@ -55,6 +59,7 @@ import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/password_policy.dart';
 import 'package:kudimata_invest/data/repositories/auth_repository.dart';
+import 'package:kudimata_invest/k_links.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -92,6 +97,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _showErrors = false;
   bool _busy = false;
+
+  // The one consent record left after R-51 (DECISIONS.md, 2026-08-31)
+  // removed the standalone legal/terms-acceptance screen, the risk-
+  // disclosure step and the suitability assessment: an unticked checkbox on
+  // this, the screen that actually creates the account, genuinely gates
+  // account creation — see _createAccount below. No AppState flag records
+  // this (there's nowhere left to read it downstream), same as any other
+  // plain form-validation bool on this screen.
+  bool _agreedToTerms = false;
 
   // Set only from a 400 INVALID_PHONE / 409 PHONE_ALREADY_REGISTERED
   // response to _createAccount (see there) — server-side errors surfaced
@@ -191,7 +205,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _createAccount() async {
-    if (!_passwordValid || !_confirmPasswordValid) {
+    if (!_passwordValid || !_confirmPasswordValid || !_agreedToTerms) {
       setState(() => _showErrors = true);
       return;
     }
@@ -313,6 +327,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         controller: _firstName,
         onChanged: _showErrors ? (_) => setState(() {}) : null,
         error: _showErrors && !_firstNameValid ? 'Enter your first name' : null,
+        required: true,
       ),
       const SizedBox(height: 16),
       // Optional (product addition, 2026-08-30 — see file header): not in
@@ -330,6 +345,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         controller: _lastName,
         onChanged: _showErrors ? (_) => setState(() {}) : null,
         error: _showErrors && !_lastNameValid ? 'Enter your last name' : null,
+        required: true,
       ),
       _stepFooter([
         KButton(label: 'Continue', onPressed: _continueFromName),
@@ -352,6 +368,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         controller: _email,
         onChanged: _showErrors ? (_) => setState(() {}) : null,
         error: _showErrors && !_emailValid ? 'Enter a valid email address' : null,
+        required: true,
       ),
       const SizedBox(height: 16),
       // Live per SHARED-CHANGES.md S-2 — the backend gained an optional
@@ -416,6 +433,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         error: _showErrors && !_passwordValid
             ? 'Use at least 8 characters with a number and a special character'
             : null,
+        required: true,
       ),
       const SizedBox(height: 16),
       KInput(
@@ -424,6 +442,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         controller: _confirmPassword,
         onChanged: (_) => setState(() {}),
         error: _showErrors && !_confirmPasswordValid ? 'Passwords do not match' : null,
+        required: true,
       ),
       const SizedBox(height: 16),
       // R-43 (2026-08-29): exactly two lines now — the third
@@ -440,6 +459,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
               label: 'One number and one special character', met: _passwordComplexOk),
         ],
       ),
+      const SizedBox(height: 18),
+      // The one consent record left after R-51 (DECISIONS.md) removed the
+      // standalone legal screen — see _agreedToTerms' own doc comment.
+      // Standard pattern: unticked by default, opens the real legal page
+      // (KLinks.legal) rather than an in-app screen.
+      KLinkedCheckbox(
+        checked: _agreedToTerms,
+        onChanged: (v) => setState(() => _agreedToTerms = v),
+        prefixText: 'I agree to the',
+        linkText: 'Terms and Disclosures',
+        url: KLinks.legal,
+      ),
+      if (_showErrors && !_agreedToTerms) ...[
+        const SizedBox(height: 8),
+        Text(
+          'Agree to the Terms and Disclosures to create your account',
+          style: KType.data(color: KColor.loss),
+        ),
+      ],
       _stepFooter([
         KButton(
           label: 'Create account',

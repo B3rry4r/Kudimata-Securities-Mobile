@@ -494,7 +494,7 @@ class _AddBankAccountSheetState extends State<_AddBankAccountSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const KEyebrow('Bank'),
+            const KFieldLabel('Bank', required: true),
             const SizedBox(height: 10),
             if (banks.isEmpty)
               Text('No banks available.', style: KType.body(color: KColor.ink3))
@@ -543,6 +543,7 @@ class _AddBankAccountSheetState extends State<_AddBankAccountSheet> {
                 setState(() {}); // refresh _canSubmit against the new text
                 _maybeResolveName();
               },
+              required: true,
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),

@@ -1,7 +1,7 @@
 // Screenshot harness for Flow A (Getting in — screens 01-12), NOT covered by
-// test/shots.dart, which hardcodes signedIn/kycApproved/suitabilityComplete
-// to true and therefore redirects every onboarding/auth route straight to
-// Home. This harness mounts a signed-OUT AppState so those router guards
+// test/shots.dart, which hardcodes signedIn/kycApproved to true and
+// therefore redirects every onboarding/auth route straight to Home. This
+// harness mounts a signed-OUT AppState so those router guards
 // let the onboarding screens actually render.
 //   flutter test test/shots_onboarding.dart
 // Renders to /tmp/shots_onboarding/<name>.png
@@ -34,7 +34,10 @@ const _routes = <String, (String, bool)>{
   '02_welcome': (Routes.welcome, false),
   '03_signup': (Routes.signup, false),
   '04_otp': (Routes.otp, false),
-  '05_06_terms': (Routes.termsOfService, false),
+  // '05_06_terms' (Routes.termsOfService) no longer exists (R-51,
+  // DECISIONS.md, 2026-08-31) — otp above hands straight to passcode
+  // creation below now, same as this table's own numbering already skips
+  // '11_document_summary' and other removed screens elsewhere.
   '07_passcode_create': (Routes.createPasscode, false),
   '08_passcode_confirm': (Routes.confirmPasscode, false),
   '09_biometric': (Routes.biometric, false),
@@ -122,7 +125,6 @@ Future<_Mounted> _mount(WidgetTester tester, {required bool signedIn}) async {
     ..passcodeSet = false
     ..kycSubmitted = false
     ..kycApproved = false
-    ..suitabilityComplete = false
     ..apiClient = apiClient;
   final router = buildRouter(state);
   final key = GlobalKey();

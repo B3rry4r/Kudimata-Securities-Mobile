@@ -22,8 +22,6 @@ void main() {
       ..biometricEnabled = true
       ..kycSubmitted = true
       ..kycApproved = true
-      ..suitabilityComplete = true
-      ..riskDisclosureAccepted = true
       ..signedIn = true
       // Several tab screens (Home, Markets, Wallet, Account, ...) read
       // AppScope.read(context).apiClient in repo field initializers — unset
@@ -66,11 +64,13 @@ void main() {
       '/account/personal', '/account/banks', '/account/refer', '/account/help',
       '/account/security',
       '/account/notifications',
-      '/account/legal',
+      // '/account/legal' no longer exists (R-51, DECISIONS.md, 2026-08-31)
+      // — legal_screen.dart and its route are gone; "Terms and disclosures"
+      // opens KLinks.legal externally instead.
       '/account/statements',
       // gated
       '/signup', '/otp', '/passcode/create', '/passcode/confirm', '/biometric',
-      '/onboarding/personal', '/onboarding/avatar', '/onboarding/next-steps',
+      '/onboarding/personal', '/onboarding/avatar',
       '/login', '/reset',
       // kyc (2026-08-24: re-sequenced to 8 real steps — chn, bank-dcs,
       // declarations, review were new; D-1, 2026-08-27 removals pass, R-9:
@@ -85,11 +85,10 @@ void main() {
       '/kyc/utility-bill',
       '/kyc/bank-dcs', '/kyc/declarations', '/kyc/next-of-kin',
       '/kyc/submitted', '/kyc/approved',
-      // suitability. 2026-08-29 (DECISIONS.md's R-8a superseded note):
-      // '/suitability/risk-disclaimer' no longer exists — risk disclosure
-      // is one of '/suitability/terms's documents now, not its own route.
-      '/suitability', '/suitability/result',
-      '/suitability/terms',
+      // '/suitability', '/suitability/result' and '/suitability/terms' no
+      // longer exist (R-51, DECISIONS.md, 2026-08-31) — the suitability
+      // questionnaire, its result screen and the legal-documents/risk-
+      // disclosure chain they used to hand off to are all removed.
       // 2026-08-22 "Soft Landing" redesign additions — added after this
       // exact test's original list missed a real overflow bug on
       // /security-alert (found only via test/shots.dart's visual check).

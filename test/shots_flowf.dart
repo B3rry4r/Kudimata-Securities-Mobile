@@ -112,8 +112,6 @@ Future<_Mounted> _mount(WidgetTester tester) async {
     ..passcodeSet = true
     ..kycSubmitted = true
     ..kycApproved = true
-    ..suitabilityComplete = true
-    ..riskDisclosureAccepted = true
     ..apiClient = apiClient;
   final router = buildRouter(state);
   final key = GlobalKey();

@@ -133,6 +133,7 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
                       error: _showErrors && _street.text.trim().isEmpty
                           ? 'Enter your street address'
                           : null,
+                      required: true,
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -145,6 +146,7 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
                             placeholder: 'Select',
                             onTap: _pickState,
                             error: _showErrors && _state == null ? 'Required' : null,
+                            required: true,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -158,6 +160,7 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
                             error: _showErrors && _state != null && _lga == null
                                 ? 'Required'
                                 : null,
+                            required: true,
                           ),
                         ),
                       ],
@@ -181,6 +184,7 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
                                 _file = null;
                                 _uploadError = null;
                               }),
+                      required: true,
                     ),
                   ],
                 ),
@@ -333,6 +337,7 @@ class _AddrSelectField extends StatelessWidget {
     required this.onTap,
     this.disabled = false,
     this.error,
+    this.required = false,
   });
 
   final String label;
@@ -342,6 +347,9 @@ class _AddrSelectField extends StatelessWidget {
   final bool disabled;
   final String? error;
 
+  /// See KInput.required — renders a red asterisk beside the label.
+  final bool required;
+
   @override
   Widget build(BuildContext context) {
     final borderColor = error != null ? KColor.loss : KColor.hairline;
@@ -349,7 +357,7 @@ class _AddrSelectField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label.upper, style: KType.label(color: disabled ? KColor.ink3 : KColor.ink2)),
+        KFieldLabel(label, required: required, color: disabled ? KColor.ink3 : KColor.ink2),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: disabled ? null : onTap,

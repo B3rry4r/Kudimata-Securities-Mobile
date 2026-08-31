@@ -1,30 +1,25 @@
-// Two real-tap flow-walk tests:
+// R-44 — the avatar picker is reached from onboarding, never KYC.
 //
-//   1. Risk disclosure lives IN the legal-documents screen (DECISIONS.md's
-//      R-8a superseded note, 2026-08-29), and since its 2026-08-31 addendum
-//      ("the risk disclosure should be a PDF too not a screen") it is
-//      opened the EXACT SAME WAY as the other three documents in that
-//      list — the phone's native viewer over a real presigned file, marked
-//      'opened' the instant that launch reports success — not a bespoke
-//      in-app scroll-gated view of hand-authored text. This drives the
-//      real screen and asserts on that: the tap reaches
-//      LegalDocumentsRepository.downloadUrl (a real network call, through
-//      the mock adapter) and a successful launchUrl, with no separate
-//      in-app viewer route or widget appearing at all.
-//   2. The avatar picker is back in ONBOARDING, reached from
-//      biometric_screen.dart's two exits, never from KYC (R-44).
+// This file used to be onboarding_avatar_and_risk_disclosure_test.dart and
+// also drove a real-tap walk through the legal-documents screen's risk-
+// disclosure row. That screen (legal_acceptance_screen.dart /
+// Routes.termsOfService) is gone — R-51, DECISIONS.md, 2026-08-31: the whole
+// suitability/legal-acceptance chain was removed from onboarding. Risk-
+// disclosure acknowledgement moved to the trade-confirmation checkbox
+// instead (trade_flows.dart, exercised by test/shots_flows.dart's
+// 'I have read the' taps) — there is no equivalent onboarding screen left
+// for this file to drive. Only the avatar-picker walk survives, renamed to
+// match.
 //
 // Driven by real taps through the real router, not just asserting on
 // routes — a prior ruling in this repo was reported done four times by
 // agents who only read the route table.
 //
-//   flutter test test/onboarding_avatar_and_risk_disclosure_test.dart
+//   flutter test test/onboarding_avatar_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher_platform_interface/link.dart';
-import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_client.dart';
@@ -33,29 +28,10 @@ import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/home/home_screen.dart';
 import 'package:kudimata_invest/screens/onboarding/avatar_screen.dart';
 import 'package:kudimata_invest/screens/onboarding/biometric_screen.dart';
-import 'package:kudimata_invest/screens/onboarding/whats_next_screen.dart';
 import 'package:kudimata_invest/theme/app_theme.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 
 import 'fixtures/mock_api_adapter.dart';
-
-/// Swaps in for [UrlLauncherPlatform.instance] so legal_acceptance_screen.
-/// dart's real `launchUrl()` call resolves without a real platform channel
-/// behind it (none is registered in a plain widget test) — the standard
-/// url_launcher testing seam. Records every URL it was asked to open so a
-/// test can assert on it, and always reports success.
-class _FakeUrlLauncher extends UrlLauncherPlatform {
-  final List<String> launchedUrls = [];
-
-  @override
-  LinkDelegate? get linkDelegate => null;
-
-  @override
-  Future<bool> launchUrl(String url, LaunchOptions options) async {
-    launchedUrls.add(url);
-    return true;
-  }
-}
 
 void _mockPlatformChannels() {
   final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
@@ -131,59 +107,6 @@ Future<GoRouter> _mount(
 }
 
 void main() {
-  group('Risk disclosure is a row inside the legal documents screen', () {
-    testWidgets(
-      'tapping it opens the phone\'s native viewer over a real presigned '
-      'file — the SAME mechanism as the other three documents, not a '
-      'bespoke in-app screen — and counts as opened once that launch '
-      'succeeds',
-      (tester) async {
-        final fakeLauncher = _FakeUrlLauncher();
-        final previousLauncher = UrlLauncherPlatform.instance;
-        UrlLauncherPlatform.instance = fakeLauncher;
-        addTearDown(() => UrlLauncherPlatform.instance = previousLauncher);
-
-        await _mount(tester, Routes.termsOfService);
-
-        await pumpUntil(
-          tester,
-          () => find.text('Risk Disclosure').evaluate().isNotEmpty,
-          'the four legal documents to load',
-        );
-        // All four real documents are listed, gate not yet satisfied.
-        expect(find.text('Open every document above to continue.'), findsOneWidget);
-
-        await tester.tap(find.text('Risk Disclosure'));
-        await pumpUntil(
-          tester,
-          () => fakeLauncher.launchedUrls.isNotEmpty,
-          'legal_acceptance_screen.dart to call launchUrl() for the '
-          "risk_disclosure row's real presigned file — never a separate "
-          'in-app viewer',
-        );
-        await tester.pump(const Duration(milliseconds: 200));
-
-        // No bespoke risk-disclosure screen exists any more — the whole
-        // interaction is this list plus the OS-level launch above.
-        expect(find.text('Important regulatory & risk notice'), findsNothing,
-            reason: 'risk disclosure is opened externally now, not rendered '
-                'in-app from hand-authored sections text');
-        expect(find.text("I've read this"), findsNothing);
-
-        // Back on (still on) the list: risk_disclosure is now 'opened', but
-        // the other three (never tapped) are not, so the shared gate still
-        // blocks — exactly the same evidence-per-row rule as before, just
-        // uniform across all four now instead of risk_disclosure being the
-        // one exception.
-        expect(
-          find.text('Open every document above to continue.'),
-          findsOneWidget,
-          reason: 'three documents are still unopened; the shared checkbox must stay locked',
-        );
-      },
-    );
-  });
-
   group('R-44 — the avatar picker is reached from onboarding, never KYC', () {
     testWidgets(
       'biometric_screen.dart\'s two exits both route through the avatar '
@@ -204,15 +127,14 @@ void main() {
         // (byType) but sit at an off-screen render position.
         await tester.pump(const Duration(milliseconds: 500));
 
-        // Skippable: nothing is chosen, "Skip" still proceeds.
-        await tester.tap(find.text('Skip'));
-        await pumpUntil(
-          tester,
-          () => find.byType(WhatsNextScreen).evaluate().isNotEmpty,
-          'skipping the avatar picker to land on "Your account is ready"',
-        );
-        await tester.pump(const Duration(milliseconds: 500));
-
+        // Skippable: nothing is chosen, "Skip" still proceeds — and now
+        // (2026-08-31, owner: "remove the screen that says start... user
+        // should just go to the home page after onboarding") lands directly
+        // on Home. "Your account is ready" (whats_next_screen.dart, s07)
+        // used to sit between this and Home; it's gone, and both of the
+        // avatar screen's own exits (`_skip()`/`_continue()`) now go
+        // straight to Routes.home — see avatar_screen.dart.
+        //
         // Home's "not verified" feature cards used to overflow the instant
         // they painted here — two hardcoded CTA strings ("Check your
         // readiness"/"Take the quiz") laid out in a Row with no
@@ -226,8 +148,12 @@ void main() {
         final previousOnError = FlutterError.onError;
         FlutterError.onError = homeRenderErrors.add;
         try {
-          await tester.tap(find.text('Look around first'));
-          await tester.pump();
+          await tester.tap(find.text('Skip'));
+          await pumpUntil(
+            tester,
+            () => find.byType(HomeScreen).evaluate().isNotEmpty,
+            'skipping the avatar picker to land directly on Home',
+          );
           await tester.pump(const Duration(milliseconds: 50));
         } finally {
           FlutterError.onError = previousOnError;

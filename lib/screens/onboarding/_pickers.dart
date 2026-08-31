@@ -346,6 +346,7 @@ class KPhoneNumberField extends StatefulWidget {
     this.error,
     this.helper,
     this.hintText = '801 234 5678',
+    this.required = false,
   });
 
   final TextEditingController controller;
@@ -353,6 +354,9 @@ class KPhoneNumberField extends StatefulWidget {
   final VoidCallback onCountryTap;
   final ValueChanged<String>? onChanged;
   final String? error;
+
+  /// See KInput.required — renders a red asterisk beside the label.
+  final bool required;
 
   /// Shown under the field when [error] is null. Callers should make this
   /// country-aware themselves (or omit it) rather than assert something
@@ -390,7 +394,7 @@ class _KPhoneNumberFieldState extends State<KPhoneNumberField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Phone number'.upper, style: KType.label(color: KColor.ink2)),
+        KFieldLabel('Phone number', required: widget.required, color: KColor.ink2),
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -777,13 +781,17 @@ class _AvatarChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 2026-08-31: matches avatar_screen.dart's _AvatarTile — KAvatar's own
+    // plate (KIllo.platePaper) is a rounded square, not a circle, now that
+    // it draws the persona characters instead of the old circular DiceBear
+    // glyphs, so the selection ring follows the same shape.
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(KRadii.card + 3),
           border: Border.all(
             color: selected ? KColor.indicator : Colors.transparent,
             width: 2,

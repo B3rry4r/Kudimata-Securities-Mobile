@@ -220,7 +220,7 @@ Map<String, dynamic> _user() => {
       'portfolioValue': 241865000,
       'returnPct': 1.43,
       'returnTrend': 'gain',
-      'avatarKey': 'adebayo',
+      'avatarKey': 'nomad',
     };
 
 Map<String, dynamic> _notification({
@@ -888,14 +888,14 @@ class MockApiAdapter implements HttpClientAdapter {
     }
     // Plain list, not the paginated shape _fallback would otherwise
     // synthesize for a path this short — matches the real
-    // GET /compliance-acknowledgements/me response shape. Every kind
-    // acknowledged — this mock represents a fully-onboarded investor (see
-    // AppState defaults set by every test harness's own state fixture:
-    // kycApproved/suitabilityComplete/riskDisclosureAccepted all true), so
-    // an empty list here would wrongly re-trigger the risk-disclaimer gate
-    // the moment any screen calls refreshKycGatingState (e.g. Home's
-    // mandatory first-load re-check — see home_screen.dart's
-    // _initialLoad).
+    // GET /compliance-acknowledgements/me response shape. Kept as a mock
+    // fixture even though nothing in lib/ calls this endpoint any more
+    // (ComplianceRepository/compliance_repository.dart were deleted
+    // 2026-08-31, R-51, DECISIONS.md, along with their one caller — the
+    // onboarding legal-acceptance screen) — harmless to leave answering the
+    // path in case a future caller needs it, and this file's own convention
+    // (see header) is per-endpoint fixtures, not a pruned-to-only-what's-
+    // used set.
     if (path == '/compliance-acknowledgements/me') {
       return [
         for (final kind in ['terms_of_service', 'privacy_policy', 'risk_disclosure', 'client_agreement'])

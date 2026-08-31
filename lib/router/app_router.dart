@@ -25,11 +25,9 @@ import '../screens/onboarding/create_passcode_screen.dart';
 import '../screens/onboarding/confirm_passcode_screen.dart';
 import '../screens/onboarding/biometric_screen.dart';
 import '../screens/onboarding/avatar_screen.dart';
-import '../screens/onboarding/whats_next_screen.dart';
 import '../screens/onboarding/personal_details_screen.dart';
 import '../screens/onboarding/log_in_screen.dart';
 import '../screens/onboarding/reset_passcode_screen.dart';
-import '../screens/onboarding/legal_preview_screen.dart';
 
 // KYC.
 import '../screens/kyc/_kyc_chrome.dart' show kycBackTarget;
@@ -48,10 +46,9 @@ import '../screens/kyc/submitted.dart';
 import '../screens/kyc/approved.dart';
 import '../screens/kyc/outcome_not_approved.dart';
 
-// Suitability & agreements.
-import '../screens/suitability/questionnaire_screen.dart';
-import '../screens/suitability/suitability_result_screen.dart';
-import '../screens/suitability/terms_and_privacy_screen.dart';
+// Suitability & agreements — questionnaire_screen.dart,
+// suitability_result_screen.dart and terms_and_privacy_screen.dart removed
+// 2026-08-31 (R-51, DECISIONS.md); see routes.dart's own header notes.
 
 // Tab roots.
 import '../screens/home/home_screen.dart';
@@ -81,7 +78,6 @@ import '../screens/account/help_support_screen.dart';
 import '../screens/account/faq_screen.dart';
 import '../screens/account/security_screen.dart';
 import '../screens/account/notifications_settings_screen.dart';
-import '../screens/account/legal_screen.dart';
 import '../screens/account/statements_screen.dart';
 import '../screens/account/freeze_account_screen.dart';
 import '../screens/account/security_alert_screen.dart';
@@ -188,15 +184,6 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.signup, builder: (_, _) => themedGated(() => SignUpScreen())),
       GoRoute(path: Routes.otp, builder: (_, _) => themedGated(() => OtpScreen())),
       GoRoute(
-        path: Routes.legalBundlePreview,
-        builder: (_, _) => themed(() => LegalBundlePreviewScreen()),
-      ),
-      GoRoute(
-        path: Routes.legalPreviewPath,
-        builder: (_, st) =>
-            themed(() => LegalPreviewScreen(kind: st.pathParameters['kind']!)),
-      ),
-      GoRoute(
         path: Routes.createPasscode,
         // `extra: true` marks re-entry from Security's "Change passcode"
         // (security_screen.dart) rather than first-time onboarding. A
@@ -256,10 +243,6 @@ GoRouter buildRouter(AppState state) {
         builder: (_, _) => themedGated(() => OnboardingAvatarScreen()),
       ),
       GoRoute(
-        path: Routes.onboardingNextSteps,
-        builder: (_, _) => themedGated(() => WhatsNextScreen()),
-      ),
-      GoRoute(
         path: Routes.login,
         // `extra: true` (main.dart's resume-lock push, A-6 2026-08-29 audit)
         // marks this as a re-lock challenge over an already-signed-in
@@ -288,22 +271,9 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.kycApproved, builder: (_, _) => themedGated(() => ApprovedScreen())),
       GoRoute(path: Routes.kycOutcome, builder: (_, _) => themedGated(() => KycOutcomeScreen())),
 
-      // ── Suitability & agreements ───────────────────────────────────────--
-      GoRoute(path: Routes.questionnaire, builder: (_, _) => themedGated(() => QuestionnaireScreen())),
-      GoRoute(path: Routes.suitabilityResult, builder: (_, _) => themedGated(() => SuitabilityResultScreen())),
-      GoRoute(
-        path: Routes.termsOfService,
-        // All FOUR legal documents, risk disclosure included, in one
-        // screen/one tick — see terms_and_privacy_screen.dart's header.
-        // Reached from suitability_result_screen.dart's own Continue action
-        // (`context.go`), not straight off OTP. There is no risk-disclaimer
-        // hop in between any more (DECISIONS.md's R-8a superseded note,
-        // 2026-08-29) — this route is reached directly. The account email
-        // rides AppState.pendingSignupEmail across the suitability/result
-        // hops between OTP and here (see that field's doc comment) rather
-        // than this route's `extra`.
-        builder: (_, _) => themedGated(() => TermsAndPrivacyScreen()),
-      ),
+      // Suitability & agreements — questionnaire/suitabilityResult/
+      // termsOfService routes removed 2026-08-31 (R-51, DECISIONS.md): otp
+      // (above) now goes straight to createPasscode.
 
       // ── Pushed detail (top-level — cover the shell, no tab bar) ─────────--
       GoRoute(path: Routes.notifications, builder: (_, _) => themed(() => NotificationsScreen())),
@@ -350,7 +320,8 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.acctFaq, builder: (_, _) => themed(() => FaqScreen())),
       GoRoute(path: Routes.acctSecurity, builder: (_, _) => themed(() => SecurityScreen())),
       GoRoute(path: Routes.acctNotifications, builder: (_, _) => themed(() => NotificationsSettingsScreen())),
-      GoRoute(path: Routes.acctLegal, builder: (_, _) => themed(() => LegalScreen())),
+      // acctLegal removed 2026-08-31 (R-51, DECISIONS.md) — account_screen.dart's
+      // "Terms and disclosures" row opens KLinks.legal directly now.
       GoRoute(path: Routes.acctStatements, builder: (_, _) => themed(() => StatementsScreen())),
       GoRoute(path: Routes.acctFreeze, builder: (_, _) => themed(() => FreezeAccountScreen())),
       GoRoute(path: Routes.securityAlert, builder: (_, _) => themed(() => SecurityAlertScreen())),
@@ -500,13 +471,13 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.splash, Routes.welcome, Routes.signup, Routes.otp,
     Routes.createPasscode, Routes.confirmPasscode,
     Routes.biometric, Routes.onboardingPersonal, Routes.onboardingAvatar,
-    Routes.onboardingNextSteps, Routes.login, Routes.reset,
+    Routes.login, Routes.reset,
     Routes.kycIntro, Routes.kycChecklist, Routes.kycBvn, Routes.kycChn, Routes.kycId,
     Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill,
     Routes.kycBankDcs, Routes.kycDeclarations, Routes.kycNextOfKin,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
-    Routes.questionnaire, Routes.suitabilityResult,
-    Routes.termsOfService,
+    // questionnaire/suitabilityResult/termsOfService removed 2026-08-31
+    // (R-51, DECISIONS.md) along with the routes themselves.
   };
 
   // Pre-auth-only screens — never legitimately reachable once fully signed
@@ -536,23 +507,22 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     //
     // The exemption reuses `gated` MINUS `preAuthOnly` — i.e. every
     // mid-onboarding screen (createPasscode/confirmPasscode themselves,
-    // biometric, KYC, questionnaire/suitabilityResult/termsOfService, the
-    // onboarding extras, the login/unlock screen) stays reachable exactly
-    // as freely as it already is for a fully signed-OUT session a few lines
-    // below ("gated flow always allowed") — this is NOT a narrower,
-    // hand-picked allowlist, on purpose: termsOfService's own accept
-    // handler (legal_acceptance_screen.dart, when its kinds include
-    // risk_disclosure) flips [signedIn] true BEFORE createPasscode/
-    // confirmPasscode ever run, so termsOfService itself can be reached
-    // with signedIn=true and passcodeSet still false — a hand-picked
-    // allowlist of just the two passcode screens caught exactly this
-    // legitimate case and forced it back to createPasscode mid-flow,
-    // silently skipping terms acceptance. What's NOT exempted is precisely
-    // what the actual defect was: `preAuthOnly` (splash/welcome/signup/otp/
-    // reset, which the block below would otherwise bounce straight to
-    // Home) and everything outside `gated` entirely — Home, the tab shell,
-    // every pushed/account screen. That is the one and only invariant this
-    // enforces.
+    // biometric, KYC, the onboarding extras, the login/unlock screen) stays
+    // reachable exactly as freely as it already is for a fully signed-OUT
+    // session a few lines below ("gated flow always allowed") — this is NOT
+    // a narrower, hand-picked allowlist, on purpose: otp_screen.dart's own
+    // `_verify()` flips [signedIn] true the instant OTP verification
+    // succeeds (2026-08-31, R-51 — moved up from the deleted legal-
+    // acceptance screen's accept handler, which used to be the one that set
+    // it), BEFORE createPasscode/confirmPasscode ever run, so createPasscode
+    // itself is reached with signedIn=true and passcodeSet still false. A
+    // hand-picked allowlist of just the two passcode screens would catch
+    // exactly this legitimate case and force a redundant redirect back to
+    // itself. What's NOT exempted is precisely what the actual defect was:
+    // `preAuthOnly` (splash/welcome/signup/otp/reset, which the block below
+    // would otherwise bounce straight to Home) and everything outside
+    // `gated` entirely — Home, the tab shell, every pushed/account screen.
+    // That is the one and only invariant this enforces.
     final midOnboardingOnly = gated.contains(loc) && !preAuthOnly.contains(loc);
     if (!state.passcodeSet && !midOnboardingOnly) {
       return Routes.createPasscode;
@@ -582,12 +552,10 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     return null;                            // otherwise free roam
   }
   if (gated.contains(loc)) return null;     // gated flow always allowed
-  // Legal-document preview is reachable pre-signup (sign_up_screen.dart's
-  // "By continuing..." link) — both the bundle list (exact match) and each
-  // individual document (a parameterized route, so a prefix check rather
-  // than the `gated` set's exact-string membership).
-  if (loc == Routes.legalBundlePreview) return null;
-  if (loc.startsWith('/legal-preview/')) return null;
+  // legalBundlePreview/legal-preview exemptions removed 2026-08-31 (R-51,
+  // DECISIONS.md) along with legal_preview_screen.dart — there is no
+  // pre-signup in-app document preview any more; sign_up_screen.dart's
+  // checkbox opens KLinks.legal in the device browser instead.
   return Routes.splash;                      // any deep link into the app → splash
 }
 

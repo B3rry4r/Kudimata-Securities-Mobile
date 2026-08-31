@@ -97,18 +97,27 @@ class UserRepository {
     await _client.patch('/users/me', data: body);
   }
 
-  /// The 8 selectable named characters — mirrors
+  /// The 6 selectable persona characters — mirrors
   /// assets/illustrations/avatars/ (excluding "guide", the fixed AI-mark
   /// mascot) and the backend's AVATAR_KEYS.
+  ///
+  /// 2026-08-31, direct product instruction ("even the avatars should be
+  /// kudimata persona avatars"): replaces the 8 generated (DiceBear
+  /// "Adventurer") glyphs this used to list — same source that
+  /// kudimata.app's own persona picker uses
+  /// (public/illustrations/avatars/). The count is genuinely 6, not 8: the
+  /// persona set kudimata.app ships today has 6 characters, so this list
+  /// shrank rather than being padded back out with invented names — see
+  /// AVATAR_KEYS' matching update in Kudimata-Securities-Backend
+  /// (common/types/user.types.ts + users/dto/update-me.dto.ts), which
+  /// validates this same 6-key set server-side.
   static const avatarKeys = [
-    'adebayo',
-    'bisi',
-    'chiamaka',
-    'emeka',
-    'folake',
-    'kudi',
-    'ngozi',
-    'tunde',
+    'artist',
+    'builder',
+    'creator',
+    'designer',
+    'freelancer',
+    'nomad',
   ];
 
   /// POST /users/me/freeze — self-service account freeze (2026-08-22 "Soft

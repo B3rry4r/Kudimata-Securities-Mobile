@@ -63,9 +63,11 @@ import 'package:kudimata_invest/data/models.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/api/passcode_store.dart';
+import 'package:kudimata_invest/data/api/risk_disclosure_store.dart';
 import 'package:kudimata_invest/data/repositories/order_placement_repository.dart';
 import 'package:kudimata_invest/data/repositories/wallet_repository.dart';
 import 'package:kudimata_invest/data/repositories/holdings_repository.dart';
+import 'package:kudimata_invest/k_links.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart'
     show BankAccountSummary;
 import 'package:kudimata_invest/screens/shared/confirm_passcode_sheet.dart';
@@ -959,16 +961,36 @@ class _BuySharesSheetState extends State<_BuySharesSheet> {
 // Step — review (s29 limit / s29m market).
 // ─────────────────────────────────────────────────────────────────────────────
 
+// R-5x (DECISIONS.md): the risk-disclosure checkbox below is a one-time-
+// per-investor acknowledgement, not a per-order confirmation — reads
+// RiskDisclosureStore BEFORE the sheet is even built, so _BuyReviewSheet's
+// build() never has to render a loading state to find out whether to show
+// it. PasscodeStore().owner is the identity used to scope that read — the
+// same "who is this device's current investor" source log_in_screen.dart
+// already relies on (belongsTo), rather than adding a second identity
+// concept. A null owner (no passcode on record) is the safe fallback: the
+// checkbox shows and nothing is ever recorded for a null identity — see
+// _BuyReviewSheetState._confirm.
 Future<Object?> _showBuyReviewSheet(
   BuildContext context, {
   required Asset asset,
   required _Kind kind,
   required double price,
   required double units,
-}) {
+}) async {
+  final owner = await PasscodeStore().owner;
+  final alreadyAccepted = owner != null && await RiskDisclosureStore().hasAccepted(owner);
+  if (!context.mounted) return null;
   return showKSheet<Object>(
     context,
-    child: _BuyReviewSheet(asset: asset, kind: kind, price: price, units: units),
+    child: _BuyReviewSheet(
+      asset: asset,
+      kind: kind,
+      price: price,
+      units: units,
+      investorEmail: owner,
+      riskDisclosureAlreadyAccepted: alreadyAccepted,
+    ),
   );
 }
 
@@ -978,11 +1000,29 @@ class _BuyReviewSheet extends StatefulWidget {
     required this.kind,
     required this.price,
     required this.units,
+    required this.investorEmail,
+    required this.riskDisclosureAlreadyAccepted,
   });
   final Asset asset;
   final _Kind kind;
   final double price;
   final double units;
+
+  /// The signed-in investor's email (PasscodeStore.owner, read by
+  /// _showBuyReviewSheet before this widget is even built) — used only to
+  /// scope RiskDisclosureStore's per-investor acceptance record. Null in
+  /// the (unreachable in practice, since passcodeSet already gates this
+  /// screen) case no passcode owner is on record: the checkbox always
+  /// shows and _confirm skips recording, the same "ask again" fallback a
+  /// missing record gets.
+  final String? investorEmail;
+
+  /// Whether [investorEmail] has already had an accepted order recorded
+  /// (RiskDisclosureStore.hasAccepted). True hides the checkbox entirely
+  /// and lets `Place order` enable on its own — the owner explicitly does
+  /// not want a ticked, disabled box shown again once an investor has
+  /// traded before.
+  final bool riskDisclosureAlreadyAccepted;
 
   @override
   State<_BuyReviewSheet> createState() => _BuyReviewSheetState();
@@ -1063,18 +1103,39 @@ class _BuyReviewSheetState extends State<_BuyReviewSheet> {
         // A real, live compliance ack, not decoration — kept even though the
         // canvas doesn't draw it (dropping a risk acknowledgement to match a
         // mockup exactly would be the wrong kind of exact).
-        KCheckbox(
-          checked: _agreed,
-          label: 'I understand the risks',
-          onChanged: (v) => setState(() => _agreed = v),
-        ),
-        const SizedBox(height: 16),
+        //
+        // Retitled 2026-08-31 (R-51, DECISIONS.md): risk-disclosure
+        // acknowledgement moved here from the deleted onboarding legal-
+        // acceptance screen — this is now where it belongs (the point of
+        // first trade, not buried in onboarding) and it's a read-the-
+        // document acknowledgement, not a bare "I understand" assertion —
+        // same shared widget and phrasing pattern as sign_up_screen.dart's
+        // account-creation checkbox (KLinkedCheckbox, lib/widgets/forms.dart).
+        //
+        // R-5x follow-up (DECISIONS.md): a ONE-TIME acknowledgement, not a
+        // per-order confirmation — once RiskDisclosureStore records this
+        // investor accepted it on a past successful order,
+        // [widget.riskDisclosureAlreadyAccepted] is true and this whole
+        // block is omitted (not shown ticked-and-disabled — the owner
+        // explicitly asked for it to be gone).
+        if (!widget.riskDisclosureAlreadyAccepted) ...[
+          KLinkedCheckbox(
+            checked: _agreed,
+            onChanged: (v) => setState(() => _agreed = v),
+            prefixText: 'I have read the',
+            linkText: 'Risk Disclosure',
+            url: KLinks.legalRisk,
+          ),
+          const SizedBox(height: 16),
+        ],
         _StepFooter(
           backLabel: 'Back',
           onBack: _placing ? null : () => Navigator.of(context).pop(_back),
           primaryLabel: 'Place order',
           primaryLoading: _placing,
-          onPrimary: (_agreed && !_placing) ? _confirm : null,
+          onPrimary: ((widget.riskDisclosureAlreadyAccepted || _agreed) && !_placing)
+              ? _confirm
+              : null,
         ),
       ],
     );
@@ -1102,6 +1163,15 @@ class _BuyReviewSheetState extends State<_BuyReviewSheet> {
         orderType: widget.kind == _Kind.limit ? OrderType.limit : OrderType.market,
         limitPrice: widget.kind == _Kind.limit ? (widget.price * 100).round() : null,
       );
+      // The order has genuinely been placed — this, not the moment the
+      // checkbox was ticked, is when acceptance is recorded (R-5x,
+      // DECISIONS.md). Everything above this line can still fail (market
+      // closed interstitial declined, passcode wrong/cancelled) or throw
+      // (the catch below) without ever reaching here, so none of those
+      // record acceptance — the next attempt still asks.
+      if (!widget.riskDisclosureAlreadyAccepted && widget.investorEmail != null) {
+        await RiskDisclosureStore().recordAccepted(widget.investorEmail!);
+      }
       if (!mounted) return;
       Navigator.of(context).pop(order);
     } on ApiException catch (e) {

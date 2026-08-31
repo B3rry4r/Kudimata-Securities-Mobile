@@ -4,6 +4,43 @@ import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import 'k_icon.dart';
 
+/// Shared field-label row: the tracked uppercase label used across every
+/// input-shaped control, with an optional trailing red asterisk for fields
+/// that actually block submission when left empty. Built once here so
+/// [KInput], [KFileUpload], and the per-screen picker/"tappable select"
+/// field widgets (state, bank, document-type, phone country, etc.) render
+/// the same marker instead of each reimplementing it — see the owner's
+/// "compulsory fields get a red asterisk" instruction (2026-08-31).
+///
+/// The asterisk is a visual-only signal, so [required] also folds into this
+/// widget's semantics label ("Field, required") rather than leaving screen
+/// readers with no way to know.
+class KFieldLabel extends StatelessWidget {
+  const KFieldLabel(this.text, {super.key, this.required = false, this.color});
+
+  final String text;
+  final bool required;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = KType.label(color: color);
+    return Semantics(
+      label: required ? '$text, required' : text,
+      excludeSemantics: true,
+      child: RichText(
+        text: TextSpan(
+          text: text.upper,
+          style: style,
+          children: required
+              ? [TextSpan(text: ' *', style: style.copyWith(color: KColor.loss))]
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
 /// Text input — tracked uppercase label, hairline field that goes ink on focus,
 /// helper/error line. Optional leading icon, prefix (₦), suffix, numeric mode.
 class KInput extends StatefulWidget {
@@ -28,6 +65,7 @@ class KInput extends StatefulWidget {
     this.amountSize = 26,
     this.multiline = false,
     this.minLines = 3,
+    this.required = false,
   });
 
   final String? label;
@@ -45,6 +83,12 @@ class KInput extends StatefulWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final Widget? trailing;
+
+  /// Marks the field as one that actually blocks submission when empty —
+  /// renders a red asterisk beside the label. Set this only for fields
+  /// confirmed in the screen's own validity/button-enable logic, not from
+  /// the label text alone.
+  final bool required;
 
   /// Editorial large-amount mode: bumps the input figure (and ₦/$ prefix) to a
   /// 26px semibold tabular numeral, matching the design's amount-entry sheets
@@ -94,8 +138,9 @@ class _KInputState extends State<KInput> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (widget.label != null) ...[
-          Text(widget.label!.upper,
-              style: KType.label(color: widget.disabled ? KColor.ink3 : KColor.ink2)),
+          KFieldLabel(widget.label!,
+              required: widget.required,
+              color: widget.disabled ? KColor.ink3 : KColor.ink2),
           const SizedBox(height: 8),
         ],
         AnimatedContainer(
@@ -471,6 +516,7 @@ class KFileUpload extends StatelessWidget {
     this.file,
     this.onPick,
     this.onRemove,
+    this.required = false,
   });
 
   final String? label;
@@ -483,6 +529,9 @@ class KFileUpload extends StatelessWidget {
   final VoidCallback? onPick;
   final VoidCallback? onRemove;
 
+  /// See [KInput.required] — renders a red asterisk beside the label.
+  final bool required;
+
   @override
   Widget build(BuildContext context) {
     final borderColor = error != null ? KColor.loss : KColor.hairline;
@@ -491,7 +540,7 @@ class KFileUpload extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (label != null) ...[
-          Text(label!.upper, style: KType.label(color: disabled ? KColor.ink3 : KColor.ink2)),
+          KFieldLabel(label!, required: required, color: disabled ? KColor.ink3 : KColor.ink2),
           const SizedBox(height: 8),
         ],
         if (file == null)

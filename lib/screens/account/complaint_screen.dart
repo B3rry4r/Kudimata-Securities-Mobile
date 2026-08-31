@@ -532,6 +532,7 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
             error: _showErrors && _descriptionController.text.trim().isEmpty
                 ? 'Tell us what happened'
                 : null,
+            required: true,
           ),
           const SizedBox(height: 12),
           KFileUpload(

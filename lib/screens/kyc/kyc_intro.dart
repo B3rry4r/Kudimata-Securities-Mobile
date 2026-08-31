@@ -212,7 +212,21 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const KIllustration('kyc-intro', role: KIlloRole.state, tone: KIlloTone.sun),
+                        // 2026-08-31 (owner: "scrap all those other useless
+                        // illustrations on the kyc start screen... get
+                        // illustrations from our Kudimata persona
+                        // section"): the greyed-out/pinkish look was the old
+                        // Semcore scene's own muted palette (KIllo.grey
+                        // #7C6C86 + KIllo.tint #E9E0F2), not a rendering
+                        // defect — this is now kudimata.app's own
+                        // iri/kyc.svg persona illustration instead.
+                        // tone: paper (not the state role's usual sun tint)
+                        // because that art is dark ink + a purple gradient
+                        // on a TRANSPARENT background — sunTint's dark-mode
+                        // wash is nearly as dark as the screen itself and
+                        // would make the ink vanish; see KIllo.platePaper's
+                        // doc comment.
+                        const KIllustration('kyc-intro', role: KIlloRole.state, tone: KIlloTone.paper),
                         const SizedBox(height: 28),
                         Text(
                           "Let's verify your identity",

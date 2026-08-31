@@ -134,14 +134,20 @@ class _OtpScreenState extends State<OtpScreen> {
       final tokens = await _repo.verifyEmailOtp(email: email, code: _digits.join());
       await _tokenStore.saveTokens(tokens.accessToken, tokens.refreshToken ?? '');
       if (!mounted) return;
-      // R-8a (DECISIONS.md, 2026-08-27): suitability now runs immediately
-      // after OTP, ahead of the legal documents — the terms screen no
-      // longer follows straight from here, so `email` can't ride this
-      // route's `extra` any more. Stashed on AppState instead (see its own
-      // doc comment) for terms_and_privacy_screen.dart to pick up several
-      // screens downstream.
-      AppScope.read(context).setPendingSignupEmail(email);
-      context.go(Routes.questionnaire);
+      // 2026-08-31 (R-51, DECISIONS.md): the questionnaire/suitability-result/
+      // legal-documents chain this used to hand off to is gone — a verified
+      // email now goes straight to passcode creation, `email` riding this
+      // route's own `extra` again (no more AppState.pendingSignupEmail hop).
+      //
+      // [signedIn] flips true right here rather than downstream, on the
+      // strength of the token just saved above — this used to happen inside
+      // the deleted legal-acceptance screen's own accept handler, several
+      // screens later; app_router.dart's `_gateRedirect` doc comment on the
+      // 2026-08-29 "interrupted signup" fix explains why createPasscode
+      // being reached with signedIn=true and passcodeSet=false is the
+      // correct, expected shape, not a bug.
+      AppScope.read(context).setSignedIn(true);
+      context.go(Routes.createPasscode, extra: email);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {

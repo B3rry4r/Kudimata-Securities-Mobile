@@ -75,7 +75,6 @@ class SubStateSpec {
     this.signedIn = true,
     this.kycSubmitted = true,
     this.kycApproved = true,
-    this.suitabilityComplete = true,
     this.kyc = MockKyc.approved,
     this.portfolio = MockPortfolio.populated,
     this.market = MockMarket.open,
@@ -98,7 +97,6 @@ class SubStateSpec {
   final bool signedIn;
   final bool kycSubmitted;
   final bool kycApproved;
-  final bool suitabilityComplete;
   final MockKyc kyc;
   final MockPortfolio portfolio;
   final MockMarket market;
@@ -269,7 +267,7 @@ final List<SubStateSpec> _subStates = [
   // uses the default MockKyc.approved fixture, which the screen's own
   // switch never matches — it silently falls through to the defensive
   // fallback branch, so none of the three real outcomes was ever rendered
-  // by the harness. kycApproved/suitabilityComplete false to match how this
+  // by the harness. kycApproved false to match how this
   // screen is actually reached (post-KYC-submission, pre-approval).
   SubStateSpec(
     screen: 'kyc_outcome',
@@ -278,7 +276,6 @@ final List<SubStateSpec> _subStates = [
     dartFile: 'kyc/outcome_not_approved.dart',
     kyc: MockKyc.rejected,
     kycApproved: false,
-    suitabilityComplete: false,
   ),
   SubStateSpec(
     screen: 'kyc_outcome',
@@ -287,7 +284,6 @@ final List<SubStateSpec> _subStates = [
     dartFile: 'kyc/outcome_not_approved.dart',
     kyc: MockKyc.flagged,
     kycApproved: false,
-    suitabilityComplete: false,
   ),
   SubStateSpec(
     screen: 'kyc_outcome',
@@ -296,7 +292,6 @@ final List<SubStateSpec> _subStates = [
     dartFile: 'kyc/outcome_not_approved.dart',
     kyc: MockKyc.expired,
     kycApproved: false,
-    suitabilityComplete: false,
   ),
 ];
 
@@ -375,8 +370,6 @@ Future<_Mounted> _mount(WidgetTester tester, SubStateSpec spec, ThemeMode mode) 
     ..passcodeSet = spec.signedIn
     ..kycSubmitted = spec.kycSubmitted
     ..kycApproved = spec.kycApproved
-    ..suitabilityComplete = spec.suitabilityComplete
-    ..riskDisclosureAccepted = spec.suitabilityComplete
     ..apiClient = apiClient
     ..kycForm = KycFormState();
 

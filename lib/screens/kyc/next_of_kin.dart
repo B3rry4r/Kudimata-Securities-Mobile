@@ -223,11 +223,13 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
                               error: _showErrors && _name.text.trim().isEmpty ? 'Enter a full name' : null,
                               onChanged: (_) {
                                 if (_showErrors) setState(() {});
-                              }),
+                              },
+                              required: true),
                           const SizedBox(height: 16),
                           _RelationshipField(
                             value: _relationship,
                             onTap: _pickRelationship,
+                            required: true,
                           ),
                           if (_showErrors && _relationship == null) ...[
                             const SizedBox(height: 6),
@@ -242,7 +244,8 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
                               error: _showErrors && _phone.text.trim().isEmpty ? 'Enter a phone number' : null,
                               onChanged: (_) {
                                 if (_showErrors) setState(() {});
-                              }),
+                              },
+                              required: true),
                           const SizedBox(height: 16),
                           // Canvas s21's 4th field — optional, no validation.
                           KInput(
@@ -300,9 +303,12 @@ void _showErrorSheet(BuildContext context, {required String message}) {
 /// consistently among the KInput fields around it in the same KCard, but
 /// opens [_RelationRow]'s picker sheet instead of a keyboard.
 class _RelationshipField extends StatelessWidget {
-  const _RelationshipField({required this.value, required this.onTap});
+  const _RelationshipField({required this.value, required this.onTap, this.required = false});
   final String? value;
   final VoidCallback onTap;
+
+  /// See KInput.required — renders a red asterisk beside the label.
+  final bool required;
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +316,7 @@ class _RelationshipField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('RELATIONSHIP', style: KType.label(color: KColor.ink2)),
+        KFieldLabel('Relationship', required: required, color: KColor.ink2),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: onTap,

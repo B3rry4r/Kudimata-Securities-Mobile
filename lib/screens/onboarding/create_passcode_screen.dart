@@ -99,16 +99,12 @@ class _CreatePasscodeScreenState extends State<CreatePasscodeScreen> {
               // `s05` draws no step label at all — see file header.
               stepLabel: null,
               // `s05`'s own back arrow targets `s04` (the OTP screen)
-              // directly, because the canvas has no separate terms screen.
-              // R-11 keeps terms acceptance as a dedicated post-OTP screen in
-              // this app ("The canvas's pre-OTP checkbox is not adopted"),
-              // so the real flow is OTP -> Terms -> here — back correctly
-              // returns to Terms, not OTP. This used to route to Routes.otp,
-              // silently skipping back over the terms screen (found during
-              // the 2026-08-23 exactness audit) — kept fixed here.
-              onBack: () => widget.reentry
-                  ? context.pop()
-                  : context.go(Routes.termsOfService),
+              // directly — matches the real flow again as of 2026-08-31
+              // (R-51, DECISIONS.md): the dedicated post-OTP terms screen
+              // this used to route back to instead is gone, and otp_screen.
+              // dart now hands off to this screen directly, same as the
+              // canvas always drew.
+              onBack: () => widget.reentry ? context.pop() : context.go(Routes.otp),
             ),
             Expanded(
               child: KOnboardBody(

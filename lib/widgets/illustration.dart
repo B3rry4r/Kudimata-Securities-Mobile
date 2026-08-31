@@ -11,8 +11,11 @@ import '../theme/tokens.dart';
 /// sizes per tokens/illustration.css's own comment).
 enum KIlloRole { hero, state, small, banner }
 
-/// Which tinted plate the illustration sits on.
-enum KIlloTone { indicator, warm, sun }
+/// Which tinted plate the illustration sits on. `paper` is the one
+/// theme-invariant option — see KIllo.platePaper's doc comment — for
+/// persona-style art (dark ink on a transparent background) that would
+/// otherwise vanish against `indicator`/`warm`/`sun`'s dark-mode washes.
+enum KIlloTone { indicator, warm, sun, paper }
 
 /// A scene from assets/illustrations/ on its plate. `name` is the file's
 /// basename without extension, e.g. `KIllustration('empty-wallet')`.
@@ -49,6 +52,7 @@ class KIllustration extends StatelessWidget {
         KIlloTone.indicator => KIllo.platePurple,
         KIlloTone.warm => KIllo.plateWarm,
         KIlloTone.sun => KIllo.plateSun,
+        KIlloTone.paper => KIllo.platePaper,
       };
 
   @override
@@ -81,12 +85,10 @@ class KIllustration extends StatelessWidget {
   }
 }
 
-/// A generated Adventurer-style character (CC BY 4.0) — see readme.md's
-/// "Characters are generated, not drawn" note. `avatarKey` renders one of
-/// the 8 named characters in assets/illustrations/avatars/ (one of
-/// UserRepository.avatarKeys); `guide` always renders the pinned guide
-/// character (the face of the comprehension layer and the AI mark)
-/// regardless of `avatarKey`.
+/// `avatarKey` renders one of the 6 named characters in
+/// assets/illustrations/avatars/ (one of UserRepository.avatarKeys);
+/// `guide` always renders the pinned guide character (the face of the
+/// comprehension layer and the AI mark) regardless of `avatarKey`.
 ///
 /// 2026-08-24, direct product instruction: this used to hash a `seed`
 /// string (usually the investor's email) to auto-pick a character with no
@@ -97,6 +99,20 @@ class KIllustration extends StatelessWidget {
 /// callers with a possibly-null avatarKey branch on it themselves (see
 /// account_screen.dart / home_screen.dart) rather than this widget silently
 /// falling back to a generated one.
+///
+/// 2026-08-31: the 8 generated (DiceBear "Adventurer") glyphs this used to
+/// draw — near-duplicate outlines differing mostly by background tint —
+/// are replaced by Kudimata's own 6 persona illustrations (same source as
+/// kudimata.app's kudi-persona picker; see UserRepository.avatarKeys' own
+/// updated doc comment for why the count changed 8 → 6). That art is drawn
+/// with dark ink and gradient fills on a TRANSPARENT background — it needs
+/// a light plate under it or it reads as nothing on the app's dark ground,
+/// same problem the website solves with its own literal-white
+/// `.avatarPlate` (components/kudi-persona/kudiPersona.module.css). `guide`
+/// is unaffected: it is still the original self-contained circular mark
+/// (its own background baked into the SVG, no plate needed) — the `guide`
+/// flag is what tells this widget which of the two rendering rules to use,
+/// rather than forking a second avatar widget for it.
 class KAvatar extends StatelessWidget {
   const KAvatar({super.key, required this.avatarKey, this.size = KIllo.avatarSm})
       : guide = false;
@@ -111,14 +127,27 @@ class KAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(size / 2),
-      child: SvgPicture.asset(
-        'assets/illustrations/avatars/$avatarKey.svg',
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
+    final svg = SvgPicture.asset(
+      'assets/illustrations/avatars/$avatarKey.svg',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+    );
+    if (guide) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: svg,
+      );
+    }
+    return Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: KIllo.platePaper,
+        borderRadius: BorderRadius.circular(KRadii.card),
       ),
+      child: svg,
     );
   }
 }

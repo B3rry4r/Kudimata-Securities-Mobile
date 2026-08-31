@@ -99,8 +99,6 @@ Future<GlobalKey> _mountAt(
     ..passcodeSet = true
     ..kycSubmitted = true
     ..kycApproved = kycApproved
-    ..suitabilityComplete = true
-    ..riskDisclosureAccepted = true
     ..apiClient = apiClient;
   final router = buildRouter(state);
   final key = GlobalKey();

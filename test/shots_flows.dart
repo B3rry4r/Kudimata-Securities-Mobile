@@ -166,7 +166,7 @@ final List<FlowSpec> _flows = [
     dartFile: 'trade/trade_flows.dart',
     steps: const [
       Tap('Buy'), Tap('Name your price'), Tap('Continue'), EnterText('60'), Tap('Review order'),
-      Tap('I understand the risks'), Tap('Place order'),
+      Tap('I have read the'), Tap('Place order'),
     ],
   ),
   FlowSpec(
@@ -175,7 +175,7 @@ final List<FlowSpec> _flows = [
     dartFile: 'trade/trade_flows.dart',
     steps: [
       const Tap('Buy'), const Tap('Name your price'), const Tap('Continue'), const EnterText('60'),
-      const Tap('Review order'), const Tap('I understand the risks'), const Tap('Place order'),
+      const Tap('Review order'), const Tap('I have read the'), const Tap('Place order'),
       ..._digits(_kTestPasscode),
     ],
   ),
@@ -187,7 +187,7 @@ final List<FlowSpec> _flows = [
     dartFile: 'shared/confirm_passcode_sheet.dart',
     steps: const [
       Tap('Buy'), Tap('Name your price'), Tap('Continue'), EnterText('60'), Tap('Review order'),
-      Tap('I understand the risks'), Tap('Place order'),
+      Tap('I have read the'), Tap('Place order'),
       Tap('1'), Tap('1'), Tap('1'), Tap('1'), Tap('1'), Tap('1'),
     ],
   ),
@@ -214,7 +214,7 @@ final List<FlowSpec> _flows = [
     market: MockMarket.closed,
     steps: const [
       Tap('Buy'), Tap('Name your price'), Tap('Continue'), EnterText('60'), Tap('Review order'),
-      Tap('I understand the risks'), Tap('Place order'),
+      Tap('I have read the'), Tap('Place order'),
     ],
   ),
 
@@ -468,8 +468,6 @@ Future<_Mounted> _mount(WidgetTester tester, FlowSpec spec, ThemeMode mode) asyn
     ..passcodeSet = true
     ..kycSubmitted = true
     ..kycApproved = true
-    ..suitabilityComplete = true
-    ..riskDisclosureAccepted = true
     ..apiClient = apiClient
     ..kycForm = KycFormState();
 
