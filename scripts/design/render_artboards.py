@@ -6,8 +6,12 @@ screenshot of the app, read the artboard's HTML *source*, and judged. Picture on
 one side, code on the other. That is not a comparison, and it is how an entire
 tab shipped un-built while every report said the design was covered.
 
-    python3 scripts/design/render_artboards.py                 # every artboard
-    python3 scripts/design/render_artboards.py s51 s22 s56     # only these
+    python3 render_artboards.py                      # every artboard
+    python3 render_artboards.py s51 s22              # only these
+    python3 render_artboards.py --canvas path/to/canvas   # explicit location
+
+Run it from the repo root. The canvas directory is discovered (any folder
+containing .dc.html files), or given with --canvas / $DESIGN_CANVAS_DIR.
 
 Output: build/design_shots/<id>.png, at phone width, ready to sit beside
 build/shots/<screen>__light.png.
@@ -34,14 +38,38 @@ collapses the layout the runtime has already computed. The copy is deleted after
 
 from __future__ import annotations
 
+import os
 import pathlib
 import re
 import subprocess
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
-CANVAS = ROOT / "docs/design/redesign-2026-08"
+ROOT = pathlib.Path.cwd()
 OUT = ROOT / "build/design_shots"
+
+
+def find_canvas() -> pathlib.Path | None:
+    """Locate the canvas directory instead of assuming its name.
+
+    The first version of this script hardcoded one project's folder
+    (`docs/design/redesign-2026-08`), which worked in exactly that repo and
+    silently rendered nothing anywhere else. A tool that only runs where it was
+    written is not a tool.
+
+    Order: an explicit --canvas argument, then $DESIGN_CANVAS_DIR, then the
+    shallowest directory under the repo that actually contains .dc.html files.
+    """
+    args = sys.argv[1:]
+    if "--canvas" in args:
+        return pathlib.Path(args[args.index("--canvas") + 1]).resolve()
+    env = os.environ.get("DESIGN_CANVAS_DIR")
+    if env:
+        return pathlib.Path(env).resolve()
+    found = sorted(
+        {f.parent for f in ROOT.rglob("*.dc.html") if ".git" not in f.parts},
+        key=lambda d: len(d.parts),
+    )
+    return found[0] if found else None
 CHROME = next((c for c in ("google-chrome", "chromium", "chromium-browser")
                if subprocess.run(["which", c], capture_output=True).returncode == 0), None)
 
@@ -61,11 +89,21 @@ def main() -> int:
         print("no chrome/chromium on PATH - cannot render", file=sys.stderr)
         return 2
 
-    wanted = set(sys.argv[1:])
+    argv = sys.argv[1:]
+    if "--canvas" in argv:
+        i = argv.index("--canvas")
+        argv = argv[:i] + argv[i + 2:]
+    wanted = set(argv)
+
+    canvas = find_canvas()
+    if canvas is None or not canvas.is_dir():
+        print("no .dc.html canvas found. Pass --canvas <dir> or set "
+              "DESIGN_CANVAS_DIR.", file=sys.stderr)
+        return 2
     OUT.mkdir(parents=True, exist_ok=True)
     rendered, failed = 0, []
 
-    for f in sorted(CANVAS.glob("*.dc.html")):
+    for f in sorted(canvas.glob("*.dc.html")):
         src = f.read_text(errors="replace")
         ids = [m.group(1) for m in re.finditer(r'id="(s\d+[a-z]*)"', src)]
         for aid in dict.fromkeys(ids):

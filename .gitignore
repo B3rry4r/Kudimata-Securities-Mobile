@@ -69,4 +69,8 @@ scripts/gates/__pycache__/
 scripts/gates/**/__pycache__/
 
 # Skills export for download — never committed (asked for explicitly, 2026-08-29).
+# Not Kudimata-specific despite living here: the skills apply to any repo, and
+# the old `kudimata-skills-*` name said otherwise. Both patterns kept so an
+# older export sitting in someone's working copy still cannot be committed.
+build-skills-*.zip
 kudimata-skills-*.zip
