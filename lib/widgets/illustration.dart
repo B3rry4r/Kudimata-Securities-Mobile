@@ -127,27 +127,14 @@ class KAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final svg = SvgPicture.asset(
-      'assets/illustrations/avatars/$avatarKey.svg',
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-    );
-    if (guide) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(size / 2),
-        child: svg,
-      );
-    }
-    return Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: KIllo.platePaper,
-        borderRadius: BorderRadius.circular(KRadii.card),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(size / 2),
+      child: SvgPicture.asset(
+        'assets/illustrations/avatars/$avatarKey.svg',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
       ),
-      child: svg,
     );
   }
 }

@@ -112,12 +112,14 @@ class UserRepository {
   /// (common/types/user.types.ts + users/dto/update-me.dto.ts), which
   /// validates this same 6-key set server-side.
   static const avatarKeys = [
-    'artist',
-    'builder',
-    'creator',
-    'designer',
-    'freelancer',
-    'nomad',
+    'adebayo',
+    'bisi',
+    'chiamaka',
+    'emeka',
+    'folake',
+    'kudi',
+    'ngozi',
+    'tunde',
   ];
 
   /// POST /users/me/freeze — self-service account freeze (2026-08-22 "Soft
