@@ -122,11 +122,15 @@ Future<void> _fillAndSubmit(WidgetTester tester, {String? middleName}) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
 
-  // Step 2 — contact (#s03b): only email is required.
+  // Step 2 — contact (#s03b): email and phone are both required (phone made
+  // required 2026-09-01, product-owner ruling) — middle name has nothing to
+  // do with this step, but Continue still needs both fields filled to
+  // advance.
   expect(find.text('How do we reach you?'), findsOneWidget,
       reason: 'an empty middle name must not have blocked step 1\'s Continue');
   final contactFields = find.byType(TextField);
   await tester.enterText(contactFields.at(0), 'adebayo@example.com');
+  await tester.enterText(contactFields.at(1), '8031234567');
   await tester.pump();
   await tester.tap(find.text('Continue'));
   await tester.pump();
@@ -141,7 +145,7 @@ Future<void> _fillAndSubmit(WidgetTester tester, {String? middleName}) async {
   // R-51 (DECISIONS.md, 2026-08-31): Create account is genuinely gated on
   // the consent checkbox now — tap its prefix text (KLinkedCheckbox,
   // lib/widgets/forms.dart) to tick it, same as a real investor would.
-  await tester.tap(find.text('I agree to the'));
+  await tester.tap(find.text('I acknowledge that I have read and agree to'));
   await tester.pump();
   await tester.tap(find.text('Create account'));
   await tester.pump();

@@ -1,30 +1,37 @@
 // KYC 6 of 7 — Declarations (artboard s19 "Two quick questions",
-// docs/design/redesign-2026-08/02 Verification.dc.html). Renumbered 8->7
-// (was 7 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation.
+// docs/design/redesign-2026-08/02 Verification.dc.html, drew a second
+// "Do you work for a stockbroker or the NGX?" question here). Renumbered
+// 8->7 (was 7 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation.
 //
-// s19's actual two questions, per RULINGS.md's evidence
-// (docs/redesign/evidence/kyc.json) — the previous build of this screen had
-// the RIGHT first question and the WRONG second one (an undesigned
-// "I trade for myself" declaration instead of s19's real second question);
-// fixed here to match the artboard:
-//   1. PEP question (Yes/No) — wired to the real backend field
-//      KycSubmission.pepSelfDeclared via PATCH /kyc-submissions/draft
-//      (KycRepository.updateDraftFields). A "Yes" reveals a "who holds the
-//      position" select + a free-text "position and body" input — the
-//      canvas draws only a "What's a PEP?" link on this question, no
-//      who/position sub-fields, but a real "Yes" here is a genuine
-//      SEC-compliance detail the screen can't leave uncollected just
-//      because the artboard's one drawn scene is "No" (same reasoning as
-//      the brief's Cancel/status-pill precedents — neither has a backend
-//      field yet, confirmed against UpdateKycDraftFieldsRequest/
-//      KycSubmission, backend common/types/kyc.types.ts: only the boolean
-//      is stored). Held in KycFormState for THIS session only — a real,
-//      flaggable gap, not faked.
-//   2. "Do you work for a stockbroker or the NGX?" (Yes/No) — s19's real
-//      second question. ALSO has no backend field (same file, same
-//      confirmation) — a real gap, filed in BACKEND_GAPS.md. Held in
-//      KycFormState (brokerOrNgxEmployed) for this session only, same
-//      treatment as the PEP who/position detail above.
+// Owner ruling, 2026-09-01: the broker/NGX-employment question is removed
+// entirely — "it is not a PEP question and it goes." This deliberately
+// diverges from s19's own artboard (which still draws it): the design is
+// normally authoritative, but a direct owner ruling on THIS specific
+// question outranks it, same standing as R-43/R-51 overriding the canvas
+// elsewhere in this codebase. Removed end to end: the UI below, the
+// session-only `KycFormState.brokerOrNgxEmployed` field and its reset, the
+// `setDeclarations(...)` parameter, and the backend field/DTO/column it was
+// never actually wired to (Kudimata-Securities-Backend
+// src/common/types/kyc.types.ts, submit-kyc-draft-step1.dto.ts,
+// kyc-submissions.service.ts/.controller.ts, and a real Prisma migration
+// dropping the column). The BACKEND_GAPS.md entry this question left behind
+// ("s19 — Declarations: broker/NGX-employment question has no backend
+// field") is removed too, since the gap it described no longer exists —
+// there is nothing left to build.
+//
+// What remains is s19's other, real question:
+//   PEP question (Yes/No) — wired to the real backend field
+//   KycSubmission.pepSelfDeclared via PATCH /kyc-submissions/draft
+//   (KycRepository.updateDraftFields). A "Yes" reveals a "who holds the
+//   position" select + a free-text "position and body" input — the canvas
+//   draws only a "What's a PEP?" link on this question, no who/position
+//   sub-fields, but a real "Yes" here is a genuine SEC-compliance detail
+//   the screen can't leave uncollected just because the artboard's one
+//   drawn scene is "No" (same reasoning as the brief's Cancel/status-pill
+//   precedents — neither has a backend field yet, confirmed against
+//   UpdateKycDraftFieldsRequest/KycSubmission, backend
+//   common/types/kyc.types.ts: only the boolean is stored). Held in
+//   KycFormState for THIS session only — a real, flaggable gap, not faked.
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -50,11 +57,6 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
   final _position = TextEditingController();
   bool _pep = false;
   String? _who;
-  // s19's second question — "Do you work for a stockbroker or the NGX?" —
-  // replaces the app's old, undesigned "I trade for myself" declaration
-  // (see kyc_form_state.dart's brokerOrNgxEmployed doc comment). Defaults to
-  // No, same as PEP.
-  bool _brokerOrNgxEmployed = false;
   bool _busy = false;
   String? _error;
   bool _prefilled = false;
@@ -74,7 +76,6 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
     _prefilled = true;
     final form = AppScope.read(context).kycForm;
     setState(() {
-      _brokerOrNgxEmployed = form.brokerOrNgxEmployed;
       _who = form.pepWho;
       _position.text = form.pepPosition ?? '';
     });
@@ -126,7 +127,6 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
       await _repo.updateDraftFields(pepSelfDeclared: _pep);
       if (!mounted) return;
       AppScope.read(context).kycForm.setDeclarations(
-            brokerOrNgxEmployed: _brokerOrNgxEmployed,
             pepWho: _pep ? _who : null,
             pepPosition: _pep ? _position.text.trim() : null,
           );
@@ -172,10 +172,12 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // s19's title/body, verbatim.
+                    // s19's title/body drew this as "Two quick questions" —
+                    // now one, since the owner ruling above removed the
+                    // second (broker/NGX-employment) question entirely.
                     const KScreenHead(
-                      title: 'Two quick questions',
-                      body: 'The regulator requires these. Most people answer no.',
+                      title: 'One quick question',
+                      body: 'The regulator requires this. Most people answer no.',
                     ),
                     const SizedBox(height: 18),
                     KCard(
@@ -244,39 +246,6 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
                               controller: _position,
                             ),
                           ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    // s19's second question, verbatim — replaces the app's
-                    // old "I trade for myself" declaration (see
-                    // kyc_form_state.dart).
-                    KCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('Do you work for a stockbroker or the NGX?', style: KType.cardTitle()),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _YesNoTile(
-                                  label: 'Yes',
-                                  selected: _brokerOrNgxEmployed,
-                                  onTap: () => setState(() => _brokerOrNgxEmployed = true),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _YesNoTile(
-                                  label: 'No',
-                                  selected: !_brokerOrNgxEmployed,
-                                  onTap: () => setState(() => _brokerOrNgxEmployed = false),
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),

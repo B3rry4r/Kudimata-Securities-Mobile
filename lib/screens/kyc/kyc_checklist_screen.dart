@@ -31,12 +31,12 @@
 //   step 5 Bank & DCS  — a primary BankAccountSummary exists
 //                         (BankAccountsRepository.list()).
 //   step 6 Declarations — pepSelfDeclared != null (a Yes/No has actually
-//                         been recorded server-side). The screen's second
-//                         question, broker/NGX employment, has no backend
-//                         field at all (see declarations_screen.dart) — it
-//                         cannot be checked from here across a fresh
-//                         session, only pepSelfDeclared can. Filed in
-//                         BACKEND_GAPS.md.
+//                         been recorded server-side). The screen's old
+//                         second question (broker/NGX employment) was
+//                         removed entirely 2026-09-01 (owner ruling — see
+//                         declarations_screen.dart's header) rather than
+//                         ever gaining a backend field, so pepSelfDeclared
+//                         alone is now a complete signal for this step.
 //   step 7 Next of kin — never independently "done" while status=='draft':
 //                         finalizeDraft() submits next-of-kin AND leaves
 //                         'draft' in the same call, so this is always the

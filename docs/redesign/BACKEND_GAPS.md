@@ -527,32 +527,17 @@ is ever built: an export endpoint that assembles the investor's own
 records into one file and emails it (or a presigned download link), plus
 the row re-added to `data_privacy_screen.dart` to call it.
 
-## s19 — Declarations: broker/NGX-employment question has no backend field
+## RESOLVED — s19 broker/NGX-employment question removed entirely (2026-09-01)
 
-`s19`'s second question — "Do you work for a stockbroker or the NGX?" —
-is a real SEC-relevant declaration the canvas draws, same standing as the
-PEP question beside it. `UpdateKycDraftFieldsRequest`/`KycSubmission`
-(backend `common/types/kyc.types.ts`) only carry `pepSelfDeclared`; there is
-no field anywhere for this second question's answer.
-
-Built: the real Yes/No UI (`declarations_screen.dart`), held in
-`KycFormState.brokerOrNgxEmployed` for the current session only — the same
-treatment already established for the PEP question's own unbacked
-who/position follow-up fields. Not built: any server persistence. Two
-consequences worth flagging together:
-
-1. A "Yes" here is currently invisible to compliance review — nothing
-   downstream (a KYC submission review screen, an admin dashboard) can see
-   it, because nothing stores it.
-2. `kyc_checklist_screen.dart` (`s11`, the new checklist hub) can only infer
-   "Declarations done" from `pepSelfDeclared != null` for this reason — it
-   has no way to know, on a fresh session, whether this second question was
-   already answered. See that file's own header comment.
-
-Needs: a `brokerOrNgxEmployed` (or similarly named) boolean field on
-`KycSubmission`, plus an `UpdateKycDraftFieldsRequest` param the same shape
-as `pepSelfDeclared`, before this can be a real persisted declaration rather
-than a same-session-only echo.
+This entry used to describe `s19`'s second question — "Do you work for a
+stockbroker or the NGX?" — having no backend field. The owner ruled the
+question out entirely ("it is not a PEP question and it goes") rather than
+having it gain one: removed end to end, both repos — the UI
+(`declarations_screen.dart`), `KycFormState.brokerOrNgxEmployed`, and the
+backend field/DTO/service sites it was never wired to, plus a real Prisma
+migration dropping the already-added-but-unused column. There is no gap
+left to build against; `pepSelfDeclared` alone is now `s11`'s complete
+signal for "Declarations done" (see `kyc_checklist_screen.dart`).
 
 ---
 

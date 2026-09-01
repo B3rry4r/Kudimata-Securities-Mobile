@@ -58,9 +58,10 @@ class AuthRepository {
   /// real first/last to compare against the registry's own name fields.
   ///
   /// [phone] added 2026-08-28 (BR-3, SHARED-CHANGES.md S-2) once the backend
-  /// gained the field. Optional, matching
-  /// Kudimata-Securities-Backend's `SignupDto` — omit it (or send empty) and
-  /// the backend keeps its previous unroutable-placeholder-phone behaviour.
+  /// gained the field, made REQUIRED 2026-09-01 (product-owner ruling, both
+  /// sides) — mirrors Kudimata-Securities-Backend's `SignupDto.phone`,
+  /// which is no longer optional either. Always sent now; there is no
+  /// longer an "omit it" path.
   ///
   /// CONTRACT (2026-08-29, once sign_up_screen.dart's phone field gained a
   /// 186-country picker instead of a hardcoded `+234`): the caller is
@@ -84,7 +85,7 @@ class AuthRepository {
     required String firstName,
     String? middleName,
     required String lastName,
-    String? phone,
+    required String phone,
   }) async {
     await _client.post('/auth/signup', data: {
       'email': email,
@@ -92,7 +93,7 @@ class AuthRepository {
       'firstName': firstName,
       if (middleName != null && middleName.isNotEmpty) 'middleName': middleName,
       'lastName': lastName,
-      if (phone != null && phone.isNotEmpty) 'phone': phone,
+      'phone': phone,
     });
   }
 

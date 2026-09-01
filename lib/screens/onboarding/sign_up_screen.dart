@@ -11,13 +11,18 @@
 // R-11 rulings applied here:
 //  - Phone number IS collected (canvas re-introduces it). The backend gained
 //    an optional `phone` on POST /auth/signup 2026-08-27 (BR-3); the field
-//    below is now live (SHARED-CHANGES.md S-2, applied 2026-08-28) — see
+//    below went live (SHARED-CHANGES.md S-2, applied 2026-08-28) — see
 //    `AuthRepository.signUp`'s doc comment for the wire shape and error
-//    codes. It stays optional at this step: artboard #s03b draws it with no
-//    "(optional)" marker distinct from Email's, but nothing about it (no
-//    asterisk, no client-side required check) blocks Continue either, and
-//    the backend itself treats it as optional (`SignupDto.phone?`) — so
-//    Continue here still gates on email alone, same as before.
+//    codes. Made REQUIRED 2026-09-01 (product-owner ruling, both sides):
+//    the field now renders with the same red-asterisk `required` marker as
+//    Email (`KPhoneNumberField.required`), Continue on this step
+//    (`_continueFromContact`) refuses to advance while it's empty, and the
+//    backend's `SignupDto.phone` is non-optional too
+//    (Kudimata-Securities-Backend src/auth/dto/signup.dto.ts). Still no
+//    client-side *format* check beyond "not empty" — an unparseable value
+//    still reaches the server, which is the one place that validates and
+//    returns INVALID_PHONE (see `_phoneError` below), same contract as
+//    before this change.
 //  - Terms acceptance: R-11 originally kept this off the password step,
 //    since acceptance lived on a dedicated post-OTP screen
 //    (terms_and_privacy_screen.dart). That screen — and the standalone
@@ -133,6 +138,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   // enter the chain that gates Continue (product owner: "watch out
   // validation should not be blocked please!").
   bool get _emailValid => _emailPattern.hasMatch(_email.text.trim());
+  // Required 2026-09-01 (product-owner ruling) — same "not empty" bar as
+  // the neighbouring required fields on this step; format is still
+  // validated only server-side (see file header and `_phoneError`).
+  bool get _phoneValid => _phone.text.trim().isNotEmpty;
 
   // R-43 (docs/redesign/DECISIONS.md, product-owner ruling, 2026-08-29):
   // 8+ characters, a number AND a special character — both real,
@@ -189,7 +198,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _continueFromContact() {
-    if (!_emailValid) {
+    if (!_emailValid || !_phoneValid) {
       setState(() => _showErrors = true);
       return;
     }
@@ -223,12 +232,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // the field isn't hardcoded to Nigeria. composePhoneE164 (_pickers.dart)
     // does the prefixing without judging the result, matching this field's
     // existing "no client-side format check" contract (see the phone
-    // KPhoneNumberField's comment below): an unparseable value still
+    // KPhoneNumberField's comment above): an unparseable value still
     // reaches the server, which is the one place that validates and
-    // returns INVALID_PHONE.
-    final phone = _phone.text.trim().isEmpty
-        ? ''
-        : composePhoneE164(_phone.text, _phoneCountry.dial);
+    // returns INVALID_PHONE. Guaranteed non-empty by the time we get here —
+    // `_continueFromContact` (required 2026-09-01) already refused to leave
+    // step 2 with an empty phone field.
+    final phone = composePhoneE164(_phone.text, _phoneCountry.dial);
     final password = _password.text.trim();
     setState(() => _busy = true);
     final repo = AuthRepository(AppScope.read(context).apiClient);
@@ -371,10 +380,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         required: true,
       ),
       const SizedBox(height: 16),
-      // Live per SHARED-CHANGES.md S-2 — the backend gained an optional
-      // `phone` on POST /auth/signup (BR-3). Optional at this step (see
-      // file header): no client-side format check, matching artboard
-      // #s03b, which draws no required marker distinct from Email's.
+      // Live per SHARED-CHANGES.md S-2 — the backend gained a `phone` on
+      // POST /auth/signup (BR-3), made required 2026-09-01 (see file
+      // header). Required here too, via the same `required`/error wiring
+      // as Email above (`_phoneValid`, `_continueFromContact`) — still no
+      // client-side *format* check (see file header for why).
       //
       // 2026-08-29: this used to be a KInput with a hardcoded `prefix:
       // '+234'` — every investor who wasn't Nigerian either lied about
@@ -400,9 +410,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
         helper: _phoneError == null && _phoneCountry.iso2 == 'NG'
             ? 'Use the line registered to your BVN'
             : null,
-        error: _phoneError,
+        // Server error (400 INVALID_PHONE / 409 PHONE_ALREADY_REGISTERED,
+        // set by _createAccount) takes priority when present; otherwise the
+        // same required-field pattern as Email above.
+        error: _phoneError ?? (_showErrors && !_phoneValid ? 'Enter your phone number' : null),
+        required: true,
         onChanged: (_) {
-          if (_phoneError != null) setState(() => _phoneError = null);
+          if (_phoneError != null || _showErrors) {
+            setState(() => _phoneError = null);
+          }
         },
       ),
       _stepFooter([
@@ -467,14 +483,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       KLinkedCheckbox(
         checked: _agreedToTerms,
         onChanged: (v) => setState(() => _agreedToTerms = v),
-        prefixText: 'I agree to the',
-        linkText: 'Terms and Disclosures',
+        prefixText: 'I acknowledge that I have read and agree to',
+        linkText: 'Kudimata Securities Agreements',
         url: KLinks.legal,
       ),
       if (_showErrors && !_agreedToTerms) ...[
         const SizedBox(height: 8),
         Text(
-          'Agree to the Terms and Disclosures to create your account',
+          'Agree to the Kudimata Securities Agreements to create your account',
           style: KType.data(color: KColor.loss),
         ),
       ],

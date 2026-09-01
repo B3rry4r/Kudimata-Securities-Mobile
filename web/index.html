@@ -89,11 +89,11 @@
     default-src 'self';
     script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com;
     style-src 'self' 'unsafe-inline';
-    img-src 'self' data:;
+    img-src 'self' data: https://kudimata-invest.lon1.digitaloceanspaces.com;
     font-src 'self';
     manifest-src 'self';
     worker-src 'self' blob:;
-    connect-src 'self' https://alpha.kudimatasecurities.com wss://alpha.kudimatasecurities.com http://localhost:* ws://localhost:* https://www.gstatic.com https://fonts.gstatic.com;
+    connect-src 'self' https://alpha.kudimatasecurities.com wss://alpha.kudimatasecurities.com http://localhost:* ws://localhost:* https://www.gstatic.com https://fonts.gstatic.com https://kudimata-invest.lon1.digitaloceanspaces.com;
     object-src 'none';
     base-uri 'self';
     form-action 'none';
