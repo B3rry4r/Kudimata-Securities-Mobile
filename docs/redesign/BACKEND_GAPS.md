@@ -859,6 +859,31 @@ checklist hub should expose it once it does.
 ## BR-10 — `GET /kyc-submissions/me|draft` needs a structured `failureReasons`
 ## field; today's `flagDetail` has shipped a raw debug string
 
+**RESOLVED 2026-09-01.** The backend now serves `failureReasons` on every
+`GET /kyc-submissions/me|draft` (and on the retry/draft responses, which
+share the same serializer), built by the single `buildFailureReasons()` in
+`kyc-submissions.service.ts`. Two amendments to what was requested below,
+both deliberate:
+
+1. **`code` is the SIGNAL name** — `nin` | `bvn` | `name` | `dob` |
+   `liveness` — not `liveness_mismatch`/`nin_unverified`. It is what
+   `failedKycStepRoutes` (kyc_checklist_screen.dart) routes on, and making
+   it identical to the `verificationSignals` key means the code path and
+   the boolean path can never disagree about which step failed. The
+   tip-off case keeps the requested `compliance_hold`, which maps to no
+   step on purpose. Any code this app does not recognise renders its
+   sentence and routes nowhere.
+2. **`failureMessages` stays on the response** (added 2026-08-31, the same
+   sentences without the codes). It is `failureReasons.map(r => r.message)`
+   — a projection of the one derivation, not a second one — so the two can
+   never drift, and the staff surfaces built against the earlier shape keep
+   working.
+
+The mobile side of this gap is closed too: `outcome_not_approved.dart` no
+longer carries its own copy of the five sentences, and no longer derives a
+reason from `verificationSignals` at all. See
+`test/kyc_failure_reasons_test.dart`.
+
 *Requested 2026-08-31, per R-50 (DECISIONS.md) — "the app tells them what
 actually went wrong... build the screen against what you would want to
 receive... the wire should fit the UI, not the reverse."*

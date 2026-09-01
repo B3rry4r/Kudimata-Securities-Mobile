@@ -76,6 +76,7 @@ class SubStateSpec {
     this.kycSubmitted = true,
     this.kycApproved = true,
     this.kyc = MockKyc.approved,
+    this.kycMeOverride,
     this.portfolio = MockPortfolio.populated,
     this.market = MockMarket.open,
     this.network = MockNetwork.ok,
@@ -98,6 +99,11 @@ class SubStateSpec {
   final bool kycSubmitted;
   final bool kycApproved;
   final MockKyc kyc;
+
+  /// Shallow-merged over `GET /kyc-submissions/me` — a prop, not a new
+  /// MockKyc case, for a sub-state that differs by response FIELDS rather
+  /// than by status (see MockApiAdapter.kycMeOverride).
+  final Map<String, dynamic>? kycMeOverride;
   final MockPortfolio portfolio;
   final MockMarket market;
   final MockNetwork network;
@@ -285,6 +291,68 @@ final List<SubStateSpec> _subStates = [
     kyc: MockKyc.flagged,
     kycApproved: false,
   ),
+  // 2026-09-01 — the two shapes the failureReasons contract actually
+  // distinguishes, which neither of the two shots above reaches: a single
+  // named failure (a sentence the backend wrote, plus a live retry) and a
+  // compliance hold (one generic sentence, no retry control at all).
+  SubStateSpec(
+    screen: 'kyc_outcome',
+    substate: 'single_failure',
+    route: Routes.kycOutcome,
+    dartFile: 'kyc/outcome_not_approved.dart',
+    kyc: MockKyc.flagged,
+    kycApproved: false,
+    kycMeOverride: const {
+      'id': 'KYC-1',
+      'status': 'flagged',
+      'flagReason': 'vendor_verification_failed',
+      'flagDetail': null,
+      'attemptCount': 1,
+      'maxAttempts': 5,
+      'canRetry': true,
+      'verificationSignals': {
+        'nin': true,
+        'bvn': true,
+        'name': true,
+        'dob': true,
+        'liveness': false,
+        // The live shape today: AML screening is switched off, so this is
+        // null on every real response — and renders as nothing at all.
+        'sanctions': null,
+      },
+      'failureReasons': [
+        {
+          'code': 'liveness',
+          'message': "Your selfie didn't match your ID photo.",
+          'retryable': true,
+        },
+      ],
+    },
+  ),
+  SubStateSpec(
+    screen: 'kyc_outcome',
+    substate: 'compliance_hold',
+    route: Routes.kycOutcome,
+    dartFile: 'kyc/outcome_not_approved.dart',
+    kyc: MockKyc.flagged,
+    kycApproved: false,
+    kycMeOverride: const {
+      'id': 'KYC-1',
+      'status': 'flagged',
+      'flagReason': 'vendor_verification_failed',
+      'flagDetail': null,
+      'attemptCount': 0,
+      'maxAttempts': 5,
+      'canRetry': true,
+      'failureReasons': [
+        {
+          'code': 'compliance_hold',
+          'message': 'Your verification could not be completed. Contact support for help.',
+          'retryable': false,
+        },
+      ],
+    },
+  ),
   SubStateSpec(
     screen: 'kyc_outcome',
     substate: 'expired',
@@ -358,6 +426,7 @@ Future<_Mounted> _mount(WidgetTester tester, SubStateSpec spec, ThemeMode mode) 
   final apiClient = ApiClient();
   apiClient.dio.httpClientAdapter = MockApiAdapter(
     kyc: spec.kyc,
+    kycMeOverride: spec.kycMeOverride,
     portfolio: spec.portfolio,
     market: spec.market,
     network: spec.network,
