@@ -70,6 +70,8 @@ class KycSubmissionStatus {
     this.resolvedName,
     this.resolvedDob,
     this.resolvedPhone,
+    this.nextOfKin,
+    this.canRetry = false,
   });
 
   final String status;
@@ -133,8 +135,42 @@ class KycSubmissionStatus {
   final String? resolvedDob;
   final String? resolvedPhone;
 
+  /// The next of kin already recorded on this submission server-side
+  /// (2026-09-01). Parsed for ONE reason: a self-service retry reuses the
+  /// same submission row, and re-finalizing it (POST /kyc-submissions/
+  /// draft/finalize) requires next-of-kin in the body — so without this the
+  /// app would have to make the investor re-type details the server is
+  /// already holding, which is precisely what a targeted retry exists to
+  /// avoid. Null on a submission that has not been finalized yet.
+  final KycNextOfKin? nextOfKin;
+
+  /// Whether `POST /kyc-submissions/retry` would be GRANTED on this
+  /// submission right now — the backend's own `canRetry`, which is the
+  /// literal predicate that endpoint throws from (KycSubmissionsService.
+  /// retryRefusal). Read it; never re-derive retry eligibility here.
+  ///
+  /// This app used to decide for itself, from `status` plus
+  /// [canResubmit] — which is how a `pending` submission left open by a
+  /// verification-provider outage sat on submitted.dart's "we're reviewing
+  /// your details" forever: the server would have happily re-run the
+  /// unanswered check, and no screen in this app ever asked it to.
+  ///
+  /// Defaults to false when the field is absent (an older backend), so a
+  /// missing value can only ever HIDE a control, never offer a dead one.
+  final bool canRetry;
+
   bool get isApproved => status == 'approved';
   bool get isDraft => status == 'draft';
+
+  /// True when this submission is open only because a verification
+  /// provider never ANSWERED a check — not because the investor failed
+  /// one. The backend's shape for that (see its `unansweredChecks()`): a
+  /// still-open `pending`/`review` decision with no staff flagReason,
+  /// which the server is nonetheless willing to retry. There is nothing
+  /// for the investor to redo in this state; the retry re-runs the lookup
+  /// server-side from the BVN/NIN already on the row.
+  bool get isAwaitingUnansweredCheck =>
+      canRetry && flagReason == null && (status == 'pending' || status == 'review');
 
   /// Whether the investor still has a resubmission attempt available, per
   /// KycSubmission's `attemptCount`/`maxAttempts` (registry.json).
@@ -228,6 +264,31 @@ class KycFailureReason {
   /// decision, never mixes a "try again" control into the same screen as
   /// a reason nobody can act on.
   final bool retryable;
+}
+
+/// The next-of-kin block already stored on a KycSubmission — see
+/// [KycSubmissionStatus.nextOfKin]. Mirrors the backend's own `NextOfKin`
+/// wire shape (common/types/kyc.types.ts) exactly: name, relationship,
+/// phone, and an optional email.
+class KycNextOfKin {
+  const KycNextOfKin({
+    required this.name,
+    required this.relationship,
+    required this.phone,
+    this.email,
+  });
+
+  factory KycNextOfKin.fromJson(Map<String, dynamic> json) => KycNextOfKin(
+        name: json['name'] as String? ?? '',
+        relationship: json['relationship'] as String? ?? '',
+        phone: json['phone'] as String? ?? '',
+        email: json['email'] as String?,
+      );
+
+  final String name;
+  final String relationship;
+  final String phone;
+  final String? email;
 }
 
 /// One registered KycDocument (registry.json) — see
@@ -346,6 +407,39 @@ class KycRepository {
     return _fromJson(data as Map<String, dynamic>);
   }
 
+  /// POST /kyc-submissions/retry (no body) — a self-service retry on the
+  /// caller's own most recent submission. Grantable exactly when
+  /// [KycSubmissionStatus.canRetry] is true; throws [ApiException] (409 /
+  /// 422) otherwise, so the button is never a lie in either direction.
+  ///
+  /// Server-side this REUSES the same submission row rather than starting
+  /// a new one: every check that passed keeps its verdict, the ID document
+  /// and the utility bill are left alone, only a failed liveness selfie is
+  /// deleted, and any check a provider never answered is re-run
+  /// immediately from the BVN/NIN already on the row — which is why this
+  /// call takes no arguments and asks the investor for nothing.
+  ///
+  /// The response tells the caller what happened. `status == 'draft'`
+  /// means work was handed back: walk the investor through the steps whose
+  /// [KycSubmissionStatus.verificationSignals] came back `false` (see
+  /// `failedKycStepRoutes`, kyc_checklist_screen.dart) and re-finalize.
+  /// Any other status means the retry resolved on its own and the
+  /// submission has a real decision again.
+  ///
+  /// Uses the same widened timeouts [verifyDraftLiveness] does, for the
+  /// same reason: this call can re-run a registry lookup (and, when the
+  /// selfie was the unanswered check, a face-liveness pass) inline.
+  Future<KycSubmissionStatus> retry() async {
+    final response = await _client.post(
+      '/kyc-submissions/retry',
+      options: Options(
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
+      ),
+    );
+    return _fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// GET /kyc-submissions/me — the current user's own KycSubmission
   /// (whatever it currently is — draft or a real decided/pending one). The
   /// kyc-submitted screen re-fetches here so it can route on the REAL
@@ -403,6 +497,12 @@ class KycRepository {
       resolvedName: json['resolvedName'] as String?,
       resolvedDob: json['resolvedDob'] as String?,
       resolvedPhone: json['resolvedPhone'] as String?,
+      nextOfKin: json['nextOfKin'] != null
+          ? KycNextOfKin.fromJson(json['nextOfKin'] as Map<String, dynamic>)
+          : null,
+      // Absent (older backend) reads as false — see [canRetry]'s own doc
+      // comment: a missing value must only ever hide a control.
+      canRetry: json['canRetry'] as bool? ?? false,
     );
   }
 

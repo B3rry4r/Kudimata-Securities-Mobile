@@ -229,6 +229,51 @@ Future<String> nextKycStepRoute(ApiClient client, {bool chnSkipped = false}) asy
   return nextIndex == -1 ? steps.last.route : steps[nextIndex].route;
 }
 
+/// The KYC step routes an investor has to REDO, in this flow's own order —
+/// derived from the per-check verification signals the submission already
+/// carries (`KycSubmissionStatus.verificationSignals`), nothing else.
+///
+/// 2026-09-01, defect B. outcome_not_approved.dart's "Try again" used to
+/// call `KycFormState.reset()` and `context.go(Routes.kycBvn)` — the whole
+/// flow from step 1, no matter what actually failed. The backend had
+/// already stopped doing that: its retry keeps every check that passed and
+/// deletes only a failed liveness selfie. So an investor whose BVN, NIN,
+/// name and date of birth all verified and whose selfie alone came back
+/// bad was sent to re-enter a BVN the server had just confirmed.
+///
+/// The mapping is the flow's own, not a new one:
+///   nin / bvn / name / dob  -> [Routes.kycBvn]. All four are produced by
+///       the SAME step-1 call (POST /kyc-submissions/draft re-runs the
+///       registry lookup and re-derives the name/dob cross-check from its
+///       answer), so they collapse to one route rather than four.
+///   liveness                -> [Routes.kycLiveness]. Its selfie was
+///       deleted server-side on the retry, so the checklist derivation
+///       above independently agrees this step is outstanding.
+///
+/// A `null` signal is deliberately NOT a step to redo: null means the
+/// provider never answered, and the backend's retry re-runs that itself
+/// without asking the investor for anything (see `KycRepository.retry`).
+/// Only `false` — a check that ran and failed — is work for a human.
+///
+/// Returns `[Routes.kycBvn]` when there are no signals at all to narrow by
+/// (an older backend, or a failure recorded before per-signal reporting
+/// existed): the flow's start is the only honest answer there, and it is
+/// what this screen did for every case before this function existed.
+/// Returns an EMPTY list when signals are present and none failed — there
+/// is genuinely nothing for the investor to redo.
+List<String> failedKycStepRoutes(KycSubmissionStatus status) {
+  final signals = status.verificationSignals;
+  if (signals == null) return const [Routes.kycBvn];
+  return [
+    if (signals.nin == false ||
+        signals.bvn == false ||
+        signals.name == false ||
+        signals.dob == false)
+      Routes.kycBvn,
+    if (signals.liveness == false) Routes.kycLiveness,
+  ];
+}
+
 /// R-45 as amended (DECISIONS.md, 2026-08-29): the routes of every step
 /// that is ALREADY done, from the same real per-item derivation
 /// [_loadChecklistSteps] uses for everything else. Called exactly once, by

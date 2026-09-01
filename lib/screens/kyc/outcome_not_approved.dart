@@ -47,9 +47,22 @@
 //     doc comment for why that's a legal requirement (tipping-off), not an
 //     omission. That reason arrives with `retryable: false`, which is
 //     exactly what removes the retry control here.
-//   - expired: same restart action as a retryable rejection/flag (expiry
-//     isn't a decision against the investor, just a stale submission), so
-//     no attempt-count check applies here.
+//   - expired: a genuine restart (`_restartKyc`) — expiry isn't a decision
+//     against the investor, just a stale submission, so no attempt-count
+//     check applies here. This is now the ONLY path that still wipes the
+//     form and returns to step 1.
+//
+// 2026-09-01 — "Try again" stopped meaning "start over". It calls
+// `POST /kyc-submissions/retry` (KycRepository.retry) on the SAME
+// submission, which keeps every check that passed, keeps the ID document
+// and the utility bill, deletes only a stale liveness selfie, and re-runs
+// anything a provider never answered without involving the investor. This
+// screen then lands them on the step that actually failed
+// (`failedKycStepRoutes`, kyc_checklist_screen.dart) rather than on step 1.
+// It also now handles a `pending` submission the server is willing to
+// retry — the provider-outage case, which used to sit on kyc-submitted's
+// "we're reviewing your details" with no control anywhere; see
+// `_buildProviderUnavailable`.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
@@ -58,6 +71,7 @@ import 'package:kudimata_invest/data/repositories/kyc_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+import 'kyc_checklist_screen.dart' show failedKycStepRoutes;
 
 class KycOutcomeScreen extends StatefulWidget {
   const KycOutcomeScreen({super.key});
@@ -70,15 +84,95 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
   late final _repo = KycRepository(AppScope.read(context).apiClient);
   late Future<KycSubmissionStatus> _statusFuture = _repo.me();
 
+  /// True while POST /kyc-submissions/retry is in flight — the button
+  /// shows a spinner instead of firing twice.
+  bool _retrying = false;
+
+  /// Set when the retry call itself was refused or failed (409/422/network),
+  /// shown under the outcome copy rather than replacing it. Null otherwise.
+  String? _retryError;
+
   void _retry() {
     setState(() => _statusFuture = _repo.me());
   }
 
   /// Clears the shared in-progress form so kyc-bvn starts clean, then
-  /// restarts the KYC collection flow.
+  /// restarts the KYC collection flow. Used ONLY for a genuinely fresh
+  /// start (an expired submission) — a failed one goes through
+  /// [_retryFailedChecks], which keeps everything that passed.
   void _restartKyc() {
     AppScope.read(context).kycForm.reset();
     context.go(Routes.kycBvn);
+  }
+
+  /// Defect B's fix (2026-09-01). Asks the backend to retry THIS submission
+  /// — which reuses the same row, keeps every check that passed, keeps the
+  /// ID document and the utility bill, deletes only a stale liveness
+  /// selfie, and re-runs anything a provider never answered without
+  /// involving the investor — then lands them on the step that actually
+  /// failed, carrying forward everything that did not.
+  ///
+  /// The failed steps are read from the status BEFORE the call, because
+  /// the retry itself is what clears those `false` signals back to null.
+  Future<void> _retryFailedChecks(KycSubmissionStatus before) async {
+    if (_retrying) return;
+    setState(() {
+      _retrying = true;
+      _retryError = null;
+    });
+
+    final steps = failedKycStepRoutes(before);
+    final app = AppScope.read(context);
+    try {
+      final retried = await _repo.retry();
+      if (!mounted) return;
+
+      // Keep the draft: this is the SAME submission row, and the next
+      // document upload has to register against it. See KycFormState.reset.
+      final form = app.kycForm;
+      form.reset(keepDraft: true);
+      final id = retried.id;
+      if (id != null) form.setDraftId(id);
+      // Re-seed next of kin from the server's own copy, so re-finalizing
+      // never asks the investor to retype what they already gave us (and
+      // works even in a session that never collected it).
+      final nok = retried.nextOfKin;
+      if (nok != null) {
+        form.setNextOfKin(
+          name: nok.name,
+          relationship: nok.relationship,
+          phone: nok.phone,
+          email: nok.email,
+        );
+      }
+
+      if (retried.status != 'draft') {
+        // Nothing was handed back — the retry resolved server-side (the
+        // provider answered this time, or is still down). kyc-submitted
+        // re-checks and routes on the REAL outcome, including back here.
+        context.go(Routes.kycSubmitted);
+        return;
+      }
+      if (steps.isNotEmpty) {
+        context.go(steps.first);
+        return;
+      }
+      // Reopened with nothing specific to redo — the checklist hub derives
+      // the right next step from the draft's real state.
+      context.go(Routes.kycChecklist);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _retrying = false;
+        _retryError = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _retrying = false;
+        _retryError = 'Something went wrong. Please try again.';
+      });
+    }
   }
 
   @override
@@ -147,6 +241,16 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
     // "it was rejected but app still told me under review".
     if (result.isRejectedWithRoomToRetry) {
       return _buildFailure(result, isFlagged: false);
+    }
+    // 2026-09-01, defect A's app half. A submission left open because a
+    // verification provider never ANSWERED a check is not a decision
+    // against the investor and must not be dressed as one: nothing they
+    // submitted is wrong, and the server will re-run the lookup itself
+    // from what they already gave us. Recognised from the backend's own
+    // `canRetry` (see KycSubmissionStatus.isAwaitingUnansweredCheck), not
+    // from a rule this screen invents.
+    if (result.isAwaitingUnansweredCheck) {
+      return _buildProviderUnavailable(result);
     }
     switch (result.status) {
       case 'rejected':
@@ -261,12 +365,50 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
     return KStatusView(
       tone: canRetry ? KStatusTone.error : (decisionOnly ? KStatusTone.error : KStatusTone.pending),
       illustrationName: 'kyc-not-approved',
+      // A refused/failed retry call is shown here rather than swallowed —
+      // the server's own 409/422 message is the honest reason the button
+      // did not do what it said (see _retryFailedChecks).
+      extra: _retryError == null
+          ? null
+          : Text(_retryError!, textAlign: TextAlign.center, style: KType.body(color: KColor.loss)),
       title: isFlagged && !canRetry && !decisionOnly
           ? 'Your account needs manual review'
           : "We couldn't verify you",
       message: message,
-      primary: canRetry ? 'Try again' : 'Contact support',
-      onPrimary: canRetry ? _restartKyc : () => context.go(Routes.acctHelp),
+      primary: canRetry ? (_retrying ? 'Trying again…' : 'Try again') : 'Contact support',
+      // 2026-09-01: was _restartKyc — a full wipe back to step 1 whatever
+      // failed. Now retries THIS submission and lands on the step that
+      // actually failed; see _retryFailedChecks.
+      onPrimary: canRetry
+          ? () => _retryFailedChecks(result)
+          : () => context.go(Routes.acctHelp),
+      secondary: 'Back to home',
+      onSecondary: () => context.go(Routes.home),
+    );
+  }
+
+  /// A submission still open only because a verification provider never
+  /// answered — no failed check, nothing for the investor to fix. The real
+  /// 2026-09-01 incident: LumiID was unreachable for the NIN lookup (it
+  /// even auto-refunded the fee), so that one signal stayed unresolved, the
+  /// submission parked on 'pending', and the investor was told a reviewer
+  /// would look — while no reviewer had a button either.
+  ///
+  /// The copy says what is true and what the button does: it re-runs the
+  /// check server-side from the BVN/NIN already on file. Nothing to
+  /// re-enter, nothing to re-upload.
+  Widget _buildProviderUnavailable(KycSubmissionStatus result) {
+    return KStatusView(
+      tone: KStatusTone.pending,
+      illustrationName: 'kyc-checking',
+      title: "We couldn't finish checking your ID",
+      message: _retryError ??
+          "Our ID checking service didn't respond, so one of your checks "
+              "never completed. Nothing is wrong with your details — tap "
+              "Try again and we'll re-run it. You won't need to re-enter "
+              'anything.',
+      primary: _retrying ? 'Trying again…' : 'Try again',
+      onPrimary: () => _retryFailedChecks(result),
       secondary: 'Back to home',
       onSecondary: () => context.go(Routes.home),
     );

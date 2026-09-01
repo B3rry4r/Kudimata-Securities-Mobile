@@ -654,6 +654,7 @@ class MockApiAdapter implements HttpClientAdapter {
     this.kycChn = '1234567890',
     this.kycDocuments,
     this.kycMeOverride,
+    this.kycRetryOverride,
   });
 
   final MockKyc kyc;
@@ -679,6 +680,11 @@ class MockApiAdapter implements HttpClientAdapter {
   // MockKyc value per scenario. Null (the default) leaves every existing
   // call site byte-for-byte unaffected.
   final Map<String, dynamic>? kycMeOverride;
+  // Merged (shallow) over the POST /kyc-submissions/retry fixture, same
+  // pattern as kycMeOverride above — 2026-09-01. Null leaves the default
+  // "reopened as a draft" shape, which is what a retry that hands work
+  // back to the investor really returns.
+  final Map<String, dynamic>? kycRetryOverride;
   final MockNotifications notifications;
   final MockPriceAlerts priceAlerts;
 
@@ -863,6 +869,29 @@ class MockApiAdapter implements HttpClientAdapter {
     if (path == '/kyc-submissions/me') {
       final base = _kycMeResponse(kyc);
       return kycMeOverride == null ? base : {...base, ...kycMeOverride!};
+    }
+    // POST /kyc-submissions/retry (2026-09-01) — the real endpoint reuses
+    // the SAME submission row and hands back either a reopened 'draft'
+    // (something still needs the investor) or a redecided submission
+    // (nothing did — the provider re-run resolved it). Resolved by path
+    // only, like every other fixture here; [kycRetryOverride] lets a test
+    // pick which of those two shapes comes back without a new MockKyc case.
+    if (path == '/kyc-submissions/retry') {
+      const base = {
+        'id': 'KYC-1',
+        'status': 'draft',
+        'submittedAt': '2026-03-01T09:00:00.000Z',
+        'attemptCount': 3,
+        'maxAttempts': 5,
+        'canRetry': false,
+        'nextOfKin': {
+          'name': 'Bola Obi',
+          'relationship': 'sister',
+          'phone': '+2348030000000',
+        },
+        'verificationSignals': {'nin': true, 'bvn': true, 'name': true, 'dob': true, 'liveness': null},
+      };
+      return kycRetryOverride == null ? base : {...base, ...kycRetryOverride!};
     }
     // GET (resume)/POST (draftStep1)/PATCH (updateDraftFields) all resolve
     // by path only — see this file's header — so one fixture answers all

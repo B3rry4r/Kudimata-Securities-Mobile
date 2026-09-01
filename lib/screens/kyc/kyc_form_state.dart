@@ -139,19 +139,37 @@ class KycFormState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Clears the held draft id for a fresh attempt (kyc-outcome screen's
-  /// "Resubmit documents"/"Start again" actions — see
-  /// lib/screens/kyc/outcome_not_approved.dart — and a completed submission
+  /// Clears the held draft id for a genuinely FRESH attempt (kyc-outcome's
+  /// "Start again" for an expired submission, and a completed submission
   /// after kyc-next-of-kin's finalize succeeds). Re-entering kyc-bvn-nin
-  /// with the FIRST attempt's stale draft id would be wrong; this restarts
-  /// step 1 with a clean slate (draftStep1() creates a genuinely new draft
-  /// server-side once the previous one is no longer 'draft').
-  void reset() {
-    draftId = null;
-    nextOfKinName = null;
-    nextOfKinRelationship = null;
-    nextOfKinPhone = null;
-    nextOfKinEmail = null;
+  /// with the previous attempt's stale draft id would be wrong; this
+  /// restarts step 1 with a clean slate (draftStep1() creates a genuinely
+  /// new draft server-side once the previous one is no longer 'draft').
+  ///
+  /// [keepDraft] — 2026-09-01, defect B. A self-service retry
+  /// (POST /kyc-submissions/retry) does NOT start a new attempt: the
+  /// backend REUSES the same submission row, keeps every check that
+  /// passed, keeps the ID document and the utility bill, and deletes only
+  /// a failed liveness selfie. Wiping [draftId] and the next-of-kin block
+  /// on that path threw all of that away on the client's side and marched
+  /// the investor back to step 1 no matter what actually failed — the
+  /// unconditional wipe this parameter exists to end. A retry therefore
+  /// clears only what it is about to redo; a restart still clears
+  /// everything, exactly as before.
+  ///
+  /// [selfieCapturedAt] is cleared either way: it is a display-only
+  /// timestamp for a selfie that is about to be recaptured (retry) or has
+  /// no submission left to belong to (restart). So are the PEP free-text
+  /// fields and the session-local navigation flags, which never survived a
+  /// round trip in the first place.
+  void reset({bool keepDraft = false}) {
+    if (!keepDraft) {
+      draftId = null;
+      nextOfKinName = null;
+      nextOfKinRelationship = null;
+      nextOfKinPhone = null;
+      nextOfKinEmail = null;
+    }
     selfieCapturedAt = null;
     pepWho = null;
     pepPosition = null;
