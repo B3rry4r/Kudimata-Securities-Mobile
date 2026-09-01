@@ -283,44 +283,86 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
   bool _looksLikeDebugDump(String s) =>
       RegExp(r'^([a-zA-Z]+\s*=\s*(true|false)\s*,?\s*)+$').hasMatch(s);
 
-  /// Resolves what to tell the investor, preferring [KycFailureReason] —
-  /// the structured shape this screen is BUILT AGAINST per R-50/BR-10 (see
-  /// that class's own doc comment) — over the per-check booleans and free
-  /// text this app already had. `result.failureReasons` is null for every
-  /// real response today (the backend hasn't shipped it), so this always
-  /// falls through to the second block below in practice; the moment it
-  /// does ship, this screen picks it up with no further change here.
-  List<KycFailureReason> _resolveFailureReasons(KycSubmissionStatus result) {
-    final structured = result.failureReasons;
-    if (structured != null) return structured;
+  /// Ends a sentence properly before anything is appended after it.
+  ///
+  /// The fix for a real defect: the sentences this screen used to compose
+  /// itself carried no full stop, so the attempts line ran straight into
+  /// them — "Your face liveness check didn't pass You can try again — 3
+  /// tries left." Applied to EVERY source of reason text, the backend's
+  /// included, so one missing full stop anywhere cannot bring it back.
+  String _endWithStop(String sentence) =>
+      RegExp(r'[.!?\u2026]$').hasMatch(sentence) ? sentence : '$sentence.';
 
-    // Fallback — today's real data. Every reason derived this way is
-    // `retryable: true`: the current wire shape has no field at all that
-    // could mark a case as a sanctions/AML decision (that distinction only
-    // exists once `failureReasons` ships), so nothing here can honestly
-    // claim otherwise.
-    final fromSignals = <KycFailureReason>[
-      for (final entry in {
-        'nin': (result.verificationSignals?.nin, 'Your NIN could not be verified'),
-        'bvn': (result.verificationSignals?.bvn, 'Your BVN could not be verified'),
-        'name': (result.verificationSignals?.name, "Your name didn't match your registered ID"),
-        'dob': (result.verificationSignals?.dob, "Your date of birth didn't match your registered ID"),
-        'liveness': (result.verificationSignals?.liveness, "Your face liveness check didn't pass"),
-      }.entries)
-        if (entry.value.$1 == false)
-          KycFailureReason(code: entry.key, message: entry.value.$2, retryable: true),
-    ];
-    if (fromSignals.isNotEmpty) return fromSignals;
+  /// The generic copy for a failure this app has no specific reason for.
+  /// Deliberately vague: not knowing why is a real state, and saying so is
+  /// honest, whereas inventing a reason is not.
+  String _genericFailureSentence({required bool isFlagged}) => isFlagged
+      ? 'One of our team needs to take a closer look at your submission.'
+      : "We weren't able to verify your details.";
 
+  /// What to tell the investor about a failed outcome, and whether any of
+  /// it is a DECISION they cannot change by trying again.
+  ///
+  /// The sentences come from the backend's `failureReasons` and nowhere
+  /// else. This screen used to keep a second copy of the same five
+  /// sentences and re-derive them from `verificationSignals` — which is
+  /// how the backend's tip-off rule for a sanctions/AML match (see
+  /// [KycFailureReason]) never reached an investor: every locally-derived
+  /// reason claimed `retryable: true`, so the retry control was offered on
+  /// a case that must not offer one, and the withheld per-signal detail was
+  /// helpfully reconstructed on this side of the network. That table is
+  /// gone; the strings exist in one repo.
+  ///
+  /// An entry whose `code` this build has never seen is shown as the plain
+  /// sentence it carries — codes are the backend's to add, and an
+  /// unrecognised one is not an error. An entry carrying no sentence at
+  /// all is dropped rather than rendered as a blank line, but its
+  /// `retryable` still counts toward `decisionOnly`.
+  ({List<String> sentences, bool decisionOnly}) _resolveFailureCopy(
+    KycSubmissionStatus result, {
+    required bool isFlagged,
+  }) {
+    final reasons = result.failureReasons;
+    if (reasons != null && reasons.isNotEmpty) {
+      final sentences = [
+        for (final reason in reasons)
+          if (reason.message.trim().isNotEmpty) _endWithStop(reason.message.trim()),
+      ];
+      return (
+        sentences: sentences.isNotEmpty
+            ? sentences
+            : [_genericFailureSentence(isFlagged: isFlagged)],
+        decisionOnly: reasons.any((r) => !r.retryable),
+      );
+    }
+
+    // SAFETY FALLBACK — a response carrying no `failureReasons` at all (an
+    // older backend, or one that named nothing). It asserts NOTHING about
+    // retryability, because there is no field on such a response that could
+    // tell this screen whether the case is a compliance decision the
+    // investor must not be invited to retry. Claiming `retryable: true`
+    // here — what this screen used to do for every derived reason — is
+    // exactly the wrong guess for the one case that matters.
+    //
+    // `decisionOnly: false` is not a claim that retrying is possible: the
+    // retry control below is gated on the SERVER's own `canResubmit`/
+    // `canRetry`, so this fallback can neither invent a retry the server
+    // would refuse nor withhold one it would grant. It only declines to
+    // veto.
+    //
+    // `flagDetail` is staff-written text about this submission, so it is
+    // shown when it reads like a sentence. `flagReason` is NOT: it is an
+    // internal enum (`vendor_verification_failed`, `rejected_by_staff`),
+    // and showing it to an investor is the same defect as showing the
+    // per-signal debug dump `_looksLikeDebugDump` already refuses.
     final detail = result.flagDetail?.trim();
     if (detail != null && detail.isNotEmpty && !_looksLikeDebugDump(detail)) {
-      return [KycFailureReason(code: '', message: detail, retryable: true)];
+      return (sentences: [_endWithStop(detail)], decisionOnly: false);
     }
-    final reason = result.flagReason?.trim();
-    if (reason != null && reason.isNotEmpty && !_looksLikeDebugDump(reason)) {
-      return [KycFailureReason(code: '', message: reason, retryable: true)];
-    }
-    return const [];
+    return (
+      sentences: [_genericFailureSentence(isFlagged: isFlagged)],
+      decisionOnly: false,
+    );
   }
 
   /// R-50 (DECISIONS.md, 2026-08-31): 'rejected' and 'flagged' share this
@@ -330,19 +372,17 @@ class _KycOutcomeScreenState extends State<KycOutcomeScreen> {
   /// statuses now mean the identical thing to the investor: something
   /// failed, here is what, and here is whether trying again can fix it.
   Widget _buildFailure(KycSubmissionStatus result, {required bool isFlagged}) {
-    final reasons = _resolveFailureReasons(result);
     // A single non-retryable reason (a sanctions/AML decision — see
     // KycFailureReason's own doc comment) makes the WHOLE case a decision,
     // never mixed with a "try again" control it would be false to offer.
-    final decisionOnly = reasons.any((r) => !r.retryable);
+    final copy = _resolveFailureCopy(result, isFlagged: isFlagged);
+    final decisionOnly = copy.decisionOnly;
     final attemptsLeft = (result.maxAttempts - result.attemptCount).clamp(0, result.maxAttempts);
     final canRetry = !decisionOnly && result.canResubmit;
 
-    final reasonText = reasons.isNotEmpty
-        ? reasons.map((r) => r.message).join(' ')
-        : (isFlagged
-            ? 'One of our team needs to take a closer look at your submission.'
-            : "We weren't able to verify your details.");
+    // Every sentence already ends in a full stop (_endWithStop), so joining
+    // them — and appending the attempts line below — reads as prose.
+    final reasonText = copy.sentences.join(' ');
 
     final String message;
     if (canRetry) {

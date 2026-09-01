@@ -111,13 +111,14 @@ class KycSubmissionStatus {
   final KycVerificationSignals? verificationSignals;
 
   /// R-50 (DECISIONS.md, 2026-08-31) / BR-10 (BACKEND_GAPS.md): the
-  /// structured per-reason breakdown outcome_not_approved.dart is built
-  /// against — see [KycFailureReason]'s own doc comment for the full
-  /// trace. Null until the backend ships `failureReasons` on this
-  /// response (true of every submission today); an empty list is a real,
-  /// meaningful "the backend sent the structured field but named nothing",
-  /// distinct from "hasn't shipped yet" — so this stays nullable rather
-  /// than defaulting to `const []`.
+  /// structured per-reason breakdown outcome_not_approved.dart renders —
+  /// see [KycFailureReason]'s own doc comment. Served by the backend as of
+  /// 2026-09-01 (`failureReasons` on `GET /kyc-submissions/me|draft`).
+  ///
+  /// Null means the response carried no such field at all — an older
+  /// backend. An empty list is a different, real answer: "structured, and
+  /// nothing failed". The two are kept distinguishable (no `?? const []`)
+  /// because outcome_not_approved.dart treats them differently.
   final List<KycFailureReason>? failureReasons;
 
   /// The BVN/NIN registry's OWN resolved name/date-of-birth/phone from the
@@ -189,6 +190,20 @@ class KycSubmissionStatus {
 
 /// See [KycSubmissionStatus.verificationSignals]. Each field: true (passed),
 /// false (failed — a real reason to reject/flag), null (never attempted).
+///
+/// The backend also serves a sixth signal, `sanctions`, which this app
+/// deliberately does not read. Two independent reasons, either enough on
+/// its own:
+///   - Kudimata's AML/sanctions screening is switched off, so that boolean
+///     is null on every response — and this app renders a null signal as a
+///     spinner (submitted.dart's checklist), which would show an investor
+///     a check that appears to be running and never finishes.
+///   - Even switched on, an investor may not be told anything specific
+///     about it. A match reaches this app only as the backend's single
+///     generic [KycFailureReason] — see that class for the legal reason.
+/// So there is no honest rendering of the boolean here, and adding one
+/// would create a screen that only becomes correct if a provider is
+/// switched on.
 class KycVerificationSignals {
   const KycVerificationSignals({
     required this.nin,
@@ -218,34 +233,43 @@ class KycVerificationSignals {
 /// One reason a KYC submission failed/was flagged, in words an investor can
 /// act on — R-50 (DECISIONS.md, 2026-08-31): "the app tells them what
 /// actually went wrong... the investor has to know what to do differently,
-/// or the retry is a lottery." Requested from the backend as BR-10
-/// (BACKEND_GAPS.md); this app is built against this shape ahead of the
-/// backend shipping it (`GET /kyc-submissions/me|draft`'s `failureReasons`,
-/// a JSON array of `{code, message, retryable}`) per the owner's own
-/// instruction — "build the screen against what you would want to
-/// receive... the wire should fit the UI, not the reverse."
+/// or the retry is a lottery." Served by the backend as of 2026-09-01
+/// (BR-10, BACKEND_GAPS.md): `GET /kyc-submissions/me|draft` carries a
+/// `failureReasons` array of `{code, message, retryable}`, built by the
+/// single `buildFailureReasons()` in the backend's
+/// kyc-submissions.service.ts.
 ///
-/// Replaces two things this app already had, neither of which is investor
-/// -facing copy on its own: [KycVerificationSignals]'s bare per-check
-/// booleans (a signal, not a sentence), and `flagDetail`/`flagReason` free
-/// text, which has shipped as a raw internal debug dump — literally
-/// `"nin=true, bvn=true, liveness=false, name=true"` — rather than
-/// something written for an investor to read. outcome_not_approved.dart's
-/// `_resolveFailureReasons` still derives reasons from those two today
-/// (this field is null until BR-10 lands), but never DISPLAYS anything
-/// that looks like that debug shape — see `_looksLikeDebugDump`.
+/// **The sentences live in the backend and only there.** This class used to
+/// be an empty promise: nothing sent `failureReasons`, so
+/// outcome_not_approved.dart re-derived reasons from
+/// [KycVerificationSignals]'s booleans using its own second copy of the
+/// same five sentences, and stamped `retryable: true` on every one — which
+/// is precisely the claim a sanctions/AML hold must never carry. That copy
+/// is gone. This app renders [message] and never composes its own.
 class KycFailureReason {
   const KycFailureReason({required this.code, required this.message, required this.retryable});
 
+  /// [retryable] defaults to FALSE when the key is missing, matching
+  /// [KycSubmissionStatus.canRetry]'s rule: a value this app did not
+  /// receive may only ever hide a control, never offer one. Guessing
+  /// `true` is the exact mistake this whole field exists to prevent — the
+  /// one shape that must not be guessed is a compliance hold.
   factory KycFailureReason.fromJson(Map<String, dynamic> json) => KycFailureReason(
         code: json['code'] as String? ?? '',
         message: json['message'] as String? ?? '',
-        retryable: json['retryable'] as bool? ?? true,
+        retryable: json['retryable'] as bool? ?? false,
       );
 
-  /// A stable machine code ('liveness_mismatch', 'proof_of_address_unreadable',
-  /// 'name_mismatch', 'compliance_hold', ...) — not rendered, for the app's
-  /// own logic/telemetry only. The investor reads [message].
+  /// The failed check's own name — `nin`, `bvn`, `name`, `dob`,
+  /// `liveness` — so `failedKycStepRoutes` (kyc_checklist_screen.dart) can
+  /// send the investor back to the step that produced it. Never rendered;
+  /// the investor reads [message].
+  ///
+  /// `compliance_hold` is the backend's tip-off-safe generic case and
+  /// names no step on purpose. Any OTHER value — a check added to the
+  /// backend after this build shipped — is treated the same way: its
+  /// [message] is shown as a plain sentence and it routes to no step. An
+  /// unrecognised code is not an error and must never be one.
   final String code;
 
   /// Investor-facing, plain language, specific enough to act on — "your
@@ -487,10 +511,10 @@ class KycRepository {
       verificationSignals: json['verificationSignals'] != null
           ? KycVerificationSignals.fromJson(json['verificationSignals'] as Map<String, dynamic>)
           : null,
-      // BR-10 — see KycFailureReason's own doc comment. Not shipped by the
-      // backend yet, so this is null for every real response today; kept
-      // nullable (not `?? const []`) so a future empty array is still
-      // distinguishable from "the backend hasn't sent this field at all".
+      // BR-10 — see KycFailureReason's own doc comment. Kept nullable (not
+      // `?? const []`) so an empty array, which means "structured, and
+      // nothing failed", stays distinguishable from an older backend that
+      // sends no such field at all.
       failureReasons: (json['failureReasons'] as List<dynamic>?)
           ?.map((r) => KycFailureReason.fromJson(r as Map<String, dynamic>))
           .toList(),

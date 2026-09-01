@@ -261,7 +261,22 @@ Future<String> nextKycStepRoute(ApiClient client, {bool chnSkipped = false}) asy
 /// what this screen did for every case before this function existed.
 /// Returns an EMPTY list when signals are present and none failed — there
 /// is genuinely nothing for the investor to redo.
+///
+/// 2026-09-01: the backend's `failureReasons` is preferred over the raw
+/// booleans when it is present, because its `code` IS the signal name and
+/// it is the field that also says whether the case may be retried at all.
+/// A code this build does not recognise — one the backend adds after this
+/// build ships — maps to no step rather than to a guess, which is also
+/// exactly what `compliance_hold` (the tip-off-safe generic reason) needs.
 List<String> failedKycStepRoutes(KycSubmissionStatus status) {
+  final reasons = status.failureReasons;
+  if (reasons != null) {
+    final routes = {for (final r in reasons) _kycStepRouteByFailureCode[r.code]};
+    return [
+      if (routes.contains(Routes.kycBvn)) Routes.kycBvn,
+      if (routes.contains(Routes.kycLiveness)) Routes.kycLiveness,
+    ];
+  }
   final signals = status.verificationSignals;
   if (signals == null) return const [Routes.kycBvn];
   return [
@@ -273,6 +288,18 @@ List<String> failedKycStepRoutes(KycSubmissionStatus status) {
     if (signals.liveness == false) Routes.kycLiveness,
   ];
 }
+
+/// Which step a `failureReasons` code sends the investor back to — the same
+/// four-into-one collapse the signal mapping above describes, keyed by the
+/// backend's own code instead of a boolean. Any code absent from this map
+/// routes nowhere; see [failedKycStepRoutes].
+const Map<String, String> _kycStepRouteByFailureCode = {
+  'nin': Routes.kycBvn,
+  'bvn': Routes.kycBvn,
+  'name': Routes.kycBvn,
+  'dob': Routes.kycBvn,
+  'liveness': Routes.kycLiveness,
+};
 
 /// R-45 as amended (DECISIONS.md, 2026-08-29): the routes of every step
 /// that is ALREADY done, from the same real per-item derivation

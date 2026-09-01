@@ -104,8 +104,32 @@ Future<void> _tap(WidgetTester tester, String label) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
-/// A flagged submission whose per-check signals say exactly what failed.
-Map<String, dynamic> _flaggedWith(Map<String, bool?> signals, {int attemptCount = 1}) => {
+/// The backend's own investor-facing sentence per signal, quoted from
+/// `buildFailureReasons()` (Kudimata-Securities-Backend,
+/// kyc-submissions.service.ts). Quoted here ON PURPOSE: this fixture is the
+/// contract between the two repos, so if the backend rewords a sentence
+/// without the app hearing about it, a test here fails rather than the app
+/// silently rendering something nobody wrote.
+const _backendFailureSentences = {
+  'nin': 'Your NIN details could not be verified against the registry.',
+  'bvn': 'Your BVN details could not be verified against the registry.',
+  'name': 'The name on your documents did not match your BVN/NIN record.',
+  'dob': 'Your date of birth did not match your BVN/NIN record.',
+  'liveness': "Your selfie didn't match your ID photo.",
+};
+
+/// A flagged submission whose per-check signals say exactly what failed —
+/// carrying the `failureReasons` a real response has carried since
+/// 2026-09-01, derived from the same signals exactly as the backend does.
+///
+/// `structured: false` drops that field to reproduce the older response
+/// shape, which is what the screen's safety fallback exists for.
+Map<String, dynamic> _flaggedWith(
+  Map<String, bool?> signals, {
+  int attemptCount = 1,
+  bool structured = true,
+}) =>
+    {
       'id': 'KYC-1',
       'status': 'flagged',
       'flagReason': 'vendor_verification_failed',
@@ -120,6 +144,12 @@ Map<String, dynamic> _flaggedWith(Map<String, bool?> signals, {int attemptCount 
         'dob': signals['dob'],
         'liveness': signals['liveness'],
       },
+      if (structured)
+        'failureReasons': [
+          for (final entry in _backendFailureSentences.entries)
+            if (signals[entry.key] == false)
+              {'code': entry.key, 'message': entry.value, 'retryable': true},
+        ],
     };
 
 void main() {

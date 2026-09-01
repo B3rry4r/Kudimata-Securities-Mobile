@@ -675,8 +675,8 @@ class MockApiAdapter implements HttpClientAdapter {
   // Merged (shallow) over `_kycMeResponse(kyc)`'s own fields for GET
   // /kyc-submissions/me — R-50 (DECISIONS.md, 2026-08-31): lets a caller
   // exercise a shape MockKyc's fixed enum doesn't have a case for, e.g. a
-  // `failureReasons` array (BR-10, BACKEND_GAPS.md — not shipped by the
-  // real backend yet) or a custom attemptCount, without adding a new
+  // `failureReasons` array (BR-10, BACKEND_GAPS.md — served by the backend
+  // as of 2026-09-01) or a custom attemptCount, without adding a new
   // MockKyc value per scenario. Null (the default) leaves every existing
   // call site byte-for-byte unaffected.
   final Map<String, dynamic>? kycMeOverride;
