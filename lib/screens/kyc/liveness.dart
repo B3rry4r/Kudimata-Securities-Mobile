@@ -251,7 +251,7 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                       ),
                     ),
                     const SizedBox(height: 28),
-                    Text(_error ?? _cameraError ?? (kIsWeb ? 'Upload a face liveness photo' : 'Look straight ahead'),
+                    Text(_error ?? _cameraError ?? (kIsWeb ? 'Capture a face liveness photo' : 'Look straight ahead'),
                         textAlign: TextAlign.center,
                         // On the feature/grape panel: featureInk (white) by
                         // default, lossOnInk (a light coral, legible on a
@@ -266,9 +266,9 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                             : _error != null
                                 ? 'Tap the button to try again'
                                 : (_busy
-                                    ? 'Uploading…'
+                                    ? (kIsWeb ? 'Capturing…' : 'Uploading…')
                                     : kIsWeb
-                                        ? 'A clear, front-facing photo of yourself'
+                                        ? 'A clear, front-facing photo of yourself. Tap to capture.'
                                         : 'Good light, no hat, no glasses. Fill the frame with your face and take one photo.'),
                         textAlign: TextAlign.center,
                         style: KType.body(color: KColor.featureInk2)),
@@ -313,7 +313,7 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
                             ? KSpinner(size: 26, color: KColor.feature)
                             : KIcon(
                                 kIsWeb
-                                    ? 'upload'
+                                    ? 'camera'
                                     : (_cameraError != null ? 'refresh' : 'camera'),
                                 size: 28,
                                 stroke: 1.9,
@@ -367,7 +367,10 @@ class _LivenessScreenState extends State<LivenessScreen> with WidgetsBindingObse
       if (_pickedBytes != null) {
         return Image.memory(_pickedBytes!, width: 250, height: 320, fit: BoxFit.cover);
       }
-      return KIcon('upload', size: 64, color: KColor.ink3);
+      // Camera glyph on web too (2026-09-02): the words say capture, so an
+      // upload tray glyph beside them would contradict the copy. The action
+      // underneath is still the file picker.
+      return KIcon('camera', size: 64, color: KColor.ink3);
     }
 
     if (_capturedPath != null) {
