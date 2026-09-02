@@ -650,6 +650,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 // Agreement (orders.service.ts:93,
                 // statement-generator.service.ts:30), so kept verbatim
                 // rather than treated as an unverified canvas claim.
+                //
+                // TRADES ONLY (2026-09-02, reported live: "I see executed by
+                // blue marina, FOR FUNDING???"). This rendered on every
+                // transaction detail, so a wallet deposit or a withdrawal
+                // claimed a dealing member had executed it. Blue Marina
+                // executes NGX orders on our behalf; it has nothing to do
+                // with money moving into or out of the wallet, and saying so
+                // on a deposit is a false statement about who handled an
+                // investor's money — not merely an odd label.
+                if (txn.type == TxnType.buy || txn.type == TxnType.sell) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
@@ -670,6 +680,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
+                ],
                 // GET /transactions/:id/receipt. Backend note: receipt
                 // generation is still a stub (placeholder presigned URL, no
                 // real PDF yet) — wired anyway so the plumbing is correct
