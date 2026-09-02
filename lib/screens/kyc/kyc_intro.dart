@@ -235,7 +235,7 @@ class _KycIntroScreenState extends State<KycIntroScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'It keeps your money safe. Takes about 5 minutes.',
+                          'It keeps your money safe.',
                           style: KType.body(color: KColor.ink2).copyWith(fontSize: 17, height: 26 / 17),
                         ),
                       ],
