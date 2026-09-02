@@ -47,7 +47,7 @@ import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart'
 import 'package:kudimata_invest/data/repositories/statements_repository.dart'
     show Statement, StatementKind;
 import 'package:kudimata_invest/data/repositories/complaint_repository.dart'
-    show Complaint, ComplaintStatus;
+    show Complaint, ComplaintStatus, ComplaintTimelineEntry;
 import 'package:kudimata_invest/router/app_router.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/kyc/kyc_form_state.dart';
@@ -98,6 +98,22 @@ final _complaint = Complaint(
   status: ComplaintStatus.reviewing,
   filedAt: DateTime.parse('2026-03-01T09:00:00.000Z'),
   answerDueAt: DateTime.parse('2026-03-15T09:00:00.000Z'),
+  // A populated register log. This fixture carried `timeline: null` until
+  // 2026-09-02, so the branch that renders staff replies had never once been
+  // captured — the screen was only ever seen in its empty state, which is the
+  // state that will stop being typical the moment the staff queue ships.
+  timeline: [
+    ComplaintTimelineEntry(
+      label: 'Complaint received',
+      at: DateTime.parse('2026-03-01T09:00:00.000Z'),
+      by: 'Kudimata Securities',
+    ),
+    ComplaintTimelineEntry(
+      label: 'A member of our team is reviewing your order history.',
+      at: DateTime.parse('2026-03-02T11:20:00.000Z'),
+      by: 'Client Services',
+    ),
+  ],
 );
 
 /// One captured (or attempted) screen. [dartFile]/[rulingKey] are relative
