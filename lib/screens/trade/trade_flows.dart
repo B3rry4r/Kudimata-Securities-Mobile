@@ -83,6 +83,38 @@ import 'package:go_router/go_router.dart';
 /// applies (the investor's own limit, or the live quote for a now-order).
 const double _kMinOrderNaira = 5000;
 
+/// The price an order is realistically expected to fill at — NOT the number
+/// the investor typed into the limit field.
+///
+/// A limit is a CEILING on a buy and a FLOOR on a sell, so an order whose
+/// limit sits the generous side of the market fills at the market instead:
+/// a buy limit of ₦5,000 on a share trading at ₦2,231 fills at ₦2,231.
+///
+/// This existed only on the server before 2026-09-02 (orders.service.ts's
+/// `filled.price ?? filled.limitPrice`), and the two sides disagreed. The app
+/// costed every limit order at the limit, so a buy of 2 shares at a ₦5,000
+/// limit was shown as "Estimated amount ₦10,000" while the server costed the
+/// same order at ₦4,462 and refused it for being under the ₦5,000 minimum.
+/// The investor was quoted one number and rejected against another they had
+/// never seen — reported as "I did 5k and it says the smallest order is 5k".
+///
+/// Every screen that costs an order, checks the minimum, or shows an estimate
+/// must use THIS, so the app and the server are always reasoning about the
+/// same money.
+double _expectedFillPrice({
+  required bool isLimit,
+  required bool isBuy,
+  required double limitPrice,
+  required double marketPrice,
+}) {
+  if (!isLimit) return marketPrice;
+  if (marketPrice <= 0) return limitPrice;
+  return isBuy
+      ? (limitPrice < marketPrice ? limitPrice : marketPrice)
+      : (limitPrice > marketPrice ? limitPrice : marketPrice);
+}
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Public flow launchers (cross-stage contract — see BUILD_CONTRACT.md §d).
 // Signatures unchanged: asset_detail_screen.dart, holding_detail_screen.dart
@@ -536,7 +568,12 @@ Future<void> _runBuyFlow(BuildContext context, Asset asset) async {
         break;
 
       case 2:
-        final refPrice = kind == _Kind.now ? _parsePrice(asset.price) : limitPrice!;
+        final refPrice = _expectedFillPrice(
+          isLimit: kind != _Kind.now,
+          isBuy: true,
+          limitPrice: limitPrice ?? 0,
+          marketPrice: _parsePrice(asset.price),
+        );
         // Opening the shares sheet — still nothing committed (shares aren't
         // chosen yet). Reached from case 0/1 forward or case 3's "Back".
         if (!context.mounted) return;
@@ -557,7 +594,12 @@ Future<void> _runBuyFlow(BuildContext context, Asset asset) async {
         break;
 
       case 3:
-        final refPrice = kind == _Kind.now ? _parsePrice(asset.price) : limitPrice!;
+        final refPrice = _expectedFillPrice(
+          isLimit: kind != _Kind.now,
+          isBuy: true,
+          limitPrice: limitPrice ?? 0,
+          marketPrice: _parsePrice(asset.price),
+        );
         // Opening the review sheet. This still precedes order placement —
         // placing the order happens inside _BuyReviewSheetState._confirm,
         // which already guards on its own State.mounted before touching
@@ -605,11 +647,11 @@ Future<Object?> _showChooserSheet(
         nowIcon: 'arrowUpRight',
         nowTitle: 'Buy now',
         nowDescription:
-            'Takes the cheapest shares on sale right now. If nobody is selling, nothing happens.',
+            'Takes the cheapest units on sale right now. If nobody is selling, nothing happens.',
         onNow: () => Navigator.of(context).pop(_Kind.now),
         limitTitle: 'Name your price',
         limitDescription:
-            'You set the price per share. Your order waits in the queue until someone sells at '
+            'You set the price per unit. Your order waits in the queue until someone sells at '
             'that price, or the market closes.',
         onLimit: () => Navigator.of(context).pop(_Kind.limit),
       ),
@@ -763,7 +805,7 @@ class _PriceSheetState extends State<_PriceSheet> {
         ),
         const SizedBox(height: 14),
         Text(
-          widget.isSell ? 'What must one share fetch?' : 'What will you pay per share?',
+          widget.isSell ? 'What must one unit fetch?' : 'What will you pay per unit?',
           style: KType.title(),
         ),
         const SizedBox(height: 6),
@@ -773,7 +815,7 @@ class _PriceSheetState extends State<_PriceSheet> {
         // quote this app has — Asset.price — stands in for both roles.
         Text(
           widget.isSell
-              ? 'Naming your price. You paid ${widget.avgPriceLabel ?? "—"} a share on average.'
+              ? 'Naming your price. You paid ${widget.avgPriceLabel ?? "—"} a unit on average.'
               : 'Naming your price. The last traded price is ${widget.asset.price}.',
           style: KType.body(color: KColor.ink2),
         ),
@@ -783,7 +825,7 @@ class _PriceSheetState extends State<_PriceSheet> {
           numeric: true,
           amount: true,
           prefix: '₦',
-          suffix: 'per share',
+          suffix: 'per unit',
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (_) => setState(() {}),
           error: _value <= 0 ? 'Enter a price above zero.' : null,
@@ -880,12 +922,12 @@ class _BuySharesSheetState extends State<_BuySharesSheet> {
       children: [
         Text('Buy ${widget.asset.ticker}', style: KType.section()),
         const SizedBox(height: 14),
-        Text('How many shares?', style: KType.title()),
+        Text('How many units?', style: KType.title()),
         const SizedBox(height: 6),
         Text(
           isNow
               ? 'Buying now at the best price on sale, ${widget.asset.price}.'
-              : 'At your price of ${_formatNairaDecimal(widget.price)} a share.',
+              : 'At your price of ${_formatNairaDecimal(widget.price)} a unit.',
           style: KType.body(color: KColor.ink2),
         ),
         const SizedBox(height: 18),
@@ -893,18 +935,18 @@ class _BuySharesSheetState extends State<_BuySharesSheet> {
           controller: _shares,
           numeric: true,
           amount: true,
-          suffix: 'shares',
+          suffix: 'units',
           keyboardType: TextInputType.number,
           onChanged: (_) => setState(() {}),
           error: _belowMinimum
-              ? 'The smallest order is $_minShares shares at this price.'
+              ? 'The smallest order is $_minShares units at this price.'
               : null,
         ),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Min $_minShares share${_minShares == 1 ? '' : 's'}',
+            Text('Min $_minShares unit${_minShares == 1 ? '' : 's'}',
                 style: KType.data(color: KColor.ink3)),
             Text(
               _loadFailed
@@ -1062,9 +1104,9 @@ class _BuyReviewSheetState extends State<_BuyReviewSheet> {
         Column(
           children: [
             _SummaryRow(label: 'Order type', value: isLimit ? 'Limit buy' : 'Market buy'),
-            _SummaryRow(label: 'Number of shares', value: _formatShares(widget.units)),
+            _SummaryRow(label: 'Number of units', value: _formatShares(widget.units)),
             _SummaryRow(
-              label: isLimit ? 'Your price per share' : 'Best price now',
+              label: isLimit ? 'Your price per unit' : 'Best price now',
               value: _formatNairaDecimal(widget.price),
             ),
             _SummaryRow(label: 'Estimated amount', value: _formatNaira(consideration)),
@@ -1084,7 +1126,7 @@ class _BuyReviewSheetState extends State<_BuyReviewSheet> {
                 isLimit
                     ? 'Your order fills at or near ${_formatNairaDecimal(widget.price)}. It cannot '
                         'be cancelled once the market opens.'
-                    : 'You buy at the best prices on sale right now, so the final price per share '
+                    : 'You buy at the best prices on sale right now, so the final price per unit '
                         'can differ slightly.',
                 style: KType.data(color: KColor.ink2),
               ),
@@ -1292,7 +1334,7 @@ class _PlacedScreen extends StatelessWidget {
                             // has no source for (see this file's header
                             // comment), so it is omitted rather than shown
                             // wrong; the share count is real.
-                            message: '${_formatShares(units)} shares of ${asset.name}'
+                            message: '${_formatShares(units)} units of ${asset.name}'
                                 '${isSell ? ' sold.' : '.'}',
                           ),
                         ),
@@ -1309,7 +1351,7 @@ class _PlacedScreen extends StatelessWidget {
                             children: [
                               _tracker('Sent to the market', done: true),
                               _tracker(
-                                isSell ? 'Selling your shares' : 'Buying your shares',
+                                isSell ? 'Selling your units' : 'Buying your units',
                                 done: filled,
                                 inProgress: !filled,
                               ),
@@ -1425,7 +1467,7 @@ Future<void> _runSellFlow(BuildContext context, Asset asset) async {
           isSell: true,
           initial: limitPrice,
           referenceLabel: 'Best buyer now',
-          belowHint: (p) => 'Above $p your shares wait until a buyer pays your price.',
+          belowHint: (p) => 'Above $p your units wait until a buyer pays your price.',
           avgPriceLabel: holding?.avgPrice,
         );
         if (!context.mounted) return;
@@ -1439,7 +1481,12 @@ Future<void> _runSellFlow(BuildContext context, Asset asset) async {
         break;
 
       case 2:
-        final refPrice = kind == _Kind.now ? _parsePrice(asset.price) : limitPrice!;
+        final refPrice = _expectedFillPrice(
+          isLimit: kind != _Kind.now,
+          isBuy: false,
+          limitPrice: limitPrice ?? 0,
+          marketPrice: _parsePrice(asset.price),
+        );
         // Opening the shares sheet — shares not yet chosen, nothing
         // committed. Reached from case 0/1 forward or case 3's "Back".
         if (!context.mounted) return;
@@ -1461,7 +1508,12 @@ Future<void> _runSellFlow(BuildContext context, Asset asset) async {
         break;
 
       case 3:
-        final refPrice = kind == _Kind.now ? _parsePrice(asset.price) : limitPrice!;
+        final refPrice = _expectedFillPrice(
+          isLimit: kind != _Kind.now,
+          isBuy: false,
+          limitPrice: limitPrice ?? 0,
+          marketPrice: _parsePrice(asset.price),
+        );
         // Opening the review sheet, still before order placement — placing
         // the sell order happens inside _SellReviewSheetState._confirm,
         // which already guards on its own State.mounted. Nothing committed
@@ -1538,7 +1590,7 @@ class _SellChooserSheetState extends State<_SellChooserSheet> {
         final holding = snapshot.data!;
         return _StaticChooser(
           title: 'How do you want to sell?',
-          subtitle: 'You hold ${holding.units} ${widget.asset.name} shares',
+          subtitle: 'You hold ${holding.units} ${widget.asset.name} units',
           nowIcon: 'arrowDownLeft',
           nowTitle: 'Sell now',
           nowDescription:
@@ -1606,7 +1658,7 @@ class _SellSharesSheetState extends State<_SellSharesSheet> {
       children: [
         Text('Sell ${widget.asset.ticker}', style: KType.section()),
         const SizedBox(height: 14),
-        Text('How many shares?', style: KType.title()),
+        Text('How many units?', style: KType.title()),
         const SizedBox(height: 6),
         Text(
           isNow
@@ -1622,7 +1674,7 @@ class _SellSharesSheetState extends State<_SellSharesSheet> {
           suffix: 'of ${_formatShares(_holdingUnits)}',
           keyboardType: TextInputType.number,
           onChanged: (_) => setState(() {}),
-          error: _overHolding ? 'You only hold ${_formatShares(_holdingUnits)} shares.' : null,
+          error: _overHolding ? 'You only hold ${_formatShares(_holdingUnits)} units.' : null,
         ),
         const SizedBox(height: 8),
         Row(
@@ -1651,7 +1703,7 @@ class _SellSharesSheetState extends State<_SellSharesSheet> {
         const SizedBox(height: 6),
         Text(
           'Fees are calculated by Kudimata when your order fills — not shown here yet. '
-          '${_formatShares(remaining.toDouble())} shares left.',
+          '${_formatShares(remaining.toDouble())} units left.',
           style: KType.data(color: KColor.ink3),
         ),
         const SizedBox(height: 20),
@@ -1801,7 +1853,7 @@ class _SellReviewSheetState extends State<_SellReviewSheet> {
           isLimit
               ? 'Unfilled sell orders expire at 4:30pm. Nothing leaves your holding until a buyer '
                   'takes it.'
-              : 'If nobody is buying, the order fails and your shares stay where they are.',
+              : 'If nobody is buying, the order fails and your units stay where they are.',
           style: KType.data(color: KColor.ink3),
         ),
         const SizedBox(height: 18),

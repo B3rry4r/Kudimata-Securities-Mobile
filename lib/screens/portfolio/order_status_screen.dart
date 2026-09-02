@@ -320,7 +320,7 @@ class _OrderCard extends StatelessWidget {
 
   String get _title {
     final verb = order.side == 'sell' ? 'Sell' : 'Buy';
-    return '$verb ${order.ticker} · ${order.units} shares';
+    return '$verb ${order.ticker} · ${order.units} units';
   }
 
   String get _orderTypeLabel => order.orderType == 'limit' ? 'Limit' : 'Market';

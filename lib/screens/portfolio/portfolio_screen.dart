@@ -443,7 +443,7 @@ class _HoldingsList extends StatelessWidget {
               // holding.returnPct) — this is this holding's own position
               // numbers, not the asset's daily per-share price/change
               // (that's Markets-screen data).
-              ticker: '${holdings[i].units} shares · avg ${holdings[i].avgPrice}',
+              ticker: '${holdings[i].units} units · avg ${holdings[i].avgPrice}',
               initialsSource: holdings[i].asset.ticker,
               logoColor: holdings[i].asset.logoColor ?? KColor.ink,
               price: holdings[i].marketValue,

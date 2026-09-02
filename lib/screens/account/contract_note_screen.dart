@@ -271,7 +271,7 @@ class _NoteBody extends StatelessWidget {
                 child: Column(
                   children: [
                     _Row(isBuy ? 'Bought' : 'Sold', '${note.assetName} · ${note.ticker}'),
-                    _Row('Shares · price',
+                    _Row('Units · price',
                         '${_trimUnits(note.units)} · ${_naira(note.fillPriceKobo)}'),
                     _Row('Consideration', _naira(note.considerationKobo)),
                     _Row('Broker commission', _naira(note.commissionKobo)),
