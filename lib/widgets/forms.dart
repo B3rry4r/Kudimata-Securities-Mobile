@@ -80,7 +80,7 @@ class KCheckbox extends StatelessWidget {
 
 /// A [KCheckbox] whose label carries exactly one tappable link out to an
 /// external document — "I acknowledge that I have read and agree to
-/// **Kudimata Securities Agreements**" (sign-up's
+/// **Terms and Conditions**" (sign-up's
 /// account-creation checkbox) / "I have read the **Risk Disclosure**"
 /// (trade confirmation's risk checkbox). Built once here (R-51, DECISIONS.md,
 /// 2026-08-31) rather than forked per screen — both callers needed the exact

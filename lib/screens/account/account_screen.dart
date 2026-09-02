@@ -138,7 +138,7 @@ List<(String title, String route, String? icon, String? sub)> _menuRows(int pend
     // URL instead of a route path; the row-tap handler below (`_menuRows`'
     // one caller) checks for an `http` prefix to tell this one row apart
     // from every other row's real in-app route.
-    ('Terms and disclosures', KLinks.legal, 'doc', 'Terms, risk disclosure, client agreement'),
+    ('Terms and conditions', KLinks.legal, 'doc', 'Terms, risk disclosure, client agreement'),
     // s51: 'settings' · "Consents, export, deletion" — s51's own last row.
     // 2026-08-29 exactness pass: "Data & privacy" -> "Data and privacy" —
     // s51 spells it out, no ampersand; no ruling authorises the shorthand.

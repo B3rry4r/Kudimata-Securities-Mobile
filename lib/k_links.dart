@@ -21,27 +21,28 @@ class KLinks {
   static const String financialLiteracy =
       'https://www.kudimata.app/our-app/financial-literacy-quiz';
 
-  // This app's own backend-served legal page (R-51, DECISIONS.md,
-  // 2026-08-31 — owner: "remove the assessment and also remove the risk
-  // disclosure too... legal on account screen should also open a link...
-  // you can just use the domain of the backend with a /legal route") — the
-  // `alpha.kudimatasecurities.com` domain above, NOT the kudimata.app
-  // marketing site the four constants above point at. Replaces the
-  // in-app legal-document screens this app used to render itself
-  // (legal_screen.dart, legal_preview_screen.dart, the onboarding legal-
-  // acceptance chain) — sign-up's account-creation checkbox and Account →
-  // Terms and disclosures both open this URL now instead. Not live yet as
-  // of this ruling; the link is correct in advance of the site shipping,
-  // by deliberate instruction — no reachability check, no fallback.
-  static const String legal = 'https://alpha.kudimatasecurities.com/legal';
+  // Kudimata Securities' own legal pages (R-51, DECISIONS.md, 2026-08-31 —
+  // owner: "remove the assessment and also remove the risk disclosure too...
+  // legal on account screen should also open a link"). Replaces the in-app
+  // legal-document screens this app used to render itself (legal_screen.dart,
+  // legal_preview_screen.dart, the onboarding legal-acceptance chain) —
+  // sign-up's account-creation checkbox and Account → Terms and conditions
+  // both open this URL now instead.
+  //
+  // Corrected 2026-09-02 (owner, exact URLs given): the public site is
+  // `kudimatasecurities.com`, NOT the `alpha.` API host these first pointed
+  // at, and the risk disclosure sits at /legal/risk-disclosure/ rather than
+  // /legal/risk. Trailing slashes are the owner's own, kept verbatim.
+  // Distinct from the kudimata.app constants above, which are the separate
+  // marketing site. Not necessarily live yet; correct in advance of the site
+  // shipping, by deliberate instruction — no reachability check, no fallback.
+  static const String legal = 'https://kudimatasecurities.com/legal/';
 
-  // Risk disclosure specifically, its own URL under the same page rather
-  // than only a row inside the list above — opened directly from the
-  // trade-confirmation risk checkbox (trade_flows.dart) so an investor
-  // about to place an order isn't sent to the full 4-document list to find
-  // the one that matters mid-order. Also not live yet; same note as
-  // [legal] above.
-  static const String legalRisk = 'https://alpha.kudimatasecurities.com/legal/risk';
+  // Risk disclosure specifically, its own page rather than only a row inside
+  // the list above — opened directly from the trade-confirmation risk
+  // checkbox (trade_flows.dart) so an investor about to place an order isn't
+  // sent to the full document list to find the one that matters mid-order.
+  static const String legalRisk = 'https://kudimatasecurities.com/legal/risk-disclosure/';
 }
 
 /// Best-effort hand-off to the device browser for a [KLinks] URL — the one

@@ -484,13 +484,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
         checked: _agreedToTerms,
         onChanged: (v) => setState(() => _agreedToTerms = v),
         prefixText: 'I acknowledge that I have read and agree to',
-        linkText: 'Kudimata Securities Agreements',
+        linkText: 'Terms and Conditions',
         url: KLinks.legal,
       ),
       if (_showErrors && !_agreedToTerms) ...[
         const SizedBox(height: 8),
         Text(
-          'Agree to the Kudimata Securities Agreements to create your account',
+          'Agree to the Terms and Conditions to create your account',
           style: KType.data(color: KColor.loss),
         ),
       ],
