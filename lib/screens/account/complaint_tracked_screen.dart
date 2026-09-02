@@ -133,7 +133,7 @@ class ComplaintTrackedScreen extends StatelessWidget {
           title: complaint.status == ComplaintStatus.escalated
               ? 'Escalated to the SEC'
               : 'Under review',
-          subtitle: 'Answer due by ${_formatDay(complaint.answerDueAt)}',
+          subtitle: 'Answer due on or before ${_formatDay(complaint.answerDueAt)}',
           state: _ComplaintStepState.active,
         ),
       );
@@ -187,7 +187,7 @@ class ComplaintTrackedScreen extends StatelessWidget {
                   style: KType.data(color: KColor.ink2),
                 ),
                 Text(
-                  'Answer due by $dueDay · 10 business days',
+                  'Answer due on or before $dueDay · within 10 business days',
                   style: KType.data(color: KColor.ink2),
                 ),
                 if (inWindow) ...[

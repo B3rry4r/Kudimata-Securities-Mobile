@@ -326,7 +326,7 @@ class _OpenComplaintCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Raised ${formatComplaintDate(complaint.filedAt)} · reference ${complaint.reference}. '
-              'We reply by ${formatComplaintDate(complaint.answerDueAt)}.',
+              'We reply on or before ${formatComplaintDate(complaint.answerDueAt)}.',
               style: KType.data(color: KColor.ink2),
             ),
           ],
