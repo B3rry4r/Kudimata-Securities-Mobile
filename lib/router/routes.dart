@@ -48,22 +48,31 @@ class Routes {
   // which is a one-shot entry with its own resume logic.
   static const String kycChecklist = '/kyc/checklist';
   static const String kycBvn = '/kyc/bvn';
-  // CHN · optional — 2 of 8 (2026-08-24 canvas screen 15, re-sequencing the
-  // real 5-step flow to the canvas's real 8 steps). Right after bvn/nin,
-  // before id upload.
+  // CHN · optional — 2 of 8 (2026-08-24 canvas screen 15). Right after
+  // bvn/nin, before id upload.
   static const String kycChn = '/kyc/chn';
   static const String kycId = '/kyc/id';
   static const String kycLiveness = '/kyc/liveness';
   static const String kycChecking = '/kyc/checking';
-  // Utility bill upload — step 5 of 8 (2026-08-20 phased-KYC directive:
-  // "we need to collect Utility bill"). documentKind 'proof_of_address'
-  // already existed in the backend schema; this is the first screen that
-  // actually collects it.
+  // Utility bill upload — the address half of step 3 of 8 (2026-08-20
+  // phased-KYC directive: "we need to collect Utility bill"). documentKind
+  // 'proof_of_address' already existed in the backend schema; this is the
+  // first screen that actually collects it.
   static const String kycUtilityBill = '/kyc/utility-bill';
-  // Bank & Direct Cash Settlement — 6 of 8 (2026-08-24 canvas screen 19).
+  // Bank & Direct Cash Settlement — 5 of 8 (2026-08-24 canvas screen 19).
   // Collects a real bank account (BankAccountsRepository — same mechanism
-  // Account → Bank accounts uses) during KYC and sets it primary/DCS.
+  // Account → Bank accounts uses), sets it primary/DCS, and — since
+  // 2026-09-04, SEC No Objection condition 1 — carries the investor's
+  // payout-destination election: Direct Cash Settlement (pre-selected, the
+  // regulator-mandated default) or wallet credit, which can only be taken by
+  // explicitly confirming the opt-out.
   static const String kycBankDcs = '/kyc/bank-dcs';
+  // Source of funds — 6 of 8 (SEC No Objection condition 2, 2026-09-04):
+  // "a dedicated 'Source of Funds' field within the onboarding questionnaire
+  // to support appropriate investor profiling and the required AML/CFT due
+  // diligence." A closed nine-option list, required, gated server-side at
+  // finalize the same way the ID document and liveness check are.
+  static const String kycSourceOfFunds = '/kyc/source-of-funds';
   // Declarations · PEP — 7 of 8 (2026-08-24 canvas screen 20). PATCHes
   // pepSelfDeclared onto the draft.
   static const String kycDeclarations = '/kyc/declarations';
@@ -135,6 +144,11 @@ class Routes {
   // ── Account sub-pages (pushed) ───────────────────────────────────────────
   static const String acctPersonal = '/account/personal';
   static const String acctBanks = '/account/banks';
+  // Payout preference — Direct Cash Settlement vs wallet credit (SEC No
+  // Objection condition 1, 2026-09-04). The owner's requirement that the
+  // choice be changeable AFTER onboarding, not only during it: the same
+  // election kycBankDcs collects, reachable for the life of the account.
+  static const String acctPayoutPreference = '/account/payout-preference';
   static const String acctRefer = '/account/refer';
   static const String acctHelp = '/account/help';
   static const String acctFaq = '/account/help/faq';
@@ -273,7 +287,8 @@ class Routes {
     kycChecking: kycLiveness,
     kycUtilityBill: kycLiveness,
     kycBankDcs: kycUtilityBill,
-    kycDeclarations: kycBankDcs,
+    kycSourceOfFunds: kycBankDcs,
+    kycDeclarations: kycSourceOfFunds,
     kycNextOfKin: kycDeclarations,
   };
 
@@ -288,6 +303,7 @@ class Routes {
     kycChecking,
     kycUtilityBill,
     kycBankDcs,
+    kycSourceOfFunds,
     kycDeclarations,
     kycNextOfKin,
   };

@@ -20,6 +20,64 @@ import 'package:dio/dio.dart' show Options;
 
 import '../api/api_client.dart';
 
+/// A single source-of-funds answer — Nigerian SEC No Objection condition 2
+/// (2026-09-04): "a dedicated 'Source of Funds' field within the onboarding
+/// questionnaire to support appropriate investor profiling and the required
+/// AML/CFT due diligence."
+///
+/// `code` is the wire value (the backend's `SourceOfFunds` enum); `label` is
+/// what the investor reads. Paired here, in lib/data/, because the code is a
+/// wire shape and a screen must never invent one.
+class SourceOfFundsOption {
+  const SourceOfFundsOption(this.code, this.label);
+  final String code;
+  final String label;
+}
+
+/// The nine answers, in the order the flow offers them — mirrors the
+/// backend's `SourceOfFunds` Prisma enum and `SOURCE_OF_FUNDS_VALUES`
+/// (src/kyc-submissions/dto/source-of-funds.validators.ts) exactly.
+///
+/// A CLOSED list, not free text: an AML/CFT profiling answer that cannot be
+/// compared across investors does not support screening. `other` is the
+/// escape hatch and requires a written description — see
+/// [KycRepository.updateDraftFields] and source_of_funds_screen.dart.
+const List<SourceOfFundsOption> kSourceOfFundsOptions = [
+  SourceOfFundsOption('salary_employment', 'Salary or employment income'),
+  SourceOfFundsOption('business_income', 'Business income'),
+  SourceOfFundsOption('savings', 'Savings'),
+  SourceOfFundsOption('investment_returns', 'Investment returns'),
+  SourceOfFundsOption('gift', 'A gift'),
+  SourceOfFundsOption('inheritance', 'Inheritance'),
+  SourceOfFundsOption('loan', 'A loan'),
+  SourceOfFundsOption('property_sale', 'Sale of property'),
+  SourceOfFundsOption('other', 'Something else'),
+];
+
+/// The code the free-text description belongs to. Named rather than spelled
+/// as a bare string at each of the four places that test for it.
+const String kSourceOfFundsOtherCode = 'other';
+
+/// Longest occupation the backend accepts — mirrors OCCUPATION_MAX_LENGTH in
+/// the backend's src/common/occupation.ts, which is the single definition of
+/// this bound on that side. Declared here in lib/data/ (not on the screen)
+/// because it is part of the wire contract: a screen that let an investor type
+/// 300 characters would be building a request the server refuses.
+///
+/// Occupation is FREE TEXT, deliberately unlike [kSourceOfFundsOptions]' closed
+/// list. Source of funds is a profiling answer that only supports AML screening
+/// if it is comparable across investors, so it must be a closed list. Occupation
+/// is an identification answer — SEC (Capital Market Operators) AML/CFT/CPF
+/// Regulations 2022, reg 50(3)(e), "verification of employment or public
+/// position held" — and it is genuinely open-ended; any list short enough to
+/// show would be wrong for someone, and pushing real answers into an "Other"
+/// bucket destroys the exact detail the regulation asks for.
+const int kOccupationMaxLength = 100;
+
+/// Shortest occupation the backend accepts (OCCUPATION_MIN_LENGTH, same file).
+/// Two characters, so "HR" fits.
+const int kOccupationMinLength = 2;
+
 /// The subset of `KycSubmission` (registry.json) the KYC flow's screens
 /// need. `status` is the authoritative field
 /// (`draft|pending|review|approved|rejected|flagged|expired`); `vendorDecision`
@@ -57,6 +115,9 @@ class KycSubmissionStatus {
     this.nin,
     this.chn,
     this.pepSelfDeclared,
+    this.sourceOfFunds,
+    this.sourceOfFundsOther,
+    this.occupation,
     this.documentType,
     this.documents = const [],
     this.flagReason,
@@ -89,6 +150,27 @@ class KycSubmissionStatus {
   /// bvn/nin"), so not masked here either.
   final String? chn;
   final bool? pepSelfDeclared;
+
+  /// Source of funds — Nigerian SEC No Objection condition 2 (2026-09-04),
+  /// the AML/CFT profiling answer collected at its own KYC step. One of
+  /// [kSourceOfFundsOptions]' codes, or null on a draft that has not reached
+  /// that step yet. Not masked server-side (it is a declaration the investor
+  /// typed, not a credential), so not masked here either.
+  final String? sourceOfFunds;
+
+  /// The free text behind [sourceOfFunds] == 'other'. Non-null only for
+  /// 'other', and required by the server in that case — see
+  /// [KycRepository.updateDraftFields].
+  final String? sourceOfFundsOther;
+
+  /// The investor's occupation or public position — SEC (Capital Market
+  /// Operators) AML/CFT/CPF Regulations 2022, reg 50(3)(e): "verification of
+  /// employment or public position held". Collected on the SAME KYC step as
+  /// [sourceOfFunds] (step 6) and required by the same server-side finalize
+  /// gate; null on a draft that has not reached that step yet. Free text,
+  /// bounded — see [kOccupationMaxLength].
+  final String? occupation;
+
   /// Set once step 2 (id document) registers — null on a fresh draft.
   final String? documentType;
   /// Every document registered against this submission/draft so far —
@@ -411,10 +493,34 @@ class KycRepository {
   /// leaves that field untouched server-side (see
   /// UpdateKycDraftFieldsRequest's doc comment, backend
   /// common/types/kyc.types.ts).
-  Future<KycSubmissionStatus> updateDraftFields({String? chn, bool? pepSelfDeclared}) async {
+  ///
+  /// [sourceOfFunds]/[sourceOfFundsOther] were added 2026-09-04 (SEC No
+  /// Objection condition 2). The server enforces the pairing rule: 'other'
+  /// REQUIRES a non-empty [sourceOfFundsOther] and every other answer refuses
+  /// one, both 400s. source_of_funds_screen.dart applies the same rule in the
+  /// UI so the investor sees it as a field error rather than a request
+  /// failure, but the server is the one that decides.
+  ///
+  /// [occupation] was added 2026-09-05 (SEC AML/CFT/CPF Regulations 2022, reg
+  /// 50(3)(e)). It is collected on the SAME screen as [sourceOfFunds] and rides
+  /// this SAME endpoint — no new route was added for it. The server trims it,
+  /// collapses internal whitespace and stores the normalised form, so a value
+  /// read back may differ in spacing from the one sent; send it trimmed anyway
+  /// so the two agree. Refused server-side (400 OCCUPATION_REQUIRED) when it is
+  /// empty or whitespace-only.
+  Future<KycSubmissionStatus> updateDraftFields({
+    String? chn,
+    bool? pepSelfDeclared,
+    String? sourceOfFunds,
+    String? sourceOfFundsOther,
+    String? occupation,
+  }) async {
     final response = await _client.patch('/kyc-submissions/draft', data: {
       'chn': ?chn,
       'pepSelfDeclared': ?pepSelfDeclared,
+      'sourceOfFunds': ?sourceOfFunds,
+      'sourceOfFundsOther': ?sourceOfFundsOther,
+      'occupation': ?occupation,
     });
     return _fromJson(response.data as Map<String, dynamic>);
   }
@@ -498,6 +604,9 @@ class KycRepository {
       nin: _maskBvn(json['nin'] as String?),
       chn: json['chn'] as String?,
       pepSelfDeclared: json['pepSelfDeclared'] as bool?,
+      sourceOfFunds: json['sourceOfFunds'] as String?,
+      sourceOfFundsOther: json['sourceOfFundsOther'] as String?,
+      occupation: json['occupation'] as String?,
       documentType: json['documentType'] as String?,
       documents: (json['documents'] as List<dynamic>? ?? const [])
           .map((d) => KycDocumentSummary.fromJson(d as Map<String, dynamic>))

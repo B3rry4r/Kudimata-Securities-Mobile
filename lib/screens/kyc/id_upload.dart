@@ -1,4 +1,4 @@
-// KYC 3 — ID upload, part of the merged "Documents" step (step 3 of 7 —
+// KYC 3 — ID upload, part of the merged "Documents" step (step 3 of 8 —
 // shares this number with utility_bill.dart's address/proof-of-address half;
 // renumbered 8->7 2026-08-27 per X-2/bvn_nin.dart's derivation). Artboard
 // s14/s14d ("Your documents",
@@ -138,9 +138,9 @@ class _IdUploadScreenState extends State<IdUploadScreen> {
               // hub, in-session goes to the normal predecessor — see
               // kycBackTarget's own doc comment.
               onBack: () => context.go(kycBackTarget(context, Routes.kycId)),
-              stepLabel: 'Verification · 3 of 7',
+              stepLabel: kycStepLabel(3),
             ),
-            const KycStepProgress(total: 7, current: 3),
+            const KycStepProgress(current: 3),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

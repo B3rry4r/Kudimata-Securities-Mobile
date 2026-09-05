@@ -1,4 +1,4 @@
-// KYC — verifying liveness (interstitial right after step 4 of 7, before step
+// KYC — verifying liveness (interstitial right after step 4 of 8, before step
 // 5; renumbered 8->7 2026-08-27 per X-2/bvn_nin.dart's derivation).
 // A centred spinner while the REAL liveness check runs server-side.
 //
@@ -83,9 +83,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
               // hub, in-session goes to the normal predecessor — see
               // kycBackTarget's own doc comment.
               onBack: () => context.go(kycBackTarget(context, Routes.kycChecking)),
-              stepLabel: 'Verification · 4 of 7',
+              stepLabel: kycStepLabel(4),
             ),
-            const KycStepProgress(total: 7, current: 4),
+            const KycStepProgress(current: 4),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: KSpace.gutter),

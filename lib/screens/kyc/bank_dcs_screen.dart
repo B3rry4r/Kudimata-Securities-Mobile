@@ -1,4 +1,4 @@
-// KYC 5 of 7 — Bank & Direct Cash Settlement (canvas screen 19). NEW screen
+// KYC 5 of 8 — Bank & Direct Cash Settlement (canvas screen 19). NEW screen
 // (2026-08-24, re-sequencing to the canvas's real 8-step flow; renumbered
 // 8->7 (was 6 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation).
 //
@@ -8,13 +8,34 @@
 // picker/preview pattern bank_accounts_screen.dart's add-account sheet
 // already uses, just inline on a full KYC step screen instead of a sheet.
 //
-// "Use this account for Direct Cash Settlement" (checked by default, per
-// the canvas) maps onto setting the newly-added account `primary` — the
-// SAME flag bank_accounts_screen.dart's "DCS active" pill already reads, and
-// which the backend now requires Order.destinationBankAccountId to satisfy
-// (confirmed 2026-08-24: "the DCS account" IS "the primary bank account",
-// no separate concept). Unchecking it still adds the account (funding-only,
-// like a _SecondaryAccountRow), just doesn't set it primary.
+// TWO DIFFERENT FACTS LIVE ON THIS SCREEN, and until 2026-09-04 one of them
+// was doing both jobs badly:
+//
+//   * WHICH ACCOUNT is the Direct Cash Settlement mandate account. That is
+//     BankAccount.primary — the SAME flag bank_accounts_screen.dart's "DCS
+//     active" pill reads and the backend requires
+//     Order.destinationBankAccountId to satisfy (confirmed 2026-08-24: "the
+//     DCS account" IS "the primary bank account", no separate concept). The
+//     account added here ALWAYS becomes it: an investor adding their first
+//     account inside KYC is nominating their settlement account, and leaving
+//     them with a linked account and no mandate was never a state anyone
+//     chose on purpose.
+//
+//   * WHERE SALE PROCEEDS GO — Direct Cash Settlement, or a wallet credit.
+//     That is User.payoutPreference, added 2026-09-04 for the Nigerian SEC's
+//     No Objection condition 1. It is a genuinely separate decision, and it
+//     is the one the regulator cares about.
+//
+// The old "Use this account for Direct Cash Settlement" checkbox (ticked by
+// default) collapsed the two: it read as the payout question but wrote the
+// account flag, and unticking it produced an investor with a funding-only
+// account, no DCS mandate, and — because sale proceeds credited the wallet
+// regardless — no way to be on DCS at all. That checkbox is gone; this step
+// now STATES the default rather than asking (owner's ruling, 2026-09-05).
+// The choice itself lives in [PayoutChoice]
+// (lib/screens/shared/payout_choice.dart), the same component Account →
+// Payout preference renders, with DCS pre-selected and wallet credit
+// requiring an explicit confirmed opt-out.
 //
 // Resume-aware: if the investor already has a primary account (added here
 // before, or already had one), this shows it directly instead of asking to
@@ -31,6 +52,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/data/api/api_exception.dart';
 import 'package:kudimata_invest/data/repositories/bank_accounts_repository.dart';
+import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/screens/shared/state_views.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
@@ -56,7 +78,10 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
   Bank? _bank;
   String? _resolvedName;
   bool _resolving = false;
-  bool _dcs = true; // checked by default, per the canvas.
+  /// Where sale proceeds go. Seeded to [kPayoutDcs] — the regulator-mandated
+  /// default — and corrected from the server in [didChangeDependencies] for an
+  /// investor who already made a choice and came back to this step. It is
+  /// never seeded to wallet credit by a failed fetch.
   bool _showAddForm = false;
   bool _busy = false;
   bool _showErrors = false;
@@ -118,7 +143,12 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
     final accountNumber = _accountNumber.text.trim();
     try {
       final added = await _repo.add(bankCode: bank.code, accountNumber: accountNumber);
-      if (_dcs && !added.primary) {
+      // Always. `_dcs` was a checkbox the investor could clear; DCS is now
+      // the default for every investor (SEC No Objection condition 1), so the
+      // account added at this step IS the DCS account. Opting out happens
+      // later, in Account -> Payout preference, and never leaves an investor
+      // with no primary account.
+      if (!added.primary) {
         await _repo.setPrimary(added.id);
       }
       if (!mounted) return;
@@ -186,9 +216,9 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
               // hub, in-session goes to the normal predecessor — see
               // kycBackTarget's own doc comment.
               onBack: () => context.go(kycBackTarget(context, Routes.kycBankDcs)),
-              stepLabel: 'Verification · 5 of 7',
+              stepLabel: kycStepLabel(5),
             ),
-            const KycStepProgress(total: 7, current: 5),
+            const KycStepProgress(current: 5),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -221,11 +251,57 @@ class _BankDcsScreenState extends State<BankDcsScreen> {
                         ] else ...[
                           _buildAddForm(),
                         ],
-                        const SizedBox(height: 14),
-                        _DcsPanel(checked: _dcs, onChanged: (v) => setState(() => _dcs = v)),
+                        const SizedBox(height: 22),
+                        // Owner's ruling, 2026-09-05: this step STATES the
+                        // default, it does not ask. The two-card PayoutChoice
+                        // that briefly stood here made a settings decision
+                        // during identity verification, where the investor has
+                        // no balance yet and no reason to weigh it. The
+                        // regulator's condition is that DCS be the default and
+                        // that leaving it be explicit — the explicit part is
+                        // satisfied by Account -> Payout preference, which is
+                        // where the same PayoutChoice component still lives
+                        // and where the opt-out confirmation and the
+                        // server-side acknowledgement guard still apply.
+                        //
+                        // So: no `_payout` read, no write, nothing to fail
+                        // here. Every investor leaves KYC on DCS, which is
+                        // exactly the default the SEC asked for.
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: KColor.indicatorTint,
+                            borderRadius: KRadii.cardR,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('DIRECT CASH SETTLEMENT',
+                                  style: KType.label(color: KColor.indicator)),
+                              const SizedBox(height: 6),
+                              Text(
+                                existingPrimary == null
+                                    ? 'When you sell, the money goes from the exchange straight to this '
+                                        'account. That is the default for every investor.'
+                                    : 'When you sell, the money goes from the exchange straight to '
+                                        '${existingPrimary.bankName} ${existingPrimary.accountNumberMasked}. '
+                                        'That is the default for every investor.',
+                                style: KType.body(color: KColor.ink2)
+                                    .copyWith(fontSize: 14, height: 20 / 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Text(_error!, style: KType.body(color: KColor.loss)),
+                        ],
                         const SizedBox(height: 14),
                         Text(
-                          'Withdrawals can only ever go to a DCS account in your name. You can add another later in Account, under Bank accounts.',
+                          'Withdrawals can only ever go to a DCS account in your name. You can add another '
+                          'account, or hold sale proceeds in your wallet instead, later in Account.',
                           style: KType.data(color: KColor.ink3),
                         ),
                       ],
@@ -480,56 +556,6 @@ class _ExistingAccountCard extends StatelessWidget {
 
 /// s18's DCS panel — checkbox (checked by default) + label + explainer, plus
 /// a "What is Direct Cash Settlement?" link, copy verbatim from the canvas.
-class _DcsPanel extends StatelessWidget {
-  const _DcsPanel({required this.checked, required this.onChanged});
-  final bool checked;
-  final ValueChanged<bool> onChanged;
-
-  void _explain(BuildContext context) {
-    showKSheet<void>(
-      context,
-      child: const KExplainPanel(
-        title: 'What is Direct Cash Settlement?',
-        body: 'Direct Cash Settlement, required by the NGX. Money goes from the exchange to your bank, '
-            'never through us.',
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: KColor.paper,
-        border: Border.all(color: KColor.hairline, width: 1),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          KCheckbox(
-            checked: checked,
-            onChanged: onChanged,
-            label: 'Pay my sales and dividends straight to this bank account',
-            description:
-                'Direct Cash Settlement, required by the NGX. Money goes from the exchange to your bank, never through us.',
-          ),
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () => _explain(context),
-            behavior: HitTestBehavior.opaque,
-            child: Text('What is Direct Cash Settlement?',
-                style: KType.data(color: KColor.indicator, w: KWeight.semibold)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Same shape as bank_accounts_screen.dart's own _BankPickerSheet — this
 /// codebase's per-screen small-widget convention duplicates rather than
 /// shares (see id_upload.dart's _IdTypeRow comment).

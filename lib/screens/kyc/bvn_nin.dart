@@ -18,14 +18,17 @@
 // re-verifies against the SAME existing draft — see
 // KycRepository.draftStep1's doc comment.
 //
-// STEP COUNT (2026-08-29: this file's own note below was stale — the X-2
-// renumbering it described as still pending was already carried out; every
-// KYC step screen has said "of 7" since 2026-08-27). Real sequence: (1) BVN
-// & NIN [this screen], (2) CHN, (3) Documents + address (s14/s17, merged),
-// (4) Selfie (s15/s16), (5) Bank & DCS (s18/s18b), (6) Two
-// questions/Declarations (s19), (7) Next of kin. personal_details_screen.dart
-// (onboarding/) is NOT and never was one of these 7 — see kyc_intro.dart's
-// header for where its fields ended up after the A-1 audit fix below.
+// STEP COUNT — this file no longer holds one. It used to declare a private
+// `_kycTotalSteps` that every other KYC screen then re-spelled as a `7`
+// literal; the count now lives in exactly one place, [kKycTotalSteps] in
+// _kyc_chrome.dart, and this screen (like every other) states only WHICH step
+// it is via [kycStepLabel]. Real sequence: (1) BVN & NIN [this screen],
+// (2) CHN, (3) Documents + address (s14/s17, merged), (4) Selfie (s15/s16),
+// (5) Bank & DCS (s18/s18b), (6) Source of funds (2026-09-04, SEC No
+// Objection condition 2), (7) Declarations (s19), (8) Next of kin.
+// personal_details_screen.dart (onboarding/) is NOT and never was one of
+// these — see kyc_intro.dart's header for where its fields ended up after
+// the A-1 audit fix below.
 //
 // A-2 (2026-08-29 product-owner audit) — two fixes to s13's confirmation:
 //   1. resolvedName/resolvedDob/resolvedPhone (BR-4, MOBILE-REQUESTS.md) now
@@ -64,8 +67,6 @@ import '_kyc_chrome.dart';
 // A Nigerian BVN/NIN are both exactly 11 numeric digits (see
 // Kudimata-Securities-Backend .pipeline/conventions.md's BVN/NIN row).
 final RegExp _digitsPattern = RegExp(r'^\d{11}$');
-
-const int _kycTotalSteps = 7; // see the step-count note above
 
 enum _Step { form, confirm, failed }
 
@@ -264,9 +265,9 @@ class _BvnNinScreenState extends State<BvnNinScreen> {
                         _step = _Step.form;
                         _confirmResult = null;
                       }),
-              stepLabel: 'Verification · 1 of $_kycTotalSteps',
+              stepLabel: kycStepLabel(1),
             ),
-            const KycStepProgress(total: _kycTotalSteps, current: 1),
+            const KycStepProgress(current: 1),
             Expanded(
               child: switch (_step) {
                 _Step.form => _buildForm(),

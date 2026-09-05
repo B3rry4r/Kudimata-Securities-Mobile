@@ -1,4 +1,4 @@
-// KYC 2 of 7 — CHN · optional (canvas screen 15). NEW screen (2026-08-24,
+// KYC 2 of 8 — CHN · optional (canvas screen 15). NEW screen (2026-08-24,
 // re-sequencing the 5-step phased flow to the canvas's real steps; renumbered
 // 8->7 steps 2026-08-27 per X-2/bvn_nin.dart's derivation — see there). Sits
 // right after BVN/NIN (step 1), before Documents (step 3).
@@ -147,9 +147,9 @@ class _ChnScreenState extends State<ChnScreen> {
               // hub, in-session goes to the normal predecessor — see
               // kycBackTarget's own doc comment.
               onBack: () => context.go(kycBackTarget(context, Routes.kycChn)),
-              stepLabel: 'Verification · 2 of 7 · optional',
+              stepLabel: kycStepLabel(2, optional: true),
             ),
-            const KycStepProgress(total: 7, current: 2),
+            const KycStepProgress(current: 2),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

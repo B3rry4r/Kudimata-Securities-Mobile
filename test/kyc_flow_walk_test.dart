@@ -197,8 +197,8 @@ void main() {
       await _settle(tester);
 
       // With the mock's fully-populated draft (chn/documents/selfie/bank/
-      // declarations all already done), the only real next step is next of
-      // kin — proving this landed via the real per-step derivation
+      // source of funds/declarations all already done), the only real next
+      // step is next of kin — proving this landed via the real per-step derivation
       // (nextKycStepRoute), not a hardcoded "always go to X".
       final loc = router.routerDelegate.currentConfiguration.uri.toString();
       expect(loc, Routes.kycNextOfKin);
@@ -216,7 +216,7 @@ void main() {
       (tester) async {
         // The mock's default draft has EVERY real per-item signal already
         // set (chn, id+utility documents, liveness, a primary bank account,
-        // pepSelfDeclared) except next-of-kin, which is never independently
+        // sourceOfFunds, pepSelfDeclared) except next-of-kin, which is never independently
         // "done" while status=='draft' (see kyc_checklist_screen.dart's own
         // header) — so this is the exact case the owner described: a draft
         // with documents and a selfie already recorded.
@@ -226,6 +226,7 @@ void main() {
           Routes.kycLiveness,
           Routes.kycUtilityBill,
           Routes.kycBankDcs,
+          Routes.kycSourceOfFunds,
           Routes.kycDeclarations,
         };
         await _mount(tester, Routes.kycChecklist, kycForm: KycFormState()..lockSteps(locked));
@@ -237,7 +238,13 @@ void main() {
         expect(find.byType(KycChecklistScreen), findsOneWidget);
 
         // The one real outstanding step (Next of kin) still routes, via
-        // either its own row or the footer "Continue" button.
+        // either its own row or the footer "Continue" button. Scrolled into
+        // view first: with the source-of-funds step added (2026-09-04) the
+        // hub lists eight rows, and the last one falls below the 800x600 test
+        // viewport — an off-screen row is a layout fact, not a tap target
+        // that stopped working.
+        await tester.scrollUntilVisible(find.text('Next of kin'), 120);
+        await _settle(tester);
         await tester.tap(find.text('Next of kin'));
         await _settle(tester);
         expect(find.byType(KycChecklistScreen), findsNothing);
@@ -262,7 +269,7 @@ void main() {
     );
   });
 
-  group('A-5 — every KYC step screen agrees on "of 7"', () {
+  group('A-5 — every KYC step screen agrees on "of 8"', () {
     for (final route in <String>[
       Routes.kycBvn,
       Routes.kycChn,
@@ -270,14 +277,19 @@ void main() {
       Routes.kycLiveness,
       Routes.kycUtilityBill,
       Routes.kycBankDcs,
+      // Source of funds — step 6, added 2026-09-04 (SEC No Objection
+      // condition 2). It is in this list for the same reason every other
+      // step is: a new step that forgot to state the right total is exactly
+      // the defect this group exists to catch.
+      Routes.kycSourceOfFunds,
       Routes.kycDeclarations,
       Routes.kycNextOfKin,
     ]) {
-      testWidgets('$route shows "of 7"', (tester) async {
+      testWidgets('$route shows "of 8"', (tester) async {
         await _mount(tester, route);
-        // KycTopBar's stepLabel renders upper-cased ("VERIFICATION · 1 OF 7").
-        expect(find.textContaining('OF 7'), findsWidgets);
-        expect(find.textContaining('OF 8'), findsNothing);
+        // KycTopBar's stepLabel renders upper-cased ("VERIFICATION · 1 OF 8").
+        expect(find.textContaining('OF 8'), findsWidgets);
+        expect(find.textContaining('OF 7'), findsNothing);
       });
     }
   });

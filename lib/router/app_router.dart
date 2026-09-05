@@ -41,6 +41,7 @@ import '../screens/kyc/checking.dart';
 import '../screens/kyc/utility_bill.dart';
 import '../screens/kyc/bank_dcs_screen.dart';
 import '../screens/kyc/declarations_screen.dart';
+import '../screens/kyc/source_of_funds_screen.dart';
 import '../screens/kyc/next_of_kin.dart';
 import '../screens/kyc/submitted.dart';
 import '../screens/kyc/approved.dart';
@@ -73,6 +74,7 @@ import '../screens/portfolio/order_status_screen.dart';
 // Account subs.
 import '../screens/account/personal_info_screen.dart';
 import '../screens/account/bank_accounts_screen.dart';
+import '../screens/account/payout_preference_screen.dart';
 import '../screens/account/refer_earn_screen.dart';
 import '../screens/account/help_support_screen.dart';
 import '../screens/account/faq_screen.dart';
@@ -265,6 +267,7 @@ GoRouter buildRouter(AppState state) {
       GoRoute(path: Routes.kycChecking, builder: (_, _) => themedGated(() => CheckingScreen())),
       GoRoute(path: Routes.kycUtilityBill, builder: (_, _) => themedGated(() => UtilityBillScreen())),
       GoRoute(path: Routes.kycBankDcs, builder: (_, _) => themedGated(() => BankDcsScreen())),
+      GoRoute(path: Routes.kycSourceOfFunds, builder: (_, _) => themedGated(() => SourceOfFundsScreen())),
       GoRoute(path: Routes.kycDeclarations, builder: (_, _) => themedGated(() => DeclarationsScreen())),
       GoRoute(path: Routes.kycNextOfKin, builder: (_, _) => themedGated(() => NextOfKinScreen())),
       GoRoute(path: Routes.kycSubmitted, builder: (_, _) => themedGated(() => SubmittedScreen())),
@@ -315,6 +318,7 @@ GoRouter buildRouter(AppState state) {
       // ── Account sub-pages (pushed) ─────────────────────────────────────--
       GoRoute(path: Routes.acctPersonal, builder: (_, _) => themed(() => PersonalInfoScreen())),
       GoRoute(path: Routes.acctBanks, builder: (_, _) => themed(() => BankAccountsScreen())),
+      GoRoute(path: Routes.acctPayoutPreference, builder: (_, _) => themed(() => PayoutPreferenceScreen())),
       GoRoute(path: Routes.acctRefer, builder: (_, _) => themed(() => ReferEarnScreen())),
       GoRoute(path: Routes.acctHelp, builder: (_, _) => themed(() => HelpSupportScreen())),
       GoRoute(path: Routes.acctFaq, builder: (_, _) => themed(() => FaqScreen())),
@@ -474,7 +478,7 @@ String? _gateRedirect(AppState state, GoRouterState st) {
     Routes.login, Routes.reset,
     Routes.kycIntro, Routes.kycChecklist, Routes.kycBvn, Routes.kycChn, Routes.kycId,
     Routes.kycLiveness, Routes.kycChecking, Routes.kycUtilityBill,
-    Routes.kycBankDcs, Routes.kycDeclarations, Routes.kycNextOfKin,
+    Routes.kycBankDcs, Routes.kycSourceOfFunds, Routes.kycDeclarations, Routes.kycNextOfKin,
     Routes.kycSubmitted, Routes.kycApproved, Routes.kycOutcome,
     // questionnaire/suitabilityResult/termsOfService removed 2026-08-31
     // (R-51, DECISIONS.md) along with the routes themselves.

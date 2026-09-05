@@ -1,4 +1,4 @@
-// KYC 6 of 7 — Declarations (artboard s19 "Two quick questions",
+// KYC 7 of 8 — Declarations (artboard s19 "Two quick questions",
 // docs/design/redesign-2026-08/02 Verification.dc.html, drew a second
 // "Do you work for a stockbroker or the NGX?" question here). Renumbered
 // 8->7 (was 7 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation.
@@ -162,9 +162,9 @@ class _DeclarationsScreenState extends State<DeclarationsScreen> {
               // hub, in-session goes to the normal predecessor — see
               // kycBackTarget's own doc comment.
               onBack: () => context.go(kycBackTarget(context, Routes.kycDeclarations)),
-              stepLabel: 'Verification · 6 of 7',
+              stepLabel: kycStepLabel(7),
             ),
-            const KycStepProgress(total: 7, current: 6),
+            const KycStepProgress(current: 7),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(

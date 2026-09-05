@@ -207,6 +207,11 @@ final List<_RouteSpec> _specs = [
       kycSubmitted: false, kycApproved: false),
   _RouteSpec('23_kyc_bank_dcs', Routes.kycBankDcs, 'kyc/bank_dcs_screen.dart',
       kycSubmitted: false, kycApproved: false),
+  // Source of funds — KYC step 6, added 2026-09-04 (SEC No Objection
+  // condition 2). Numbered 23b rather than renumbering every capture after
+  // it: the shot names are how a reviewer finds a screen across runs.
+  _RouteSpec('23b_kyc_source_of_funds', Routes.kycSourceOfFunds, 'kyc/source_of_funds_screen.dart',
+      kycSubmitted: false, kycApproved: false),
   _RouteSpec('24_kyc_declarations', Routes.kycDeclarations, 'kyc/declarations_screen.dart',
       kycSubmitted: false, kycApproved: false),
   // D-1 (2026-08-27 removals pass, R-9): review_submit_screen.dart dropped
@@ -247,6 +252,10 @@ final List<_RouteSpec> _specs = [
   // ── Account sub-pages ────────────────────────────────────────────────────
   _RouteSpec('41_acct_personal', Routes.acctPersonal, 'account/personal_info_screen.dart'),
   _RouteSpec('42_acct_banks', Routes.acctBanks, 'account/bank_accounts_screen.dart'),
+  // Payout preference — SEC No Objection condition 1 (2026-09-04). Same 'b'
+  // suffix convention as 23b above, for the same reason.
+  _RouteSpec('42b_acct_payout_preference', Routes.acctPayoutPreference,
+      'account/payout_preference_screen.dart'),
   _RouteSpec('43_acct_refer', Routes.acctRefer, 'account/refer_earn_screen.dart'),
   _RouteSpec('44_acct_help', Routes.acctHelp, 'account/help_support_screen.dart'),
   _RouteSpec('45_acct_faq', Routes.acctFaq, 'account/faq_screen.dart'),

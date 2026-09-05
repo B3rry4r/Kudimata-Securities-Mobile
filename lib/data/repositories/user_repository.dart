@@ -140,6 +140,42 @@ class UserRepository {
     await _client.post('/users/me/request-closure', data: {});
   }
 
+  // -------------------------------------------------------------------
+  // Payout preference — SEC No Objection condition 1 (2026-09-04)
+  // -------------------------------------------------------------------
+
+  /// GET /users/me/payout-preference — where this investor's sale proceeds
+  /// go, plus the DCS mandate account they would actually reach.
+  ///
+  /// The server resolves the default before responding, so [PayoutPreference]
+  /// is never null and this client never has to know that a null column means
+  /// DCS. [PayoutPreferenceState.needsDcsAccount] is the server's own
+  /// conjunction too — the screen renders it, it does not re-derive it.
+  Future<PayoutPreferenceState> payoutPreference() async {
+    final response = await _client.get('/users/me/payout-preference');
+    return PayoutPreferenceState.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// PATCH /users/me/payout-preference — the investor's own election.
+  ///
+  /// Opting OUT of Direct Cash Settlement requires
+  /// `acknowledgedDcsOptOut: true`; the SERVER refuses a wallet-credit
+  /// request without it (422 DCS_OPT_OUT_NOT_ACKNOWLEDGED), which is the
+  /// regulator's "the application should require the investor to explicitly
+  /// opt out" made real rather than left to the client's good manners. The
+  /// flag is sent ONLY when opting out — the server rejects it alongside
+  /// 'dcs' as a self-contradicting request.
+  Future<PayoutPreferenceState> setPayoutPreference(
+    String preference, {
+    bool? acknowledgedDcsOptOut,
+  }) async {
+    final response = await _client.patch('/users/me/payout-preference', data: {
+      'preference': preference,
+      'acknowledgedDcsOptOut': ?acknowledgedDcsOptOut,
+    });
+    return PayoutPreferenceState.fromJson(response.data as Map<String, dynamic>);
+  }
+
   static const _months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -155,6 +191,63 @@ class UserRepository {
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '—';
     return '${dt.day} ${_months[dt.month - 1]} ${dt.year}';
+  }
+}
+
+/// The two lawful payout destinations — Nigerian SEC No Objection condition 1
+/// (2026-09-04). Wire values, mirroring the backend's `PayoutPreference`
+/// union; a screen must never spell either as a bare string.
+///
+/// [kPayoutDcs] is the DEFAULT and always will be: the regulator requires
+/// Direct Cash Settlement to be what an investor gets unless they explicitly
+/// choose otherwise.
+const String kPayoutDcs = 'dcs';
+const String kPayoutWallet = 'wallet';
+
+/// GET/PATCH /users/me/payout-preference response — see
+/// [UserRepository.payoutPreference].
+class PayoutPreferenceState {
+  const PayoutPreferenceState({
+    required this.preference,
+    required this.setAt,
+    required this.dcsBankAccountId,
+    required this.dcsAccountLabel,
+    required this.needsDcsAccount,
+  });
+
+  /// [kPayoutDcs] or [kPayoutWallet]. Never null — the server resolves the
+  /// default before it reaches this client.
+  final String preference;
+
+  /// ISO-8601 timestamp of the investor's own explicit election, or null if
+  /// they have never made one and are on DCS because DCS is the default.
+  /// This is what lets the screen say "the default" instead of claiming they
+  /// chose something they were never asked about.
+  final String? setAt;
+
+  /// The bank account currently carrying the DCS mandate, or null.
+  final String? dcsBankAccountId;
+
+  /// e.g. "GTBank ****4821" — null when [dcsBankAccountId] is null.
+  final String? dcsAccountLabel;
+
+  /// The server's own conjunction: on DCS, with no account for it to pay
+  /// into. Rendered, never re-derived here.
+  final bool needsDcsAccount;
+
+  bool get isDcs => preference == kPayoutDcs;
+
+  factory PayoutPreferenceState.fromJson(Map<String, dynamic> json) {
+    return PayoutPreferenceState(
+      // Falls back to DCS if the field is ever absent — a client that cannot
+      // read the preference must assume the regulator-mandated default, never
+      // the opt-out.
+      preference: json['preference'] as String? ?? kPayoutDcs,
+      setAt: json['setAt'] as String?,
+      dcsBankAccountId: json['dcsBankAccountId'] as String?,
+      dcsAccountLabel: json['dcsAccountLabel'] as String?,
+      needsDcsAccount: json['needsDcsAccount'] as bool? ?? false,
+    );
   }
 }
 

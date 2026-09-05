@@ -486,6 +486,14 @@ Map<String, dynamic> _kycDraft({String? chn = '1234567890', List<Map<String, dyn
       'nin': '77889012345',
       'chn': chn,
       'pepSelfDeclared': false,
+      // Source of funds (2026-09-04, SEC No Objection condition 2) — this
+      // fixture represents a draft with every collection step done except
+      // next of kin, so the new step 6 is answered here like every other.
+      'sourceOfFunds': 'salary_employment',
+      'sourceOfFundsOther': null,
+      // Occupation (2026-09-05, SEC AML/CFT/CPF Regulations 2022 reg 50(3)(e))
+      // — collected on the same step, so answered here for the same reason.
+      'occupation': 'Secondary school teacher',
       'tier': 'Tier 2',
       'documentType': 'drivers_licence',
       'documents': documents ??
@@ -530,7 +538,7 @@ Map<String, dynamic> _kycDraft({String? chn = '1234567890', List<Map<String, dyn
 /// sentinel-BVN branch in [MockApiAdapter.fetch] above. Freshly-created
 /// (not the fully-populated [_kycDraft] draft, which is meant to represent
 /// a much-later point in the flow): a fresh step-1 draft has no documents,
-/// no chn, none of steps 2-7 done yet — only bvn/nin were just attempted,
+/// no chn, none of steps 2-8 done yet — only bvn/nin were just attempted,
 /// and both failed.
 Map<String, dynamic> _kycDraftBvnVerificationFailed() => {
       'id': 'KYC-FAILED',
@@ -539,6 +547,9 @@ Map<String, dynamic> _kycDraftBvnVerificationFailed() => {
       'nin': '00000000000',
       'chn': null,
       'pepSelfDeclared': null,
+      'sourceOfFunds': null,
+      'sourceOfFundsOther': null,
+      'occupation': null,
       'tier': 'Tier 1',
       'documentType': null,
       'documents': const [],
@@ -775,6 +786,20 @@ class MockApiAdapter implements HttpClientAdapter {
           : {'open': true, 'mode': 'open'};
     }
     if (path == '/users/me') return _user();
+    // Payout preference (2026-09-04, SEC No Objection condition 1). The
+    // fixture is the SHIPPING default: Direct Cash Settlement, never chosen
+    // (setAt null), with the same GTBank account /bank-accounts returns as the
+    // DCS mandate — so a render of either payout surface shows the state a
+    // real new investor is actually in.
+    if (path == '/users/me/payout-preference') {
+      return {
+        'preference': 'dcs',
+        'setAt': null,
+        'dcsBankAccountId': 'BA1',
+        'dcsAccountLabel': 'GTBank ••••6789',
+        'needsDcsAccount': false,
+      };
+    }
     if (path == '/assets/trending') return _assets;
     if (path == '/assets') {
       final assetClass = query['assetClass'] as String?;

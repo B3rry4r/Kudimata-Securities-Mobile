@@ -21,6 +21,8 @@
 // locally (e.g. the legal document titles) instead of standing up a backend
 // endpoint for something that essentially never changes.
 import 'package:flutter/material.dart';
+import 'package:kudimata_invest/data/repositories/kyc_repository.dart'
+    show kSourceOfFundsOptions;
 import 'package:kudimata_invest/data/repositories/user_repository.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
@@ -801,4 +803,129 @@ class _AvatarChoice extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Shared collapsed-select chrome + the source-of-funds picker ───────────
+// Added 2026-09-05, when the KYC source-of-funds step became a select instead
+// of nine inline radio rows (owner instruction: nine visible options is too
+// tall a list to sit as radios).
+//
+// [KSelectField] was next_of_kin.dart's file-private `_RelationshipField`.
+// It MOVED here rather than being copied: this file is already where the app's
+// picker sheets live (showStatePicker/showCountryCodePicker/showAvatarPicker,
+// all built on showKSheet + [_PickerRow]), and next_of_kin.dart already imports
+// it. A second collapsed-select field on the source-of-funds screen would have
+// been a second truth about what a select looks like — exactly the fork the
+// build contract forbids — so there is now one, used by both.
+
+/// The closed/collapsed state of a select: same visual chrome as [KInput]
+/// (tracked uppercase label, 50px hairline box, trailing chevron) so it sits
+/// consistently among the KInput fields around it in the same KCard, but opens
+/// a [showKSheet] picker instead of a keyboard.
+///
+/// [value] null renders the [placeholder] in the muted ink KInput uses for its
+/// own placeholder, so an unanswered select reads as unanswered.
+class KSelectField extends StatelessWidget {
+  const KSelectField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onTap,
+    this.placeholder = 'Select',
+    this.required = false,
+    this.error,
+  });
+
+  final String label;
+
+  /// The chosen option's human label — NOT its wire code. A select shows the
+  /// investor what they picked; wire codes stay in lib/data/.
+  final String? value;
+  final VoidCallback onTap;
+  final String placeholder;
+
+  /// See KInput.required — renders a red asterisk beside the label.
+  final bool required;
+
+  /// Field-level error, rendered underneath in the same place and style
+  /// [KInput] puts its own, so a select and a text field refuse identically.
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KFieldLabel(label, required: required, color: KColor.ink2),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: KColor.paper,
+              borderRadius: BorderRadius.circular(KRadii.input),
+              border: Border.all(
+                color: error != null ? KColor.loss : KColor.hairline,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value ?? placeholder,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: KType.body(
+                      color: value == null ? KColor.ink3 : KColor.ink,
+                      w: KWeight.medium,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                KIcon('chevronRight', size: 20, color: KColor.ink3),
+              ],
+            ),
+          ),
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 6),
+          Text(error!, style: KType.data(color: KColor.loss)),
+        ],
+      ],
+    );
+  }
+}
+
+/// Opens a [showKSheet] listing [kSourceOfFundsOptions]; returns the tapped
+/// option's WIRE CODE, or null if the sheet is dismissed without a selection.
+///
+/// The nine options come from lib/data/ — they mirror the backend's
+/// `SourceOfFunds` enum, and a screen never invents a wire value. Unsearchable,
+/// unlike the state/country pickers above: nine options all fit, and a search
+/// pill over nine rows is chrome pretending to be a feature.
+Future<String?> showSourceOfFundsPicker(BuildContext context, {String? selected}) {
+  return showKSheet<String>(
+    context,
+    title: 'Source of funds',
+    child: KCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < kSourceOfFundsOptions.length; i++)
+            _PickerRow(
+              label: kSourceOfFundsOptions[i].label,
+              selected: kSourceOfFundsOptions[i].code == selected,
+              first: i == 0,
+              onTap: () => Navigator.of(context).pop(kSourceOfFundsOptions[i].code),
+            ),
+        ],
+      ),
+    ),
+  );
 }

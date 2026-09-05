@@ -77,6 +77,12 @@ List<(String title, String route, String? icon, String? sub)> _menuRows(int pend
     // s51 doesn't draw this row at all (see report: rows the artboard
     // omits), but it's real and wired, so it stays.
     ('Bank accounts & DCS', Routes.acctBanks, 'card', 'Linked accounts, DCS mandate'),
+    // Payout preference — SEC No Objection condition 1 (2026-09-04), plus the
+    // owner's requirement that the DCS opt-out be reachable AFTER onboarding,
+    // not only inside the KYC flow. Sits directly under Bank accounts because
+    // the two answer adjacent questions: which account carries the DCS
+    // mandate, and whether sale proceeds go to it at all.
+    ('Payout preference', Routes.acctPayoutPreference, 'transfer', 'Where your sale proceeds go'),
     // D-3 (SHARED-CHANGES.md, 2026-08-27 removals pass, R-6): the
     // AI-credits line is parked behind kAiCreditsEnabled — see
     // lib/app/feature_flags.dart. Screen + repository stay in the tree.

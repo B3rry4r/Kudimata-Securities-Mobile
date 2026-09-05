@@ -168,6 +168,14 @@
       "reason": "Same shared-file-scope provenance as corporate_actions_repository.dart: Dividend/EDividendMandate/DividendSummary live here because lib/data/models.dart was off-limits to the wiring agent that added them, per the screen-agent brief's rule 5/6. Not a deferral.",
       "where": "lib/data/repositories/dividend_repository.dart:20"
     },
+    "efcd58bd78fa030d": {
+      "evidence": "onTap: enabled ? onTap : null,",
+      "gate": "dead_controls",
+      "message": "onTap is null - confirm this is a deliberate disabled state",
+      "owner": "Excel",
+      "reason": "Confirmed deliberate. `enabled` is false only while a payout-preference write is in flight (bank_dcs_screen.dart's _setPayout / payout_preference_screen.dart's _change both pass `enabled: !saving`). Both radio options go inert together for those few hundred milliseconds so a double-tap cannot fire a second PATCH, or fire one against a selection the server has not confirmed yet -- this control routes an investor's SALE PROCEEDS (SEC No Objection condition 1, 2026-09-04), and a race between two writes here decides where real money goes. The rest of the time onTap is always non-null: this is a disabled state, not an unwired control. [2026-09-04 Excel]",
+      "where": "lib/screens/shared/payout_choice.dart:204"
+    },
     "fc613672e5ba974d": {
       "evidence": "/// rather than shared \u2014 that file is out of scope to touch, per this",
       "gate": "deferrals",

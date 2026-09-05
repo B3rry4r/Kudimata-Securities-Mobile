@@ -1,6 +1,7 @@
 // Text field, search pill, segmented control, pill chip, file upload.
 // Ported from components/core/{Input,SearchPill,SegmentedControl,PillChip,FileUpload}.jsx.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LengthLimitingTextInputFormatter;
 import '../theme/tokens.dart';
 import 'k_icon.dart';
 
@@ -66,6 +67,7 @@ class KInput extends StatefulWidget {
     this.multiline = false,
     this.minLines = 3,
     this.required = false,
+    this.maxLength,
   });
 
   final String? label;
@@ -106,6 +108,16 @@ class KInput extends StatefulWidget {
 
   /// Minimum visible lines when [multiline] is true.
   final int minLines;
+
+  /// Hard character cap, enforced while typing — a prop on the one input,
+  /// not a second input (2026-09-05, added for the KYC occupation field's
+  /// wire bound). Null means uncapped, which is every existing caller.
+  ///
+  /// Deliberately NOT TextField.maxLength: that draws Material's own "12/100"
+  /// counter below the field, which is not in this design system. This just
+  /// stops the field accepting more, the same way otp_screen.dart's own raw
+  /// TextField already does with LengthLimitingTextInputFormatter.
+  final int? maxLength;
 
   @override
   State<KInput> createState() => _KInputState();
@@ -182,6 +194,9 @@ class _KInputState extends State<KInput> {
                   focusNode: _focus,
                   enabled: !widget.disabled,
                   onChanged: widget.onChanged,
+                  inputFormatters: widget.maxLength == null
+                      ? null
+                      : [LengthLimitingTextInputFormatter(widget.maxLength!)],
                   obscureText: _obscured,
                   maxLines: widget.multiline ? null : 1,
                   minLines: widget.multiline ? widget.minLines : null,

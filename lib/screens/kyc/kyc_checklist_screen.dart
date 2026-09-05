@@ -30,17 +30,28 @@
 //   step 4 Selfie      — draft.documents contains a liveness_selfie kind.
 //   step 5 Bank & DCS  — a primary BankAccountSummary exists
 //                         (BankAccountsRepository.list()).
-//   step 6 Declarations — pepSelfDeclared != null (a Yes/No has actually
+//   step 6 Occupation &  — draft.sourceOfFunds != null AND
+//          source of funds   draft.occupation != null (2026-09-04, SEC No
+//                         Objection condition 2; occupation added 2026-09-05
+//                         per SEC AML/CFT/CPF Regulations 2022 reg 50(3)(e)).
+//                         BOTH are real persisted values on the draft, PATCHed
+//                         together by source_of_funds_screen.dart; nothing else
+//                         can set either. Both, not either — the backend
+//                         refuses to finalize without BOTH, so a checklist
+//                         satisfied by one would tick a step the server still
+//                         considers unmet. This is still ONE step: occupation
+//                         was added to that screen, not as a ninth item.
+//   step 7 Declarations — pepSelfDeclared != null (a Yes/No has actually
 //                         been recorded server-side). The screen's old
 //                         second question (broker/NGX employment) was
 //                         removed entirely 2026-09-01 (owner ruling — see
 //                         declarations_screen.dart's header) rather than
 //                         ever gaining a backend field, so pepSelfDeclared
 //                         alone is now a complete signal for this step.
-//   step 7 Next of kin — never independently "done" while status=='draft':
+//   step 8 Next of kin — never independently "done" while status=='draft':
 //                         finalizeDraft() submits next-of-kin AND leaves
 //                         'draft' in the same call, so this is always the
-//                         last remaining item once 1-6 are done.
+//                         last remaining item once 1-7 are done.
 //
 // 2026-08-29 (product-owner audit — resume loop: "did the document upload,
 // went to liveness, closed the app... reopened, did documents again, did
@@ -162,6 +173,16 @@ Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client, {bool chnSkip
   final documentsDone = hasIdDocument && hasUtilityBill;
   final selfieDone = hasLivenessSelfie;
   final bankDone = accounts.any((a) => a.primary);
+  // SEC No Objection condition 2 (2026-09-04). Real persisted evidence, same
+  // species as every other item here: the value exists on the draft row or the
+  // step is not done. There is no session-local or derived fallback, and there
+  // must not be — this is an AML/CFT field the backend refuses to finalize
+  // without, so a checklist that called it done while the server disagreed
+  // would walk the investor into a rejected submit.
+  // Both halves of step 6, ANDed. See this file's header note: the server
+  // refuses to finalize a draft missing either, so a step ticked on one alone
+  // would walk the investor into a rejected submit.
+  final sourceOfFundsDone = draft?.sourceOfFunds != null && draft?.occupation != null;
   final declarationsDone = draft?.pepSelfDeclared != null;
 
   return [
@@ -198,8 +219,14 @@ Future<List<_ChecklistStep>> _loadChecklistSteps(ApiClient client, {bool chnSkip
       route: Routes.kycBankDcs,
     ),
     _ChecklistStep(
-      title: 'Two quick questions',
-      note: 'Regulator requires them',
+      title: 'Occupation & source of funds',
+      note: 'What you do, and where the money comes from',
+      done: sourceOfFundsDone,
+      route: Routes.kycSourceOfFunds,
+    ),
+    _ChecklistStep(
+      title: 'One quick question',
+      note: 'Regulator requires it',
       done: declarationsDone,
       route: Routes.kycDeclarations,
     ),
@@ -314,7 +341,7 @@ Future<Set<String>> doneKycStepRoutes(ApiClient client, {bool chnSkipped = false
 }
 
 /// C-3 fix (2026-08-29 product-owner audit — "the kyc count on unverified
-/// home still wrong"): the real "N of 7 done" figure for a surface OUTSIDE
+/// home still wrong"): the real "N of 8 done" figure for a surface OUTSIDE
 /// this hub (home_screen.dart's `_VerifyBanner`) that needs it. Deliberately
 /// NOT `KycSubmissionStatus.currentStep`/`totalSteps` — those are the
 /// backend's phased-KYC gating numbers (`KYC_TOTAL_STEPS = 5` in
@@ -322,8 +349,8 @@ Future<Set<String>> doneKycStepRoutes(ApiClient client, {bool chnSkipped = false
 /// model from 2026-08-20 and never updated for the CHN/Bank & DCS/
 /// Declarations steps the 2026-08-24 canvas re-sequencing added — a fresh
 /// draft with CHN and the bank account both done can report
-/// `currentStep: 3` of `totalSteps: 5` even though 4 of the real 7 steps are
-/// finished. Filed as a backend gap (BACKEND_GAPS.md) rather than papered
+/// `currentStep: 3` of `totalSteps: 5` even though 4 of the real
+/// [kKycTotalSteps] steps are finished. Filed as a backend gap (BACKEND_GAPS.md) rather than papered
 /// over: this reuses [_loadChecklistSteps]'s own real, per-item derivation
 /// instead (the SAME one the hub's own UI and [nextKycStepRoute] already
 /// trust), so the two surfaces can never disagree about what "done" means.
@@ -380,7 +407,7 @@ class _KycChecklistScreenState extends State<KycChecklistScreen> {
                     return KErrorView(onPrimary: _retry);
                   }
                   // The checklist itself is never empty — it always lists
-                  // the same 7 fixed steps, whether 0 or 6 of them are done
+                  // the same [kKycTotalSteps] fixed steps, whether 0 or 7 of them are done
                   // yet, so KEmptyView's "nothing here" framing does not
                   // apply to this screen: a fresh draft with zero completed
                   // steps is still a fully-populated, correct render, not an

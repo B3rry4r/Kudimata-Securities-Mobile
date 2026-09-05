@@ -1,4 +1,4 @@
-// KYC 7 of 7 — next of kin (2026-08-24 re-sequencing: was step 5 of 5/final;
+// KYC 8 of 8 — next of kin (2026-08-24 re-sequencing: was step 5 of 5/final;
 // renumbered 8->7 (was 8 of 8) 2026-08-27 per X-2/bvn_nin.dart's derivation).
 // Name / relationship / phone.
 //
@@ -197,9 +197,9 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
               // hub, in-session goes to the normal predecessor — see
               // kycBackTarget's own doc comment.
               onBack: () => context.go(kycBackTarget(context, Routes.kycNextOfKin)),
-              stepLabel: 'Verification · 7 of 7',
+              stepLabel: kycStepLabel(8),
             ),
-            const KycStepProgress(total: 7, current: 7),
+            const KycStepProgress(current: 8),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -226,15 +226,24 @@ class _NextOfKinScreenState extends State<NextOfKinScreen> {
                               },
                               required: true),
                           const SizedBox(height: 16),
-                          _RelationshipField(
+                          // 2026-09-05: was this file's own
+                          // `_RelationshipField`. That widget MOVED to
+                          // ../onboarding/_pickers.dart as [KSelectField] when
+                          // the source-of-funds step became a select too —
+                          // one collapsed-select chrome, used by both, rather
+                          // than a second copy free to drift. Same label, same
+                          // sheet, same inline error (KSelectField.error
+                          // renders it in the same place and style the two
+                          // lines below used to).
+                          KSelectField(
+                            label: 'Relationship',
                             value: _relationship,
                             onTap: _pickRelationship,
                             required: true,
+                            error: _showErrors && _relationship == null
+                                ? 'Select a relationship'
+                                : null,
                           ),
-                          if (_showErrors && _relationship == null) ...[
-                            const SizedBox(height: 6),
-                            Text('Select a relationship', style: KType.data(color: KColor.loss)),
-                          ],
                           const SizedBox(height: 16),
                           KPhoneNumberField(
                               controller: _phone,
@@ -296,58 +305,6 @@ void _showErrorSheet(BuildContext context, {required String message}) {
       ),
     ),
   );
-}
-
-/// "Relationship" field's closed/collapsed state — same visual chrome as
-/// [KInput] (tracked uppercase label, 50px hairline box) so it sits
-/// consistently among the KInput fields around it in the same KCard, but
-/// opens [_RelationRow]'s picker sheet instead of a keyboard.
-class _RelationshipField extends StatelessWidget {
-  const _RelationshipField({required this.value, required this.onTap, this.required = false});
-  final String? value;
-  final VoidCallback onTap;
-
-  /// See KInput.required — renders a red asterisk beside the label.
-  final bool required;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KFieldLabel('Relationship', required: required, color: KColor.ink2),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: KColor.paper,
-              borderRadius: BorderRadius.circular(KRadii.input),
-              border: Border.all(color: KColor.hairline, width: 1),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    value ?? 'Select',
-                    style: KType.body(
-                        color: value == null ? KColor.ink3 : KColor.ink,
-                        w: KWeight.medium),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                KIcon('chevronRight', size: 20, color: KColor.ink3),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 /// One row in the relationship picker sheet — same shape as

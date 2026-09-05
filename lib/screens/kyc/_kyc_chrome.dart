@@ -1,12 +1,42 @@
-// Shared KYC chrome: slim back top bar + the segmented step-progress indicator.
-// KYC is a linear gated flow — NO tab bar; each step has a back chevron and a
-// "STEP n OF 5" progress strip (mirrors StepProgress in kyc-screens.jsx).
+// Shared KYC chrome: slim back top bar + the segmented step-progress
+// indicator, and — as of 2026-09-04 — the ONE definition of how many steps
+// the KYC flow has.
+//
+// KYC is a linear gated flow: no tab bar, a back chevron and a step-progress
+// strip on every screen.
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:kudimata_invest/app/app_state.dart';
 import 'package:kudimata_invest/router/routes.dart';
 import 'package:kudimata_invest/theme/tokens.dart';
 import 'package:kudimata_invest/widgets/widgets.dart';
+
+/// THE KYC STEP COUNT. One constant, one definition, every surface.
+///
+/// This project has shipped a WRONG step figure three separate times, each
+/// time because the number was spelled out again somewhere new — a private
+/// constant in bvn_nin.dart, a `total: 7` literal on eight screens, a stale
+/// `total = 4` default on [KycStepProgress] that nothing happened to be
+/// using, and the backend's own unrelated KYC_TOTAL_STEPS = 5 (its phased
+/// gating counter, which has never described this flow). Every one of those
+/// is now derived from here or deleted.
+///
+/// The eight steps, in checklist order (kyc_checklist_screen.dart's
+/// `_loadChecklistSteps` builds exactly this many items, and
+/// test/kyc_step_count_single_truth_test.dart asserts it):
+///   1 BVN & NIN        2 CHN (optional)     3 Documents (ID + utility bill)
+///   4 Selfie           5 Bank & DCS         6 Source of funds
+///   7 Declarations     8 Next of kin
+///
+/// Step 6 was added 2026-09-04 for the Nigerian SEC's No Objection condition
+/// 2 (a dedicated Source of Funds field in the onboarding questionnaire).
+const int kKycTotalSteps = 8;
+
+/// The step label [KycTopBar.stepLabel] takes — "Verification · 5 of 8".
+/// Built from [kKycTotalSteps] so a screen can state WHICH step it is without
+/// also restating how many there are.
+String kycStepLabel(int step, {bool optional = false}) =>
+    'Verification · $step of $kKycTotalSteps${optional ? ' · optional' : ''}';
 
 /// R-45 as amended (DECISIONS.md, 2026-08-29 — owner's correction to the
 /// original ruling: "they can go back but on restart they shouldn't be able
@@ -44,7 +74,8 @@ class KycTopBar extends StatelessWidget {
   const KycTopBar({super.key, this.onBack, this.stepLabel, this.onFeature = false});
   final VoidCallback? onBack;
 
-  /// e.g. "Verification · 1 of 7" — sits beside the back button, same row.
+  /// e.g. "Verification · 1 of 8" — sits beside the back button, same row.
+  /// Build it with [kycStepLabel]; never spell the total again by hand.
   /// Ported 1:1 from the canvas mockup's #s14-#s21 blocks: the step label is
   /// part of the header row (`padding:14px 20px 10px`), not a caption under
   /// the progress bar — was previously rendered as "STEP N OF total" below
@@ -97,7 +128,10 @@ class KycTopBar extends StatelessWidget {
 /// segments with a 3px radius (a subtle rounded bar, not a full pill) and no
 /// caption underneath — the step label lives in [KycTopBar] instead.
 class KycStepProgress extends StatelessWidget {
-  const KycStepProgress({super.key, this.total = 4, required this.current, this.onFeature = false});
+  /// [total] defaults to [kKycTotalSteps] and no caller should ever pass it.
+  /// It used to default to a stale `4` that nothing was using — a wrong step
+  /// count sitting in the shared widget waiting for someone to rely on it.
+  const KycStepProgress({super.key, this.total = kKycTotalSteps, required this.current, this.onFeature = false});
   final int total;
   final int current;
 

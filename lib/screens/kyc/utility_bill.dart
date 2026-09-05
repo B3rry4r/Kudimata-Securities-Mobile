@@ -1,5 +1,5 @@
 // KYC — Address + utility bill upload, part of the merged "Documents" step
-// (step 3 of 7 — shares this number with id_upload.dart's ID half;
+// (step 3 of 8 — shares this number with id_upload.dart's ID half;
 // renumbered from 5 of 8 on 2026-08-27 per X-2/bvn_nin.dart's derivation).
 // Artboard s17/s17d
 // ("Where do you live?", 02 Verification.dc.html) — RULING R-19
@@ -110,9 +110,9 @@ class _UtilityBillScreenState extends State<UtilityBillScreen> {
               // hub, in-session goes to the normal predecessor — see
               // kycBackTarget's own doc comment.
               onBack: () => context.go(kycBackTarget(context, Routes.kycUtilityBill)),
-              stepLabel: 'Verification · 3 of 7',
+              stepLabel: kycStepLabel(3),
             ),
-            const KycStepProgress(total: 7, current: 3),
+            const KycStepProgress(current: 3),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
